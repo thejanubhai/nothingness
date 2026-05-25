@@ -25,7 +25,7 @@ export async function getBlockedIntervals(propertyId: string, iCalUrl?: string |
     try {
       const events = await ical.async.fromURL(iCalUrl);
       for (const event of Object.values(events)) {
-        if (event.type === 'VEVENT' && event.start && event.end) {
+        if (event && event.type === 'VEVENT' && event.start && event.end) {
           intervals.push({ 
             start: event.start.toISOString().split('T')[0], 
             end: event.end.toISOString().split('T')[0] 
