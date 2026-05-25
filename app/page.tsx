@@ -1,8 +1,30 @@
 import Hero from "@/components/Hero";
 import BookingWidget from "@/components/BookingWidget";
 import PropertyCard from "@/components/PropertyCard";
+import { createClient } from "@/lib/supabase/server";
+import { mockProperties } from "@/lib/mock-data";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: properties, error } = await supabase
+    .from('properties')
+    .select('*')
+    .eq('active', true)
+    .order('created_at', { ascending: false })
+    .limit(4);
+
+  // Fallback to mock data if no db is connected or no properties exist
+  const displayProperties = (properties && properties.length > 0) 
+    ? properties.map(p => ({
+        id: p.id,
+        title: p.title,
+        location: `${p.area}, ${p.city}`,
+        image: p.featured_image || p.images?.[0] || "/images/property-1.png",
+        price: p.nightly_price,
+        slug: p.slug
+      }))
+    : mockProperties.slice(0, 4);
+
   return (
     <main className="min-h-screen">
       <div className="relative pb-10">
@@ -21,20 +43,16 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16">
-          <PropertyCard 
-            title="The Concrete Villa" 
-            location="Hidden Woods, NY"
-            image="/images/property-1.png"
-            price={1200}
-            slug="concrete-villa"
-          />
-          <PropertyCard 
-            title="Underground Art Loft" 
-            location="Berlin, Germany"
-            image="/images/property-2.png"
-            price={850}
-            slug="underground-loft"
-          />
+          {displayProperties.map((prop) => (
+            <PropertyCard 
+              key={prop.id}
+              title={prop.title} 
+              location={prop.location}
+              image={prop.image}
+              price={prop.price}
+              slug={prop.slug}
+            />
+          ))}
         </div>
       </section>
     </main>

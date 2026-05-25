@@ -3,6 +3,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+import { getBlockedIntervals } from './calendar';
+import { areIntervalsOverlapping } from 'date-fns';
+
 export async function createBooking(propertyId: string, checkIn: Date, checkOut: Date, guests: number, totalPrice: number) {
   const supabase = await createClient();
 
@@ -10,6 +13,25 @@ export async function createBooking(propertyId: string, checkIn: Date, checkOut:
 
   if (!user) {
     return { error: 'You must be logged in to book a sanctuary.' };
+  }
+
+  // Fetch the property to get its iCal URL
+  const { data: property } = await supabase
+    .from('properties')
+    .select('airbnb_ical_url')
+    .eq('id', propertyId)
+    .single();
+
+  // Validate dates in real-time
+  const blockedIntervals = await getBlockedIntervals(propertyId, property?.airbnb_ical_url);
+  
+  const requestedInterval = { start: checkIn, end: checkOut };
+  const isBlocked = blockedIntervals.some(blocked => 
+    areIntervalsOverlapping(requestedInterval, { start: new Date(blocked.start), end: new Date(blocked.end) })
+  );
+
+  if (isBlocked) {
+    return { error: 'These dates are no longer available. Please select different dates.' };
   }
 
   const { error } = await supabase
