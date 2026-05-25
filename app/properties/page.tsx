@@ -18,17 +18,14 @@ export default async function PropertiesPage() {
     console.error("Supabase connection failed:", e);
   }
 
-  // Fallback to mock data if no db is connected or no properties exist
-  const displayProperties = (properties && properties.length > 0) 
-    ? properties.map(p => ({
-        id: p.id,
-        title: p.title,
-        location: `${p.area}, ${p.city}`,
-        image: p.featured_image || p.images?.[0] || "/images/property-1.png",
-        price: p.nightly_price,
-        slug: p.slug
-      }))
-    : mockProperties;
+  const displayProperties = properties ? properties.map(p => ({
+    id: p.id,
+    title: p.title,
+    location: `${p.area}, ${p.city}`,
+    image: p.featured_image || p.images?.[0] || "/images/property-1.png",
+    price: p.nightly_price,
+    slug: p.slug
+  })) : [];
 
   return (
     <main className="min-h-screen pt-32 pb-24 px-4 md:px-12 max-w-7xl mx-auto">

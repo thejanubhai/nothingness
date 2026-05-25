@@ -20,26 +20,19 @@ export default async function PropertyPage({ params }: { params: Promise<{ slug:
     console.error("Supabase connection failed:", e);
   }
 
-  // Try to use DB property, fallback to mock, or 404
-  let displayProp: any = null;
-  
-  if (property) {
-    displayProp = {
-      title: property.title,
-      location: `${property.area}, ${property.city}`,
-      description: property.description,
-      price: property.nightly_price,
-      image: property.featured_image || property.images?.[0] || "/images/property-1.png",
-      amenities: property.amenities || [],
-      rules: property.rules ? property.rules.split('\n') : []
-    };
-  } else {
-    displayProp = mockPropertyDetails[slug as keyof typeof mockPropertyDetails];
-  }
-
-  if (!displayProp) {
+  if (!property) {
     notFound();
   }
+  
+  const displayProp = {
+    title: property.title,
+    location: `${property.area}, ${property.city}`,
+    description: property.description,
+    price: property.nightly_price,
+    image: property.featured_image || property.images?.[0] || "/images/property-1.png",
+    amenities: property.amenities || [],
+    rules: property.rules ? property.rules.split('\n') : []
+  };
 
   return (
     <main className="min-h-screen bg-background">
