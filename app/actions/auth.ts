@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-export async function loginWithOtp(formData: FormData) {
+export async function loginWithOtp(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const supabase = await createClient();
 
@@ -24,7 +24,7 @@ export async function loginWithOtp(formData: FormData) {
   redirect('/auth/check-email');
 }
 
-export async function verifyOtp(formData: FormData) {
+export async function verifyOtp(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const token = formData.get('token') as string;
   const supabase = await createClient();
