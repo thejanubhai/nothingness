@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+:root {
+  --background: #080808;
+  --foreground: #F5F5F5;
+  --accent-gold: #D4AF37;
+  --accent-muted: #F3E5AB;
+  --brown-deep: #1A120B;
+  --surface-blur: rgba(20, 20, 20, 0.6);
+  --border-subtle: #222222;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent-gold: var(--accent-gold);
+  --color-accent-muted: var(--accent-muted);
+  --color-brown-deep: var(--brown-deep);
+  --color-surface-blur: var(--surface-blur);
+  --color-border-subtle: var(--border-subtle);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-playfair);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.bg-grain {
+  position: relative;
+}
+
+.bg-grain::after {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background-image: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 9999;
+}
