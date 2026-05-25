@@ -6,13 +6,19 @@ import { mockPropertyDetails } from "@/lib/mock-data";
 
 export default async function PropertyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  
-  const supabase = await createClient();
-  const { data: property, error } = await supabase
-    .from('properties')
-    .select('*')
-    .eq('slug', slug)
-    .single();
+  let property = null;
+
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+    property = data;
+  } catch (e) {
+    console.error("Supabase connection failed:", e);
+  }
 
   // Try to use DB property, fallback to mock, or 404
   let displayProp: any = null;

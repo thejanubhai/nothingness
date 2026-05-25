@@ -4,12 +4,19 @@ import { createClient } from "@/lib/supabase/server";
 import { mockProperties } from "@/lib/mock-data";
 
 export default async function PropertiesPage() {
-  const supabase = await createClient();
-  const { data: properties, error } = await supabase
-    .from('properties')
-    .select('*')
-    .eq('active', true)
-    .order('created_at', { ascending: false });
+  let properties = null;
+
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('active', true)
+      .order('created_at', { ascending: false });
+    properties = data;
+  } catch (e) {
+    console.error("Supabase connection failed:", e);
+  }
 
   // Fallback to mock data if no db is connected or no properties exist
   const displayProperties = (properties && properties.length > 0) 
