@@ -7,7 +7,7 @@ export default function Hero() {
     <section className="relative w-full h-[90vh] overflow-hidden bg-black flex flex-col justify-center items-center">
       <div className="absolute inset-0 z-0">
         <Image
-          src="/images/hero.png"
+          src="/images/the-chamber/image-1.jpg"
           alt="Cinematic background"
           fill
           priority

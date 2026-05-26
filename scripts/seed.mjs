@@ -29,8 +29,12 @@ const properties = [
     cleaning_fee: 250,
     max_guests: 2,
     amenities: ["St. Andrew's Cross", "Premium Restraints", "Ambient Red Lighting", "Soundproofing", "Heavy Chains", "Custom Dark Furniture"],
-    images: ["/images/the-chamber.jpg"],
-    featured_image: "/images/the-chamber.jpg",
+    images: [
+      "/images/the-chamber/image-1.jpg",
+      "/images/the-chamber/image-2.jpg",
+      "/images/the-chamber/image-3.jpg"
+    ],
+    featured_image: "/images/the-chamber/image-1.jpg",
     rules: "Absolute Discretion Required\nNo photography outside the space\nRespect the equipment",
     active: true,
     featured: true

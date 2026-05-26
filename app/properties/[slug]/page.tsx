@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import SinglePropertyClient from "./SinglePropertyClient";
+import PropertyCarousel from "@/components/PropertyCarousel";
 import { createClient } from "@/lib/supabase/server";
-import { mockPropertyDetails } from "@/lib/mock-data";
 
 export default async function PropertyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -29,24 +29,15 @@ export default async function PropertyPage({ params }: { params: Promise<{ slug:
     location: `${property.area}, ${property.city}`,
     description: property.description,
     price: property.nightly_price,
-    image: property.featured_image || property.images?.[0] || "/images/property-1.png",
+    images: property.images && property.images.length > 0 ? property.images : [property.featured_image || "/images/property-1.png"],
     amenities: property.amenities || [],
     rules: property.rules ? property.rules.split('\n') : []
   };
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Hero Image */}
-      <div className="relative w-full h-[70vh] md:h-[85vh]">
-        <Image 
-          src={displayProp.image}
-          alt={displayProp.title}
-          fill
-          priority
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-      </div>
+      {/* Hero Image Carousel */}
+      <PropertyCarousel images={displayProp.images} title={displayProp.title} />
 
       <div className="max-w-7xl mx-auto px-4 md:px-12 -mt-32 relative z-10 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
