@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import Image from "next/image";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -33,20 +34,13 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-5 md:px-8 flex justify-between items-center">
           <Link
             href="/"
-            className="font-serif text-xl md:text-2xl tracking-[0.25em] uppercase text-white hover:text-accent-gold transition-colors duration-300"
+            className="flex items-center justify-center transition-opacity hover:opacity-80 duration-300"
           >
-            Nothingness
+            <Image src="/images/logo.png" alt="Nothingness Logo" width={40} height={40} className="object-contain invert" />
           </Link>
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-10">
-            <Link
-              href="/properties"
-              className="text-[13px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group"
-            >
-              Properties
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
-            </Link>
             <Link
               href="/media"
               className="text-[13px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group"
@@ -79,7 +73,6 @@ export default function Header() {
           >
             {[
               { href: "/", label: "Home" },
-              { href: "/properties", label: "Properties" },
               { href: "/media", label: "Media" },
             ].map((item, i) => (
               <motion.div

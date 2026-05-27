@@ -25,7 +25,7 @@ export default function SinglePropertyClient({ property }: { property: any }) {
         {/* Form */}
         <div className="space-y-5 mb-7">
           <div>
-            <label className="block text-[10px] uppercase tracking-[0.25em] text-white/30 mb-2">Check In – Check Out</label>
+            <label className="block text-[10px] uppercase tracking-[0.25em] text-white/30 mb-2">Check In - Check Out</label>
             <input 
               type="text" 
               placeholder="Select dates" 

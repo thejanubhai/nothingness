@@ -34,7 +34,7 @@ export default function FranchisePage() {
             <Lock className="w-8 h-8 text-accent-gold mb-6" />
             <h3 className="text-lg font-medium text-white mb-3 tracking-wide">Privacy & Safety</h3>
             <p className="text-foreground/70 text-sm leading-relaxed">
-              Designed for an absolute sense of safety and freedom—especially curated for women travelers.
+              Designed for an absolute sense of safety and freedom, especially curated for women travelers.
             </p>
           </div>
           
