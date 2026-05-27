@@ -34,9 +34,16 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-5 md:px-8 flex justify-between items-center">
           <Link
             href="/"
-            className="flex items-center justify-center transition-opacity hover:opacity-80 duration-300"
+            className="flex items-center justify-center transition-transform hover:scale-105 duration-300"
           >
-            <Image src="/images/logo.png" alt="Nothingness Logo" width={100} height={40} className="object-contain" />
+            <Image 
+              src="/images/logo.png" 
+              alt="Nothingness Logo" 
+              width={160} 
+              height={64} 
+              className="object-contain drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]" 
+              priority
+            />
           </Link>
 
           {/* Desktop Nav */}

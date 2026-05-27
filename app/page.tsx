@@ -106,23 +106,32 @@ export default async function Home() {
             <h2 className="font-serif text-4xl mb-3 text-white">Loved by the Community</h2>
             <p className="text-white/40 text-[14px]">Consistently rated 5.0 stars on Airbnb.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { text: "This place is on another level! The vibe, the aesthetics, the privacy... everything was just perfect. Felt so safe and comfortable. Can't wait to visit again!", name: "Riya" },
-              { text: "Honestly exceeded all expectations. The room was stunning, super clean and the whole experience was so unique and memorable. Totally worth it!", name: "Aarav" },
-              { text: "Beautifully designed space with so much attention to detail. Perfect for a getaway with your partner. We loved every bit of our stay 🖤 Highly recommended!", name: "Prerna" },
-              { text: "One of the most unique stays I've ever had in India. It's not just a place to stay, it's an experience in itself. 10/10 would absolutely come back!", name: "Simran" },
-              { text: "If you're looking for something different, this is it. Super private, super aesthetic and the host is amazing. We had a fantastic time!", name: "Karan" },
-            ].map((review, i) => (
-              <div key={i} className="bg-white/[0.03] backdrop-blur-sm border border-white/5 p-7 rounded-2xl hover:border-white/10 transition-colors duration-500">
-                <div className="flex items-center gap-1 mb-5 text-accent-gold text-sm tracking-wider">★★★★★</div>
-                <p className="text-white/70 text-[14px] leading-relaxed mb-6">"{review.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[11px] font-semibold text-white/60">{review.name[0]}</div>
-                  <span className="text-[12px] font-medium text-white/50 tracking-wider uppercase">{review.name}</span>
+          
+          <div className="relative w-full overflow-hidden flex items-center group mask-fade-edges pb-4">
+            <div className="flex w-max animate-marquee gap-6 hover:[animation-play-state:paused] touch-pan-x">
+              {[
+                { text: "This place is on another level! The vibe, the aesthetics, the privacy... everything was just perfect. Felt so safe and comfortable. Can't wait to visit again!", name: "Riya" },
+                { text: "Honestly exceeded all expectations. The room was stunning, super clean and the whole experience was so unique and memorable. Totally worth it!", name: "Aarav" },
+                { text: "Beautifully designed space with so much attention to detail. Perfect for a getaway with your partner. We loved every bit of our stay 🖤 Highly recommended!", name: "Prerna" },
+                { text: "One of the most unique stays I've ever had in India. It's not just a place to stay, it's an experience in itself. 10/10 would absolutely come back!", name: "Simran" },
+                { text: "If you're looking for something different, this is it. Super private, super aesthetic and the host is amazing. We had a fantastic time!", name: "Karan" },
+                // Duplicate the items for seamless looping
+                { text: "This place is on another level! The vibe, the aesthetics, the privacy... everything was just perfect. Felt so safe and comfortable. Can't wait to visit again!", name: "Riya" },
+                { text: "Honestly exceeded all expectations. The room was stunning, super clean and the whole experience was so unique and memorable. Totally worth it!", name: "Aarav" },
+                { text: "Beautifully designed space with so much attention to detail. Perfect for a getaway with your partner. We loved every bit of our stay 🖤 Highly recommended!", name: "Prerna" },
+                { text: "One of the most unique stays I've ever had in India. It's not just a place to stay, it's an experience in itself. 10/10 would absolutely come back!", name: "Simran" },
+                { text: "If you're looking for something different, this is it. Super private, super aesthetic and the host is amazing. We had a fantastic time!", name: "Karan" },
+              ].map((review, i) => (
+                <div key={i} className="flex-shrink-0 w-[300px] md:w-[380px] bg-white/[0.03] backdrop-blur-sm border border-white/5 p-7 rounded-2xl hover:border-white/10 transition-colors duration-500">
+                  <div className="flex items-center gap-1 mb-5 text-accent-gold text-sm tracking-wider">★★★★★</div>
+                  <p className="text-white/70 text-[14px] leading-relaxed mb-6">"{review.text}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[11px] font-semibold text-white/60">{review.name[0]}</div>
+                    <span className="text-[12px] font-medium text-white/50 tracking-wider uppercase">{review.name}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
     </main>

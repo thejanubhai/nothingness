@@ -11,8 +11,14 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-12 py-16">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="inline-block mb-5 transition-opacity hover:opacity-80 duration-300">
-              <Image src="/images/logo.png" alt="Nothingness Logo" width={120} height={48} className="object-contain" />
+            <Link href="/" className="inline-block mb-5 transition-transform hover:scale-105 duration-300">
+              <Image 
+                src="/images/logo.png" 
+                alt="Nothingness Logo" 
+                width={160} 
+                height={64} 
+                className="object-contain drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]" 
+              />
             </Link>
             <p className="text-white/40 text-[13px] leading-relaxed max-w-xs">
               India's First & Only Kink & BDSM Hospitality Brand. A culturally relevant, community-driven ecosystem.
