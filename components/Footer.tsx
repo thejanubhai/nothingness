@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -10,8 +11,8 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-12 py-16">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="font-serif text-2xl tracking-[0.2em] uppercase text-white hover:text-accent-gold transition-colors duration-300 block mb-5">
-              Nothingness
+            <Link href="/" className="inline-block mb-5 transition-opacity hover:opacity-80 duration-300">
+              <Image src="/images/logo.png" alt="Nothingness Logo" width={120} height={48} className="object-contain" />
             </Link>
             <p className="text-white/40 text-[13px] leading-relaxed max-w-xs">
               India's First & Only Kink & BDSM Hospitality Brand. A culturally relevant, community-driven ecosystem.

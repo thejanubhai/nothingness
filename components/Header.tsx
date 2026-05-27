@@ -36,7 +36,7 @@ export default function Header() {
             href="/"
             className="flex items-center justify-center transition-opacity hover:opacity-80 duration-300"
           >
-            <Image src="/images/logo.png" alt="Nothingness Logo" width={40} height={40} className="object-contain invert" />
+            <Image src="/images/logo.png" alt="Nothingness Logo" width={100} height={40} className="object-contain" />
           </Link>
 
           {/* Desktop Nav */}

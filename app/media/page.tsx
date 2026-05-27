@@ -1,5 +1,6 @@
-import Link from "next/link";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import Image from "next/image";
+import fs from "fs";
+import path from "path";
 
 export const metadata = {
   title: "Media & Press | Nothingness",
@@ -7,46 +8,48 @@ export const metadata = {
 };
 
 export default function MediaPage() {
+  // Read all images from the public/images/media directory
+  const mediaDir = path.join(process.cwd(), "public/images/media");
+  let images: string[] = [];
+  try {
+    const files = fs.readdirSync(mediaDir);
+    images = files
+      .filter((file) => file.match(/\.(png|jpe?g)$/i) && file !== 'media__1779911551607.png') // exclude the logo
+      .map((file) => `/images/media/${file}`);
+  } catch (e) {
+    console.error("Error reading media directory:", e);
+  }
+
   return (
     <main className="min-h-screen bg-background pt-32 pb-24 px-4 md:px-12 max-w-7xl mx-auto">
       <div className="mb-16">
         <h1 className="font-serif text-5xl md:text-7xl tracking-tight mb-4 text-foreground">Press & Media</h1>
         <p className="text-xl text-accent-gold font-serif italic mb-6">India's First & Only BDSM & Kink Hospitality Brand</p>
         <p className="text-foreground/70 max-w-2xl text-lg">
-          Nothingness has redefined luxury hospitality by creating private, judgment-free sanctuaries designed for absolute intimacy, exploration, and cinematic stays. Here is what the media is saying about us.
+          Nothingness has redefined luxury hospitality by creating private, judgment-free sanctuaries designed for absolute intimacy, exploration, and cinematic stays. Explore our features across social media and digital publications.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        {/* ScoopWhoop Feature */}
-        <article className="group block bg-surface-blur border border-border-subtle rounded-2xl p-8 hover:border-accent-gold transition-colors duration-500">
-          <div className="flex justify-between items-start mb-6">
-            <span className="text-sm tracking-widest text-accent-muted uppercase">ScoopWhoop</span>
-            <ExternalLink className="w-5 h-5 text-accent-muted group-hover:text-accent-gold transition-colors" />
+      <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+        {images.map((src, index) => (
+          <div key={index} className="break-inside-avoid group relative rounded-2xl overflow-hidden border border-border-subtle bg-surface-blur">
+            <div className="relative w-full aspect-auto h-auto">
+              <Image 
+                src={src} 
+                alt={`Media feature ${index + 1}`} 
+                width={800}
+                height={1200}
+                className="w-full h-auto object-cover group-hover:scale-[1.02] transition-transform duration-700 ease-in-out" 
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            </div>
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+              <span className="text-white font-medium tracking-widest text-sm uppercase px-6 py-2 border border-white/20 rounded-full bg-black/50">
+                View Feature
+              </span>
+            </div>
           </div>
-          <h2 className="font-serif text-3xl mb-4 text-white">Inside India's First Kink-Friendly Airbnb</h2>
-          <p className="text-foreground/80 mb-8 leading-relaxed">
-            "Nothingness has created something entirely unprecedented in the Indian hospitality space. The Chamber by Nothingness is a bold, sensual sanctuary that provides couples a safe, private, and aesthetic environment to explore their fantasies without judgment. It's a massive step forward for sex-positive culture in Delhi."
-          </p>
-          <div className="flex items-center text-accent-gold text-sm tracking-widest uppercase font-semibold">
-            Read Feature <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-2 transition-transform" />
-          </div>
-        </article>
-
-        {/* The New Indian Express Feature */}
-        <article className="group block bg-surface-blur border border-border-subtle rounded-2xl p-8 hover:border-accent-gold transition-colors duration-500">
-          <div className="flex justify-between items-start mb-6">
-            <span className="text-sm tracking-widest text-accent-muted uppercase">The New Indian Express</span>
-            <ExternalLink className="w-5 h-5 text-accent-muted group-hover:text-accent-gold transition-colors" />
-          </div>
-          <h2 className="font-serif text-3xl mb-4 text-white">The Rise of Alternative Hospitality in Delhi</h2>
-          <p className="text-foreground/80 mb-8 leading-relaxed">
-            "By establishing Nothingness, the founder has tapped into a deeply underserved desire for privacy and thematic exploration. Operating discreetly while maintaining strict verification and sanitization protocols, these spaces prove that luxury and alternative lifestyles can coexist beautifully."
-          </p>
-          <div className="flex items-center text-accent-gold text-sm tracking-widest uppercase font-semibold">
-            Read Feature <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-2 transition-transform" />
-          </div>
-        </article>
+        ))}
       </div>
 
       <div className="mt-24 border-t border-border-subtle pt-12 flex flex-col md:flex-row justify-between items-center gap-6">

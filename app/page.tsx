@@ -46,6 +46,10 @@ export default async function Home() {
               <br className="hidden md:block" />
               It's setting them.
             </h2>
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <span className="text-xl">🏆</span>
+              <span className="text-accent-gold text-sm tracking-wide font-medium">Airbnb Superhost, 6 Times in a Row</span>
+            </div>
             <p className="text-white/50 text-[15px] leading-relaxed">
               A next-generation hospitality brand founded in Delhi. Discover a hidden world designed for privacy, comfort, and expression.
             </p>
