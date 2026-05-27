@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────
+   NOTHINGNESS — Design System Globals
+   Dark luxury hospitality · 2026 native-app-grade experience
+   ───────────────────────────────────────────────────────────── */
+
+/* ═══════════════════════════════════════════════════════════════
+   1. DESIGN TOKENS
+   ═══════════════════════════════════════════════════════════════ */
+
 :root {
+  /* ── Core palette ─────────────────────────────────────────── */
   --background: #080808;
   --foreground: #F5F5F5;
   --accent-gold: #D4AF37;
@@ -8,7 +18,31 @@
   --brown-deep: #1A120B;
   --surface-blur: rgba(20, 20, 20, 0.6);
   --border-subtle: #222222;
+
+  /* ── Easing curves (native-feel motion) ───────────────────── */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-cubic: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Transition durations ─────────────────────────────────── */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --duration-slower: 600ms;
+
+  /* ── Focus ring ───────────────────────────────────────────── */
+  --focus-ring-color: color-mix(in oklch, var(--accent-gold) 50%, transparent);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* ── Z-index scale ────────────────────────────────────────── */
+  --z-grain: 9999;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   2. TAILWIND v4 THEME (inline)
+   ═══════════════════════════════════════════════════════════════ */
 
 @theme inline {
   --color-background: var(--background);
@@ -22,13 +56,271 @@
   --font-serif: var(--font-playfair);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   3. BASE RESETS & SMOOTH SCROLLING
+   ═══════════════════════════════════════════════════════════════ */
+
+html {
+  scroll-behavior: smooth;
+
+  /* Viewport height fix — use dynamic viewport height */
+  min-height: 100dvh;
+
+  /* Prevent text size adjustment on orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+
+  /* Improve text rendering */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Smooth font-weight transitions for variable fonts */
+  font-synthesis: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4. BODY — SAFE AREA INSETS & DEFAULTS
+   ═══════════════════════════════════════════════════════════════ */
+
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Typography defaults */
+  line-height: 1.6;
+  letter-spacing: -0.011em;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  -webkit-font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+
+  /* Safe area insets for notched/dynamic-island devices */
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+
+  /* Prevent overscroll bounce on iOS */
+  overscroll-behavior-y: none;
+
+  /* Dynamic viewport height */
+  min-height: 100dvh;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   5. CUSTOM SCROLLBAR — Ultra-thin, gold-accented
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--accent-gold) 30%, transparent) transparent;
+}
+
+/* Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--accent-gold) 25%, transparent);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--accent-gold) 50%, transparent);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--accent-gold);
+}
+
+/* Hide scrollbar on small screens for app-like feel */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 0px;
+    display: none;
+  }
+
+  * {
+    scrollbar-width: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6. TYPOGRAPHY REFINEMENTS
+   ═══════════════════════════════════════════════════════════════ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif), ui-serif, Georgia, serif;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-wrap: balance;
+  font-weight: 500;
+}
+
+h1 { letter-spacing: -0.03em; line-height: 1.05; }
+h2 { letter-spacing: -0.025em; line-height: 1.1; }
+h3 { letter-spacing: -0.02em; line-height: 1.15; }
+
+p {
+  text-wrap: pretty;
+  line-height: 1.7;
+}
+
+small {
+  letter-spacing: 0.01em;
+}
+
+/* Optical alignment for serif italic quotes */
+blockquote {
+  font-family: var(--font-serif), ui-serif, Georgia, serif;
+  font-style: italic;
+  border-left: 2px solid color-mix(in oklch, var(--accent-gold) 40%, transparent);
+  padding-left: 1.25em;
+  color: var(--accent-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7. NATIVE TOUCH OPTIMIZATIONS
+   ═══════════════════════════════════════════════════════════════ */
+
+a,
+button,
+[role="button"],
+input,
+select,
+textarea,
+[tabindex]:not([tabindex="-1"]) {
+  /* Remove tap highlight on mobile (native feel) */
+  -webkit-tap-highlight-color: transparent;
+  /* Smoother touch interactions */
+  touch-action: manipulation;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   8. FOCUS RING STYLES — Elegant gold accessibility rings
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Remove default outline, add custom focus-visible ring */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: 4px;
+  transition: outline-offset var(--duration-fast) var(--ease-out-expo);
+}
+
+/* Specialized focus for inputs */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 0px;
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent-gold) 12%, transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   9. BUTTON & INTERACTIVE ELEMENT HOVER STATES
+   ═══════════════════════════════════════════════════════════════ */
+
+a,
+button,
+[role="button"] {
+  transition:
+    color var(--duration-base) var(--ease-out-expo),
+    background-color var(--duration-base) var(--ease-out-expo),
+    border-color var(--duration-base) var(--ease-out-expo),
+    transform var(--duration-fast) var(--ease-out-expo),
+    box-shadow var(--duration-base) var(--ease-out-expo),
+    opacity var(--duration-base) var(--ease-out-expo);
+  will-change: transform;
+}
+
+button:not(:disabled):hover,
+[role="button"]:not(:disabled):hover {
+  transform: scale(1.02);
+}
+
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active {
+  transform: scale(0.98);
+  transition-duration: var(--duration-fast);
+}
+
+/* Disabled state */
+button:disabled,
+[role="button"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   10. PAGE FADE-IN ANIMATION
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Apply to main content wrapper */
+main,
+[data-animate="fade-in"] {
+  animation: fade-in-up var(--duration-slower) var(--ease-out-expo) both;
+}
+
+/* Stagger children if desired */
+[data-animate="stagger"] > * {
+  animation: fade-in-up var(--duration-slow) var(--ease-out-expo) both;
+}
+
+[data-animate="stagger"] > *:nth-child(1) { animation-delay: 0ms; }
+[data-animate="stagger"] > *:nth-child(2) { animation-delay: 60ms; }
+[data-animate="stagger"] > *:nth-child(3) { animation-delay: 120ms; }
+[data-animate="stagger"] > *:nth-child(4) { animation-delay: 180ms; }
+[data-animate="stagger"] > *:nth-child(5) { animation-delay: 240ms; }
+[data-animate="stagger"] > *:nth-child(6) { animation-delay: 300ms; }
+[data-animate="stagger"] > *:nth-child(7) { animation-delay: 360ms; }
+[data-animate="stagger"] > *:nth-child(8) { animation-delay: 420ms; }
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   11. GRAIN TEXTURE OVERLAY
+   ═══════════════════════════════════════════════════════════════ */
 
 .bg-grain {
   position: relative;
@@ -37,9 +329,196 @@ body {
 .bg-grain::after {
   content: "";
   position: fixed;
-  top: 0; left: 0; width: 100vw; height: 100vh;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
   background-image: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
-  opacity: 0.04;
+  opacity: 0.025;
   pointer-events: none;
-  z-index: 9999;
+  z-index: var(--z-grain);
+  mix-blend-mode: overlay;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   12. GLASS MORPHISM UTILITY
+   ═══════════════════════════════════════════════════════════════ */
+
+.glass {
+  background: color-mix(in oklch, var(--background) 60%, transparent);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent);
+  box-shadow:
+    0 0 0 0.5px color-mix(in oklch, var(--foreground) 4%, transparent),
+    0 4px 24px -4px rgba(0, 0, 0, 0.5);
+}
+
+.glass-gold {
+  background: color-mix(in oklch, var(--brown-deep) 70%, transparent);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid color-mix(in oklch, var(--accent-gold) 15%, transparent);
+  box-shadow:
+    0 0 0 0.5px color-mix(in oklch, var(--accent-gold) 6%, transparent),
+    0 4px 32px -8px rgba(212, 175, 55, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   13. PROSE STYLING — Dark theme for legal & content pages
+   ═══════════════════════════════════════════════════════════════ */
+
+.prose-invert {
+  --tw-prose-body: var(--foreground);
+  --tw-prose-headings: var(--foreground);
+  --tw-prose-lead: color-mix(in oklch, var(--foreground) 80%, transparent);
+  --tw-prose-links: var(--accent-gold);
+  --tw-prose-bold: var(--foreground);
+  --tw-prose-counters: color-mix(in oklch, var(--foreground) 50%, transparent);
+  --tw-prose-bullets: color-mix(in oklch, var(--accent-gold) 50%, transparent);
+  --tw-prose-hr: var(--border-subtle);
+  --tw-prose-quotes: var(--accent-muted);
+  --tw-prose-quote-borders: color-mix(in oklch, var(--accent-gold) 30%, transparent);
+  --tw-prose-captions: color-mix(in oklch, var(--foreground) 50%, transparent);
+  --tw-prose-kbd: var(--foreground);
+  --tw-prose-kbd-shadows: none;
+  --tw-prose-code: var(--accent-muted);
+  --tw-prose-pre-code: var(--foreground);
+  --tw-prose-pre-bg: color-mix(in oklch, var(--background) 60%, black);
+  --tw-prose-th-borders: var(--border-subtle);
+  --tw-prose-td-borders: color-mix(in oklch, var(--border-subtle) 60%, transparent);
+
+  color: var(--foreground);
+  line-height: 1.8;
+  letter-spacing: -0.006em;
+}
+
+.prose-invert a {
+  color: var(--accent-gold);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--accent-gold) 30%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--duration-base) var(--ease-out-expo);
+}
+
+.prose-invert a:hover {
+  text-decoration-color: var(--accent-gold);
+}
+
+.prose-invert h1,
+.prose-invert h2,
+.prose-invert h3,
+.prose-invert h4 {
+  font-family: var(--font-serif), ui-serif, Georgia, serif;
+  color: var(--foreground);
+}
+
+.prose-invert hr {
+  border-color: var(--border-subtle);
+}
+
+.prose-invert code {
+  background: color-mix(in oklch, var(--foreground) 8%, transparent);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+
+.prose-invert blockquote {
+  border-left-color: color-mix(in oklch, var(--accent-gold) 40%, transparent);
+  color: var(--accent-muted);
+  font-style: italic;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   14. UTILITY ANIMATIONS
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent-gold) 30%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in oklch, var(--accent-gold) 0%, transparent);
+  }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklch, var(--accent-gold) 8%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s var(--ease-in-out-cubic) infinite;
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 2s var(--ease-in-out-cubic) infinite;
+}
+
+.animate-breathe {
+  animation: breathe 3s var(--ease-in-out-cubic) infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   15. IMAGE & MEDIA DEFAULTS
+   ═══════════════════════════════════════════════════════════════ */
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Smooth image loading transition */
+img {
+  content-visibility: auto;
+}
+
+img[loading="lazy"] {
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-out-expo);
+}
+
+img[loading="lazy"].loaded,
+img[loading="lazy"][complete] {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   16. SEPARATOR / DIVIDER DEFAULTS
+   ═══════════════════════════════════════════════════════════════ */
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin-block: 2rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   17. LOADING SKELETON
+   ═══════════════════════════════════════════════════════════════ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--foreground) 5%, transparent) 25%,
+    color-mix(in oklch, var(--foreground) 10%, transparent) 50%,
+    color-mix(in oklch, var(--foreground) 5%, transparent) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: 8px;
 }

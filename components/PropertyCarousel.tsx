@@ -1,80 +1,93 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function PropertyCarousel({ images, title }: { images: string[], title: string }) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
 
-  // Auto-scroll every 5 seconds
   useEffect(() => {
     if (images.length <= 1) return;
     const interval = setInterval(() => {
+      setDirection(1);
       setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 5000);
+    }, 6000);
     return () => clearInterval(interval);
   }, [images.length]);
 
-  const nextImage = () => {
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  };
+  const navigate = useCallback((dir: number) => {
+    setDirection(dir);
+    setCurrentIndex((prev) => {
+      if (dir === 1) return (prev + 1) % images.length;
+      return (prev - 1 + images.length) % images.length;
+    });
+  }, [images.length]);
 
-  const prevImage = () => {
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  if (!images || images.length === 0) return null;
 
-  if (!images || images.length === 0) {
-    return null;
-  }
+  const variants = {
+    enter: (d: number) => ({ opacity: 0, x: d > 0 ? 60 : -60, scale: 1.02 }),
+    center: { opacity: 1, x: 0, scale: 1 },
+    exit: (d: number) => ({ opacity: 0, x: d > 0 ? -60 : 60, scale: 0.98 }),
+  };
 
   return (
-    <div className="relative w-full h-[70vh] md:h-[85vh] group overflow-hidden bg-black">
-      <AnimatePresence initial={false} mode="wait">
+    <div className="relative w-full h-[75dvh] md:h-[90dvh] group overflow-hidden bg-black">
+      <AnimatePresence initial={false} custom={direction} mode="popLayout">
         <motion.div
           key={currentIndex}
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+          custom={direction}
+          variants={variants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.7, ease: [0.32, 0.72, 0, 1] }}
           className="absolute inset-0"
         >
           <Image 
             src={images[currentIndex]}
-            alt={`${title} - Image ${currentIndex + 1}`}
+            alt={`${title} - ${currentIndex + 1}`}
             fill
             priority={currentIndex === 0}
             className="object-cover"
+            sizes="100vw"
           />
         </motion.div>
       </AnimatePresence>
       
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent pointer-events-none" />
+      {/* Gradient overlays */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/30 pointer-events-none z-[2]" />
 
+      {/* Navigation arrows */}
       {images.length > 1 && (
         <>
           <button 
-            onClick={prevImage}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/40"
+            onClick={() => navigate(-1)}
+            className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-10 w-11 h-11 flex items-center justify-center rounded-full bg-white/8 backdrop-blur-xl border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white/15 active:scale-90"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
           
           <button 
-            onClick={nextImage}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/40"
+            onClick={() => navigate(1)}
+            className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-10 w-11 h-11 flex items-center justify-center rounded-full bg-white/8 backdrop-blur-xl border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white/15 active:scale-90"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-5 h-5" />
           </button>
 
-          <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-2">
+          {/* Indicator dots */}
+          <div className="absolute bottom-28 md:bottom-12 left-1/2 -translate-x-1/2 z-10 flex gap-2.5">
             {images.map((_, i) => (
               <button
                 key={i}
-                onClick={() => setCurrentIndex(i)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  i === currentIndex ? 'bg-accent-gold w-6' : 'bg-white/50 hover:bg-white'
+                onClick={() => { setDirection(i > currentIndex ? 1 : -1); setCurrentIndex(i); }}
+                className={`rounded-full transition-all duration-500 ${
+                  i === currentIndex 
+                    ? 'bg-accent-gold w-7 h-1.5' 
+                    : 'bg-white/30 w-1.5 h-1.5 hover:bg-white/60'
                 }`}
               />
             ))}
