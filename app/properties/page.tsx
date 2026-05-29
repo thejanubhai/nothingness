@@ -3,6 +3,8 @@ import PropertyCard from "@/components/PropertyCard";
 import { createClient } from "@/lib/supabase/server";
 import { mockProperties } from "@/lib/mock-data";
 
+export const dynamic = 'force-dynamic';
+
 export default async function PropertiesPage() {
   let properties = null;
 

@@ -5,6 +5,8 @@ import PropertySkeleton from "@/components/PropertySkeleton";
 import { createClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
 
+export const dynamic = 'force-dynamic';
+
 async function PropertyList() {
   let properties = null;
 

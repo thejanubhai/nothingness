@@ -3,6 +3,8 @@ import SinglePropertyClient from "./SinglePropertyClient";
 import PropertyCarousel from "@/components/PropertyCarousel";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = 'force-dynamic';
+
 export default async function PropertyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   let property = null;
