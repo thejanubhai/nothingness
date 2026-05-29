@@ -1,8 +1,90 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Magnetic from '@/components/Magnetic';
+import { DayPicker, DateRange } from 'react-day-picker';
+import { format, differenceInDays } from 'date-fns';
+import { toast } from 'sonner';
+import 'react-day-picker/dist/style.css';
+
+// Type declaration for Razorpay attached to window
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 export default function SinglePropertyClient({ property }: { property: any }) {
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [date, setDate] = useState<DateRange | undefined>();
+  const [guests, setGuests] = useState(2);
+  const [loading, setLoading] = useState(false);
+
+  const nights = useMemo(() => {
+    if (date?.from && date?.to) {
+      return differenceInDays(date.to, date.from);
+    }
+    return 0;
+  }, [date]);
+
+  const handleCheckout = async () => {
+    if (!date?.from || !date?.to) {
+      toast.error('Please select check-in and check-out dates.');
+      return;
+    }
+    setLoading(true);
+    try {
+      // 1. Call our API to create a Razorpay order
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyId: property.id,
+          checkIn: date.from.toISOString(),
+          checkOut: date.to.toISOString(),
+          amount: (property.price * nights) + 2500
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // 2. Open Razorpay Checkout JS
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_dummy_key',
+        amount: data.amount,
+        currency: 'INR',
+        name: 'Nothingness',
+        description: `Booking: ${property.title}`,
+        order_id: data.orderId,
+        handler: async function (response: any) {
+          // Success handler - webhook handles backend state
+          toast.success('Sanctuary Reserved Successfully!', {
+            description: `Payment ID: ${response.razorpay_payment_id}`
+          });
+        },
+        prefill: {
+          name: '',
+          email: '',
+          contact: ''
+        },
+        theme: {
+          color: '#D4AF37'
+        }
+      };
+
+      const rzp1 = new window.Razorpay(options);
+      rzp1.on('payment.failed', function (response: any) {
+        toast.error('Payment Failed', { description: response.error.description });
+      });
+      rzp1.open();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="sticky top-28">
       <motion.div 
@@ -23,15 +105,52 @@ export default function SinglePropertyClient({ property }: { property: any }) {
         </div>
 
         {/* Form */}
-        <div className="space-y-5 mb-7">
+        <div className="space-y-5 mb-7 relative">
           <div>
             <label className="block text-[10px] uppercase tracking-[0.25em] text-white/30 mb-2">Check In - Check Out</label>
-            <input 
-              type="text" 
-              placeholder="Select dates" 
-              className="w-full bg-white/[0.04] border border-white/8 rounded-xl text-white text-[14px] px-4 py-3 focus:outline-none focus:border-accent-gold/50 placeholder:text-white/20 cursor-pointer transition-colors duration-300" 
-              readOnly 
-            />
+            <div 
+              onClick={() => setShowCalendar(!showCalendar)}
+              className="w-full bg-white/[0.04] border border-white/8 rounded-xl text-white text-[14px] px-4 py-3 cursor-pointer transition-colors duration-300 hover:border-accent-gold/50 flex justify-between items-center"
+            >
+              <span className={date?.from ? "text-white" : "text-white/20"}>
+                {date?.from ? (
+                  date.to ? (
+                    `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}`
+                  ) : (
+                    format(date.from, "LLL dd, y")
+                  )
+                ) : (
+                  "Select dates"
+                )}
+              </span>
+            </div>
+            
+            <AnimatePresence>
+              {showCalendar && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute z-50 top-[70px] left-0 right-0 bg-[#0d0d0d] border border-white/10 rounded-xl p-4 shadow-2xl"
+                >
+                  <DayPicker
+                    mode="range"
+                    defaultMonth={new Date()}
+                    selected={date}
+                    onSelect={setDate}
+                    disabled={[
+                      { before: new Date() },
+                      ...(property.bookings || []).map((b: any) => ({
+                        from: new Date(b.check_in),
+                        to: new Date(b.check_out)
+                      }))
+                    ]}
+                    numberOfMonths={1}
+                    className="rdp-dark"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           <div>
             <label className="block text-[10px] uppercase tracking-[0.25em] text-white/30 mb-2">Guests</label>
@@ -44,24 +163,36 @@ export default function SinglePropertyClient({ property }: { property: any }) {
 
         {/* Price Breakdown */}
         <div className="space-y-3 mb-7 text-[13px] border-t border-white/5 pt-6">
-          <div className="flex justify-between text-white/40">
-            <span>₹{property.price?.toLocaleString('en-IN')} × 3 nights</span>
-            <span>₹{(property.price * 3)?.toLocaleString('en-IN')}</span>
-          </div>
-          <div className="flex justify-between text-white/40">
-            <span>Cleaning fee</span>
-            <span>₹2,500</span>
-          </div>
-          <div className="flex justify-between text-white font-medium pt-3 border-t border-white/5">
-            <span>Total</span>
-            <span className="text-accent-gold">₹{((property.price * 3) + 2500)?.toLocaleString('en-IN')}</span>
-          </div>
+          {nights > 0 ? (
+            <>
+              <div className="flex justify-between text-white/40">
+                <span>₹{property.price?.toLocaleString('en-IN')} × {nights} nights</span>
+                <span>₹{(property.price * nights)?.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between text-white/40">
+                <span>Cleaning fee</span>
+                <span>₹2,500</span>
+              </div>
+              <div className="flex justify-between text-white font-medium pt-3 border-t border-white/5">
+                <span>Total</span>
+                <span className="text-accent-gold">₹{((property.price * nights) + 2500)?.toLocaleString('en-IN')}</span>
+              </div>
+            </>
+          ) : (
+            <div className="text-white/40 text-center py-2">Select dates to view pricing</div>
+          )}
         </div>
 
         {/* CTA */}
-        <button className="w-full bg-accent-gold text-black py-4 rounded-xl text-[13px] font-semibold tracking-[0.15em] uppercase hover:bg-white transition-all duration-300 active:scale-[0.98]">
-          Reserve Sanctuary
-        </button>
+        <Magnetic>
+          <button 
+            onClick={handleCheckout}
+            disabled={loading || nights === 0}
+            className="w-full bg-accent-gold text-black py-4 rounded-xl text-[13px] font-semibold tracking-[0.15em] uppercase hover:bg-white transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? "Processing..." : "Reserve Sanctuary"}
+          </button>
+        </Magnetic>
 
         <p className="text-center text-white/20 text-[11px] mt-4 tracking-wide">You won't be charged yet</p>
       </motion.div>

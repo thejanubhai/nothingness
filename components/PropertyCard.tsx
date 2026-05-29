@@ -41,9 +41,14 @@ export default function PropertyCard({ title, location, image, price, slug }: Pr
         </div>
 
         {/* Details */}
-        <div className="px-1">
-          <p className="text-[11px] uppercase tracking-[0.25em] text-white/40 mb-2">{location}</p>
-          <h3 className="font-serif text-2xl text-white group-hover:text-accent-gold transition-colors duration-300">{title}</h3>
+        <div className="px-1 flex justify-between items-end">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.25em] text-white/40 mb-2">{location}</p>
+            <h3 className="font-serif text-2xl text-white group-hover:text-accent-gold transition-colors duration-300">{title}</h3>
+          </div>
+          <div className="opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-500 text-accent-gold text-sm tracking-wider uppercase">
+            Explore →
+          </div>
         </div>
       </motion.div>
     </Link>

@@ -1,108 +1,67 @@
-import { ArrowRight, Lock, TrendingUp, ShieldCheck, Users } from "lucide-react";
+import { Metadata } from 'next';
+import Link from 'next/link';
+import Magnetic from '@/components/Magnetic';
 
-export const metadata = {
-  title: "Franchise | Nothingness",
-  description: "Join the Nothingness ecosystem. A culturally relevant, community-driven, disruptive hospitality brand.",
+export const metadata: Metadata = {
+  title: 'Franchise Opportunities | Nothingness',
+  description: 'Partner with Nothingness to build luxury, discreet sanctuaries.',
 };
 
 export default function FranchisePage() {
   return (
-    <main className="min-h-screen bg-background pt-32 pb-24 px-4 md:px-12 max-w-7xl mx-auto">
-      {/* Hero Section */}
-      <div className="mb-24 text-center">
-        <span className="text-accent-gold text-sm font-semibold tracking-widest uppercase mb-4 block">
-          Partnership Opportunity
-        </span>
-        <h1 className="font-serif text-5xl md:text-7xl tracking-tight mb-6 text-foreground max-w-4xl mx-auto">
-          Not just a franchise. <br className="hidden md:block"/> A cultural movement.
+    <main className="min-h-screen pt-40 pb-24 px-5 md:px-8 max-w-5xl mx-auto">
+      <div className="text-center mb-20">
+        <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4">Partnerships</p>
+        <h1 className="font-serif text-5xl md:text-7xl mb-8 leading-tight">
+          Invest in the <br /> <span className="italic text-white/50">Underground</span>.
         </h1>
-        <p className="text-foreground/70 max-w-2xl text-lg md:text-xl mx-auto leading-relaxed">
-          Nothingness is a next-generation hospitality ecosystem built for the digital generation. 
-          We are expanding our network of culturally relevant, community-driven, and highly disruptive experiential stays.
+        <p className="text-white/60 max-w-2xl mx-auto text-lg leading-relaxed">
+          Nothingness is rapidly expanding. We are actively seeking visionary partners and real estate owners to build the next generation of discreet luxury hospitality.
         </p>
       </div>
 
-      {/* Why the brand works */}
-      <section className="mb-32">
-        <div className="text-center mb-16">
-          <h2 className="font-serif text-4xl mb-4 text-white">Why Nothingness Works</h2>
-          <p className="text-foreground/70">Nothingness isn't following trends. It's setting them.</p>
+      <div className="grid md:grid-cols-2 gap-12 mb-32">
+        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-10 hover:border-accent-gold/20 transition-colors">
+          <h2 className="text-4xl font-serif mb-4 text-accent-gold">200%</h2>
+          <h3 className="text-xl mb-4 font-medium">Higher Yields</h3>
+          <p className="text-white/60 leading-relaxed text-sm">
+            Our highly specialized market positioning and premium pricing strategy result in significantly higher RevPAR (Revenue Per Available Room) compared to standard luxury rentals.
+          </p>
         </div>
+        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-10 hover:border-accent-gold/20 transition-colors">
+          <h2 className="text-4xl font-serif mb-4 text-accent-gold">94%</h2>
+          <h3 className="text-xl mb-4 font-medium">Occupancy Rate</h3>
+          <p className="text-white/60 leading-relaxed text-sm">
+            With intense, organic word-of-mouth growth and a highly loyal community, our flagship properties consistently operate at near-maximum capacity year-round.
+          </p>
+        </div>
+      </div>
+
+      <div className="prose prose-invert prose-lg max-w-3xl mx-auto mb-24">
+        <h2>What We Provide</h2>
+        <ul>
+          <li><strong>Architectural & Aesthetic Blueprints:</strong> Complete design guidelines for cinematic lighting, soundproofing, and equipment installation.</li>
+          <li><strong>Brand Power:</strong> Instant access to our highly engaged, waitlisted community.</li>
+          <li><strong>Tech Stack:</strong> Seamless integration into our custom booking engine, privacy infrastructure, and payment gateways.</li>
+          <li><strong>Operational Playbooks:</strong> Rigorous protocols for medical-grade sanitation, guest vetting, and discreet operations.</li>
+        </ul>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div className="bg-surface-blur border border-border-subtle p-8 rounded-2xl">
-            <Lock className="w-8 h-8 text-accent-gold mb-6" />
-            <h3 className="text-lg font-medium text-white mb-3 tracking-wide">Privacy & Safety</h3>
-            <p className="text-foreground/70 text-sm leading-relaxed">
-              Designed for an absolute sense of safety and freedom, especially curated for women travelers.
-            </p>
-          </div>
-          
-          <div className="bg-surface-blur border border-border-subtle p-8 rounded-2xl">
-            <Users className="w-8 h-8 text-accent-gold mb-6" />
-            <h3 className="text-lg font-medium text-white mb-3 tracking-wide">Community Driven</h3>
-            <p className="text-foreground/70 text-sm leading-relaxed">
-              A deeply loyal, female-first community that chooses Nothingness time and time again.
-            </p>
-          </div>
+        <h2>Who We Are Looking For</h2>
+        <p>We partner with individuals or groups who own premium real estate (apartments, penthouses, or secluded villas) in Tier 1 cities or exclusive getaway destinations. Partners must align with our ethos of absolute discretion, safety, and luxury.</p>
+      </div>
 
-          <div className="bg-surface-blur border border-border-subtle p-8 rounded-2xl">
-            <ShieldCheck className="w-8 h-8 text-accent-gold mb-6" />
-            <h3 className="text-lg font-medium text-white mb-3 tracking-wide">Internet-Native DNA</h3>
-            <p className="text-foreground/70 text-sm leading-relaxed">
-              Built natively for the digital generation with high visual recall and organic, viral reach.
-            </p>
-          </div>
-
-          <div className="bg-surface-blur border border-border-subtle p-8 rounded-2xl">
-            <TrendingUp className="w-8 h-8 text-accent-gold mb-6" />
-            <h3 className="text-lg font-medium text-white mb-3 tracking-wide">100% Organic Growth</h3>
-            <p className="text-foreground/70 text-sm leading-relaxed">
-              Zero paid promotions. Zero gimmicks. Scaled entirely on word-of-mouth and genuine love.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* The Traction */}
-      <section className="mb-32 border-t border-b border-border-subtle py-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          <div>
-            <div className="font-serif text-4xl md:text-5xl text-white mb-2">3+</div>
-            <div className="text-xs uppercase tracking-widest text-accent-gold font-semibold">Years Operations</div>
-            <div className="text-foreground/60 text-xs mt-2">Consistent & Stable</div>
-          </div>
-          <div>
-            <div className="font-serif text-4xl md:text-5xl text-white mb-2">5.0</div>
-            <div className="text-xs uppercase tracking-widest text-accent-gold font-semibold">Airbnb Rating</div>
-            <div className="text-foreground/60 text-xs mt-2">Hundreds of Reviews</div>
-          </div>
-          <div>
-            <div className="font-serif text-4xl md:text-5xl text-white mb-2">Top 5%</div>
-            <div className="text-xs uppercase tracking-widest text-accent-gold font-semibold">Airbnb Homes</div>
-            <div className="text-foreground/60 text-xs mt-2">Elite Ranking</div>
-          </div>
-          <div>
-            <div className="font-serif text-4xl md:text-5xl text-white mb-2">100%</div>
-            <div className="text-xs uppercase tracking-widest text-accent-gold font-semibold">Organic Growth</div>
-            <div className="text-foreground/60 text-xs mt-2">No Ads. Just Community.</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Call to Action */}
-      <section className="text-center max-w-2xl mx-auto">
-        <h2 className="font-serif text-4xl mb-6 text-white">Build the future of hospitality.</h2>
-        <p className="text-foreground/70 mb-10 leading-relaxed">
-          Nothingness is not for everyone. And that's exactly the point. We partner with visionaries who understand that true luxury is an emotional experience, not just a physical space.
+      <div className="text-center bg-white/[0.02] border border-white/10 rounded-3xl p-12 relative overflow-hidden max-w-3xl mx-auto">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(212,175,55,0.05),transparent_70%)]" />
+        <h2 className="font-serif text-3xl md:text-4xl mb-4 relative z-10">Request Prospectus</h2>
+        <p className="text-white/50 mb-8 max-w-lg mx-auto relative z-10 text-sm">
+          Serious inquiries only. Our partnership team will review your application and send a detailed investment prospectus.
         </p>
-        <a 
-          href="mailto:franchise@nothingness.asia" 
-          className="inline-flex items-center px-10 py-4 bg-white text-black rounded-full font-medium tracking-wide hover:bg-accent-gold hover:text-white transition-colors"
-        >
-          Inquire About Franchising <ArrowRight className="ml-3 w-5 h-5" />
-        </a>
-      </section>
+        <Magnetic>
+          <Link href="/contact" className="relative z-10 inline-block bg-white text-black px-10 py-4 rounded-full text-[13px] font-semibold tracking-[0.15em] uppercase hover:bg-accent-gold transition-all duration-300">
+            Apply Now
+          </Link>
+        </Magnetic>
+      </div>
     </main>
   );
 }

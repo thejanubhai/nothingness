@@ -15,6 +15,18 @@ export default async function PropertyPage({ params }: { params: Promise<{ slug:
       .eq('slug', slug)
       .single();
     property = data;
+
+    if (property) {
+      const { data: bookingData } = await supabase
+        .from('bookings')
+        .select('check_in, check_out')
+        .eq('property_id', property.id)
+        .eq('status', 'confirmed');
+        
+      if (bookingData) {
+        property.bookings = bookingData;
+      }
+    }
   } catch (e) {
     console.error("Supabase connection failed:", e);
   }
@@ -30,7 +42,8 @@ export default async function PropertyPage({ params }: { params: Promise<{ slug:
     price: property.nightly_price,
     images: property.images && property.images.length > 0 ? property.images : [property.featured_image || "/images/property-1.png"],
     amenities: property.amenities || [],
-    rules: property.rules ? property.rules.split('\n') : []
+    rules: property.rules ? property.rules.split('\n') : [],
+    bookings: property.bookings || []
   };
 
   return (

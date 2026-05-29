@@ -1,37 +1,40 @@
-export const metadata = {
-  title: "Guest Rules & Liability Waiver | Nothingness",
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Guest Rules & Liability | Nothingness',
+  description: 'Important rules and liability waiver for guests of Nothingness.',
 };
 
 export default function LiabilityPage() {
   return (
-    <main className="min-h-screen bg-background pt-32 pb-24 px-4 md:px-12 max-w-4xl mx-auto">
-      <h1 className="font-serif text-4xl md:text-5xl text-white mb-8">Guest Rules & Liability Waiver</h1>
-      <p className="text-foreground/60 text-sm mb-12">Last Updated: May 2026</p>
-      
-      <div className="prose prose-invert prose-p:text-foreground/80 prose-headings:font-serif prose-headings:font-normal prose-a:text-accent-gold max-w-none">
-        <p>To maintain the sanctity, safety, and exclusivity of the Nothingness community, all guests must strictly adhere to the following rules. By confirming a booking, you acknowledge and accept these terms in their entirety.</p>
-        
-        <h2>1. Strict Privacy & Non-Disclosure</h2>
-        <p>Nothingness is built on absolute discretion. Guests are strictly prohibited from publishing the exact address or exterior photos of the property on social media or any public forum. Interior photography for personal use is permitted, provided it does not compromise the brand's identity or the privacy of future guests.</p>
-        
-        <h2>2. Assumption of Risk</h2>
-        <p>Our properties are experiential and feature specialized, thematic furniture and equipment. By utilizing the property and its amenities, you acknowledge that you do so entirely at your own risk. You agree to use all equipment responsibly and within its intended structural limits.</p>
+    <main className="min-h-screen pt-40 pb-24 px-5 md:px-8 max-w-4xl mx-auto">
+      <div className="prose prose-invert prose-lg max-w-none">
+        <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4">Legal</p>
+        <h1 className="font-serif text-4xl md:text-5xl mb-8">Guest Rules & Liability</h1>
+        <p className="text-white/60 mb-12">Last Updated: October 2026</p>
 
-        <h2>3. Liability Waiver</h2>
-        <p>Nothingness, its founders, franchisees, and staff shall not be held liable for any personal injury, emotional distress, physical harm, or property damage sustained during your stay. Guests accept full responsibility for their safety and the safety of their accompanying partner(s).</p>
+        <p>Nothingness properties contain specialized equipment and bespoke furnishings designed for adult use. By booking and entering the premises, you acknowledge and agree to the following rules and liability waivers.</p>
 
-        <h2>4. Damage Policy</h2>
-        <p>Guests are fully responsible for any damages inflicted upon the property, its structural integrity, or specialized equipment during their stay. A security deposit may be held or requested prior to check-in. Any damage exceeding the deposit will be legally pursued for compensation.</p>
-
-        <h2>5. Absolute Zero Tolerance Policies</h2>
+        <h2>1. Strict House Rules</h2>
         <ul>
-          <li><strong>Illegal Activities:</strong> The use or possession of illegal narcotics is strictly banned.</li>
-          <li><strong>Consent:</strong> Nothingness advocates for safe, sane, and consensual experiences. Any violation of basic human consent or law on the premises will result in immediate police involvement.</li>
-          <li><strong>Parties & Gatherings:</strong> No unauthorized guests. Only the individuals registered via government ID during booking are permitted inside the property.</li>
+          <li><strong>No Visitors:</strong> Only registered guests whose IDs have been verified are permitted on the property. No exceptions.</li>
+          <li><strong>Discretion:</strong> Do not photograph the exterior of the property or share its exact location publicly on social media.</li>
+          <li><strong>Cleanliness:</strong> Excessive mess, body fluids on unprotected furnishings, or damage to equipment will incur a heavy cleaning/replacement fee.</li>
+          <li><strong>Noise:</strong> Respect the neighbors. Keep noise to a minimum, especially after 10 PM.</li>
+          <li><strong>No Smoking:</strong> Smoking of any kind is strictly prohibited indoors.</li>
         </ul>
 
-        <h2>6. Right to Terminate Stay</h2>
-        <p>We reserve the right to immediately terminate your stay without a refund if any of the above rules are violated, or if complaints regarding noise or misconduct are received from neighbors.</p>
+        <h2>2. Assumption of Risk</h2>
+        <p>Guests acknowledge that the use of any specialized equipment (including but not limited to suspension gear, restraints, swings, and specific furniture) carries inherent risks of physical injury. Guests assume full responsibility for their own safety and the safety of their partner(s). Nothingness is not liable for any injuries, accidents, or psychological distress resulting from the use of the property or its equipment.</p>
+
+        <h2>3. Consent and Legal Compliance</h2>
+        <p>All activities taking place within the property must be consensual and comply with the laws of India. Nothingness has a zero-tolerance policy for non-consensual activity or illegal behavior. In the event of an emergency or suspected illegal activity, Nothingness reserves the right to contact local authorities.</p>
+
+        <h2>4. Equipment Misuse</h2>
+        <p>Any damage caused by improper use or exceeding weight limits of the equipment will be charged directly to the guest. Use equipment only as intended and always test weight-bearing items before full use.</p>
+
+        <hr className="my-12 border-white/10" />
+        <p className="text-sm text-white/50">By proceeding with your booking, you electronically sign and agree to these terms.</p>
       </div>
     </main>
   );

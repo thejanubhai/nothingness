@@ -531,7 +531,51 @@ hr {
   animation-play-state: paused;
 }
 
-.mask-fade-edges {
   mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
   -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REACT DAY PICKER - DARK THEME CUSTOMIZATION
+   ═══════════════════════════════════════════════════════════════ */
+.rdp-dark {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: var(--accent-gold);
+  --rdp-background-color: rgba(212, 175, 55, 0.1);
+  --rdp-accent-color-dark: var(--accent-gold);
+  --rdp-background-color-dark: rgba(212, 175, 55, 0.2);
+  --rdp-outline: 2px solid var(--accent-gold);
+  --rdp-outline-selected: 2px solid var(--accent-gold);
+  
+  color: var(--foreground);
+  font-family: var(--font-inter);
+}
+
+.rdp-dark .rdp-day_selected, 
+.rdp-dark .rdp-day_selected:focus-visible, 
+.rdp-dark .rdp-day_selected:hover {
+  color: #000;
+  background-color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.rdp-dark .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.rdp-dark .rdp-day_disabled {
+  opacity: 0.2;
+}
+
+.rdp-dark .rdp-head_cell {
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.rdp-dark .rdp-caption_label {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--accent-gold);
 }

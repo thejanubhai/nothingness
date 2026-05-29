@@ -1,16 +1,28 @@
 'use client';
-import { motion } from 'framer-motion';
+import { useRef } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import Image from 'next/image';
 
 export default function Hero() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"]
+  });
+
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
+  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+
   return (
-    <section className="relative w-full h-dvh min-h-[600px] overflow-hidden bg-black flex flex-col justify-end items-center pb-40 md:pb-48">
-      {/* Background with parallax-like zoom */}
+    <section ref={containerRef} className="relative w-full h-dvh min-h-[600px] overflow-hidden bg-black flex flex-col justify-end items-center pb-40 md:pb-48">
+      {/* Background with parallax scrolling */}
       <motion.div 
         initial={{ scale: 1.15, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 2.5, ease: [0.16, 1, 0.3, 1] }}
-        className="absolute inset-0 z-0"
+        style={{ y, opacity }}
+        className="absolute inset-0 z-0 origin-bottom"
       >
         <Image
           src="/images/the-chamber/image-1.jpg"

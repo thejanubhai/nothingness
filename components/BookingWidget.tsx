@@ -32,6 +32,8 @@ export default function BookingWidget({ properties = [] }: { properties?: { slug
           <div className="relative">
             <button 
               onClick={() => setIsOpen(!isOpen)}
+              aria-label="Select Property"
+              aria-expanded={isOpen}
               className="w-full flex items-center justify-between text-white text-[15px] font-light tracking-wide py-1 px-1 hover:text-accent-gold transition-colors"
             >
               <span>{selectedTitle}</span>
@@ -46,6 +48,7 @@ export default function BookingWidget({ properties = [] }: { properties?: { slug
                 {properties.map(p => (
                   <button
                     key={p.slug}
+                    aria-label={`Select ${p.title}`}
                     onClick={() => { setSelected(p.slug); setIsOpen(false); }}
                     className={`w-full text-left px-4 py-3 text-sm transition-colors ${
                       p.slug === selected ? 'text-accent-gold bg-white/5' : 'text-white/80 hover:text-white hover:bg-white/5'

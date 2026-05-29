@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
+import Magnetic from "./Magnetic";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -48,13 +49,15 @@ export default function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-10">
-            <Link
-              href="/media"
-              className="text-[13px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group"
-            >
-              Media
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
-            </Link>
+            <Magnetic>
+              <Link
+                href="/media"
+                className="text-[13px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2"
+              >
+                Media
+                <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
+              </Link>
+            </Magnetic>
           </nav>
 
           {/* Mobile Hamburger */}
