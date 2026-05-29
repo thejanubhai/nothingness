@@ -6,7 +6,6 @@ import Footer from "@/components/Footer";
 import SmoothScroll from "@/components/SmoothScroll";
 import NextTopLoader from 'nextjs-toploader';
 import PageWrapper from "@/components/PageWrapper";
-import CustomCursor from "@/components/CustomCursor";
 import CookieBanner from "@/components/CookieBanner";
 import { Toaster } from "sonner";
 import Script from "next/script";
@@ -87,7 +86,6 @@ export default function RootLayout({
           speed={200}
           shadow="0 0 10px #D4AF37,0 0 5px #D4AF37"
         />
-        <CustomCursor />
         <Toaster 
           theme="dark" 
           toastOptions={{

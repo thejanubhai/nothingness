@@ -15,7 +15,6 @@ async function PropertyList() {
     const { data } = await supabase
       .from('properties')
       .select('*')
-      .eq('active', true)
       .order('created_at', { ascending: false })
       .limit(4);
     properties = data;
@@ -57,8 +56,7 @@ export default async function Home() {
     const supabase = await createClient();
     const { data } = await supabase
       .from('properties')
-      .select('slug, title')
-      .eq('active', true);
+      .select('slug, title');
     properties = data;
   } catch (e) {
     console.error("Supabase connection failed:", e);

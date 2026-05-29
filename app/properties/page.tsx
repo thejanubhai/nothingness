@@ -1,7 +1,6 @@
 import Link from "next/link";
 import PropertyCard from "@/components/PropertyCard";
 import { createClient } from "@/lib/supabase/server";
-import { mockProperties } from "@/lib/mock-data";
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +12,6 @@ export default async function PropertiesPage() {
     const { data } = await supabase
       .from('properties')
       .select('*')
-      .eq('active', true)
       .order('created_at', { ascending: false });
     properties = data;
   } catch (e) {

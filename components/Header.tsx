@@ -28,8 +28,8 @@ export default function Header() {
       <header
         className={`fixed top-0 w-full z-50 transition-all duration-500 ${
           isScrolled
-            ? "bg-black/80 backdrop-blur-2xl border-b border-white/5 py-4"
-            : "bg-transparent py-6"
+            ? "bg-black/80 backdrop-blur-2xl border-b border-white/5 py-3"
+            : "bg-transparent py-4"
         }`}
       >
         <div className="max-w-7xl mx-auto px-5 md:px-8 flex justify-between items-center">
@@ -40,8 +40,8 @@ export default function Header() {
             <Image 
               src="/images/logo.png" 
               alt="Nothingness Logo" 
-              width={160} 
-              height={64} 
+              width={100} 
+              height={40} 
               className="object-contain drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]" 
               priority
             />
