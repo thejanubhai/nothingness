@@ -86,7 +86,10 @@ export default async function AdminPage() {
 
                 {booking.status !== 'cancelled' && (
                   <div className="pt-4 border-t border-white/5 mt-4">
-                    <form action={cancelBooking.bind(null, booking.id)}>
+                    <form action={async () => {
+                      "use server";
+                      await cancelBooking(booking.id);
+                    }}>
                       <button type="submit" className="text-[10px] font-semibold tracking-wider uppercase text-red-400 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-md transition-colors">
                         Cancel Booking
                       </button>

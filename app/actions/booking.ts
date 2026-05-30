@@ -55,7 +55,7 @@ export async function createBooking(propertyId: string, checkIn: Date, checkOut:
   return { success: true };
 }
 
-export async function cancelBooking(bookingId: string) {
+export async function cancelBooking(bookingId: string, formData?: FormData): Promise<any> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
