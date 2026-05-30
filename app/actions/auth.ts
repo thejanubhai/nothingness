@@ -43,7 +43,7 @@ export async function verifyOtp(prevState: any, formData: FormData) {
   redirect('/dashboard');
 }
 
-export async function signOut() {
+export async function signOut(formData?: FormData) {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect('/');

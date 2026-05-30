@@ -2,9 +2,10 @@ import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { LogOut, User as UserIcon, BookOpen, Ban } from 'lucide-react';
+import { LogOut, User as UserIcon, BookOpen } from 'lucide-react';
 
-import { cancelBooking } from '@/app/actions/booking';
+import CancelBookingButton from '@/components/CancelBookingButton';
+import { signOut } from '@/app/actions/auth';
 import GuestVerificationList from '@/components/GuestVerificationList';
 
 export const metadata: Metadata = {
@@ -54,8 +55,8 @@ export default async function DashboardPage() {
           <h1 className="font-serif text-4xl md:text-5xl">{user.email?.split('@')[0] || 'Guest'}</h1>
         </div>
         
-        <form action="/auth/signout" method="post">
-          <button className="text-xs uppercase tracking-widest text-white/40 hover:text-white flex items-center gap-2 transition-colors">
+        <form action={signOut}>
+          <button type="submit" className="text-xs uppercase tracking-widest text-white/40 hover:text-white flex items-center gap-2 transition-colors cursor-pointer">
             <LogOut className="w-4 h-4" /> Sign Out
           </button>
         </form>
@@ -170,11 +171,7 @@ export default async function DashboardPage() {
                       )}
 
                       {booking.status !== 'cancelled' && (
-                        <form action={cancelBooking.bind(null, booking.id)}>
-                          <button type="submit" className="text-[11px] font-semibold tracking-[0.1em] uppercase text-red-400 bg-red-500/10 px-4 py-2 rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-2 cursor-pointer">
-                            <Ban className="w-3 h-3" /> Cancel
-                          </button>
-                        </form>
+                        <CancelBookingButton bookingId={booking.id} />
                       )}
                     </div>
                     
