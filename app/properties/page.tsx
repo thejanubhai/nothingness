@@ -21,7 +21,7 @@ export default async function PropertiesPage() {
   const displayProperties = properties ? properties.map(p => ({
     id: p.id,
     title: p.title,
-    location: `${p.area}, ${p.city}`,
+    location: `${p.area || ''}, ${p.city || ''}`.replace(/^, /, ''),
     image: p.featured_image || p.images?.[0] || "/images/property-1.png",
     price: p.nightly_price,
     slug: p.slug

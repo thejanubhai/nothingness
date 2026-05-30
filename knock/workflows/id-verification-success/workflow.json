@@ -1,0 +1,17 @@
+{
+  "name": "ID Verification Success",
+  "key": "id-verification-success",
+  "description": "Triggered when a guest's ID is verified successfully.",
+  "steps": [
+    {
+      "ref": "send_email",
+      "type": "channel",
+      "channel_key": "resend",
+      "settings": {
+        "template": {
+          "file": "emails/id-verified.json"
+        }
+      }
+    }
+  ]
+}

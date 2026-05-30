@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import Tooltip from "./Tooltip";
 
 export default function Footer() {
   const linkClass = "relative group text-white/60 hover:text-white text-[13px] transition-colors duration-300";
@@ -110,9 +111,13 @@ export default function Footer() {
             © {new Date().getFullYear()} Nothingness Inc. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
-            <span className="text-white/25 text-[11px] tracking-[0.15em] uppercase">18+ Only</span>
+            <Tooltip content="Strictly for adults above 18">
+              <span className="text-white/25 text-[11px] tracking-[0.15em] uppercase cursor-help">18+ Only</span>
+            </Tooltip>
             <span className="w-1 h-1 rounded-full bg-white/15" />
-            <span className="text-white/25 text-[11px] tracking-[0.15em] uppercase">ID Verified</span>
+            <Tooltip content="Identity verification required before check-in">
+              <span className="text-white/25 text-[11px] tracking-[0.15em] uppercase cursor-help">ID Verified</span>
+            </Tooltip>
           </div>
         </div>
       </div>

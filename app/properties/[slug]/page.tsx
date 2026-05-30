@@ -39,7 +39,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ slug:
   
   const displayProp = {
     title: property.title,
-    location: `${property.area}, ${property.city}`,
+    location: `${property.area || ''}, ${property.city || ''}`.replace(/^, /, ''),
     description: property.description,
     price: property.nightly_price,
     images: property.images && property.images.length > 0 ? property.images : [property.featured_image || "/images/property-1.png"],

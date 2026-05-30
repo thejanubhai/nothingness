@@ -12,15 +12,34 @@ export default function ContactPage() {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
     
-    toast.success('Message Received', {
-      description: "Our concierge team will review your inquiry and respond shortly."
-    });
-    
-    (e.target as HTMLFormElement).reset();
-    setLoading(false);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.get('name'),
+          email: formData.get('email'),
+          subject: formData.get('subject'),
+          message: formData.get('message')
+        }),
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error);
+      
+      toast.success('Message Received', {
+        description: "Our concierge team will review your inquiry and respond shortly."
+      });
+      form.reset();
+    } catch (err: any) {
+      toast.error(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,8 +78,11 @@ export default function ContactPage() {
           <form onSubmit={handleSubmit} className="relative z-10 space-y-6">
             <div className="space-y-2">
               <label htmlFor="name" className="text-[11px] uppercase tracking-[0.2em] text-white/50 ml-1">Name</label>
-              <input 
+              <motion.input 
+                whileFocus={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.05)" }}
+                transition={{ duration: 0.2 }}
                 id="name"
+                name="name"
                 required
                 type="text" 
                 className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-accent-gold/50 transition-colors"
@@ -70,8 +92,11 @@ export default function ContactPage() {
             
             <div className="space-y-2">
               <label htmlFor="email" className="text-[11px] uppercase tracking-[0.2em] text-white/50 ml-1">Email</label>
-              <input 
+              <motion.input 
+                whileFocus={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.05)" }}
+                transition={{ duration: 0.2 }}
                 id="email"
+                name="email"
                 required
                 type="email" 
                 className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-accent-gold/50 transition-colors"
@@ -81,21 +106,27 @@ export default function ContactPage() {
 
             <div className="space-y-2">
               <label htmlFor="subject" className="text-[11px] uppercase tracking-[0.2em] text-white/50 ml-1">Inquiry Type</label>
-              <select 
+              <motion.select 
+                whileFocus={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.05)" }}
+                transition={{ duration: 0.2 }}
                 id="subject"
+                name="subject"
                 className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-accent-gold/50 transition-colors appearance-none cursor-pointer"
               >
                 <option className="bg-black">Booking Question</option>
                 <option className="bg-black">Franchise Inquiry</option>
                 <option className="bg-black">Press & Media</option>
                 <option className="bg-black">Other</option>
-              </select>
+              </motion.select>
             </div>
             
             <div className="space-y-2">
               <label htmlFor="message" className="text-[11px] uppercase tracking-[0.2em] text-white/50 ml-1">Message</label>
-              <textarea 
+              <motion.textarea 
+                whileFocus={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.05)" }}
+                transition={{ duration: 0.2 }}
                 id="message"
+                name="message"
                 required
                 rows={5}
                 className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-accent-gold/50 transition-colors resize-none"

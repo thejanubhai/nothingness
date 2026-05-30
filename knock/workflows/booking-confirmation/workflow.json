@@ -1,0 +1,17 @@
+{
+  "name": "Booking Confirmation",
+  "key": "booking-confirmation",
+  "description": "Triggered when a guest successfully pays and confirms a booking.",
+  "steps": [
+    {
+      "ref": "send_email",
+      "type": "channel",
+      "channel_key": "resend",
+      "settings": {
+        "template": {
+          "file": "emails/booking-confirmed.json"
+        }
+      }
+    }
+  ]
+}

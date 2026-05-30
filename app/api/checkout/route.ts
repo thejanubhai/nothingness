@@ -1,22 +1,32 @@
 import { NextResponse } from 'next/server';
-import Razorpay from 'razorpay';
+import { Cashfree, CFEnvironment } from 'cashfree-pg';
 import { createClient } from '@/lib/supabase/server';
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_dummy_key',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'rzp_test_dummy_secret',
-});
+const env = process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' 
+  ? CFEnvironment.PRODUCTION 
+  : CFEnvironment.SANDBOX;
+
+const cashfree = new Cashfree(
+  env, 
+  process.env.NEXT_PUBLIC_CASHFREE_APP_ID || 'dummy_id', 
+  process.env.CASHFREE_SECRET_KEY || 'dummy_secret'
+);
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { propertyId, checkIn, checkOut, amount } = body;
+    const { guests, propertyId, checkIn, checkOut, amount } = body;
 
-    if (!propertyId || !checkIn || !checkOut || !amount) {
+    if (!propertyId || !checkIn || !checkOut || !amount || !guests) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const supabase = await createClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized. You must be logged in to book.' }, { status: 401 });
+    }
 
     // Verify property exists and get actual price to prevent tampering
     const { data: property, error: propError } = await supabase
@@ -29,35 +39,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }
 
-    // Amount should be calculated server-side normally, but for now we trust the amount passed
-    // Or we recalculate:
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
     const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 3600 * 24));
     
-    // Base price + 2500 cleaning + 18% GST
+    // Base price + 2500 cleaning + extra guests + 18% GST
     const baseTotal = (property.nightly_price * nights) + 2500;
-    const finalAmount = Math.round(baseTotal * 1.18); // Including GST
+    const extraGuestAmount = guests > 2 ? (guests - 2) * 500 * nights : 0;
+    const finalAmount = Math.round((baseTotal + extraGuestAmount) * 1.18); // Including GST
 
-    // Create Razorpay Order
-    const options = {
-      amount: finalAmount * 100, // amount in smallest currency unit (paise)
-      currency: "INR",
-      receipt: `receipt_order_${Date.now()}`,
-    };
+    const orderId = `order_${Date.now()}`;
 
-    const order = await razorpay.orders.create(options);
-
-    // Save preliminary booking to Supabase
+    // Save preliminary booking to Supabase FIRST to get the booking.id
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
         property_id: propertyId,
+        user_id: user.id,
         check_in: checkIn,
         check_out: checkOut,
+        guests: guests,
         total_price: finalAmount,
         status: 'pending',
-        payment_order_id: order.id
+        payment_order_id: orderId
       })
       .select()
       .single();
@@ -67,9 +71,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to create booking record' }, { status: 500 });
     }
 
+    // Now create Cashfree Order with the correct return_url
+    const request = {
+      order_amount: finalAmount,
+      order_currency: "INR",
+      order_id: orderId,
+      customer_details: {
+        customer_id: `guest_${Date.now()}`,
+        customer_phone: "9999999999",
+        customer_name: "Nothingness Guest"
+      },
+      order_meta: {
+        return_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/booking/${booking.id}/verify`
+      }
+    };
+    const response = await cashfree.PGCreateOrder(request);
+    const paymentSessionId = response.data.payment_session_id;
+
+    // Create booking_guests entries
+    const guestEntries = Array.from({ length: guests }).map((_, index) => ({
+      booking_id: booking.id,
+      guest_index: index,
+      verification_status: 'pending'
+    }));
+
+    const { error: guestsError } = await supabase
+      .from('booking_guests')
+      .insert(guestEntries);
+
+    if (guestsError) {
+      console.error('Booking Guests Error:', guestsError);
+      // Non-blocking error, but we should log it
+    }
+
     return NextResponse.json({ 
-      orderId: order.id, 
-      amount: order.amount, 
+      orderId: orderId, 
+      paymentSessionId: paymentSessionId, 
       bookingId: booking.id 
     }, { status: 200 });
 

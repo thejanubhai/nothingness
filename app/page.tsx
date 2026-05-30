@@ -25,7 +25,7 @@ async function PropertyList() {
   const displayProperties = properties ? properties.map(p => ({
     id: p.id,
     title: p.title,
-    location: `${p.area}, ${p.city}`,
+    location: `${p.area || ''}, ${p.city || ''}`.replace(/^, /, ''),
     image: p.featured_image || p.images?.[0] || "/images/property-1.png",
     price: p.nightly_price,
     slug: p.slug
@@ -62,12 +62,14 @@ export default async function Home() {
     console.error("Supabase connection failed:", e);
   }
 
+  const widgetProperties = properties || [];
+
   return (
     <main className="min-h-screen">
       {/* Hero + Booking Widget */}
       <div className="relative">
         <Hero />
-        <BookingWidget properties={properties || []} />
+        <BookingWidget properties={widgetProperties || []} />
       </div>
 
       {/* Properties Section */}

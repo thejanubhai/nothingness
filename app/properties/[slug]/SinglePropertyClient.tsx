@@ -35,7 +35,9 @@ export default function SinglePropertyClient({ property }: { property: any }) {
     }
     setLoading(true);
     try {
-      // 1. Call our API to create a Razorpay order
+      const baseAmount = (property.price * nights) + 2500;
+      const extraGuestAmount = guests > 2 ? (guests - 2) * 500 * nights : 0;
+      
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,41 +45,34 @@ export default function SinglePropertyClient({ property }: { property: any }) {
           propertyId: property.id,
           checkIn: date.from.toISOString(),
           checkOut: date.to.toISOString(),
-          amount: (property.price * nights) + 2500
+          guests: guests,
+          amount: baseAmount + extraGuestAmount
         }),
       });
       const data = await res.json();
+      
+      if (res.status === 401) {
+        toast.error('You must log in to reserve a sanctuary.');
+        window.location.href = '/auth';
+        return;
+      }
+      
       if (!res.ok) throw new Error(data.error);
 
-      // 2. Open Razorpay Checkout JS
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_dummy_key',
-        amount: data.amount,
-        currency: 'INR',
-        name: 'Nothingness',
-        description: `Booking: ${property.title}`,
-        order_id: data.orderId,
-        handler: async function (response: any) {
-          // Success handler - webhook handles backend state
-          toast.success('Sanctuary Reserved Successfully!', {
-            description: `Payment ID: ${response.razorpay_payment_id}`
-          });
-        },
-        prefill: {
-          name: '',
-          email: '',
-          contact: ''
-        },
-        theme: {
-          color: '#D4AF37'
-        }
-      };
-
-      const rzp1 = new window.Razorpay(options);
-      rzp1.on('payment.failed', function (response: any) {
-        toast.error('Payment Failed', { description: response.error.description });
+      // 2. Open Cashfree Checkout Modal
+      const { load } = await import('@cashfreepayments/cashfree-js');
+      const cashfree = await load({
+        mode: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' ? 'production' : 'sandbox'
       });
-      rzp1.open();
+      
+      const checkoutOptions = {
+        paymentSessionId: data.paymentSessionId,
+        redirectTarget: "_self"
+      };
+      
+      toast.info('Initializing secure payment...');
+      cashfree.checkout(checkoutOptions);
+      
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Something went wrong');
@@ -154,9 +149,15 @@ export default function SinglePropertyClient({ property }: { property: any }) {
           </div>
           <div>
             <label className="block text-[10px] uppercase tracking-[0.25em] text-white/30 mb-2">Guests</label>
-            <select className="w-full bg-white/[0.04] border border-white/8 rounded-xl text-white text-[14px] px-4 py-3 focus:outline-none focus:border-accent-gold/50 appearance-none cursor-pointer transition-colors duration-300">
-              <option className="bg-black text-white">2 Guests</option>
-              <option className="bg-black text-white">1 Guest</option>
+            <select 
+              value={guests}
+              onChange={(e) => setGuests(Number(e.target.value))}
+              className="w-full bg-white/[0.04] border border-white/8 rounded-xl text-white text-[14px] px-4 py-3 focus:outline-none focus:border-accent-gold/50 appearance-none cursor-pointer transition-colors duration-300"
+            >
+              <option value={1} className="bg-black text-white">1 Guest</option>
+              <option value={2} className="bg-black text-white">2 Guests</option>
+              <option value={3} className="bg-black text-white">3 Guests (+₹500/night)</option>
+              <option value={4} className="bg-black text-white">4 Guests (+₹1000/night)</option>
             </select>
           </div>
         </div>
@@ -169,13 +170,21 @@ export default function SinglePropertyClient({ property }: { property: any }) {
                 <span>₹{property.price?.toLocaleString('en-IN')} × {nights} nights</span>
                 <span>₹{(property.price * nights)?.toLocaleString('en-IN')}</span>
               </div>
+              {guests > 2 && (
+                <div className="flex justify-between text-white/40">
+                  <span>Extra Guests ({guests - 2})</span>
+                  <span>₹{((guests - 2) * 500 * nights)?.toLocaleString('en-IN')}</span>
+                </div>
+              )}
               <div className="flex justify-between text-white/40">
                 <span>Cleaning fee</span>
                 <span>₹2,500</span>
               </div>
               <div className="flex justify-between text-white font-medium pt-3 border-t border-white/5">
                 <span>Total</span>
-                <span className="text-accent-gold">₹{((property.price * nights) + 2500)?.toLocaleString('en-IN')}</span>
+                <span className="text-accent-gold">
+                  ₹{((property.price * nights) + 2500 + (guests > 2 ? (guests - 2) * 500 * nights : 0))?.toLocaleString('en-IN')}
+                </span>
               </div>
             </>
           ) : (

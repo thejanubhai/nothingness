@@ -54,3 +54,36 @@ export async function createBooking(propertyId: string, checkIn: Date, checkOut:
   revalidatePath('/dashboard');
   return { success: true };
 }
+
+export async function cancelBooking(bookingId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Unauthorized' };
+  }
+
+  // Ensure user owns booking or is admin
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('user_id')
+    .eq('id', bookingId)
+    .single();
+
+  if (!booking) return { error: 'Booking not found' };
+
+  if (booking.user_id !== user.id && !user.email?.includes('admin') && !user.email?.includes('hudav')) {
+    return { error: 'Unauthorized' };
+  }
+
+  const { error } = await supabase
+    .from('bookings')
+    .update({ status: 'cancelled' })
+    .eq('id', bookingId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/dashboard');
+  revalidatePath('/admin');
+  return { success: true };
+}
