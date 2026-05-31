@@ -21,11 +21,11 @@ export async function GET(
   }
 
   // 2. Fetch all bookings for this property
-  const { data: bookings, error: bookError } = await supabase
+    const { data: bookings, error: bookError } = await supabase
     .from('bookings')
-    .select('check_in, check_out, guests, booking_status')
+    .select('check_in, check_out, guests, status')
     .eq('property_id', property.id)
-    .neq('booking_status', 'cancelled');
+    .neq('status', 'cancelled');
 
   if (bookError) {
     return new NextResponse('Failed to fetch bookings', { status: 500 });
@@ -42,7 +42,7 @@ export async function GET(
     calendar.createEvent({
       start: new Date(booking.check_in),
       end: new Date(booking.check_out),
-      summary: `Reserved - ${booking.booking_status}`,
+      summary: `Reserved - ${booking.status}`,
       description: `Guests: ${booking.guests}`,
       allDay: true, // Airbnb expects bookings to block full days
     });

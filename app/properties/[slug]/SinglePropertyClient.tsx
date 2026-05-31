@@ -8,13 +8,6 @@ import { format, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 import 'react-day-picker/dist/style.css';
 
-// Type declaration for Razorpay attached to window
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
-
 export default function SinglePropertyClient({ property }: { property: any }) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [date, setDate] = useState<DateRange | undefined>();

@@ -46,10 +46,22 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="mailto:contact@nothingness.asia" className={linkClass}>
+                <Link href="/contact" className={linkClass}>
                   Contact
                   <span className={underlineClass} />
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link href="/about" className={linkClass}>
+                  About
+                  <span className={underlineClass} />
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className={linkClass}>
+                  FAQ
+                  <span className={underlineClass} />
+                </Link>
               </li>
             </ul>
           </div>

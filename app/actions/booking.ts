@@ -43,7 +43,7 @@ export async function createBooking(propertyId: string, checkIn: Date, checkOut:
       check_out: checkOut.toISOString(),
       guests,
       total_price: totalPrice,
-      booking_status: 'pending',
+      status: 'pending',
       payment_status: 'pending'
     });
 

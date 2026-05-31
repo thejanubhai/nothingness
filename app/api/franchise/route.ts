@@ -17,7 +17,7 @@ export async function POST(req: Request) {
         name,
         email,
         phone,
-        location,
+        property_location: location,
         investment_budget: budget,
         experience,
         status: 'new'

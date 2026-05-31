@@ -12,7 +12,7 @@ export async function getBlockedIntervals(propertyId: string, iCalUrl?: string |
     .from('bookings')
     .select('check_in, check_out')
     .eq('property_id', propertyId)
-    .neq('booking_status', 'cancelled');
+    .neq('status', 'cancelled');
 
   if (bookings) {
     bookings.forEach(b => {

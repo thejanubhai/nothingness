@@ -48,14 +48,29 @@ export default function Header() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-10">
+          <nav className="hidden md:flex items-center gap-8">
+            {[
+              { href: "/properties", label: "Properties" },
+              { href: "/media", label: "Media" },
+              { href: "/contact", label: "Contact" },
+              { href: "/franchise", label: "Franchise" },
+            ].map((item) => (
+              <Magnetic key={item.href}>
+                <Link
+                  href={item.href}
+                  className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2"
+                >
+                  {item.label}
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
+                </Link>
+              </Magnetic>
+            ))}
             <Magnetic>
               <Link
-                href="/media"
-                className="text-[13px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2"
+                href="/auth"
+                className="text-[12px] font-medium tracking-[0.2em] uppercase text-accent-gold/80 hover:text-accent-gold transition-colors duration-300 border border-accent-gold/30 px-4 py-2 rounded-full hover:bg-accent-gold/10"
               >
-                Media
-                <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
+                Guest Portal
               </Link>
             </Magnetic>
           </nav>
@@ -83,7 +98,11 @@ export default function Header() {
           >
             {[
               { href: "/", label: "Home" },
+              { href: "/properties", label: "Properties" },
               { href: "/media", label: "Media" },
+              { href: "/contact", label: "Contact" },
+              { href: "/franchise", label: "Franchise" },
+              { href: "/auth", label: "Guest Portal" },
             ].map((item, i) => (
               <motion.div
                 key={item.href}
@@ -94,7 +113,9 @@ export default function Header() {
                 <Link
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className="font-serif text-4xl tracking-wider text-white hover:text-accent-gold transition-colors"
+                  className={`font-serif text-4xl tracking-wider transition-colors ${
+                    item.label === 'Guest Portal' ? 'text-accent-gold hover:text-white' : 'text-white hover:text-accent-gold'
+                  }`}
                 >
                   {item.label}
                 </Link>

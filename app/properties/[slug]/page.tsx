@@ -38,6 +38,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ slug:
   }
   
   const displayProp = {
+    id: property.id,
     title: property.title,
     location: `${property.area || ''}, ${property.city || ''}`.replace(/^, /, ''),
     description: property.description,

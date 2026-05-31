@@ -80,7 +80,7 @@ export default function FAQPage() {
       <div className="mt-24 text-center">
         <p className="text-white/50 mb-6">Still have questions?</p>
         <a 
-          href="mailto:concierge@nothingness.asia" 
+          href="/contact" 
           className="inline-block border border-accent-gold/50 text-accent-gold px-8 py-3 rounded-full text-[13px] font-semibold tracking-[0.15em] uppercase hover:bg-accent-gold hover:text-black transition-all duration-300"
         >
           Contact Concierge

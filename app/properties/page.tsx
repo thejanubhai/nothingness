@@ -5,27 +5,28 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = 'force-dynamic';
 
 export default async function PropertiesPage() {
-  let properties = null;
+  let properties: any[] = [];
 
   try {
     const supabase = await createClient();
     const { data } = await supabase
       .from('properties')
       .select('*')
+      .eq('active', true)
       .order('created_at', { ascending: false });
-    properties = data;
+    if (data) properties = data;
   } catch (e) {
     console.error("Supabase connection failed:", e);
   }
 
-  const displayProperties = properties ? properties.map(p => ({
+  const displayProperties = properties.map((p: any) => ({
     id: p.id,
     title: p.title,
     location: `${p.area || ''}, ${p.city || ''}`.replace(/^, /, ''),
     image: p.featured_image || p.images?.[0] || "/images/property-1.png",
     price: p.nightly_price,
     slug: p.slug
-  })) : [];
+  }));
 
   return (
     <main className="min-h-screen pt-32 pb-24 px-4 md:px-12 max-w-7xl mx-auto">

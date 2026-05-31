@@ -8,28 +8,29 @@ import { Suspense } from "react";
 export const dynamic = 'force-dynamic';
 
 async function PropertyList() {
-  let properties = null;
+  let properties: any[] = [];
 
   try {
     const supabase = await createClient();
     const { data } = await supabase
       .from('properties')
       .select('*')
+      .eq('active', true)
       .order('created_at', { ascending: false })
       .limit(4);
-    properties = data;
+    if (data) properties = data;
   } catch (e) {
     console.error("Supabase connection failed:", e);
   }
 
-  const displayProperties = properties ? properties.map(p => ({
+  const displayProperties = properties.map(p => ({
     id: p.id,
     title: p.title,
     location: `${p.area || ''}, ${p.city || ''}`.replace(/^, /, ''),
     image: p.featured_image || p.images?.[0] || "/images/property-1.png",
     price: p.nightly_price,
     slug: p.slug
-  })) : [];
+  }));
 
   if (displayProperties.length === 0) return null;
 
@@ -50,19 +51,20 @@ async function PropertyList() {
 }
 
 export default async function Home() {
-  let properties = null;
+  let properties: any[] = [];
 
   try {
     const supabase = await createClient();
     const { data } = await supabase
       .from('properties')
-      .select('slug, title');
-    properties = data;
+      .select('slug, title')
+      .eq('active', true);
+    if (data) properties = data;
   } catch (e) {
     console.error("Supabase connection failed:", e);
   }
 
-  const widgetProperties = properties || [];
+  const widgetProperties = properties.map(p => ({ slug: p.slug, title: p.title }));
 
   return (
     <main className="min-h-screen">
