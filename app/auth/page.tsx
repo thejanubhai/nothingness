@@ -13,6 +13,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const base64URLStringToBuffer = (base64URLString: string) => {
+    const padding = '='.repeat((4 - base64URLString.length % 4) % 4);
+    const base64 = (base64URLString + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
   const handleSendOtp = async () => {
     if (!identifier) return;
     setLoading(true);
@@ -58,8 +69,21 @@ export default function LoginPage() {
       
       if (startError) throw startError;
 
+      const options = data?.options as any;
+      const publicKey = {
+        ...options,
+        challenge: base64URLStringToBuffer(options.challenge),
+      };
+      
+      if (publicKey.allowCredentials) {
+        publicKey.allowCredentials = publicKey.allowCredentials.map((cred: any) => ({
+          ...cred,
+          id: base64URLStringToBuffer(cred.id),
+        }));
+      }
+
       const credential = await navigator.credentials.get({
-        publicKey: data?.options as any,
+        publicKey: publicKey as any,
       });
 
       if (!credential) throw new Error('Passkey selection cancelled');
@@ -167,6 +191,14 @@ export default function LoginPage() {
               className="w-full bg-accent-gold text-black py-4 rounded-xl text-[12px] font-bold tracking-[0.15em] uppercase hover:bg-white transition-colors mt-6 disabled:opacity-50"
             >
               {loading ? 'Verifying...' : 'Verify Code'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSendOtp}
+              disabled={loading}
+              className="w-full bg-transparent text-white/70 py-3 rounded-xl text-[12px] font-bold tracking-widest uppercase hover:text-white transition-colors disabled:opacity-50 mt-2"
+            >
+              Resend OTP
             </button>
           </form>
         )}

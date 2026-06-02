@@ -7,6 +7,17 @@ import { toast } from 'sonner';
 export default function RegisterPasskeyButton() {
   const [loading, setLoading] = useState(false);
 
+  const base64URLStringToBuffer = (base64URLString: string) => {
+    const padding = '='.repeat((4 - base64URLString.length % 4) % 4);
+    const base64 = (base64URLString + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
   const handleRegisterPasskey = async () => {
     setLoading(true);
     try {
@@ -16,8 +27,18 @@ export default function RegisterPasskeyButton() {
 
       if (startError) throw startError;
 
+      const options = data?.options as any;
+      const publicKey = {
+        ...options,
+        challenge: base64URLStringToBuffer(options.challenge),
+        user: {
+          ...options.user,
+          id: base64URLStringToBuffer(options.user.id),
+        }
+      };
+
       const credential = await navigator.credentials.create({
-        publicKey: data?.options as any,
+        publicKey: publicKey as any,
       });
 
       if (!credential) throw new Error('Passkey registration cancelled');

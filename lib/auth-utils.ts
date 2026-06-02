@@ -16,8 +16,8 @@ export function getRedirectPath(user: { email?: string; phone?: string } | null)
   if (!user || !env.ADMIN) return '/dashboard';
   
   // Strictly check against the phone number, as mobile is our sole unique identifier.
-  const adminIdentifier = env.ADMIN.trim();
-  const userPhone = user.phone?.trim();
+  const adminIdentifier = normalizeIdentifier(env.ADMIN);
+  const userPhone = user.phone ? normalizeIdentifier(user.phone) : null;
   
   if (userPhone === adminIdentifier) {
     return '/admin';
