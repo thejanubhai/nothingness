@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeIdentifier } from "@/lib/auth-utils";
+import { env } from "@/lib/env";
 import Link from "next/link";
 import { 
   LayoutDashboard, 
@@ -22,7 +24,10 @@ export default async function AdminLayout({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user || (!user.email?.includes('admin') && !user.email?.includes('hudav'))) {
+  const adminIdentifier = normalizeIdentifier(env.ADMIN || '');
+  const userPhone = user?.phone ? normalizeIdentifier(user.phone) : null;
+
+  if (!user || (userPhone !== adminIdentifier && !user.email?.includes('admin') && !user.email?.includes('hudav'))) {
     redirect('/');
   }
 

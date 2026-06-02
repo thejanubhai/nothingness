@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export default function RegisterPasskeyButton() {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const base64URLStringToBuffer = (base64URLString: string) => {
     const padding = '='.repeat((4 - base64URLString.length % 4) % 4);
@@ -51,6 +53,7 @@ export default function RegisterPasskeyButton() {
       if (verifyError) throw verifyError;
 
       toast.success('Passkey successfully registered! You can now use it to sign in.');
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Failed to register passkey.');

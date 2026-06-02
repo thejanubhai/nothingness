@@ -15,6 +15,8 @@ export default async function SettingsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
+  const { data: passkeys, error: passkeysError } = await supabase.auth.passkey.list();
+  
   if (!user) {
     redirect('/auth/login');
   }
@@ -65,6 +67,20 @@ export default async function SettingsPage() {
             </div>
           </div>
           
+          {passkeys && passkeys.length > 0 && (
+            <div className="mb-6 space-y-3">
+              {passkeys.map(pk => (
+                <div key={pk.id} className="bg-white/[0.04] border border-white/10 px-5 py-4 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <p className="text-white font-medium text-sm">{pk.friendly_name || 'Passkey Device'}</p>
+                    <p className="text-white/40 text-xs mt-1">Added {new Date(pk.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <span className="text-[10px] text-green-400 border border-green-500/20 bg-green-500/10 px-3 py-1 rounded-full uppercase tracking-widest">Active</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-6">
             <RegisterPasskeyButton />
           </div>
