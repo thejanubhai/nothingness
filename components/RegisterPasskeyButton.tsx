@@ -12,17 +12,19 @@ export default function RegisterPasskeyButton() {
     try {
       const supabase = createClient();
       
-      const { data: options, error: startError } = await supabase.auth.passkey.startRegistration();
+      const { data, error: startError } = await supabase.auth.passkey.startRegistration();
+
       if (startError) throw startError;
 
       const credential = await navigator.credentials.create({
-        publicKey: options as any,
+        publicKey: data?.options as any,
       });
 
       if (!credential) throw new Error('Passkey registration cancelled');
 
       const { error: verifyError } = await supabase.auth.passkey.verifyRegistration({
-        credential,
+        challengeId: data?.challenge_id as string,
+        credential: credential as any,
       });
 
       if (verifyError) throw verifyError;

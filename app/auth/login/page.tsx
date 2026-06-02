@@ -54,18 +54,19 @@ export default function LoginPage() {
     setErrorMsg('');
     try {
       const supabase = createClient();
-      const { data: options, error: startError } = await supabase.auth.passkey.startAuthentication();
+      const { data, error: startError } = await supabase.auth.passkey.startAuthentication();
       
       if (startError) throw startError;
 
       const credential = await navigator.credentials.get({
-        publicKey: options as any,
+        publicKey: data?.options as any,
       });
 
       if (!credential) throw new Error('Passkey selection cancelled');
 
       const { error: verifyError } = await supabase.auth.passkey.verifyAuthentication({
-        credential,
+        challengeId: data?.challenge_id as string,
+        credential: credential as any,
       });
 
       if (verifyError) throw verifyError;
