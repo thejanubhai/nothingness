@@ -64,32 +64,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
       }
 
-      // Trigger Knock booking-confirmation workflow
-      if (process.env.KNOCK_SECRET_API_KEY) {
-        try {
-          const { Knock } = await import('@knocklabs/node');
-          const knock = new Knock({ apiKey: process.env.KNOCK_SECRET_API_KEY as string });
-          
-          const customerEmail = payload.data?.customer_details?.customer_email || 'guest@example.com';
-          const customerName = payload.data?.customer_details?.customer_name || 'Nothingness Guest';
-          const customerId = payload.data?.customer_details?.customer_id || 'guest_default';
-
-          await knock.workflows.trigger('booking-confirmation', {
-            recipients: [{
-              id: customerId,
-              email: customerEmail,
-              name: customerName,
-            }],
-            data: {
-              bookingId: orderId,
-              status: 'confirmed'
-            }
-          });
-          console.log("Knock booking-confirmation workflow triggered successfully.");
-        } catch (knockErr) {
-          console.error("Failed to trigger Knock workflow:", knockErr);
-        }
-      }
+      // Booking confirmation email is now handled by the database trigger
+      // in /api/webhooks/bookings/route.ts which listens to status changes.
     }
 
     return NextResponse.json({ status: 'ok' }, { status: 200 });

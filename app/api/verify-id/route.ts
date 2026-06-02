@@ -116,27 +116,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to update guest status' }, { status: 500 });
     }
 
-    // Trigger Knock id-verification-success workflow
-    if (process.env.KNOCK_SECRET_API_KEY) {
-      try {
-        const { Knock } = await import('@knocklabs/node');
-        const knock = new Knock({ apiKey: process.env.KNOCK_SECRET_API_KEY as string });
-        
-        await knock.workflows.trigger('id-verification-success', {
-          recipients: [{
-            id: profileId || `guest_${Date.now()}`,
-            name: result.name,
-          }],
-          data: {
-            bookingId: bookingId || token,
-            documentType: result.document_type
-          }
-        });
-        console.log("Knock id-verification-success workflow triggered.");
-      } catch (knockErr) {
-        console.error("Failed to trigger Knock workflow:", knockErr);
-      }
-    }
+    // Notification logic omitted since Knock is removed.
+    // If you wish to send ID Verification success emails, add Resend logic here.
 
     return NextResponse.json({ verified: true, name: result.name }, { status: 200 });
 

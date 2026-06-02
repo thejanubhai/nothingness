@@ -3,36 +3,43 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { normalizeIdentifier, getRedirectPath } from '@/lib/auth-utils';
 
-export async function loginWithOtp(prevState: any, formData: FormData) {
-  const email = formData.get('email') as string;
+export async function sendOtp(prevState: any, formData: FormData) {
+  const phoneInput = formData.get('identifier') as string;
+  const phone = normalizeIdentifier(phoneInput);
+  
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithOtp({
-    email,
+    phone,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-    },
+    }
   });
 
   if (error) {
-    return { error: error.message };
+    return { error: error.message, success: false };
   }
 
-  // Normally we'd redirect to a "check your email" page or show state
-  redirect('/auth/check-email');
+  return { 
+    success: true, 
+    identifier: phone,
+    message: 'OTP sent successfully!' 
+  };
 }
 
 export async function verifyOtp(prevState: any, formData: FormData) {
-  const email = formData.get('email') as string;
+  const phoneInput = formData.get('identifier') as string;
   const token = formData.get('token') as string;
+  
+  const phone = normalizeIdentifier(phoneInput);
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.verifyOtp({
-    email,
+  const { data, error } = await supabase.auth.verifyOtp({
+    phone,
     token,
-    type: 'email',
+    type: 'sms',
   });
 
   if (error) {
@@ -40,11 +47,23 @@ export async function verifyOtp(prevState: any, formData: FormData) {
   }
 
   revalidatePath('/');
-  redirect('/dashboard');
+  redirect(getRedirectPath(data.user));
 }
 
 export async function signOut(formData?: FormData) {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect('/');
+}
+
+export async function onPasskeyLoginSuccess() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return { error: 'Failed to retrieve session after passkey login.' };
+  }
+
+  revalidatePath('/');
+  redirect(getRedirectPath(user));
 }

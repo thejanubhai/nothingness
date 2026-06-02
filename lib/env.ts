@@ -7,8 +7,10 @@ const envSchema = z.object({
   CASHFREE_SECRET_KEY: z.string().optional(),
   NEXT_PUBLIC_CASHFREE_APP_ID: z.string().optional(),
   NEXT_PUBLIC_CASHFREE_ENVIRONMENT: z.enum(['SANDBOX', 'PRODUCTION']).default('SANDBOX'),
-  KNOCK_SECRET_API_KEY: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
+  SUPABASE_AUTH_WEBHOOK_SECRET: z.string().default('secret-auth-hook-token-123'),
+  ADMIN: z.string().optional(),
 });
 
 export const env = envSchema.parse({
@@ -18,6 +20,8 @@ export const env = envSchema.parse({
   CASHFREE_SECRET_KEY: process.env.CASHFREE_SECRET_KEY,
   NEXT_PUBLIC_CASHFREE_APP_ID: process.env.NEXT_PUBLIC_CASHFREE_APP_ID,
   NEXT_PUBLIC_CASHFREE_ENVIRONMENT: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT,
-  KNOCK_SECRET_API_KEY: process.env.KNOCK_SECRET_API_KEY,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  SUPABASE_AUTH_WEBHOOK_SECRET: process.env.SUPABASE_AUTH_WEBHOOK_SECRET,
+  ADMIN: process.env.ADMIN,
 });

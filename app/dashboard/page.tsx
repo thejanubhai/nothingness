@@ -1,195 +1,217 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { LogOut, User as UserIcon, BookOpen } from 'lucide-react';
-
+import Link from 'next/link';
+import { Calendar as CalendarIcon, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
 import CancelBookingButton from '@/components/CancelBookingButton';
-import { signOut } from '@/app/actions/auth';
-import GuestVerificationList from '@/components/GuestVerificationList';
 
 export const metadata: Metadata = {
-  title: 'Guest Portal | Nothingness',
+  title: 'Overview | Guest Portal',
 };
 
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardPage() {
+export default async function DashboardOverview() {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    redirect('/auth');
+  if (!user) {
+    redirect('/auth/login');
   }
-  
-  // Fetch real bookings for this authenticated user
-  const { data: bookings } = await supabase
+
+  // 1. Fetch upcoming bookings (check_in >= today or pending)
+  const today = new Date().toISOString().split('T')[0];
+  const { data: upcomingBookings } = await supabase
     .from('bookings')
     .select(`
       *,
-      properties (
-        title,
-        featured_image,
-        city
-      ),
-      booking_guests (*)
+      spaces ( title, city, featured_image )
     `)
     .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+    .gte('check_in', today)
+    .order('check_in', { ascending: true })
+    .limit(3);
 
-  // Fetch their guest profile if they have verified one
+  // 2. Fetch Identity Profile
   const { data: profile } = await supabase
     .from('guest_profiles')
     .select('*')
-    // We would match on phone number or email if we had it, but for demo we will just get one or none
+    .eq('user_id', user.id)
     .limit(1)
     .single();
 
+  // Calculate Days Left for ID Deletion
+  let daysLeft = 0;
+  if (profile?.is_verified && profile.created_at) {
+    const verifiedDate = new Date(profile.created_at);
+    const deletionDate = new Date(verifiedDate.getTime() + 180 * 24 * 60 * 60 * 1000);
+    const timeDiff = deletionDate.getTime() - new Date().getTime();
+    daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    if (daysLeft < 0) daysLeft = 0;
+  }
+
   return (
-    <main className="min-h-screen pt-40 pb-24 px-5 md:px-8 max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6 border-b border-white/10 pb-8">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4 flex items-center gap-2">
-            <UserIcon className="w-3 h-3" /> Welcome Back
-          </p>
-          <h1 className="font-serif text-4xl md:text-5xl">{user.email?.split('@')[0] || 'Guest'}</h1>
-        </div>
-        
-        <form action={signOut}>
-          <button type="submit" className="text-xs uppercase tracking-widest text-white/40 hover:text-white flex items-center gap-2 transition-colors cursor-pointer">
-            <LogOut className="w-4 h-4" /> Sign Out
-          </button>
-        </form>
+    <div className="space-y-8">
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-2">Welcome Back</p>
+        <h1 className="font-serif text-3xl md:text-4xl">{user.phone}</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Profile Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6">
-            <h3 className="font-serif text-2xl mb-4 text-white">Identity Profile</h3>
-            {profile ? (
-              <div className="space-y-4 text-sm text-white/70">
-                <div>
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">Full Name</p>
-                  <p>{profile.full_name}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* NEW BOOKING WIDGET */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-accent-gold/10 to-transparent border border-accent-gold/20 rounded-3xl p-8 flex flex-col justify-between group">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-accent-gold/5 rounded-full blur-3xl -mr-20 -mt-20 transition-transform duration-700 group-hover:scale-150" />
+          
+          <div className="relative z-10">
+            <div className="w-12 h-12 bg-accent-gold/20 rounded-2xl flex items-center justify-center mb-6 border border-accent-gold/30">
+              <CalendarIcon className="w-6 h-6 text-accent-gold" />
+            </div>
+            <h2 className="font-serif text-2xl text-white mb-2">Book Your Next Escape</h2>
+            <p className="text-white/60 text-sm mb-8 max-w-sm">
+              Ready to disappear? Reserve The Chamber for your next private getaway.
+            </p>
+          </div>
+          
+          <Link 
+            href="/booking"
+            className="relative z-10 inline-flex items-center justify-between bg-white text-black px-6 py-4 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-accent-gold transition-colors"
+          >
+            Start Booking
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {/* ID VERIFICATION & PRIVACY WIDGET */}
+        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-serif text-xl text-white flex items-center gap-2">
+                <ShieldCheck className={`w-5 h-5 ${profile?.is_verified ? 'text-green-400' : 'text-white/30'}`} />
+                Identity Status
+              </h2>
+              {profile?.is_verified && (
+                <span className="bg-green-500/10 text-green-400 border border-green-500/20 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">
+                  Verified
+                </span>
+              )}
+            </div>
+            
+            {profile?.is_verified ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Document Type</p>
+                    <p className="text-white">{profile.id_document_type}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Name</p>
+                    <p className="text-white truncate">{profile.full_name}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">Document Type</p>
-                  <p>{profile.id_document_type}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">Status</p>
-                  <span className="text-green-400 bg-green-500/10 px-2 py-1 rounded-md">Verified</span>
+
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-accent-gold" />
+                  <div className="flex items-start gap-4">
+                    <Clock className="w-5 h-5 text-accent-gold shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-white mb-1">Automatic Deletion in {daysLeft} Days</p>
+                      <p className="text-xs text-white/50 leading-relaxed">
+                        To protect your privacy, your personally identifiable data (PII) is automatically purged from our servers 180 days after verification.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (
               <div className="text-center py-6">
                 <p className="text-white/40 text-sm mb-4">No verified identity found.</p>
-                <p className="text-[11px] text-accent-gold">Identities are automatically built when you verify during a booking.</p>
+                <p className="text-[11px] text-accent-gold">Your ID will be securely verified during your first booking.</p>
               </div>
             )}
           </div>
-          
-          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6">
-            <h3 className="font-serif text-xl mb-4 text-white">Quick Actions</h3>
-            <ul className="space-y-3 text-sm">
-              <li>
-                <Link href="/contact" className="text-white/50 hover:text-white transition-colors flex items-center gap-2">
-                  Contact Concierge
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="text-white/50 hover:text-white transition-colors flex items-center gap-2">
-                  House Rules & Policies
-                </Link>
-              </li>
-            </ul>
-          </div>
         </div>
 
-        {/* Bookings Feed */}
-        <div className="lg:col-span-2">
-          <h2 className="font-serif text-3xl mb-6 text-white flex items-center gap-3">
-            <BookOpen className="w-6 h-6 text-accent-gold" /> Your Bookings
-          </h2>
-          
-          {bookings && bookings.length > 0 ? (
-            <div className="space-y-6">
-              {bookings.map((booking: any) => (
-                <div key={booking.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex flex-col md:flex-row gap-6">
-                  <div className="w-full md:w-40 aspect-video md:aspect-square relative rounded-xl overflow-hidden shrink-0 border border-white/10">
-                    <img 
-                      src={booking.properties.featured_image || '/images/property-1.png'} 
-                      alt={booking.properties.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  
-                  <div className="flex-grow space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-serif text-xl text-white mb-1">{booking.properties.title}</h3>
-                        <p className="text-white/40 text-[11px] uppercase tracking-widest">{booking.properties.city}</p>
-                      </div>
-                      <div className={`px-3 py-1 rounded-full text-[10px] font-semibold tracking-wider uppercase ${
-                        booking.status === 'confirmed' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-                        booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                        'bg-accent-gold/10 text-accent-gold border border-accent-gold/20'
-                      }`}>
-                        {booking.status}
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm border-y border-white/5 py-3 my-3">
-                      <div>
-                        <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Check In</p>
-                        <p className="text-white/80">{new Date(booking.check_in).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                      </div>
-                      <div>
-                        <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Check Out</p>
-                        <p className="text-white/80">{new Date(booking.check_out).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                      </div>
-                    </div>
+      </div>
 
-                    <div className="flex gap-3">
-                      {booking.status === 'pending' && (
-                        <Link 
-                          href={`/booking/${booking.id}/verify`}
-                          className="text-[11px] font-semibold tracking-[0.1em] uppercase text-black bg-accent-gold px-4 py-2 rounded-lg hover:bg-white transition-colors"
-                        >
-                          Complete Verification
-                        </Link>
-                      )}
-                      
-                      {booking.status === 'confirmed' && (
-                        <Link 
-                          href={`/booking/${booking.id}/success`}
-                          className="text-[11px] font-semibold tracking-[0.1em] uppercase text-accent-gold border border-accent-gold/30 px-4 py-2 rounded-lg hover:bg-accent-gold/10 transition-colors"
-                        >
-                          View Access Code
-                        </Link>
-                      )}
+      {/* UPCOMING BOOKINGS WIDGET */}
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-serif text-2xl text-white">Upcoming Bookings</h2>
+          <Link href="/dashboard/bookings" className="text-xs text-accent-gold hover:text-white uppercase tracking-widest transition-colors">
+            View All
+          </Link>
+        </div>
 
-                      {booking.status !== 'cancelled' && (
-                        <CancelBookingButton bookingId={booking.id} />
-                      )}
+        {upcomingBookings && upcomingBookings.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {upcomingBookings.map((booking: any) => (
+              <div key={booking.id} className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden group">
+                <div className="h-40 relative overflow-hidden">
+                  <img 
+                    src={booking.spaces.featured_image || '/images/property-1.png'} 
+                    alt={booking.spaces.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                    <div>
+                      <h3 className="font-serif text-lg text-white leading-tight">{booking.spaces.title}</h3>
+                      <p className="text-[10px] uppercase tracking-widest text-white/70">{booking.spaces.city}</p>
                     </div>
-                    
-                    <GuestVerificationList guests={booking.booking_guests} siteUrl={process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'} />
+                    <div className={`px-2 py-1 rounded border text-[9px] font-bold tracking-widest uppercase ${
+                      booking.status === 'confirmed' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                      'bg-accent-gold/20 text-accent-gold border-accent-gold/30'
+                    }`}>
+                      {booking.status}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-20 border border-white/5 rounded-2xl bg-white/[0.01]">
-              <p className="text-white/40 mb-6">You have no reservations on record.</p>
-              <Link href="/" className="inline-block border border-accent-gold/50 text-accent-gold px-8 py-3 rounded-xl text-[12px] font-semibold tracking-[0.15em] uppercase hover:bg-accent-gold hover:text-black transition-all duration-300">
-                Explore Properties
-              </Link>
-            </div>
-          )}
-        </div>
+                
+                <div className="p-5">
+                  <div className="grid grid-cols-2 gap-4 text-xs mb-5">
+                    <div>
+                      <p className="text-white/30 uppercase tracking-widest mb-1">Check In</p>
+                      <p className="text-white/90">{new Date(booking.check_in).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/30 uppercase tracking-widest mb-1">Check Out</p>
+                      <p className="text-white/90">{new Date(booking.check_out).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {booking.status === 'pending' ? (
+                      <Link 
+                        href={`/booking/${booking.id}/verify`}
+                        className="flex-1 text-center text-[10px] font-bold tracking-[0.1em] uppercase text-black bg-accent-gold px-3 py-2.5 rounded-lg hover:bg-white transition-colors"
+                      >
+                        Verify ID
+                      </Link>
+                    ) : (
+                      <Link 
+                        href={`/booking/${booking.id}/success`}
+                        className="flex-1 text-center text-[10px] font-bold tracking-[0.1em] uppercase text-accent-gold border border-accent-gold/30 px-3 py-2.5 rounded-lg hover:bg-accent-gold/10 transition-colors"
+                      >
+                        Access Code
+                      </Link>
+                    )}
+                    <CancelBookingButton bookingId={booking.id} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 border border-white/5 rounded-3xl bg-white/[0.01]">
+            <p className="text-white/40 text-sm mb-4">You have no upcoming stays.</p>
+            <Link href="/booking" className="text-xs text-accent-gold hover:text-white uppercase tracking-widest transition-colors underline underline-offset-4">
+              Book a Space
+            </Link>
+          </div>
+        )}
       </div>
-    </main>
+
+    </div>
   );
 }
