@@ -72,7 +72,7 @@ export default async function AdminSettings() {
             
             <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
               <div>
-                <p className="text-white font-medium mb-1">Knock Notifications</p>
+                <p className="text-white font-medium mb-1">Resend Email Delivery</p>
                 <p className="text-[10px] text-white/50 uppercase tracking-widest">Connected (Production)</p>
               </div>
               <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>

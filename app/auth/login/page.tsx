@@ -59,7 +59,7 @@ export default function LoginPage() {
       if (startError) throw startError;
 
       const credential = await navigator.credentials.get({
-        publicKey: options,
+        publicKey: options as any,
       });
 
       if (!credential) throw new Error('Passkey selection cancelled');

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { knock } from '@/lib/knock';
 
 export async function POST(req: Request) {
   try {
@@ -32,17 +31,18 @@ export async function POST(req: Request) {
     }
 
     try {
-      await knock.workflows.trigger("franchise-lead-received", {
-        recipients: ["admin-team"],
-        data: {
-          lead_name: name,
-          lead_email: email,
-          lead_location: location,
-          lead_budget: budget
-        },
-      });
-    } catch (knockError) {
-      console.error("Knock notification failed, but lead was saved:", knockError);
+      const { Resend } = await import('resend');
+      if (process.env.RESEND_API_KEY) {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        await resend.emails.send({
+          from: 'Nothingness Franchise <hello@nothingness.asia>',
+          to: 'admin@nothingness.asia',
+          subject: 'New Franchise Lead Received',
+          html: `<p>New Lead: <b>${name}</b> (${email})</p><p>Location: ${location}</p><p>Budget: ${budget}</p>`
+        });
+      }
+    } catch (emailError) {
+      console.error("Email notification failed, but lead was saved:", emailError);
     }
 
     return NextResponse.json({ success: true }, { status: 200 });

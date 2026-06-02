@@ -16,7 +16,7 @@ export default function RegisterPasskeyButton() {
       if (startError) throw startError;
 
       const credential = await navigator.credentials.create({
-        publicKey: options,
+        publicKey: options as any,
       });
 
       if (!credential) throw new Error('Passkey registration cancelled');
