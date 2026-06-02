@@ -1,29 +1,29 @@
 import Hero from "@/components/Hero";
 import BookingWidget from "@/components/BookingWidget";
-import PropertyCard from "@/components/PropertyCard";
-import PropertySkeleton from "@/components/PropertySkeleton";
+import SpaceCard from "@/components/SpaceCard";
+import SpaceSkeleton from "@/components/SpaceSkeleton";
 import { createClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
 
 export const dynamic = 'force-dynamic';
 
-async function PropertyList() {
-  let properties: any[] = [];
+async function SpaceList() {
+  let spaces: any[] = [];
 
   try {
     const supabase = await createClient();
     const { data } = await supabase
-      .from('properties')
+      .from('spaces')
       .select('*')
       .eq('active', true)
       .order('created_at', { ascending: false })
       .limit(4);
-    if (data) properties = data;
+    if (data) spaces = data;
   } catch (e) {
     console.error("Supabase connection failed:", e);
   }
 
-  const displayProperties = properties.map(p => ({
+  const displaySpaces = spaces.map(p => ({
     id: p.id,
     title: p.title,
     location: `${p.area || ''}, ${p.city || ''}`.replace(/^, /, ''),
@@ -32,12 +32,12 @@ async function PropertyList() {
     slug: p.slug
   }));
 
-  if (displayProperties.length === 0) return null;
+  if (displaySpaces.length === 0) return null;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-      {displayProperties.map((prop) => (
-        <PropertyCard 
+      {displaySpaces.map((prop) => (
+        <SpaceCard 
           key={prop.id}
           title={prop.title} 
           location={prop.location}
@@ -51,30 +51,30 @@ async function PropertyList() {
 }
 
 export default async function Home() {
-  let properties: any[] = [];
+  let spaces: any[] = [];
 
   try {
     const supabase = await createClient();
     const { data } = await supabase
-      .from('properties')
+      .from('spaces')
       .select('slug, title')
       .eq('active', true);
-    if (data) properties = data;
+    if (data) spaces = data;
   } catch (e) {
     console.error("Supabase connection failed:", e);
   }
 
-  const widgetProperties = properties.map(p => ({ slug: p.slug, title: p.title }));
+  const widgetSpaces = spaces.map(p => ({ slug: p.slug, title: p.title }));
 
   return (
     <main className="min-h-screen">
       {/* Hero + Booking Widget */}
       <div className="relative">
         <Hero />
-        <BookingWidget properties={widgetProperties || []} />
+        <BookingWidget spaces={widgetSpaces || []} />
       </div>
 
-      {/* Properties Section */}
+      {/* Spaces Section */}
       <section className="py-24 md:py-32 px-5 md:px-8 max-w-7xl mx-auto">
         <div className="mb-16 md:mb-20 text-center max-w-2xl mx-auto">
           <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4">Our Spaces</p>
@@ -94,11 +94,11 @@ export default async function Home() {
 
         <Suspense fallback={
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-            <PropertySkeleton />
-            <PropertySkeleton />
+            <SpaceSkeleton />
+            <SpaceSkeleton />
           </div>
         }>
-          <PropertyList />
+          <SpaceList />
         </Suspense>
       </section>
 

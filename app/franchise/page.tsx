@@ -1,11 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import Magnetic from '@/components/Magnetic';
-
-
 
 export default function FranchisePage() {
   const [loading, setLoading] = useState(false);

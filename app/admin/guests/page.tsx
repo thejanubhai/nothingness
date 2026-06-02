@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Search, UserCheck, UserX } from "lucide-react";
 import { format } from "date-fns";
-
+import Link from "next/link";
 export const dynamic = 'force-dynamic';
 
 export default async function AdminGuests() {
@@ -12,7 +12,7 @@ export default async function AdminGuests() {
     .select(`
       *,
       booking_guests (
-        bookings (id, check_in, check_out, properties(title))
+        bookings (id, check_in, check_out, spaces(title))
       )
     `)
     .order('created_at', { ascending: false });
@@ -51,7 +51,9 @@ export default async function AdminGuests() {
               {guests?.map((guest) => (
                 <tr key={guest.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="px-6 py-4">
-                    <p className="text-white font-medium">{guest.full_name}</p>
+                    <Link href={`/admin/guests/${guest.id}`} className="text-white font-medium hover:text-accent-gold transition-colors">
+                      {guest.full_name}
+                    </Link>
                   </td>
                   <td className="px-6 py-4">
                     <p className="text-white/80">{guest.id_document_type}</p>

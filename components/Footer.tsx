@@ -106,13 +106,11 @@ export default function Footer() {
           {/* Partnership */}
           <div>
             <h4 className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/30 mb-6">Partnership</h4>
-            <ul className="flex flex-col gap-3.5">
-              <li>
-                <Link href="/franchise" className="relative group text-accent-gold/80 hover:text-accent-gold text-[13px] transition-colors duration-300">
-                  Franchise Opportunities
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
-                </Link>
-              </li>
+            <h4 className="font-serif text-lg mb-6 text-white">Explore</h4>
+            <ul className="space-y-4">
+              <li><Link href="/spaces" className="text-white/50 hover:text-accent-gold text-sm transition-colors">Our Spaces</Link></li>
+              <li><Link href="/franchise" className="text-white/50 hover:text-accent-gold text-sm transition-colors">Partner With Us</Link></li>
+              <li><Link href="/about" className="text-white/50 hover:text-accent-gold text-sm transition-colors">The Philosophy</Link></li>
             </ul>
           </div>
         </div>

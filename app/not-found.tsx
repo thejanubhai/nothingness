@@ -13,9 +13,9 @@ export default function NotFound() {
       
       <div className="relative z-10 flex flex-col items-center">
         <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-6">Lost in the Void</p>
-        <h2 className="font-serif text-4xl md:text-5xl text-white mb-6">This space doesn't exist.</h2>
-        <p className="text-white/50 max-w-md mb-12">
-          The sanctuary you are looking for has been moved or doesn't exist in our current reality.
+        <h2 className="font-serif text-3xl md:text-5xl text-white mb-4">Nothingness.</h2>
+        <p className="text-white/60 mb-8 max-w-md">
+          The sanctuary you seek does not exist in this realm. It may have been removed, or the path you entered is incorrect.
         </p>
         
         <Magnetic>

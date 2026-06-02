@@ -6,7 +6,7 @@ import { ArrowLeft, Save, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
-export default function AddPropertyPage() {
+export default function AddSpacePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export default function AddPropertyPage() {
       const supabase = createClient();
       
       const { error: insertError } = await supabase
-        .from('properties')
+        .from('spaces')
         .insert({
           ...formData,
           amenities: amenities.filter(a => a.trim() !== ''),
@@ -48,11 +48,11 @@ export default function AddPropertyPage() {
 
       if (insertError) throw insertError;
       
-      router.push('/admin/properties');
+      router.push('/admin/spaces');
       router.refresh();
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Failed to create property');
+      setError(err.message || 'Failed to create space');
     } finally {
       setLoading(false);
     }
@@ -76,11 +76,11 @@ export default function AddPropertyPage() {
     <div className="space-y-8 max-w-4xl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/admin/properties" className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/50 hover:text-white">
+          <Link href="/admin/spaces" className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/50 hover:text-white">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="font-serif text-3xl md:text-4xl mb-1 text-white">Add Property</h1>
+            <h1 className="font-serif text-3xl md:text-4xl mb-1 text-white">Add Space</h1>
             <p className="text-white/50 text-sm tracking-wide">Create a new sanctuary listing.</p>
           </div>
         </div>
@@ -90,7 +90,7 @@ export default function AddPropertyPage() {
           className="flex items-center gap-2 bg-accent-gold text-black px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-accent-gold/90 transition-colors disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
-          {loading ? 'Saving...' : 'Save Property'}
+          {loading ? 'Saving...' : 'Save Space'}
         </button>
       </div>
 
@@ -106,7 +106,7 @@ export default function AddPropertyPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40">Property Title</label>
+              <label className="text-[10px] uppercase tracking-widest text-white/40">Space Title</label>
               <input 
                 required
                 type="text" 

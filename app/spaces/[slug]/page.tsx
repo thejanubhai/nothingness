@@ -1,58 +1,79 @@
 import { notFound } from "next/navigation";
-import SinglePropertyClient from "./SinglePropertyClient";
-import PropertyCarousel from "@/components/PropertyCarousel";
+import SingleSpaceClient from "./SingleSpaceClient";
+import SpaceCarousel from "@/components/SpaceCarousel";
 import { createClient } from "@/lib/supabase/server";
+import Script from "next/script";
 
 export const dynamic = 'force-dynamic';
 
-export default async function PropertyPage({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  let property = null;
+  const supabase = await createClient();
+  const { data: space } = await supabase
+    .from('spaces')
+    .select('title, description, featured_image')
+    .eq('slug', slug)
+    .single();
+
+  if (!space) return { title: 'Not Found' };
+
+  return {
+    title: space.title,
+    description: space.description,
+    openGraph: {
+      images: [space.featured_image || '/og-default.png']
+    }
+  };
+}
+
+export default async function SpacePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  let space = null;
 
   try {
     const supabase = await createClient();
     const { data } = await supabase
-      .from('properties')
+      .from('spaces')
       .select('*')
       .eq('slug', slug)
       .single();
-    property = data;
+    space = data;
 
-    if (property) {
+    if (space) {
       const { data: bookingData } = await supabase
         .from('bookings')
         .select('check_in, check_out')
-        .eq('property_id', property.id)
+        .eq('space_id', space.id)
         .eq('status', 'confirmed');
         
       if (bookingData) {
-        property.bookings = bookingData;
+        space.bookings = bookingData;
       }
     }
   } catch (e) {
     console.error("Supabase connection failed:", e);
   }
 
-  if (!property) {
+  if (!space) {
     notFound();
   }
   
   const displayProp = {
-    id: property.id,
-    title: property.title,
-    location: `${property.area || ''}, ${property.city || ''}`.replace(/^, /, ''),
-    description: property.description,
-    price: property.nightly_price,
-    images: property.images && property.images.length > 0 ? property.images : [property.featured_image || "/images/property-1.png"],
-    amenities: property.amenities || [],
-    rules: property.rules ? property.rules.split('\n') : [],
-    bookings: property.bookings || []
+    id: space.id,
+    title: space.title,
+    location: `${space.area || ''}, ${space.city || ''}`.replace(/^, /, ''),
+    description: space.description,
+    price: space.nightly_price,
+    images: space.images && space.images.length > 0 ? space.images : [space.featured_image || "/images/property-1.png"],
+    amenities: space.amenities || [],
+    rules: space.rules ? space.rules.split('\n') : [],
+    bookings: space.bookings || []
   };
 
   return (
     <main className="min-h-screen bg-background">
       {/* Hero Carousel */}
-      <PropertyCarousel images={displayProp.images} title={displayProp.title} />
+      <SpaceCarousel images={displayProp.images} title={displayProp.title} />
 
       <div className="max-w-7xl mx-auto px-5 md:px-8 -mt-24 md:-mt-32 relative z-10 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 md:gap-16">
@@ -104,10 +125,32 @@ export default async function PropertyPage({ params }: { params: Promise<{ slug:
 
           {/* Sticky Booking Widget */}
           <div className="lg:col-span-1">
-            <SinglePropertyClient property={displayProp} />
+            <SingleSpaceClient space={displayProp} />
           </div>
         </div>
       </div>
+      
+      <Script
+        id="json-ld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'HotelRoom',
+          name: displayProp.title,
+          description: displayProp.description,
+          image: displayProp.images[0],
+          address: {
+            '@type': 'PostalAddress',
+            addressLocality: space.city,
+            addressCountry: 'India'
+          },
+          amenityFeature: displayProp.amenities.map((amenity: string) => ({
+            '@type': 'LocationFeatureSpecification',
+            name: amenity,
+            value: true
+          }))
+        })}}
+      />
     </main>
   );
 }

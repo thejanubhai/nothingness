@@ -49,22 +49,14 @@ export default function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
-            {[
-              { href: "/properties", label: "Properties" },
-              { href: "/media", label: "Media" },
-              { href: "/contact", label: "Contact" },
-              { href: "/franchise", label: "Franchise" },
-            ].map((item) => (
-              <Magnetic key={item.href}>
-                <Link
-                  href={item.href}
-                  className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2"
-                >
-                  {item.label}
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
-                </Link>
-              </Magnetic>
-            ))}
+            <Link href="/spaces" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
+              Spaces
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
+            </Link>
+            <Link href="/franchise" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
+              Franchise
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
+            </Link>
             <Magnetic>
               <Link
                 href="/auth"
@@ -96,31 +88,17 @@ export default function Header() {
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-40 bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center gap-10"
           >
-            {[
-              { href: "/", label: "Home" },
-              { href: "/properties", label: "Properties" },
-              { href: "/media", label: "Media" },
-              { href: "/contact", label: "Contact" },
-              { href: "/franchise", label: "Franchise" },
-              { href: "/auth", label: "Guest Portal" },
-            ].map((item, i) => (
-              <motion.div
-                key={item.href}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + i * 0.08 }}
-              >
-                <Link
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`font-serif text-4xl tracking-wider transition-colors ${
-                    item.label === 'Guest Portal' ? 'text-accent-gold hover:text-white' : 'text-white hover:text-accent-gold'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </motion.div>
-            ))}
+            <div className="flex flex-col space-y-8 mt-12 text-center">
+              <Link href="/" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors" onClick={() => setMobileOpen(false)}>
+                Home
+              </Link>
+              <Link href="/spaces" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors" onClick={() => setMobileOpen(false)}>
+                Spaces
+              </Link>
+              <Link href="/about" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors" onClick={() => setMobileOpen(false)}>
+                About
+              </Link>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

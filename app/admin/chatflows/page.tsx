@@ -1,40 +1,23 @@
-'use client';
+import { createClient } from "@/lib/supabase/server";
+import { Bot, Plus, Zap, MessageSquare, ToggleLeft, ToggleRight, Settings } from "lucide-react";
+import Link from "next/link";
 
-import { useState } from 'react';
-import { MessageSquare, Plus, CheckCircle, Save, Settings } from 'lucide-react';
+export const dynamic = 'force-dynamic';
 
-export default function ChatflowsPage() {
-  const [flows, setFlows] = useState([
-    {
-      id: 1,
-      name: 'Guest Onboarding Sequence',
-      trigger: 'Booking Confirmed',
-      channel: 'WhatsApp',
-      active: true,
-      steps: [
-        { type: 'message', content: 'Welcome to Nothingness, {{guest_name}}. Your sanctuary awaits.' },
-        { type: 'delay', content: 'Wait 24 hours' },
-        { type: 'message', content: 'Please complete your identity verification before check-in: {{verification_link}}' }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Pre-Arrival Check-in',
-      trigger: '2 Days Before Check-in',
-      channel: 'Omnichannel (Email + WhatsApp)',
-      active: true,
-      steps: [
-        { type: 'message', content: 'Your stay at {{property_name}} is approaching. Here are your access instructions.' }
-      ]
-    }
-  ]);
+export default async function AdminChatflows() {
+  const supabase = await createClient();
+  
+  const { data: chatflows } = await supabase
+    .from('chatflows')
+    .select('*')
+    .order('created_at', { ascending: false });
 
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="font-serif text-3xl md:text-4xl mb-2 text-white">Omnichannel Chatflows</h1>
-          <p className="text-white/50 text-sm tracking-wide">Automate guest communication across WhatsApp, Email, and SMS.</p>
+          <h1 className="font-serif text-3xl md:text-4xl mb-2 text-white">Chatflows</h1>
+          <p className="text-white/50 text-sm tracking-wide">Configure automated omnichannel responses.</p>
         </div>
         <button className="flex items-center gap-2 bg-accent-gold text-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent-gold/90 transition-colors">
           <Plus className="w-4 h-4" />
@@ -42,73 +25,54 @@ export default function ChatflowsPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-4">
-          <h3 className="font-serif text-xl text-white mb-4">Active Flows</h3>
-          {flows.map(flow => (
-            <div key={flow.id} className={`p-4 rounded-xl border cursor-pointer transition-colors ${flow.id === 1 ? 'bg-white/10 border-accent-gold/50' : 'bg-white/[0.02] border-white/5 hover:border-white/20'}`}>
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="text-white font-medium">{flow.name}</h4>
-                {flow.active && <CheckCircle className="w-4 h-4 text-green-400" />}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {chatflows?.map((flow) => (
+          <div key={flow.id} className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex flex-col group relative">
+            <div className="flex justify-between items-start mb-4">
+              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/50">
+                <Bot className="w-5 h-5" />
               </div>
-              <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-widest text-white/40">Trigger: {flow.trigger}</p>
-                <p className="text-[10px] uppercase tracking-widest text-white/40">Channel: {flow.channel}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="lg:col-span-2 bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex flex-col">
-          <div className="flex justify-between items-center border-b border-white/10 pb-4 mb-6">
-            <h2 className="font-serif text-2xl text-white">Guest Onboarding Sequence</h2>
-            <div className="flex gap-2">
-              <button className="p-2 hover:bg-white/10 rounded-lg text-white/50 transition-colors">
+              <button className="text-white/30 hover:text-white transition-colors">
                 <Settings className="w-4 h-4" />
               </button>
-              <button className="flex items-center gap-2 bg-white/10 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors">
-                <Save className="w-4 h-4" /> Save
-              </button>
             </div>
-          </div>
-
-          <div className="flex-1 space-y-6 relative before:absolute before:inset-y-0 before:left-[15px] before:w-px before:bg-white/10 ml-2">
             
-            <div className="relative pl-10">
-              <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-accent-gold/20 border border-accent-gold flex items-center justify-center -translate-x-[20%]">
-                <Settings className="w-4 h-4 text-accent-gold" />
+            <h3 className="text-lg text-white font-medium mb-1">{flow.name}</h3>
+            <div className="flex items-center gap-2 text-xs text-white/50 mb-6">
+              <Zap className="w-3 h-3 text-yellow-500" />
+              Trigger: {flow.trigger_event}
+            </div>
+            
+            <div className="bg-white/5 p-3 rounded-xl border border-white/5 mb-6 flex-1">
+              <p className="text-xs text-white/60 line-clamp-3">"{flow.response_template}"</p>
+            </div>
+            
+            <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+              <div className="flex items-center gap-1.5 text-xs text-white/40 uppercase tracking-wider">
+                <MessageSquare className="w-3 h-3" />
+                {flow.channel}
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <p className="text-[10px] uppercase tracking-widest text-white/40 mb-2">Trigger Event</p>
-                <p className="text-white text-sm">Booking Confirmed</p>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs ${flow.is_active ? 'text-green-400' : 'text-white/30'}`}>
+                  {flow.is_active ? 'Active' : 'Paused'}
+                </span>
+                {flow.is_active ? (
+                  <ToggleRight className="w-5 h-5 text-green-400 cursor-pointer" />
+                ) : (
+                  <ToggleLeft className="w-5 h-5 text-white/30 cursor-pointer" />
+                )}
               </div>
             </div>
-
-            {flows[0].steps.map((step, idx) => (
-              <div key={idx} className="relative pl-10">
-                <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center -translate-x-[20%]">
-                  <MessageSquare className="w-4 h-4 text-white/60" />
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4 group hover:border-accent-gold/30 transition-colors">
-                  <div className="flex justify-between mb-2">
-                    <p className="text-[10px] uppercase tracking-widest text-white/40">Action: {step.type}</p>
-                  </div>
-                  <textarea 
-                    className="w-full bg-transparent text-sm text-white resize-none focus:outline-none focus:ring-1 focus:ring-accent-gold/50 rounded p-2 -ml-2"
-                    defaultValue={step.content}
-                    rows={2}
-                  />
-                </div>
-              </div>
-            ))}
-
-            <div className="relative pl-10 pt-4">
-              <button className="flex items-center gap-2 text-xs uppercase tracking-widest text-accent-gold hover:text-white transition-colors">
-                <Plus className="w-4 h-4" /> Add Step
-              </button>
-            </div>
-
           </div>
+        ))}
+
+        {/* Empty state or Create New Card */}
+        <div className="bg-white/[0.01] border border-white/5 border-dashed p-6 rounded-2xl flex flex-col items-center justify-center min-h-[250px] cursor-pointer hover:bg-white/[0.03] transition-colors group">
+          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/30 group-hover:text-accent-gold group-hover:bg-accent-gold/10 transition-colors mb-4">
+            <Plus className="w-6 h-6" />
+          </div>
+          <p className="text-white font-medium text-sm">Create New Chatflow</p>
+          <p className="text-white/40 text-xs mt-1 text-center max-w-[200px]">Automate responses for bookings, check-ins, or common questions.</p>
         </div>
       </div>
     </div>

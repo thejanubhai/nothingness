@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
+import { Filter } from "lucide-react";
 import CancelBookingButton from "@/components/CancelBookingButton";
+import CsvExportButton from "@/components/CsvExportButton";
 import { CheckCircle, Clock, ShieldAlert } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +14,7 @@ export default async function AdminBookings() {
     .from('bookings')
     .select(`
       *,
-      properties (title),
+      spaces (title),
       booking_guests (
         id, name, verification_status, guest_index, 
         guest_profiles (document_number, full_name, is_verified)
@@ -22,9 +24,18 @@ export default async function AdminBookings() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-serif text-3xl md:text-4xl mb-2 text-white">Bookings</h1>
-        <p className="text-white/50 text-sm tracking-wide">Monitor reservations and guest verifications.</p>
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="font-serif text-3xl md:text-4xl mb-2 text-white">Bookings</h1>
+          <p className="text-white/50 text-sm tracking-wide">Monitor reservations and guest verifications.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <CsvExportButton data={bookings || []} filename="bookings.csv" />
+          <button className="flex items-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <Filter className="w-4 h-4" />
+            Filter
+          </button>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -36,7 +47,7 @@ export default async function AdminBookings() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-[10px] text-accent-gold uppercase tracking-widest mb-1">REF: {booking.id.split('-')[0]}</p>
-                  <h4 className="text-xl text-white">{booking.properties?.title}</h4>
+                  <h4 className="text-xl text-white">{booking.spaces?.title}</h4>
                 </div>
                 <span className={`px-2 py-1 text-[9px] uppercase tracking-widest rounded-full border ${
                   booking.status === 'confirmed' ? 'bg-green-500/10 text-green-400 border-green-500/20' :

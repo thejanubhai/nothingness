@@ -12,7 +12,7 @@ export default async function AdminHousekeeping() {
     .from('housekeeping_tasks')
     .select(`
       *,
-      properties (title),
+      spaces (title),
       bookings (id, check_in, check_out, guests)
     `)
     .order('scheduled_date', { ascending: true });
@@ -20,7 +20,7 @@ export default async function AdminHousekeeping() {
   // Generate automated tasks based on bookings if none exist for today/tomorrow
   const { data: activeBookings } = await supabase
     .from('bookings')
-    .select('id, check_in, check_out, property_id, properties(title)')
+    .select('id, check_in, check_out, space_id, spaces(title)')
     .eq('status', 'confirmed');
     
   return (
@@ -50,7 +50,7 @@ export default async function AdminHousekeeping() {
                 
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-white font-medium">{task.properties?.title}</h3>
+                    <h3 className="text-white font-medium">{task.spaces?.title}</h3>
                     <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm bg-white/10 text-white/60">
                       {task.task_type}
                     </span>

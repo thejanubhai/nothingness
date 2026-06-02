@@ -1,25 +1,25 @@
 import Link from "next/link";
-import PropertyCard from "@/components/PropertyCard";
+import SpaceCard from "@/components/SpaceCard";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = 'force-dynamic';
 
-export default async function PropertiesPage() {
-  let properties: any[] = [];
+export default async function SpacesPage() {
+  let spaces: any[] = [];
 
   try {
     const supabase = await createClient();
     const { data } = await supabase
-      .from('properties')
+      .from('spaces')
       .select('*')
       .eq('active', true)
       .order('created_at', { ascending: false });
-    if (data) properties = data;
+    if (data) spaces = data;
   } catch (e) {
     console.error("Supabase connection failed:", e);
   }
 
-  const displayProperties = properties.map((p: any) => ({
+  const displaySpaces = spaces.map((p: any) => ({
     id: p.id,
     title: p.title,
     location: `${p.area || ''}, ${p.city || ''}`.replace(/^, /, ''),
@@ -38,8 +38,8 @@ export default async function PropertiesPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
-        {displayProperties.map((prop) => (
-          <PropertyCard 
+        {displaySpaces.map((prop) => (
+          <SpaceCard 
             key={prop.id}
             title={prop.title}
             location={prop.location}

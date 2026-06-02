@@ -6,18 +6,25 @@ const env = process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION'
   ? CFEnvironment.PRODUCTION 
   : CFEnvironment.SANDBOX;
 
+const appId = process.env.NEXT_PUBLIC_CASHFREE_APP_ID;
+const secretKey = process.env.CASHFREE_SECRET_KEY;
+
+if (!appId || !secretKey) {
+  console.warn("Cashfree API keys are missing. Payments will fail.");
+}
+
 const cashfree = new Cashfree(
   env, 
-  process.env.NEXT_PUBLIC_CASHFREE_APP_ID || 'dummy_id', 
-  process.env.CASHFREE_SECRET_KEY || 'dummy_secret'
+  appId || '', 
+  secretKey || ''
 );
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { guests, propertyId, checkIn, checkOut, amount } = body;
+    const { guests, spaceId, checkIn, checkOut, amount } = body;
 
-    if (!propertyId || !checkIn || !checkOut || !amount || !guests) {
+    if (!spaceId || !checkIn || !checkOut || !amount || !guests) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -28,15 +35,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized. You must be logged in to book.' }, { status: 401 });
     }
 
-    // Verify property exists and get actual price to prevent tampering
-    const { data: property, error: propError } = await supabase
-      .from('properties')
+    // Verify space exists and get actual price to prevent tampering
+    const { data: space, error: propError } = await supabase
+      .from('spaces')
       .select('nightly_price')
-      .eq('id', propertyId)
+      .eq('id', spaceId)
       .single();
 
-    if (propError || !property) {
-      return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+    if (propError || !space) {
+      return NextResponse.json({ error: 'Space not found' }, { status: 404 });
     }
 
     const checkInDate = new Date(checkIn);
@@ -44,7 +51,7 @@ export async function POST(req: Request) {
     const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 3600 * 24));
     
     // Base price + 2500 cleaning + extra guests + 18% GST
-    const baseTotal = (property.nightly_price * nights) + 2500;
+    const baseTotal = (space.nightly_price * nights) + 2500;
     const extraGuestAmount = guests > 2 ? (guests - 2) * 500 * nights : 0;
     const finalAmount = Math.round((baseTotal + extraGuestAmount) * 1.18); // Including GST
 
@@ -54,7 +61,7 @@ export async function POST(req: Request) {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
-        property_id: propertyId,
+        space_id: spaceId,
         user_id: user.id,
         check_in: checkIn,
         check_out: checkOut,

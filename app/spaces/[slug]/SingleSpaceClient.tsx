@@ -8,7 +8,7 @@ import { format, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 import 'react-day-picker/dist/style.css';
 
-export default function SinglePropertyClient({ property }: { property: any }) {
+export default function SingleSpaceClient({ space }: { space: any }) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [date, setDate] = useState<DateRange | undefined>();
   const [guests, setGuests] = useState(2);
@@ -28,14 +28,14 @@ export default function SinglePropertyClient({ property }: { property: any }) {
     }
     setLoading(true);
     try {
-      const baseAmount = (property.price * nights) + 2500;
+      const baseAmount = (space.price * nights) + 2500;
       const extraGuestAmount = guests > 2 ? (guests - 2) * 500 * nights : 0;
       
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          propertyId: property.id,
+          spaceId: space.id,
           checkIn: date.from.toISOString(),
           checkOut: date.to.toISOString(),
           guests: guests,
@@ -84,7 +84,7 @@ export default function SinglePropertyClient({ property }: { property: any }) {
         {/* Price */}
         <div className="flex items-baseline justify-between mb-7 pb-6 border-b border-white/5">
           <div>
-            <span className="font-serif text-3xl text-white">₹{property.price?.toLocaleString('en-IN')}</span>
+            <span className="font-serif text-3xl text-white">₹{space.price?.toLocaleString('en-IN')}</span>
             <span className="text-white/30 text-sm ml-2 tracking-wider">/night</span>
           </div>
           <div className="flex items-center gap-1 text-accent-gold text-[13px]">
@@ -128,7 +128,7 @@ export default function SinglePropertyClient({ property }: { property: any }) {
                     onSelect={setDate}
                     disabled={[
                       { before: new Date() },
-                      ...(property.bookings || []).map((b: any) => ({
+                      ...(space.bookings || []).map((b: any) => ({
                         from: new Date(b.check_in),
                         to: new Date(b.check_out)
                       }))
@@ -160,8 +160,8 @@ export default function SinglePropertyClient({ property }: { property: any }) {
           {nights > 0 ? (
             <>
               <div className="flex justify-between text-white/40">
-                <span>₹{property.price?.toLocaleString('en-IN')} × {nights} nights</span>
-                <span>₹{(property.price * nights)?.toLocaleString('en-IN')}</span>
+                <span>₹{space.price?.toLocaleString('en-IN')} × {nights} nights</span>
+                <span>₹{(space.price * nights)?.toLocaleString('en-IN')}</span>
               </div>
               {guests > 2 && (
                 <div className="flex justify-between text-white/40">
@@ -176,7 +176,7 @@ export default function SinglePropertyClient({ property }: { property: any }) {
               <div className="flex justify-between text-white font-medium pt-3 border-t border-white/5">
                 <span>Total</span>
                 <span className="text-accent-gold">
-                  ₹{((property.price * nights) + 2500 + (guests > 2 ? (guests - 2) * 500 * nights : 0))?.toLocaleString('en-IN')}
+                  ₹{((space.price * nights) + 2500 + (guests > 2 ? (guests - 2) * 500 * nights : 0))?.toLocaleString('en-IN')}
                 </span>
               </div>
             </>

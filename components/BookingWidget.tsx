@@ -1,19 +1,20 @@
 'use client';
-import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { Calendar, Users, MapPin, ChevronRight, Check } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 
-export default function BookingWidget({ properties = [] }: { properties?: { slug: string, title: string }[] }) {
+export default function BookingWidget({ spaces = [] }: { spaces?: any[] }) {
   const router = useRouter();
-  const [selected, setSelected] = useState(properties[0]?.slug || '');
+  const [selected, setSelected] = useState(spaces[0]?.slug || '');
   const [isOpen, setIsOpen] = useState(false);
 
-  const selectedTitle = properties.find(p => p.slug === selected)?.title || 'Select Property';
+  const selectedTitle = spaces.find(p => p.slug === selected)?.title || 'Select Space';
 
   const handleCheck = () => {
     if (selected) {
-      router.push(`/properties/${selected}`);
+      router.push(`/spaces/${selected}`);
     }
   };
 
@@ -39,13 +40,13 @@ export default function BookingWidget({ properties = [] }: { properties?: { slug
               <span>{selectedTitle}</span>
               <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
-            {isOpen && properties.length > 0 && (
+            {isOpen && spaces.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="absolute top-full left-0 w-full mt-2 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl"
               >
-                {properties.map(p => (
+                {spaces.map(p => (
                   <button
                     key={p.slug}
                     aria-label={`Select ${p.title}`}

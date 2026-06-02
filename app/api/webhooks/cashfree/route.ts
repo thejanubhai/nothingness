@@ -6,10 +6,17 @@ const env = process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION'
   ? CFEnvironment.PRODUCTION 
   : CFEnvironment.SANDBOX;
 
+const appId = process.env.NEXT_PUBLIC_CASHFREE_APP_ID;
+const secretKey = process.env.CASHFREE_SECRET_KEY;
+
+if (!appId || !secretKey) {
+  console.warn("Cashfree API keys are missing. Webhooks will fail.");
+}
+
 const cashfree = new Cashfree(
   env, 
-  process.env.NEXT_PUBLIC_CASHFREE_APP_ID || 'dummy_id', 
-  process.env.CASHFREE_SECRET_KEY || 'dummy_secret'
+  appId || '', 
+  secretKey || ''
 );
 
 export async function POST(req: Request) {
@@ -35,6 +42,17 @@ export async function POST(req: Request) {
       const orderId = payload.data.order.order_id;
 
       const supabase = await createClient();
+      
+      // Idempotency check: see if already paid
+      const { data: existingBooking } = await supabase
+        .from('bookings')
+        .select('payment_status')
+        .eq('payment_order_id', orderId)
+        .single();
+        
+      if (existingBooking?.payment_status === 'paid') {
+        return NextResponse.json({ status: 'ok', message: 'Already processed' }, { status: 200 });
+      }
       
       const { error } = await supabase
         .from('bookings')

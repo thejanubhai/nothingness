@@ -1,10 +1,17 @@
-import { Settings2, Key, Link2, Shield } from "lucide-react";
+import { Settings2, Key, Link2, Shield, Save } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = 'force-dynamic';
 
-export default function AdminSettings() {
+export default async function AdminSettings() {
+  const supabase = await createClient();
+  const { data: settings } = await supabase
+    .from('platform_settings')
+    .select('*')
+    .single();
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-5xl">
       <div>
         <h1 className="font-serif text-3xl md:text-4xl mb-2 text-white">Platform Settings</h1>
         <p className="text-white/50 text-sm tracking-wide">Configure integrations, security, and global preferences.</p>
@@ -12,6 +19,41 @@ export default function AdminSettings() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         
+        {/* Global Settings */}
+        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-6">
+            <Settings2 className="w-5 h-5 text-accent-gold" />
+            <h2 className="font-serif text-xl text-white">System Configuration</h2>
+          </div>
+          
+          <form className="space-y-6">
+            <div>
+              <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">Maintenance Mode</label>
+              <select 
+                defaultValue={settings?.maintenance_mode ? 'true' : 'false'}
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+              >
+                <option value="false" className="bg-black text-white">System Online (Normal Operations)</option>
+                <option value="true" className="bg-black text-white">Maintenance Mode (Offline)</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">Admin Contact Email</label>
+              <input 
+                type="email" 
+                defaultValue={settings?.admin_contact_email || 'admin@nothingness.asia'}
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
+              />
+            </div>
+            
+            <button type="button" className="w-full flex items-center justify-center gap-2 bg-accent-gold text-black hover:bg-accent-gold/90 py-3 rounded-lg text-sm font-medium transition-colors mt-4">
+              <Save className="w-4 h-4" />
+              Save Configuration
+            </button>
+          </form>
+        </div>
+
         {/* Integrations */}
         <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6">
           <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-6">
@@ -46,32 +88,6 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        {/* Global Settings */}
-        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6">
-          <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-6">
-            <Settings2 className="w-5 h-5 text-accent-gold" />
-            <h2 className="font-serif text-xl text-white">System Configuration</h2>
-          </div>
-          
-          <div className="space-y-6">
-            <div>
-              <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">Maintenance Mode</label>
-              <select disabled className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none appearance-none opacity-50 cursor-not-allowed">
-                <option>System Online (Normal Operations)</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">Admin Contact Email</label>
-              <input disabled type="email" value="admin@nothingness.asia" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none opacity-50 cursor-not-allowed" />
-            </div>
-            
-            <button disabled className="w-full bg-white/5 text-white/30 border border-white/10 py-3 rounded-lg text-sm font-medium cursor-not-allowed mt-4">
-              Save Configuration
-            </button>
-            <p className="text-center text-xs text-white/30 italic">Settings are currently locked for environment safety.</p>
-          </div>
-        </div>
       </div>
     </div>
   );

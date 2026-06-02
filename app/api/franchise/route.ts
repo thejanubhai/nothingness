@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { knock } from '@/lib/knock';
 
 export async function POST(req: Request) {
   try {
@@ -21,11 +22,27 @@ export async function POST(req: Request) {
         investment_budget: budget,
         experience,
         status: 'new'
-      });
+      })
+      .select()
+      .single();
 
     if (error) {
       console.error('Franchise lead error:', error);
       return NextResponse.json({ error: 'Failed to submit application.' }, { status: 500 });
+    }
+
+    try {
+      await knock.workflows.trigger("franchise-lead-received", {
+        recipients: ["admin-team"],
+        data: {
+          lead_name: name,
+          lead_email: email,
+          lead_location: location,
+          lead_budget: budget
+        },
+      });
+    } catch (knockError) {
+      console.error("Knock notification failed, but lead was saved:", knockError);
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
