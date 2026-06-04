@@ -39,11 +39,22 @@ export async function POST(request: NextRequest) {
     const description = descMatch ? descMatch[1] : '';
 
     const imageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
-    const imageUrl = imageMatch ? imageMatch[1] : '';
+    let imageUrl = imageMatch ? imageMatch[1] : '';
+    if (imageUrl) {
+      imageUrl = imageUrl.replace(/&amp;/g, '&');
+    }
 
-    // Advanced: try to parse __NEXT_DATA__ if available (not always reliable as Airbnb changes it)
-    // We'll rely mostly on basic details + the iCal URL
-    
+    // Extract bedrooms and bathrooms from title: e.g. "Rental unit in New Delhi · ★4.8 · 1 bedroom · 1 bed · 1 private bathroom"
+    let bedrooms = 1;
+    let bathrooms = 1;
+    if (title) {
+      const bedMatch = title.match(/([0-9]+)\s+bedroom/i);
+      if (bedMatch) bedrooms = parseInt(bedMatch[1], 10);
+      
+      const bathMatch = title.match(/([0-9]+(?:\.[0-9]+)?)\s+(?:private|shared)?\s*bath/i);
+      if (bathMatch) bathrooms = parseFloat(bathMatch[1]);
+    }
+
     // Construct iCal URL (hash 's' is typically needed, but we can't generate it easily without API. 
     // We will leave the iCal URL blank or just provide the ID so the user can paste the official one)
     const iCalPlaceholder = `https://www.airbnb.com/calendar/ical/${listingId}.ics?s=YOUR_HASH_HERE`;
@@ -62,8 +73,8 @@ export async function POST(request: NextRequest) {
         },
         price_per_night: 0,
         max_guests: 2,
-        bedrooms: 1,
-        bathrooms: 1,
+        bedrooms: bedrooms,
+        bathrooms: bathrooms,
         amenities: [],
         house_rules: [],
         airbnb_listing_id: listingId,

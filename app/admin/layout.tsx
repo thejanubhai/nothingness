@@ -86,8 +86,8 @@ export default async function AdminLayout({
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-black relative">
-        <div className="absolute inset-0 bg-grain opacity-[0.02] pointer-events-none" />
+      <main className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden bg-black relative w-full">
+        <div className="fixed inset-0 bg-grain opacity-[0.02] pointer-events-none z-0" />
         <div className="min-h-full p-4 sm:p-8 md:p-12 max-w-7xl mx-auto relative z-10 pb-20 md:pb-12">
           {children}
         </div>
