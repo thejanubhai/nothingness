@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import MobileNav from "@/components/admin/MobileNav";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeIdentifier } from "@/lib/auth-utils";
 import { env } from "@/lib/env";
@@ -43,9 +44,10 @@ export default async function AdminLayout({
   ];
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden selection:bg-accent-gold/30">
+    <div className="flex flex-col md:flex-row h-screen bg-background overflow-hidden selection:bg-accent-gold/30">
+      <MobileNav />
       {/* Sidebar */}
-      <aside className="w-64 bg-white/[0.02] border-r border-white/5 flex flex-col">
+      <aside className="hidden md:flex w-64 bg-white/[0.02] border-r border-white/5 flex-col">
         <div className="p-6 border-b border-white/5">
           <Link href="/admin" className="font-serif text-2xl text-accent-gold tracking-wide">
             Nothingness
@@ -86,7 +88,7 @@ export default async function AdminLayout({
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto bg-black relative">
         <div className="absolute inset-0 bg-grain opacity-[0.02] pointer-events-none" />
-        <div className="min-h-full p-8 md:p-12 max-w-7xl mx-auto relative z-10">
+        <div className="min-h-full p-4 sm:p-8 md:p-12 max-w-7xl mx-auto relative z-10 pb-20 md:pb-12">
           {children}
         </div>
       </main>

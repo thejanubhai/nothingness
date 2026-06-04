@@ -316,7 +316,7 @@ export default function AddSpacePage() {
           </div>
           
           {images.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {images.map((url, idx) => (
                 <div key={idx} className={`relative group aspect-square rounded-lg overflow-hidden border ${formData.featured_image === url ? 'border-accent-gold' : 'border-white/10'}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -358,7 +358,7 @@ export default function AddSpacePage() {
         <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 md:p-8 space-y-6">
           <h2 className="font-serif text-xl text-white border-b border-white/10 pb-4">Location & Specs</h2>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest text-white/40">Area / Neighborhood</label>
               <input 
@@ -482,7 +482,7 @@ export default function AddSpacePage() {
             {/* Outbound Feed */}
             <div className="bg-black/40 border border-white/10 rounded-xl p-4">
               <p className="text-[10px] uppercase tracking-widest text-white/40 mb-2">Our iCal Feed (Export)</p>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input 
                   type="text" 
                   readOnly

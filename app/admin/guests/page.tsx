@@ -35,7 +35,13 @@ export default async function AdminGuests() {
               className="w-full bg-white/5 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-accent-gold/50 focus:ring-1 focus:ring-accent-gold/50 transition-all"
             />
           </div>
-          <ComingSoonButton text="Add Guest" icon={<Plus className="w-4 h-4" />} />
+          <Link 
+            href="/admin/guests/new" 
+            className="flex items-center gap-2 bg-accent-gold text-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent-gold/90 transition-colors whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" />
+            Add Guest
+          </Link>
         </div>
       </div>
 

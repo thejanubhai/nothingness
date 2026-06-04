@@ -4,7 +4,7 @@ export async function POST(request: NextRequest) {
   try {
     const { url } = await request.json();
 
-    if (!url || !url.includes('airbnb.com')) {
+    if (!url || !url.includes('airbnb.')) {
       return NextResponse.json({ success: false, error: 'Invalid Airbnb URL' }, { status: 400 });
     }
 

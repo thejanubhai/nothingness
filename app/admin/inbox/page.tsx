@@ -19,7 +19,7 @@ export default async function AdminInbox({
     .from('messages')
     .select(`
       *,
-      guest_profiles(full_name, email, phone)
+      guest_profiles(full_name, phone_number)
     `)
     .order('created_at', { ascending: false });
 
@@ -145,7 +145,13 @@ export default async function AdminInbox({
           <div className="p-6 md:p-8 h-full overflow-y-auto">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-xl text-white font-serif">Automated Flows</h2>
-              <ComingSoonButton text="Create Flow" icon={<Plus className="w-4 h-4" />} />
+              <Link 
+                href="/admin/inbox/flows/new" 
+                className="flex items-center gap-2 bg-accent-gold text-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent-gold/90 transition-colors whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                Create Flow
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -155,9 +161,9 @@ export default async function AdminInbox({
                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/50">
                       <Bot className="w-5 h-5" />
                     </div>
-                    <button className="text-white/30 hover:text-white transition-colors">
+                    <Link href={`/admin/inbox/flows/${flow.id}`} className="text-white/30 hover:text-white transition-colors">
                       <Settings className="w-4 h-4" />
-                    </button>
+                    </Link>
                   </div>
                   
                   <h3 className="text-lg text-white font-medium mb-1">{flow.name}</h3>
@@ -189,13 +195,13 @@ export default async function AdminInbox({
                 </div>
               ))}
 
-              <div className="bg-white/[0.01] border border-white/5 border-dashed p-6 rounded-2xl flex flex-col items-center justify-center min-h-[250px] cursor-pointer hover:bg-white/[0.03] transition-colors group">
+              <Link href="/admin/inbox/flows/new" className="bg-white/[0.01] border border-white/5 border-dashed p-6 rounded-2xl flex flex-col items-center justify-center min-h-[250px] cursor-pointer hover:bg-white/[0.03] transition-colors group">
                 <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/30 group-hover:text-accent-gold group-hover:bg-accent-gold/10 transition-colors mb-4">
                   <Plus className="w-6 h-6" />
                 </div>
                 <p className="text-white font-medium text-sm">Create New Chatflow</p>
                 <p className="text-white/40 text-xs mt-1 text-center max-w-[200px]">Automate responses for bookings, check-ins, or common questions.</p>
-              </div>
+              </Link>
             </div>
           </div>
         )}

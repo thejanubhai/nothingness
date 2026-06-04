@@ -5,6 +5,7 @@ import CancelBookingButton from "@/components/CancelBookingButton";
 import CsvExportButton from "@/components/CsvExportButton";
 import { CheckCircle, Clock, ShieldAlert, Plus } from "lucide-react";
 import ComingSoonButton from "@/components/ComingSoonButton";
+import Link from "next/link";
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,13 @@ export default async function AdminBookings() {
             <Filter className="w-4 h-4" />
             Filter
           </button>
-          <ComingSoonButton text="Add Booking" icon={<Plus className="w-4 h-4" />} />
+          <Link 
+            href="/admin/bookings/new" 
+            className="flex items-center gap-2 bg-accent-gold text-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent-gold/90 transition-colors whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" />
+            Add Booking
+          </Link>
         </div>
       </div>
 
