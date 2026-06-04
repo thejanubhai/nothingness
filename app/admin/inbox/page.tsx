@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { MessageSquare, Send, Mail, Phone, Globe, Bot, Plus, Zap, ToggleLeft, ToggleRight, Settings, Instagram, Facebook } from "lucide-react";
+import { MessageSquare, Send, Mail, Phone, Globe, Bot, Plus, Zap, ToggleLeft, ToggleRight, Settings, Camera, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import ComingSoonButton from "@/components/ComingSoonButton";
@@ -97,8 +97,8 @@ export default async function AdminInbox({
                       {msg.channel === 'whatsapp' && <MessageSquare className="w-3 h-3 text-green-400" />}
                       {msg.channel === 'email' && <Mail className="w-3 h-3 text-blue-400" />}
                       {msg.channel === 'sms' && <Phone className="w-3 h-3 text-purple-400" />}
-                      {msg.channel === 'instagram' && <Instagram className="w-3 h-3 text-pink-400" />}
-                      {msg.channel === 'facebook' && <Facebook className="w-3 h-3 text-blue-500" />}
+                      {msg.channel === 'instagram' && <Camera className="w-3 h-3 text-pink-400" />}
+                      {msg.channel === 'facebook' && <MessageCircle className="w-3 h-3 text-blue-500" />}
                       <span className="text-[9px] uppercase tracking-wider text-white/30">{msg.channel}</span>
                     </div>
                   </div>
@@ -231,7 +231,7 @@ export default async function AdminInbox({
               <div className="p-5 border border-white/5 bg-white/[0.01] rounded-2xl flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-pink-500/10 rounded-xl flex items-center justify-center text-pink-500">
-                    <Instagram className="w-6 h-6" />
+                    <Camera className="w-6 h-6" />
                   </div>
                   <div>
                     <h3 className="text-white font-medium">Instagram Direct</h3>
@@ -247,7 +247,7 @@ export default async function AdminInbox({
               <div className="p-5 border border-white/5 bg-white/[0.01] rounded-2xl flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
-                    <Facebook className="w-6 h-6" />
+                    <MessageCircle className="w-6 h-6" />
                   </div>
                   <div>
                     <h3 className="text-white font-medium">Facebook Messenger</h3>
