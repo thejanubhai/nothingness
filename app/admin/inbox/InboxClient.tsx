@@ -230,7 +230,7 @@ export default function InboxClient({ initialConversations }: { initialConversat
                   <Link href={`/admin/bookings`} className="text-[10px] text-accent-gold hover:underline">View All</Link>
                 </div>
                 <div className="p-4 bg-white/5 border border-white/10 rounded-lg space-y-2">
-                  <p className="text-sm text-white font-medium">{activeConv.bookings.properties?.title}</p>
+                  <p className="text-sm text-white font-medium">{activeConv.bookings.spaces?.title}</p>
                   <p className="text-xs text-white/50">
                     {format(new Date(activeConv.bookings.check_in), 'MMM dd')} - {format(new Date(activeConv.bookings.check_out), 'MMM dd, yyyy')}
                   </p>

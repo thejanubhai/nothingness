@@ -2,11 +2,17 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import Tooltip from "./Tooltip";
 
 export default function Footer() {
+  const pathname = usePathname();
   const linkClass = "relative group text-white/60 hover:text-white text-[13px] transition-colors duration-300";
   const underlineClass = "absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300";
+
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <footer className="w-full bg-black/50 backdrop-blur-xl border-t border-white/5 mt-auto">

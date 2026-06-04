@@ -11,7 +11,7 @@ export default async function AdminDashboard() {
   // Fetch stats data
   const { data: bookings } = await supabase
     .from('bookings')
-    .select('id, total_price, status, created_at, check_in, check_out, properties(title)')
+    .select('id, total_price, status, created_at, check_in, check_out, spaces(title)')
     .order('created_at', { ascending: false })
     .limit(10);
     
@@ -74,7 +74,7 @@ export default async function AdminDashboard() {
             {bookings && bookings.length > 0 ? bookings.slice(0, 5).map((booking: any) => (
               <div key={booking.id} className="flex justify-between items-center p-3 hover:bg-white/5 rounded-lg transition-colors border-b border-white/5 last:border-0">
                 <div>
-                  <p className="text-sm text-white mb-1">{booking.properties?.title}</p>
+                  <p className="text-sm text-white mb-1">{booking.spaces?.title}</p>
                   <p className="text-[10px] text-white/40 uppercase tracking-wider">
                     {format(new Date(booking.check_in), 'MMM dd')} - {format(new Date(booking.check_out), 'MMM dd, yyyy')}
                   </p>

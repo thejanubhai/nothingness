@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  try {
+    const { url } = await request.json();
+
+    if (!url || !url.includes('airbnb.com')) {
+      return NextResponse.json({ success: false, error: 'Invalid Airbnb URL' }, { status: 400 });
+    }
+
+    // Extract listing ID
+    const match = url.match(/rooms\/([0-9]+)/);
+    const listingId = match ? match[1] : null;
+
+    if (!listingId) {
+      return NextResponse.json({ success: false, error: 'Could not extract listing ID from URL' }, { status: 400 });
+    }
+
+    // Try fetching the page
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      next: { revalidate: 0 }
+    });
+
+    if (!response.ok) {
+      return NextResponse.json({ success: false, error: 'Failed to fetch Airbnb page' }, { status: 500 });
+    }
+
+    const html = await response.text();
+
+    // Extract basic data using regex
+    const titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/);
+    const title = titleMatch ? titleMatch[1] : '';
+
+    const descMatch = html.match(/<meta property="og:description" content="([^"]+)"/);
+    const description = descMatch ? descMatch[1] : '';
+
+    const imageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
+    const imageUrl = imageMatch ? imageMatch[1] : '';
+
+    // Advanced: try to parse __NEXT_DATA__ if available (not always reliable as Airbnb changes it)
+    // We'll rely mostly on basic details + the iCal URL
+    
+    // Construct iCal URL (hash 's' is typically needed, but we can't generate it easily without API. 
+    // We will leave the iCal URL blank or just provide the ID so the user can paste the official one)
+    const iCalPlaceholder = `https://www.airbnb.com/calendar/ical/${listingId}.ics?s=YOUR_HASH_HERE`;
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        title: title || `Airbnb Listing ${listingId}`,
+        description,
+        photos: imageUrl ? [imageUrl] : [],
+        location: {
+          city: '',
+          area: '',
+          state: '',
+          country: ''
+        },
+        price_per_night: 0,
+        max_guests: 2,
+        bedrooms: 1,
+        bathrooms: 1,
+        amenities: [],
+        house_rules: [],
+        airbnb_listing_id: listingId,
+        airbnb_url: url,
+        airbnb_ical_url: iCalPlaceholder
+      }
+    });
+  } catch (error: any) {
+    console.error('Airbnb Scrape Error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

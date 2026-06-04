@@ -1,17 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Plus, X, Star, Link as LinkIcon, Download, Calendar, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Star, Link as LinkIcon, Download, Calendar, Image as ImageIcon, Trash2, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
-export default function AddSpacePage() {
+export default function EditSpacePage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const { id } = resolvedParams;
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [airbnbUrl, setAirbnbUrl] = useState('');
+  
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -37,122 +41,146 @@ export default function AddSpacePage() {
   const [rules, setRules] = useState<string[]>(['']);
   
   // Calendar Sync Sources
-  const [syncSources, setSyncSources] = useState<{platform: string, url: string}[]>([]);
+  const [syncSources, setSyncSources] = useState<any[]>([]);
   const [newSourcePlatform, setNewSourcePlatform] = useState('airbnb');
   const [newSourceUrl, setNewSourceUrl] = useState('');
 
-  const handleImportAirbnb = async () => {
-    if (!airbnbUrl) return;
-    
-    setImporting(true);
-    toast.info('Importing listing data from Airbnb...');
-    
+  useEffect(() => {
+    fetchSpace();
+  }, [id]);
+
+  const fetchSpace = async () => {
     try {
-      const res = await fetch('/api/spaces/scrape-airbnb', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: airbnbUrl })
+      const supabase = createClient();
+      
+      // Fetch space details
+      const { data: space, error: spaceError } = await supabase
+        .from('spaces')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (spaceError) throw spaceError;
+      
+      setFormData({
+        title: space.title || '',
+        slug: space.slug || '',
+        description: space.description || '',
+        area: space.area || '',
+        city: space.city || '',
+        state: space.state || 'Delhi',
+        country: space.country || 'India',
+        nightly_price: space.nightly_price || 15000,
+        max_guests: space.max_guests || 2,
+        bedrooms: space.bedrooms || 1,
+        bathrooms: space.bathrooms || 1,
+        featured_image: space.featured_image || '',
+        active: space.active !== false,
+        airbnb_listing_id: space.airbnb_listing_id || '',
+        airbnb_ical_url: space.airbnb_ical_url || ''
       });
       
-      const result = await res.json();
+      setImages(space.images || []);
+      setAmenities(space.amenities && space.amenities.length > 0 ? space.amenities : ['']);
+      setRules(space.rules ? space.rules.split('\n') : ['']);
       
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to import');
+      // Fetch calendar sync sources
+      const { data: sources, error: sourcesError } = await supabase
+        .from('calendar_sync_sources')
+        .select('*')
+        .eq('space_id', id);
+        
+      if (!sourcesError && sources) {
+        setSyncSources(sources);
       }
       
-      const data = result.data;
-      
-      setFormData(prev => ({
-        ...prev,
-        title: data.title || prev.title,
-        slug: data.title ? data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') : prev.slug,
-        description: data.description || prev.description,
-        nightly_price: data.price_per_night || prev.nightly_price,
-        max_guests: data.max_guests || prev.max_guests,
-        bedrooms: data.bedrooms || prev.bedrooms,
-        bathrooms: data.bathrooms || prev.bathrooms,
-        airbnb_listing_id: data.airbnb_listing_id || prev.airbnb_listing_id,
-        airbnb_ical_url: data.airbnb_ical_url || prev.airbnb_ical_url,
-      }));
-      
-      if (data.photos && data.photos.length > 0) {
-        setImages(data.photos);
-        setFormData(prev => ({ ...prev, featured_image: data.photos[0] }));
-      }
-      
-      if (data.amenities && data.amenities.length > 0) {
-        setAmenities(data.amenities);
-      }
-      
-      if (data.house_rules && data.house_rules.length > 0) {
-        setRules(data.house_rules);
-      }
-      
-      // Auto-add the iCal source if we got the placeholder URL
-      if (data.airbnb_ical_url) {
-        setSyncSources([{ platform: 'airbnb', url: data.airbnb_ical_url }]);
-      }
-      
-      toast.success('Airbnb listing imported successfully!');
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || 'Error importing Airbnb listing');
+      toast.error('Failed to load space details');
+      setError(err.message);
     } finally {
-      setImporting(false);
+      setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
     setError(null);
 
     try {
       const supabase = createClient();
       
-      // 1. Insert the space
-      const { data: space, error: insertError } = await supabase
+      const { error: updateError } = await supabase
         .from('spaces')
-        .insert({
+        .update({
           ...formData,
           images,
           amenities: amenities.filter(a => a.trim() !== ''),
           rules: rules.filter(r => r.trim() !== '').join('\n'),
         })
-        .select()
-        .single();
+        .eq('id', id);
 
-      if (insertError) throw insertError;
+      if (updateError) throw updateError;
       
-      // 2. Insert calendar sync sources if any
-      if (syncSources.length > 0 && space) {
-        const sourcesToInsert = syncSources.map(source => ({
-          space_id: space.id,
-          platform: source.platform,
-          inbound_ical_url: source.url,
-          is_active: true,
-          sync_status: 'pending'
-        }));
+      toast.success('Space updated successfully!');
+      router.refresh();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to update space');
+      toast.error('Failed to update space');
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  const handleManualSync = async () => {
+    setSyncing(true);
+    toast.info('Starting manual sync...');
+    
+    try {
+      const res = await fetch('/api/spaces/sync-calendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ space_id: id })
+      });
+      
+      const result = await res.json();
+      
+      if (!result.success) throw new Error(result.error);
+      
+      toast.success(`Sync complete! ${result.synced} calendars synced.`);
+      fetchSpace(); // Refresh data to get new sync times
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Sync failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this space? This will also delete all associated bookings and calendar sources. This action cannot be undone.')) {
+      return;
+    }
+    
+    setDeleting(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('spaces')
+        .delete()
+        .eq('id', id);
         
-        const { error: syncError } = await supabase
-          .from('calendar_sync_sources')
-          .insert(sourcesToInsert);
-          
-        if (syncError) {
-          console.error("Failed to add sync sources", syncError);
-          toast.warning('Space created, but some calendar sources failed to save.');
-        }
-      }
+      if (error) throw error;
       
-      toast.success('Space created successfully!');
+      toast.success('Space deleted');
       router.push('/admin/spaces');
       router.refresh();
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Failed to create space');
-      toast.error('Failed to create space');
-    } finally {
-      setLoading(false);
+      toast.error('Failed to delete space');
+      setDeleting(false);
     }
   };
 
@@ -166,14 +194,54 @@ export default function AddSpacePage() {
     setter([...array, '']);
   };
 
-  const removeArrayItem = (setter: any, index: number, array: any[]) => {
+  const removeArrayItem = (setter: any, index: number, array: string[]) => {
     setter(array.filter((_, i) => i !== index));
   };
   
-  const addSyncSource = () => {
+  const addSyncSource = async () => {
     if (!newSourceUrl.trim()) return;
-    setSyncSources([...syncSources, { platform: newSourcePlatform, url: newSourceUrl }]);
-    setNewSourceUrl('');
+    
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('calendar_sync_sources')
+        .insert({
+          space_id: id,
+          platform: newSourcePlatform,
+          inbound_ical_url: newSourceUrl,
+          is_active: true,
+          sync_status: 'pending'
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setSyncSources([...syncSources, data]);
+      setNewSourceUrl('');
+      toast.success('Calendar source added');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to add calendar source');
+    }
+  };
+  
+  const removeSyncSource = async (sourceId: string) => {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('calendar_sync_sources')
+        .delete()
+        .eq('id', sourceId);
+        
+      if (error) throw error;
+      
+      setSyncSources(syncSources.filter(s => s.id !== sourceId));
+      toast.success('Calendar source removed');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to remove source');
+    }
   };
 
   const addImage = () => {
@@ -190,25 +258,29 @@ export default function AddSpacePage() {
     setFormData({...formData, featured_image: url});
   };
 
+  if (loading) {
+    return <div className="flex items-center justify-center h-64 text-white/50">Loading space details...</div>;
+  }
+
   return (
-    <div className="space-y-8 max-w-4xl">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 max-w-4xl pb-24">
+      <div className="flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-10 py-4 -my-4 mb-4">
         <div className="flex items-center gap-4">
           <Link href="/admin/spaces" className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/50 hover:text-white">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="font-serif text-3xl md:text-4xl mb-1 text-white">Add Space</h1>
-            <p className="text-white/50 text-sm tracking-wide">Create a new sanctuary listing.</p>
+            <h1 className="font-serif text-3xl md:text-4xl mb-1 text-white">Edit Space</h1>
+            <p className="text-white/50 text-sm tracking-wide">{formData.title || 'Loading...'}</p>
           </div>
         </div>
         <button 
-          onClick={handleSubmit}
-          disabled={loading}
+          onClick={handleSave}
+          disabled={saving}
           className="flex items-center gap-2 bg-accent-gold text-black px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-accent-gold/90 transition-colors disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
-          {loading ? 'Saving...' : 'Save Space'}
+          {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
 
@@ -217,40 +289,6 @@ export default function AddSpacePage() {
           {error}
         </div>
       )}
-      
-      {/* Airbnb Auto-Import Section */}
-      <div className="bg-gradient-to-r from-accent-gold/10 to-transparent border border-accent-gold/20 rounded-2xl p-6 md:p-8 space-y-4">
-        <div className="flex items-center gap-3 mb-2">
-          <Download className="w-5 h-5 text-accent-gold" />
-          <h2 className="font-serif text-xl text-white">Import from Airbnb</h2>
-        </div>
-        <p className="text-sm text-white/50 mb-4">Paste an Airbnb listing URL to automatically extract details and photos.</p>
-        
-        <div className="flex flex-col md:flex-row gap-4">
-          <input 
-            type="url" 
-            value={airbnbUrl}
-            onChange={(e) => setAirbnbUrl(e.target.value)}
-            className="flex-1 bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
-            placeholder="https://www.airbnb.com/rooms/1234567"
-          />
-          <button 
-            type="button"
-            onClick={handleImportAirbnb}
-            disabled={importing || !airbnbUrl}
-            className="flex items-center justify-center gap-2 bg-white/10 text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors disabled:opacity-50 border border-white/10 hover:border-white/20 whitespace-nowrap"
-          >
-            {importing ? (
-              <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                Importing...
-              </span>
-            ) : (
-              'Fetch Listing'
-            )}
-          </button>
-        </div>
-      </div>
 
       <form className="space-y-8">
         {/* Basic Information */}
@@ -264,9 +302,8 @@ export default function AddSpacePage() {
                 required
                 type="text" 
                 value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')})}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
                 className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
-                placeholder="e.g., The Chamber"
               />
             </div>
             
@@ -348,8 +385,7 @@ export default function AddSpacePage() {
           ) : (
             <div className="py-8 flex flex-col items-center justify-center border border-dashed border-white/20 rounded-xl bg-white/5">
               <ImageIcon className="w-8 h-8 text-white/30 mb-2" />
-              <p className="text-sm text-white/50">No images added yet</p>
-              <p className="text-xs text-white/30 mt-1">Import from Airbnb or add manually</p>
+              <p className="text-sm text-white/50">No images</p>
             </div>
           )}
         </div>
@@ -436,7 +472,6 @@ export default function AddSpacePage() {
                     value={item}
                     onChange={(e) => handleArrayChange(setAmenities, i, e.target.value, amenities)}
                     className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
-                    placeholder="e.g., King Size Bed"
                   />
                   <button type="button" onClick={() => removeArrayItem(setAmenities, i, amenities)} className="p-3 text-white/30 hover:text-red-400 transition-colors">
                     <X className="w-4 h-4" />
@@ -457,7 +492,6 @@ export default function AddSpacePage() {
                     value={item}
                     onChange={(e) => handleArrayChange(setRules, i, e.target.value, rules)}
                     className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
-                    placeholder="e.g., No smoking indoors"
                   />
                   <button type="button" onClick={() => removeArrayItem(setRules, i, rules)} className="p-3 text-white/30 hover:text-red-400 transition-colors">
                     <X className="w-4 h-4" />
@@ -473,9 +507,20 @@ export default function AddSpacePage() {
         
         {/* Calendar Sync Setup */}
         <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 md:p-8 space-y-6">
-          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-            <Calendar className="w-5 h-5 text-accent-gold" />
-            <h2 className="font-serif text-xl text-white">Calendar Sync (Two-Way iCal)</h2>
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-accent-gold" />
+              <h2 className="font-serif text-xl text-white">Calendar Sync (Two-Way iCal)</h2>
+            </div>
+            <button
+              type="button"
+              onClick={handleManualSync}
+              disabled={syncing || syncSources.length === 0}
+              className="flex items-center gap-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 text-white"
+            >
+              <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync Now'}
+            </button>
           </div>
           
           <div className="space-y-6">
@@ -486,13 +531,13 @@ export default function AddSpacePage() {
                 <input 
                   type="text" 
                   readOnly
-                  value={`https://nothingness.asia/api/spaces/${formData.slug || '[slug]'}/ical`}
+                  value={`https://nothingness.asia/api/spaces/${formData.slug}/ical`}
                   className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white/50 focus:outline-none"
                 />
                 <button 
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(`https://nothingness.asia/api/spaces/${formData.slug || '[slug]'}/ical`);
+                    navigator.clipboard.writeText(`https://nothingness.asia/api/spaces/${formData.slug}/ical`);
                     toast.success('iCal URL copied');
                   }}
                   className="px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm font-medium"
@@ -500,7 +545,6 @@ export default function AddSpacePage() {
                   Copy
                 </button>
               </div>
-              <p className="text-xs text-white/30 mt-2">Paste this URL into Airbnb, Booking.com, etc., to block their calendars when a booking is made here.</p>
             </div>
 
             {/* Inbound Feeds */}
@@ -508,22 +552,37 @@ export default function AddSpacePage() {
               <p className="text-[10px] uppercase tracking-widest text-white/40">Connected Platforms (Import)</p>
               
               {syncSources.map((source, i) => (
-                <div key={i} className="flex items-center gap-3 bg-white/5 border border-white/10 p-3 rounded-lg">
+                <div key={source.id || i} className="flex items-center gap-3 bg-white/5 border border-white/10 p-3 rounded-lg">
                   <div className="bg-black/50 p-2 rounded-md">
                     <LinkIcon className="w-4 h-4 text-accent-gold" />
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <p className="text-xs font-medium text-white capitalize">{source.platform}</p>
-                    <p className="text-[10px] text-white/50 truncate">{source.url}</p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-xs font-medium text-white capitalize">{source.platform}</p>
+                      <span className={`text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded-sm border ${
+                        source.sync_status === 'synced' ? 'text-green-400 border-green-500/20 bg-green-500/10' :
+                        source.sync_status === 'error' ? 'text-red-400 border-red-500/20 bg-red-500/10' :
+                        'text-accent-gold border-accent-gold/20 bg-accent-gold/10'
+                      }`}>
+                        {source.sync_status}
+                      </span>
+                      {source.last_synced_at && (
+                        <span className="text-[9px] text-white/30 ml-2">Last synced: {new Date(source.last_synced_at).toLocaleTimeString()}</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-white/50 truncate">{source.inbound_ical_url}</p>
+                    {source.sync_error && (
+                      <p className="text-[10px] text-red-400 mt-1 truncate">Error: {source.sync_error}</p>
+                    )}
                   </div>
-                  <button type="button" onClick={() => removeArrayItem(setSyncSources, i, syncSources)} className="p-2 text-white/30 hover:text-red-400 transition-colors">
+                  <button type="button" onClick={() => removeSyncSource(source.id)} className="p-2 text-white/30 hover:text-red-400 transition-colors">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               ))}
               
               {syncSources.length === 0 && (
-                <div className="text-sm text-white/30 py-2">No external calendars connected yet.</div>
+                <div className="text-sm text-white/30 py-2">No external calendars connected.</div>
               )}
               
               <div className="flex flex-col md:flex-row gap-3 pt-2">
@@ -555,6 +614,21 @@ export default function AddSpacePage() {
               </div>
             </div>
           </div>
+        </div>
+        
+        {/* Danger Zone */}
+        <div className="bg-red-500/5 border border-red-500/10 rounded-2xl p-6 md:p-8 space-y-4">
+          <h2 className="font-serif text-xl text-red-400">Danger Zone</h2>
+          <p className="text-sm text-white/50">Deleting this space will also delete all associated bookings, calendar sources, and external blocked dates. This action cannot be undone.</p>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            {deleting ? 'Deleting...' : 'Delete Space'}
+          </button>
         </div>
 
       </form>

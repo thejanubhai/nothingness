@@ -52,7 +52,7 @@ export default function EmailUpdateForm({ initialEmail }: { initialEmail: string
         
         <button 
           type="submit" 
-          disabled={loading || email === initialEmail}
+          disabled={loading}
           className="w-full md:w-auto bg-accent-gold text-black px-8 py-4 rounded-xl text-[12px] font-bold tracking-[0.1em] uppercase hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {loading && <Loader2 className="w-4 h-4 animate-spin" />}

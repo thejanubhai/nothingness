@@ -33,11 +33,10 @@ export default async function AdminLayout({
 
   const navItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Properties', href: '/admin/properties', icon: Building2 },
+    { name: 'Spaces', href: '/admin/spaces', icon: Building2 },
     { name: 'Bookings', href: '/admin/bookings', icon: CalendarDays },
     { name: 'Guests CRM', href: '/admin/guests', icon: Users },
     { name: 'Inbox', href: '/admin/inbox', icon: MessageSquare },
-    { name: 'Chatflows', href: '/admin/chatflows', icon: MessageSquare },
     { name: 'Financials', href: '/admin/financials', icon: CreditCard },
     { name: 'Housekeeping', href: '/admin/housekeeping', icon: Sparkles },
     { name: 'Settings', href: '/admin/settings', icon: Settings },

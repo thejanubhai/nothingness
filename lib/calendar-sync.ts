@@ -1,0 +1,154 @@
+import ical from 'node-ical';
+import { SupabaseClient } from '@supabase/supabase-js';
+
+interface SyncSource {
+  id: string;
+  space_id: string;
+  platform: string;
+  inbound_ical_url: string;
+  is_active: boolean;
+}
+
+interface SyncResult {
+  synced: number;
+  errors: number;
+  details: Array<{
+    source_id: string;
+    space_id: string;
+    platform: string;
+    status: 'success' | 'error';
+    events_upserted: number;
+    error?: string;
+  }>;
+}
+
+/**
+ * Sync external iCal feeds for all or a specific space.
+ * Fetches each active calendar_sync_source, parses the iCal data,
+ * and upserts events into external_blocked_dates.
+ */
+export async function syncCalendars(
+  supabase: SupabaseClient,
+  spaceId?: string
+): Promise<SyncResult> {
+  const result: SyncResult = { synced: 0, errors: 0, details: [] };
+
+  // 1. Fetch active sync sources
+  let query = supabase
+    .from('calendar_sync_sources')
+    .select('id, space_id, platform, inbound_ical_url, is_active')
+    .eq('is_active', true);
+
+  if (spaceId) {
+    query = query.eq('space_id', spaceId);
+  }
+
+  const { data: sources, error: sourcesError } = await query;
+
+  if (sourcesError) {
+    throw new Error(`Failed to fetch sync sources: ${sourcesError.message}`);
+  }
+
+  if (!sources || sources.length === 0) {
+    return result;
+  }
+
+  // 2. Process each source
+  for (const source of sources as SyncSource[]) {
+    let eventsUpserted = 0;
+
+    try {
+      // Fetch and parse the iCal feed
+      const events = await ical.async.fromURL(source.inbound_ical_url);
+
+      // Process each VEVENT
+      for (const [, event] of Object.entries(events)) {
+        if (!event || event.type !== 'VEVENT') continue;
+
+        const vevent = event as ical.VEvent;
+        if (!vevent.start || !vevent.end) continue;
+
+        const startDate = new Date(vevent.start).toISOString().split('T')[0];
+        const endDate = new Date(vevent.end).toISOString().split('T')[0];
+        const externalUid = vevent.uid || `${source.id}-${startDate}-${endDate}`;
+        const summary = vevent.summary || 'Blocked (External)';
+
+        // Upsert into external_blocked_dates using source_id + external_uid for deduplication
+        const { error: upsertError } = await supabase
+          .from('external_blocked_dates')
+          .upsert(
+            {
+              space_id: source.space_id,
+              source_id: source.id,
+              start_date: startDate,
+              end_date: endDate,
+              summary,
+              external_uid: externalUid,
+            },
+            {
+              onConflict: 'source_id,external_uid',
+            }
+          );
+
+        if (upsertError) {
+          console.error(
+            `Failed to upsert event ${externalUid} for source ${source.id}:`,
+            upsertError.message
+          );
+          continue;
+        }
+
+        eventsUpserted++;
+      }
+
+      // Update source status to success
+      await supabase
+        .from('calendar_sync_sources')
+        .update({
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          sync_error: null,
+        })
+        .eq('id', source.id);
+
+      result.synced++;
+      result.details.push({
+        source_id: source.id,
+        space_id: source.space_id,
+        platform: source.platform,
+        status: 'success',
+        events_upserted: eventsUpserted,
+      });
+    } catch (syncError: unknown) {
+      const errorMessage =
+        syncError instanceof Error ? syncError.message : 'Unknown sync error';
+
+      // Update source status to error
+      await supabase
+        .from('calendar_sync_sources')
+        .update({
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'error',
+          sync_error: errorMessage,
+        })
+        .eq('id', source.id);
+
+      result.errors++;
+      result.details.push({
+        source_id: source.id,
+        space_id: source.space_id,
+        platform: source.platform,
+        status: 'error',
+        events_upserted: eventsUpserted,
+        error: errorMessage,
+      });
+
+      console.error(
+        `Calendar sync error for source ${source.id} (${source.platform}):`,
+        errorMessage
+      );
+    }
+  }
+
+  return result;
+}

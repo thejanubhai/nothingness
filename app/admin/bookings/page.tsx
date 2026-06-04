@@ -3,7 +3,8 @@ import { format } from "date-fns";
 import { Filter } from "lucide-react";
 import CancelBookingButton from "@/components/CancelBookingButton";
 import CsvExportButton from "@/components/CsvExportButton";
-import { CheckCircle, Clock, ShieldAlert } from "lucide-react";
+import { CheckCircle, Clock, ShieldAlert, Plus } from "lucide-react";
+import ComingSoonButton from "@/components/ComingSoonButton";
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,7 @@ export default async function AdminBookings() {
             <Filter className="w-4 h-4" />
             Filter
           </button>
+          <ComingSoonButton text="Add Booking" icon={<Plus className="w-4 h-4" />} />
         </div>
       </div>
 

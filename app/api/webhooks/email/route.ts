@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { processIncomingMessage } from "@/lib/chat/flows";
 
 export async function POST(request: Request) {
   try {
@@ -45,6 +46,17 @@ export async function POST(request: Request) {
           content: text.substring(0, 1000), // truncate for safety
           status: 'delivered'
         });
+
+      // Process message through AI Orchestrator / Chatflows
+      const systemReply = await processIncomingMessage(
+        newConv.id,
+        null,
+        text,
+        'email'
+      );
+
+      // In a real app, dispatch systemReply via SendGrid/Resend API here
+      console.log(`[Email Webhook] System reply to ${email}: ${systemReply}`);
     }
 
     return NextResponse.json({ success: true }, { status: 200 });

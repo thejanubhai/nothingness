@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { getBlockedIntervals } from './calendar';
 import { areIntervalsOverlapping } from 'date-fns';
 
-export async function createBooking(propertyId: string, checkIn: Date, checkOut: Date, guests: number, totalPrice: number) {
+export async function createBooking(spaceId: string, checkIn: Date, checkOut: Date, guests: number, totalPrice: number) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -15,15 +15,15 @@ export async function createBooking(propertyId: string, checkIn: Date, checkOut:
     return { error: 'You must be logged in to book a sanctuary.' };
   }
 
-  // Fetch the property to get its iCal URL
-  const { data: property } = await supabase
-    .from('properties')
+  // Fetch the space to get its iCal URL
+  const { data: space } = await supabase
+    .from('spaces')
     .select('airbnb_ical_url')
-    .eq('id', propertyId)
+    .eq('id', spaceId)
     .single();
 
   // Validate dates in real-time
-  const blockedIntervals = await getBlockedIntervals(propertyId, property?.airbnb_ical_url);
+  const blockedIntervals = await getBlockedIntervals(spaceId, space?.airbnb_ical_url);
   
   const requestedInterval = { start: checkIn, end: checkOut };
   const isBlocked = blockedIntervals.some(blocked => 
@@ -37,7 +37,7 @@ export async function createBooking(propertyId: string, checkIn: Date, checkOut:
   const { error } = await supabase
     .from('bookings')
     .insert({
-      property_id: propertyId,
+      space_id: spaceId,
       user_id: user.id,
       check_in: checkIn.toISOString(),
       check_out: checkOut.toISOString(),

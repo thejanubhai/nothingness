@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { processIncomingMessage } from "@/lib/chat/flows";
 
 export async function POST(request: Request) {
   try {
@@ -81,6 +82,17 @@ export async function POST(request: Request) {
         .from('conversations')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', conversationId);
+
+      // Process message through AI Orchestrator / Chatflows
+      const systemReply = await processIncomingMessage(
+        conversationId,
+        profiles && profiles.length > 0 ? profiles[0].id : null,
+        body,
+        'whatsapp'
+      );
+
+      // In a real app, dispatch systemReply via Twilio API here
+      console.log(`[Twilio Webhook] System reply to ${fromPhone}: ${systemReply}`);
     }
 
     // Twilio expects a valid TwiML response or a 200 OK
