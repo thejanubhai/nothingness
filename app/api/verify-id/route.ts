@@ -1,23 +1,65 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@/lib/supabase/server';
-import { sendVerificationApprovedNotification, sendVerificationRejectedNotification } from '@/lib/notifications/verification';
+import { sendVerificationApprovedNotification } from '@/lib/notifications/verification';
+import { addDays } from 'date-fns';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { bookingId, guestId, token, frontImage, backImage, mimeType } = body;
+    const { bookingId, guestId, token, phone, frontImage, backImage, mimeType } = body;
 
-    if (!frontImage || !backImage) {
-      return NextResponse.json({ error: 'Both Front and Back images are required' }, { status: 400 });
+    const supabase = await createClient();
+
+    // ------------------------------------------------------------------
+    // 1. Check if guest is already verified by phone number within 180 days
+    // ------------------------------------------------------------------
+    if (phone) {
+      const cleanPhone = phone.replace(/[^0-9+]/g, '');
+      const { data: existingProfile } = await supabase
+        .from('guest_profiles')
+        .select('*')
+        .eq('phone', cleanPhone)
+        .eq('is_verified', true)
+        .gt('verification_expires_at', new Date().toISOString())
+        .limit(1)
+        .single();
+
+      if (existingProfile) {
+        // Link to booking without requiring new ID upload!
+        if (bookingId && guestId) {
+          await supabase
+            .from('booking_guests')
+            .update({ 
+              verification_status: 'verified', 
+              name: existingProfile.full_name,
+              guest_profile_id: existingProfile.id
+            })
+            .eq('id', guestId)
+            .eq('booking_id', bookingId);
+        }
+
+        return NextResponse.json({
+          verified: true,
+          reusedExisting: true,
+          name: existingProfile.full_name,
+          expires_at: existingProfile.verification_expires_at,
+          message: `Welcome back ${existingProfile.full_name}! Your ID verification is valid for 180 days (expires ${new Date(existingProfile.verification_expires_at).toLocaleDateString()}). No re-verification required.`
+        }, { status: 200 });
+      }
     }
 
-    if (!token && (!bookingId || !guestId)) {
-      return NextResponse.json({ error: 'Missing identification credentials (token or booking details)' }, { status: 400 });
+    if (!frontImage || !backImage) {
+      return NextResponse.json({ error: 'Both Front and Back photos of Aadhaar Card or Passport are required.' }, { status: 400 });
+    }
+
+    if (!token && (!bookingId || !guestId) && !phone) {
+      return NextResponse.json({ error: 'Missing identification credentials (token, phone, or booking details)' }, { status: 400 });
     }
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+    // Strict Security Rules: Aadhaar Card and Passport ONLY. Reject Driving License (DL) and Voter ID.
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: [
@@ -25,26 +67,30 @@ export async function POST(req: Request) {
           role: 'user',
           parts: [
             { 
-              text: `Analyze these two images representing the FRONT and BACK of an identity document.
-              Strictly enforce the following rules:
-              1. The document MUST be a valid Indian Aadhaar Card OR a valid Passport. Any other document (e.g., PAN card, Driving License, arbitrary photo) MUST be rejected.
-              2. Is the person 18 years or older based on the Date of Birth? (Yes/No)
-              3. Extract the full name of the person from the ID.
-              4. Extract the Document Number (Aadhaar Number or Passport Number).
-              5. Identify the Document Type ("Aadhaar" or "Passport").
+              text: `Analyze these two images representing the FRONT and BACK of a guest identity document.
               
-              Return ONLY a JSON object with this exact structure, no markdown blocks:
+              STRICT VERIFICATION & SECURITY RULES:
+              1. Document MUST be an official AADHAAR CARD or PASSPORT. 
+              2. Driving License (DL), Voter ID, PAN Card, or any other document MUST BE STRICTLY REJECTED with reason: "Driving License and Voter ID are not accepted. Please upload a clear Aadhaar Card or Passport."
+              3. Primary booker MUST be 18 years of age or older based on Date of Birth.
+              4. Extract full name, document type ("Aadhaar" or "Passport"), document number, DOB, and permanent address.
+              
+              Return ONLY a valid JSON object matching this exact schema:
               {
                 "valid": true/false,
-                "name": "Extracted Name",
-                "document_number": "XXXX",
-                "document_type": "Aadhaar",
+                "name": "Full Name",
+                "dob": "DD/MM/YYYY or YYYY",
                 "above18": true/false,
-                "reason": "Brief explanation if invalid or under 18, else empty string"
+                "document_type": "Aadhaar" or "Passport",
+                "document_number": "XXXX",
+                "permanent_address": "Extracted residential address",
+                "is_foreign_national": true/false,
+                "nationality": "Indian / Country Name",
+                "reason": "Reason if rejected (e.g. if DL or Voter ID was provided or under 18)"
               }` 
             },
-            { inlineData: { data: frontImage, mimeType: mimeType } },
-            { inlineData: { data: backImage, mimeType: mimeType } }
+            { inlineData: { data: frontImage, mimeType: mimeType || 'image/jpeg' } },
+            { inlineData: { data: backImage, mimeType: mimeType || 'image/jpeg' } }
           ]
         }
       ]
@@ -56,22 +102,29 @@ export async function POST(req: Request) {
     let result;
     try {
       result = JSON.parse(jsonStr);
-    } catch (e) {
+    } catch {
       console.error("Failed to parse Gemini response:", responseText);
-      return NextResponse.json({ error: 'AI Verification failed to parse' }, { status: 500 });
+      return NextResponse.json({ error: 'AI Verification parser error' }, { status: 500 });
     }
 
     if (!result.valid) {
-      return NextResponse.json({ verified: false, reason: result.reason || 'Invalid ID provided.' }, { status: 400 });
+      return NextResponse.json({ 
+        verified: false, 
+        reason: result.reason || 'Driving License and Voter ID are not accepted due to verification regulations. Please submit a valid Aadhaar Card or Passport.' 
+      }, { status: 400 });
     }
 
     if (!result.above18) {
-      return NextResponse.json({ verified: false, reason: 'You must be at least 18 years old.' }, { status: 400 });
+      return NextResponse.json({ verified: false, reason: 'Per Delhi Hospitality Laws, primary guest must be at least 18 years of age.' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    // Calculate 180 days expiration date
+    const now = new Date();
+    const expiresAt = addDays(now, 180).toISOString();
+    const policeStatus = result.is_foreign_national ? 'form_c_required' : 'verified_compliant';
+    const cleanPhone = phone ? phone.replace(/[^0-9+]/g, '') : null;
 
-    // 1. Upsert into global guest_profiles
+    // 2. Upsert into global guest_profiles with 180-day validity
     let profileId = null;
     if (result.document_number) {
       const { data: profile, error: profileError } = await supabase
@@ -80,8 +133,16 @@ export async function POST(req: Request) {
           { 
             document_number: result.document_number, 
             full_name: result.name,
+            phone: cleanPhone,
             id_document_type: result.document_type,
-            is_verified: true
+            dob: result.dob,
+            permanent_address: result.permanent_address || 'Address recorded on ID',
+            is_foreign_national: !!result.is_foreign_national,
+            nationality: result.nationality || (result.is_foreign_national ? 'Foreign' : 'Indian'),
+            police_register_status: policeStatus,
+            verification_timestamp: now.toISOString(),
+            verification_expires_at: expiresAt,
+            is_verified: true,
           }, 
           { onConflict: 'document_number' }
         )
@@ -95,7 +156,7 @@ export async function POST(req: Request) {
       }
     }
     
-    // 2. Update booking_guests
+    // 3. Update booking_guests
     let updateQuery = supabase
       .from('booking_guests')
       .update({ 
@@ -106,18 +167,13 @@ export async function POST(req: Request) {
 
     if (token) {
       updateQuery = updateQuery.eq('verification_token', token);
-    } else {
+    } else if (bookingId && guestId) {
       updateQuery = updateQuery.eq('id', guestId).eq('booking_id', bookingId);
     }
 
-    const { error: updateError } = await updateQuery;
+    await updateQuery;
 
-    if (updateError) {
-      console.error('Supabase update error:', updateError);
-      return NextResponse.json({ error: 'Failed to update guest status' }, { status: 500 });
-    }
-
-    // 3. Dispatch Verification Approval Notification via Resend
+    // 4. Dispatch Verification Approval Notification via Resend
     try {
       let guestEmail = null;
       let spaceTitle = undefined;
@@ -166,7 +222,13 @@ export async function POST(req: Request) {
       console.error('Failed to send verification approval notification:', notifErr);
     }
 
-    return NextResponse.json({ verified: true, name: result.name }, { status: 200 });
+    return NextResponse.json({ 
+      verified: true, 
+      name: result.name,
+      document_type: result.document_type,
+      verification_expires_at: expiresAt,
+      message: `Verification successful! Verified for 180 days (valid until ${new Date(expiresAt).toLocaleDateString()}). Nothingness guest account updated.`
+    }, { status: 200 });
 
   } catch (error: any) {
     console.error('Verification error:', error);

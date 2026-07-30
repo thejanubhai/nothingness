@@ -11,7 +11,20 @@ export async function handleAiFallback(
 ) {
   const supabase = await createClient();
 
-  // 1. Fetch conversation history for context
+  // 1. Fetch live space capacities from Supabase for AI Context
+  const { data: activeSpaces } = await supabase
+    .from('spaces')
+    .select('title, max_guests, check_in_time, check_out_time, key_instructions')
+    .eq('active', true);
+
+  let spacesInfo = "Available Luxury Sanctuaries & Max Guest Limits:\n";
+  if (activeSpaces && activeSpaces.length > 0) {
+    activeSpaces.forEach(s => {
+      spacesInfo += `- ${s.title}: Max ${s.max_guests} Guests (Check-in ${s.check_in_time || '3:00 PM'}, Check-out ${s.check_out_time || '11:00 AM'}). Key Info: ${s.key_instructions || 'Key lockbox'}\n`;
+    });
+  }
+
+  // 2. Fetch conversation history for context
   const { data: messages } = await supabase
     .from('conversation_messages')
     .select('sender_type, content')
@@ -26,9 +39,16 @@ export async function handleAiFallback(
     });
   }
 
-  // 2. Build the System Prompt
+  // 3. Build System Prompt with Listing Capacity & Guest Verification Knowledge
   const systemPrompt = `
 You are the Nothingness Stays AI Concierge. You handle guest inquiries outside of our automated flows.
+
+${spacesInfo}
+
+Guest Verification & Account Rules:
+- Primary bookers can add accompanying guests up to the listing's max guest capacity.
+- Every verified accompanying guest receives their own verified Nothingness Guest Account (valid for 180 days across all stays).
+- Only Aadhaar Card and Passport are accepted (Driving License and Voter ID are strictly rejected).
 
 Current State:
 Active Flow: ${currentState.active_flow || 'None'}
@@ -37,15 +57,11 @@ Collected Context: ${JSON.stringify(currentState.flow_context)}
 
 ${historyContext}
 
-Your goal is to answer the guest's inquiry helpfuly. 
-If the guest's message indicates they want to check dates, book a stay, or verify their ID, you MUST use the provided tools to start the correct flow. 
-Otherwise, just respond to their question politely using your knowledge as a hospitality concierge.
-
-Keep your responses concise and natural (under 3 sentences).
+Your goal is to answer the guest's inquiry helpfully while enforcing listing limits and guest policies.
+Keep your responses concise, elegant, and natural (under 3 sentences).
   `;
 
   try {
-    // 3. Call the Gemini API using @google/genai (v2)
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-pro',
       contents: incomingText,
@@ -72,7 +88,6 @@ Keep your responses concise and natural (under 3 sentences).
       }
     });
 
-    // 4. Check if the model decided to call a tool
     if (response.functionCalls && response.functionCalls.length > 0) {
       const call = response.functionCalls[0];
       if (call.name === 'start_flow') {
@@ -89,10 +104,9 @@ Keep your responses concise and natural (under 3 sentences).
           responseText = "Let's get your booking started! Which property are you interested in?";
           flowStep = 'ask_space';
         } else if (flowName === 'id_verification') {
-          responseText = "Please upload a clear photo of your government-issued ID to proceed.";
+          responseText = "Please upload a clear photo of your Aadhaar Card or Passport to proceed.";
           flowStep = 'ask_id';
         } else {
-          // Unknown flow
           return {
             responseText: "I'm sorry, I couldn't start that process. How else can I help?",
             updatedState: currentState,
@@ -110,7 +124,6 @@ Keep your responses concise and natural (under 3 sentences).
       }
     }
 
-    // 5. If no tool was called, return the text response
     return {
       responseText: response.text || "I'm not quite sure how to answer that, but I will have a human agent follow up.",
       updatedState: currentState,

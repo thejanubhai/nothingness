@@ -44,19 +44,24 @@ export async function POST(request: NextRequest) {
       imageUrl = imageUrl.replace(/&amp;/g, '&');
     }
 
-    // Extract bedrooms and bathrooms from title: e.g. "Rental unit in New Delhi · ★4.8 · 1 bedroom · 1 bed · 1 private bathroom"
+    // Extract bedrooms, bathrooms, and max guests dynamically from title & description
     let bedrooms = 1;
     let bathrooms = 1;
-    if (title) {
-      const bedMatch = title.match(/([0-9]+)\s+bedroom/i);
+    let maxGuests = 2;
+
+    const fullText = (title + ' ' + description).toLowerCase();
+
+    if (fullText) {
+      const bedMatch = fullText.match(/([0-9]+)\s+bedroom/i);
       if (bedMatch) bedrooms = parseInt(bedMatch[1], 10);
       
-      const bathMatch = title.match(/([0-9]+(?:\.[0-9]+)?)\s+(?:private|shared)?\s*bath/i);
+      const bathMatch = fullText.match(/([0-9]+(?:\.[0-9]+)?)\s+(?:private|shared)?\s*bath/i);
       if (bathMatch) bathrooms = parseFloat(bathMatch[1]);
+
+      const guestMatch = fullText.match(/([0-9]+)\s+(?:guest|person|people)/i);
+      if (guestMatch) maxGuests = parseInt(guestMatch[1], 10);
     }
 
-    // Construct iCal URL (hash 's' is typically needed, but we can't generate it easily without API. 
-    // We will leave the iCal URL blank or just provide the ID so the user can paste the official one)
     const iCalPlaceholder = `https://www.airbnb.com/calendar/ical/${listingId}.ics?s=YOUR_HASH_HERE`;
 
     return NextResponse.json({
@@ -72,7 +77,7 @@ export async function POST(request: NextRequest) {
           country: ''
         },
         price_per_night: 0,
-        max_guests: 2,
+        max_guests: maxGuests,
         bedrooms: bedrooms,
         bathrooms: bathrooms,
         amenities: [],

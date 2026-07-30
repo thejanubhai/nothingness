@@ -1,0 +1,49 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  try {
+    const supabase = await createClient();
+
+    const { data: guests, error } = await supabase
+      .from('guest_profiles')
+      .select('*')
+      .order('verification_timestamp', { ascending: false });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Generate CSV Header & Rows for Delhi Police Hospitality Register Format
+    const headers = ['S.No', 'Full Name', 'DOB', 'ID Document Type', 'Document Number', 'Permanent Residential Address', 'Nationality', 'Is Foreign National', 'Visa Number', 'Verification Timestamp'];
+    
+    const rows = (guests || []).map((g, idx) => [
+      idx + 1,
+      `"${g.full_name || ''}"`,
+      `"${g.dob || ''}"`,
+      `"${g.id_document_type || ''}"`,
+      `"${g.document_number || ''}"`,
+      `"${(g.permanent_address || '').replace(/"/g, '""')}"`,
+      `"${g.nationality || 'Indian'}"`,
+      g.is_foreign_national ? 'Yes' : 'No',
+      `"${g.visa_number || ''}"`,
+      `"${g.verification_timestamp || g.created_at || ''}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+    return new NextResponse(csvContent, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="delhi_police_guest_register_${new Date().toISOString().split('T')[0]}.csv"`,
+      },
+    });
+
+  } catch (err: any) {
+    console.error('Police register export error:', err);
+    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+  }
+}

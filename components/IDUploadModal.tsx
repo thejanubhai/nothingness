@@ -116,14 +116,16 @@ export default function IDUploadModal({ isOpen, onClose, guestId, token, booking
             </button>
 
             <div className="p-8">
-              <h2 className="font-serif text-2xl mb-2 text-white">Upload Identity Document</h2>
+              <h2 className="font-serif text-2xl mb-2 text-white">Digital Guest ID Verification</h2>
               <p className="text-sm text-white/50 mb-6">
-                Please upload clear photos of your <span className="text-white">Aadhaar</span> or <span className="text-white">Passport</span>. Both front and back are mandatory per local regulations.
+                Per Delhi Police regulations, please upload clear front &amp; back photos of your <span className="text-white font-medium">Aadhaar Card</span> or <span className="text-white font-medium">Passport</span>.
+                <br />
+                <span className="text-[11px] text-red-400/90 mt-1 inline-block">⚠️ Driving License (DL) &amp; Voter ID are not accepted for security compliance.</span>
               </p>
 
-              <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-accent-gold/60 bg-accent-gold/10 py-2 px-4 rounded-lg w-max mb-6 border border-accent-gold/20">
-                <ShieldAlert className="w-3 h-3" />
-                <span>Not stored. Processed & discarded immediately.</span>
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-accent-gold/80 bg-accent-gold/10 py-2 px-4 rounded-lg w-max mb-6 border border-accent-gold/20 font-mono">
+                <ShieldAlert className="w-3.5 h-3.5 text-accent-gold" />
+                <span>Verified once — Valid for 180 Days across all bookings</span>
               </div>
 
               <div className="space-y-6">

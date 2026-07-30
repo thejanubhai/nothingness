@@ -41,6 +41,7 @@ export default async function AdminLayout({
     { name: 'Inbox', href: '/admin/inbox', icon: MessageSquare },
     { name: 'Financials', href: '/admin/financials', icon: CreditCard },
     { name: 'Housekeeping', href: '/admin/housekeeping', icon: Sparkles },
+    { name: 'WhatsApp Connect', href: '/admin/whatsapp-connect', icon: MessageSquare },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 

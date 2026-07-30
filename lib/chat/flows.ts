@@ -254,12 +254,26 @@ async function handleBookingFlow(state: ConversationState, input: string, _guest
   } else if (state.flow_step === 'ask_guests') {
     const guests = parseInt(input, 10);
     if (!isNaN(guests)) {
-      const spaceTitle = (updatedState.flow_context.space_title as string) || 'your sanctuary stay';
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      const spaceId = updatedState.flow_context.space_id as string;
+      let maxAllowed = 4;
+      let spaceTitle = (updatedState.flow_context.space_title as string) || 'your sanctuary stay';
 
-      responseText = `Thanks! I have recorded your details for ${guests} guest(s) at ${spaceTitle}. You can review and complete your reservation securely here: ${siteUrl}/spaces`;
-      updatedState.active_flow = 'id_verification';
-      updatedState.flow_step = 'ask_id';
+      if (spaceId) {
+        const { data: sData } = await supabase.from('spaces').select('title, max_guests').eq('id', spaceId).single();
+        if (sData) {
+          maxAllowed = sData.max_guests || 4;
+          spaceTitle = sData.title;
+        }
+      }
+
+      if (guests > maxAllowed) {
+        responseText = `Per our listing policy, the maximum capacity for ${spaceTitle} is ${maxAllowed} guests. Please enter a guest count up to ${maxAllowed}.`;
+      } else {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        responseText = `Thanks! I have recorded your reservation for ${guests} guest(s) at ${spaceTitle} (Max Capacity: ${maxAllowed}).\n\n👥 Every accompanying guest can verify their Aadhaar/Passport via their private link so they get their own Nothingness Account (valid 180 days):\n${siteUrl}/verify-guest\n\nYou can complete your reservation securely here: ${siteUrl}/spaces`;
+        updatedState.active_flow = 'id_verification';
+        updatedState.flow_step = 'ask_id';
+      }
     } else {
       useAi = true;
     }

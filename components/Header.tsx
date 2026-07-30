@@ -59,6 +59,10 @@ export default function Header() {
               Spaces
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
             </Link>
+            <Link href="/kinksters" className="text-[12px] font-medium tracking-[0.2em] uppercase text-rose-400/90 hover:text-rose-400 transition-colors duration-300 relative group py-2 flex items-center gap-1">
+              Kinksters 🔥
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-rose-500 group-hover:w-full transition-all duration-300" />
+            </Link>
             <Link href="/franchise" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
               Franchise
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
@@ -88,21 +92,27 @@ export default function Header() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center gap-10"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-40 bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6"
           >
-            <div className="flex flex-col space-y-8 mt-12 text-center">
-              <Link href="/" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors" onClick={() => setMobileOpen(false)}>
+            <div className="flex flex-col space-y-6 text-center w-full max-w-xs">
+              <Link href="/" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors py-2" onClick={() => setMobileOpen(false)}>
                 Home
               </Link>
-              <Link href="/spaces" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors" onClick={() => setMobileOpen(false)}>
+              <Link href="/spaces" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors py-2" onClick={() => setMobileOpen(false)}>
                 Spaces
               </Link>
-              <Link href="/about" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors" onClick={() => setMobileOpen(false)}>
-                About
+              <Link href="/kinksters" className="text-2xl font-serif text-rose-400 hover:text-rose-300 transition-colors py-2 flex items-center justify-center gap-2" onClick={() => setMobileOpen(false)}>
+                Kinksters 🔥
+              </Link>
+              <Link href="/franchise" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors py-2" onClick={() => setMobileOpen(false)}>
+                Franchise
+              </Link>
+              <Link href="/auth" className="mt-4 py-3 bg-gradient-to-r from-accent-gold to-amber-600 text-black font-bold text-sm tracking-widest uppercase rounded-full shadow-lg" onClick={() => setMobileOpen(false)}>
+                Guest Portal
               </Link>
             </div>
           </motion.div>

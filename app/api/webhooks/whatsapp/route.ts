@@ -19,10 +19,70 @@ export async function POST(request: Request) {
     }
 
     // -------------------------------------------------------------
-    // 1. Housekeeping Cleaner Inspection Photo Analysis via Gemini Vision
+    // 1. Direct In-Chat Guest ID Verification Photo via Gemini AI
+    // -------------------------------------------------------------
+    if (mediaUrl && (body.toLowerCase().includes('id') || body.toLowerCase().includes('aadhaar') || body.toLowerCase().includes('passport') || body.toLowerCase().includes('doc') || body.length < 5)) {
+      if (process.env.GEMINI_API_KEY) {
+        try {
+          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+          const aiResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  {
+                    text: `Analyze this image submitted via WhatsApp for Delhi Hotel & BnB police check-in compliance.
+                    Determine if it is a government-issued ID (Aadhaar, Passport, Voter ID, Driving License, Foreign Passport).
+                    Extract: Name, Document Type, Document Number, 18+ verification, Permanent Address.
+                    
+                    Return JSON ONLY:
+                    {
+                      "is_id_document": true/false,
+                      "valid": true/false,
+                      "name": "Name",
+                      "document_type": "Aadhaar / Passport / DL / Voter ID",
+                      "document_number": "XXXX",
+                      "above18": true/false,
+                      "permanent_address": "Full Address",
+                      "reason": "If invalid, why"
+                    }`
+                  },
+                  {
+                    fileData: { mimeType: 'image/jpeg', fileUri: mediaUrl }
+                  }
+                ]
+              }
+            ]
+          });
+
+          const text = aiResponse.text || '{}';
+          const parsed = JSON.parse(text.replace(/```json/g, '').replace(/```/g, '').trim());
+
+          if (parsed.is_id_document && parsed.valid && parsed.above18) {
+            // Upsert into guest_profiles
+            await supabase.from('guest_profiles').upsert({
+              document_number: parsed.document_number,
+              full_name: parsed.name,
+              id_document_type: parsed.document_type,
+              permanent_address: parsed.permanent_address || 'Address recorded on ID',
+              police_register_status: 'verified_compliant',
+              is_verified: true,
+            }, { onConflict: 'document_number' });
+
+            const replyXml = `<Response><Message>✅ Identity Verified! Thank you ${parsed.name}. Your ID (${parsed.document_type}) has been digitally registered per Delhi Police regulations.\n\n👥 If you have accompanying guests staying with you, please send their ID photos in this chat as well!</Message></Response>`;
+            return new NextResponse(replyXml, { status: 200, headers: { 'Content-Type': 'text/xml' } });
+          }
+        } catch (idErr) {
+          console.error('In-chat WhatsApp ID verification error:', idErr);
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 2. Housekeeping Cleaner Inspection Photo Analysis via Gemini Vision
     // -------------------------------------------------------------
     if (mediaUrl || body.toLowerCase().includes('clean') || body.toLowerCase().includes('turnover')) {
-      // Check if fromPhone belongs to a cleaner or there is an active pending task
       const { data: space } = await supabase
         .from('spaces')
         .select('id, title, cleaner_phone, cleaner_name')
@@ -34,7 +94,6 @@ export async function POST(request: Request) {
         let aiScore = 90;
         let aiSummary = "Turnover inspection completed. Room & bed linen appear clean and prepared for next guest.";
         
-        // Call Gemini Vision AI if media image URL present and GEMINI_API_KEY configured
         if (mediaUrl && process.env.GEMINI_API_KEY) {
           try {
             const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -47,32 +106,21 @@ export async function POST(request: Request) {
                     {
                       text: `You are an AI Housekeeping Quality Inspector for Nothingness luxury sanctuaries.
                       Analyze this turnover inspection photo submitted by the cleaning staff.
-                      Assess:
-                      1. Bed arrangement & linen cleanliness
-                      2. Floor condition & room tidiness
-                      3. Absence of clutter/trash
-                      
                       Return ONLY a JSON object:
                       {
                         "cleanliness_score": number (0-100),
                         "passed": true/false,
-                        "summary": "Brief 1-2 sentence inspection summary"
+                        "summary": "Brief inspection summary"
                       }`
                     },
-                    {
-                      fileData: {
-                        mimeType: 'image/jpeg',
-                        fileUri: mediaUrl
-                      }
-                    }
+                    { fileData: { mimeType: 'image/jpeg', fileUri: mediaUrl } }
                   ]
                 }
               ]
             });
 
             const text = response.text || '{}';
-            const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(cleanJson);
+            const parsed = JSON.parse(text.replace(/```json/g, '').replace(/```/g, '').trim());
             if (parsed.cleanliness_score !== undefined) aiScore = parsed.cleanliness_score;
             if (parsed.summary) aiSummary = parsed.summary;
           } catch (visionErr) {
@@ -83,7 +131,6 @@ export async function POST(request: Request) {
         const targetSpaceId = space?.id;
         const todayStr = new Date().toISOString().split('T')[0];
 
-        // Find and update today's housekeeping task for this space
         let taskQuery = supabase.from('housekeeping_tasks').select('id').eq('scheduled_date', todayStr);
         if (targetSpaceId) taskQuery = taskQuery.eq('space_id', targetSpaceId);
 
@@ -100,16 +147,14 @@ export async function POST(request: Request) {
             })
             .eq('id', existingTask.id);
 
-          console.log(`[WhatsApp Webhook] Housekeeping task ${existingTask.id} marked COMPLETED via AI Vision score: ${aiScore}`);
-
-          const xmlReply = `<Response><Message>Thank you ${profileName}! Gemini AI Vision has verified your turnover inspection (Score: ${aiScore}/100). Sanctuary turnover is marked COMPLETED.</Message></Response>`;
+          const xmlReply = `<Response><Message>Thank you ${profileName}! Gemini AI Vision verified turnover inspection (Score: ${aiScore}/100). Sanctuary turnover marked COMPLETED.</Message></Response>`;
           return new NextResponse(xmlReply, { status: 200, headers: { 'Content-Type': 'text/xml' } });
         }
       }
     }
 
     // -------------------------------------------------------------
-    // 2. Guest Messaging & Chatflow Engine Processing
+    // 3. Guest Messaging & Chatflow Engine Processing
     // -------------------------------------------------------------
     const { data: profiles } = await supabase
       .from('guest_profiles')
