@@ -36,6 +36,7 @@ export default async function AdminLayout({
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Spaces', href: '/admin/spaces', icon: Building2 },
     { name: 'Bookings', href: '/admin/bookings', icon: CalendarDays },
+    { name: 'Calendar Sync', href: '/admin/calendar', icon: CalendarDays },
     { name: 'Guests CRM', href: '/admin/guests', icon: Users },
     { name: 'Inbox', href: '/admin/inbox', icon: MessageSquare },
     { name: 'Financials', href: '/admin/financials', icon: CreditCard },

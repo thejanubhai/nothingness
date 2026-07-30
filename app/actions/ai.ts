@@ -238,3 +238,85 @@ export async function generateReply(message: string, conversationId: string) {
     return { success: false, error: error.message }
   }
 }
+
+export async function testGeminiPrompt(systemPrompt: string, testMessage: string, temperature: number = 0.7) {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: 'GEMINI_API_KEY environment variable is not configured in environment.' };
+    }
+
+    const { GoogleGenAI } = await import('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: `SYSTEM DIRECTIVE:\n${systemPrompt}\n\nGUEST USER INPUT:\n${testMessage}` }
+          ]
+        }
+      ],
+      config: {
+        temperature,
+      }
+    });
+
+    const reply = response.text || 'No response generated.';
+    return { success: true, reply };
+  } catch (error: any) {
+    console.error('Error testing Gemini prompt:', error);
+    return { success: false, error: error.message || 'Gemini execution error' };
+  }
+}
+
+export async function generateChatflowTemplate(flowName: string, triggerEvent: string, customInstruction?: string) {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: 'GEMINI_API_KEY is not configured in environment.' };
+    }
+
+    const { GoogleGenAI } = await import('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
+
+    const promptText = `
+You are an expert hospitality copywriter for "Nothingness", an ultra-exclusive luxury sanctuary brand.
+Generate an automated message response template and trigger keyword for a chatflow.
+
+Flow Name: "${flowName || 'General Inquiry'}"
+Trigger Event: "${triggerEvent || 'keyword'}"
+Custom Instruction/Topic: "${customInstruction || 'Write a warm, luxury hospitality template.'}"
+
+Requirements:
+1. "suggested_keyword": A concise, lowercase keyword or phrase suitable for triggering this flow (e.g. "ac", "checkin", "wifi", "available", "tools", "booking").
+2. "response_template": A warm, refined, high-end hospitality message template. Use variables like {{guest_name}}, {{space_title}}, {{check_in_date}}, {{check_out_date}} where appropriate.
+
+Return ONLY a valid JSON object with format:
+{
+  "suggested_keyword": "keyword_here",
+  "response_template": "template_text_here"
+}
+`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ role: 'user', parts: [{ text: promptText }] }]
+    });
+
+    const text = response.text || '{}';
+    const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(cleanJson);
+
+    return {
+      success: true,
+      suggested_keyword: parsed.suggested_keyword || '',
+      response_template: parsed.response_template || '',
+    };
+  } catch (error: any) {
+    console.error('Error generating chatflow template with AI:', error);
+    return { success: false, error: error.message || 'AI template generation failed' };
+  }
+}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@/lib/supabase/server';
+import { sendVerificationApprovedNotification, sendVerificationRejectedNotification } from '@/lib/notifications/verification';
 
 export async function POST(req: Request) {
   try {
@@ -116,8 +117,54 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to update guest status' }, { status: 500 });
     }
 
-    // Notification logic omitted since Knock is removed.
-    // If you wish to send ID Verification success emails, add Resend logic here.
+    // 3. Dispatch Verification Approval Notification via Resend
+    try {
+      let guestEmail = null;
+      let spaceTitle = undefined;
+      let checkIn = undefined;
+      let checkOut = undefined;
+
+      if (profileId) {
+        const { data: prof } = await supabase
+          .from('guest_profiles')
+          .select('email, phone')
+          .eq('id', profileId)
+          .single();
+        if (prof?.email) guestEmail = prof.email;
+      }
+
+      if (bookingId) {
+        const { data: bData } = await supabase
+          .from('bookings')
+          .select('check_in, check_out, spaces(title), guest_profiles(email)')
+          .eq('id', bookingId)
+          .single();
+
+        if (bData) {
+          const spaceRecord: any = Array.isArray(bData.spaces) ? bData.spaces[0] : bData.spaces;
+          const profileRecord: any = Array.isArray(bData.guest_profiles) ? bData.guest_profiles[0] : bData.guest_profiles;
+
+          spaceTitle = spaceRecord?.title;
+          checkIn = bData.check_in;
+          checkOut = bData.check_out;
+          if (!guestEmail && profileRecord?.email) {
+            guestEmail = profileRecord.email;
+          }
+        }
+      }
+
+      if (guestEmail) {
+        await sendVerificationApprovedNotification({
+          email: guestEmail,
+          guestName: result.name || 'Guest',
+          spaceTitle,
+          checkInDate: checkIn,
+          checkOutDate: checkOut,
+        });
+      }
+    } catch (notifErr) {
+      console.error('Failed to send verification approval notification:', notifErr);
+    }
 
     return NextResponse.json({ verified: true, name: result.name }, { status: 200 });
 

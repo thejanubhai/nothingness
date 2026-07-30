@@ -2,24 +2,68 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Bot } from 'lucide-react';
+import { ArrowLeft, Save, Bot, Sparkles, RefreshCw, Wand2 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { generateChatflowTemplate } from '@/app/actions/ai';
+
+const QUICK_TOPIC_PRESETS = [
+  { name: 'AC & Climate Control', keyword: 'ac', event: 'keyword', prompt: 'Air conditioning, room thermostat, heating & cooling details.' },
+  { name: 'Amenities & Tools', keyword: 'amenities', event: 'keyword', prompt: 'High-speed Wi-Fi, gourmet kitchen tools, private pool, luxury linens.' },
+  { name: 'Check-in & Check-out Timings', keyword: 'checkin', event: 'keyword', prompt: 'Standard check-in at 3:00 PM and check-out at 11:00 AM.' },
+  { name: 'Availability Query', keyword: 'available', event: 'keyword', prompt: 'Prompting guest for check-in and check-out dates to check calendar.' },
+  { name: 'Booking Request', keyword: 'book', event: 'keyword', prompt: 'Assisting guest with space reservation and guest count.' },
+];
 
 export default function CreateFlowPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
-    trigger_event: 'booking_confirmed',
+    trigger_event: 'keyword',
     trigger_keyword: '',
     response_template: '',
-    channel: 'whatsapp',
+    channel: 'all',
     is_active: true,
   });
+
+  const handleAiGenerate = async (presetInstruction?: string) => {
+    setIsAiGenerating(true);
+    toast.loading('Generating template & keywords with Gemini AI...');
+    try {
+      const res = await generateChatflowTemplate(formData.name, formData.trigger_event, presetInstruction || formData.response_template);
+      toast.dismiss();
+      if (res.success) {
+        setFormData((prev) => ({
+          ...prev,
+          response_template: res.response_template || prev.response_template,
+          trigger_keyword: prev.trigger_event === 'keyword' && res.suggested_keyword ? res.suggested_keyword : prev.trigger_keyword,
+        }));
+        toast.success('AI template and keywords generated successfully!');
+      } else {
+        toast.error(res.error || 'AI generation failed');
+      }
+    } catch {
+      toast.dismiss();
+      toast.error('Failed to run AI assistance');
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
+  const handleApplyPreset = (preset: typeof QUICK_TOPIC_PRESETS[0]) => {
+    setFormData((prev) => ({
+      ...prev,
+      name: preset.name,
+      trigger_event: preset.event,
+      trigger_keyword: preset.keyword,
+    }));
+    void handleAiGenerate(preset.prompt);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,9 +89,9 @@ export default function CreateFlowPage() {
       toast.success('Chatflow created successfully!');
       router.push('/admin/inbox?tab=chatflows');
       router.refresh();
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Failed to create chatflow');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to create chatflow';
+      setError(msg);
       toast.error('Failed to create chatflow');
     } finally {
       setLoading(false);
@@ -55,7 +99,7 @@ export default function CreateFlowPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/admin/inbox?tab=chatflows" className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/50 hover:text-white">
@@ -63,7 +107,7 @@ export default function CreateFlowPage() {
           </Link>
           <div>
             <h1 className="font-serif text-3xl md:text-4xl mb-1 text-white">Create Flow</h1>
-            <p className="text-white/50 text-sm tracking-wide">Automate responses and messaging.</p>
+            <p className="text-white/50 text-sm tracking-wide">Configure custom keyword triggers, automated templates, or use AI assistance.</p>
           </div>
         </div>
         <button 
@@ -81,12 +125,45 @@ export default function CreateFlowPage() {
           {error}
         </div>
       )}
-      
+
+      {/* AI Quick Preset Topics */}
+      <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl space-y-3">
+        <p className="text-[10px] uppercase tracking-widest text-white/40 flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-accent-gold" />
+          Quick AI Presets (Click to Auto-Generate)
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {QUICK_TOPIC_PRESETS.map((preset) => (
+            <button
+              key={preset.name}
+              type="button"
+              onClick={() => handleApplyPreset(preset)}
+              className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg text-xs text-white/80 hover:text-white transition-colors"
+            >
+              <Wand2 className="w-3 h-3 text-accent-gold" />
+              {preset.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 md:p-8 space-y-6">
-          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-            <Bot className="w-5 h-5 text-accent-gold" />
-            <h2 className="font-serif text-xl text-white">Flow Configuration</h2>
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center gap-3">
+              <Bot className="w-5 h-5 text-accent-gold" />
+              <h2 className="font-serif text-xl text-white">Flow Configuration</h2>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => void handleAiGenerate()}
+              disabled={isAiGenerating}
+              className="flex items-center gap-2 bg-accent-gold/10 hover:bg-accent-gold/20 text-accent-gold border border-accent-gold/30 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              {isAiGenerating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              {isAiGenerating ? 'Generating...' : 'AI Assist / Generate Template'}
+            </button>
           </div>
           
           <div className="space-y-6">
@@ -98,7 +175,7 @@ export default function CreateFlowPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
-                placeholder="e.g., Welcome Message"
+                placeholder="e.g., AC & Climate Control Info"
               />
             </div>
 
@@ -110,10 +187,10 @@ export default function CreateFlowPage() {
                   onChange={(e) => setFormData({...formData, trigger_event: e.target.value})}
                   className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
                 >
+                  <option value="keyword" className="bg-black text-white">Specific Keyword</option>
                   <option value="booking_confirmed" className="bg-black text-white">Booking Confirmed</option>
                   <option value="check_in" className="bg-black text-white">Check-in Day</option>
                   <option value="check_out" className="bg-black text-white">Check-out Day</option>
-                  <option value="keyword" className="bg-black text-white">Specific Keyword</option>
                 </select>
               </div>
               
@@ -124,10 +201,10 @@ export default function CreateFlowPage() {
                   onChange={(e) => setFormData({...formData, channel: e.target.value})}
                   className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
                 >
+                  <option value="all" className="bg-black text-white">All Active Channels</option>
                   <option value="whatsapp" className="bg-black text-white">WhatsApp</option>
                   <option value="email" className="bg-black text-white">Email</option>
                   <option value="sms" className="bg-black text-white">SMS</option>
-                  <option value="all" className="bg-black text-white">All Active Channels</option>
                 </select>
               </div>
             </div>
@@ -140,15 +217,25 @@ export default function CreateFlowPage() {
                   type="text" 
                   value={formData.trigger_keyword}
                   onChange={(e) => setFormData({...formData, trigger_keyword: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
-                  placeholder="e.g., WIFI, PARKING"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50 font-mono"
+                  placeholder="e.g., ac, wifi, checkin, available, tools"
                 />
-                <p className="text-[10px] text-white/30">The exact word or phrase that will trigger this automated response.</p>
+                <p className="text-[10px] text-white/30">The word or phrase that will trigger this automated template.</p>
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40">Response Template</label>
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] uppercase tracking-widest text-white/40">Response Template</label>
+                <button
+                  type="button"
+                  onClick={() => void handleAiGenerate()}
+                  disabled={isAiGenerating}
+                  className="text-[10px] text-accent-gold hover:underline flex items-center gap-1"
+                >
+                  <Sparkles className="w-3 h-3" /> Polish with AI
+                </button>
+              </div>
               <textarea 
                 required
                 rows={6}

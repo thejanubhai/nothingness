@@ -22,10 +22,10 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const defaultFlows = [
   {
-    name: 'Date Check',
+    name: 'Date & Availability Check',
     trigger_event: 'keyword',
     trigger_keyword: 'available',
-    response_template: 'Hi {{guest_name}}! Please provide your preferred check-in and check-out dates, and I will check the availability for you.',
+    response_template: 'Hi {{guest_name}}! Please provide your preferred check-in and check-out dates, and I will check live availability for you.',
     channel: 'all',
     is_active: true
   },
@@ -33,7 +33,31 @@ const defaultFlows = [
     name: 'Booking Process',
     trigger_event: 'keyword',
     trigger_keyword: 'book',
-    response_template: 'Great! To proceed with your booking, please confirm the number of guests and any special requirements you might have.',
+    response_template: 'Great! To proceed with your booking, please confirm the number of guests and your preferred sanctuary dates.',
+    channel: 'all',
+    is_active: true
+  },
+  {
+    name: 'Check-in & Check-out Timings',
+    trigger_event: 'keyword',
+    trigger_keyword: 'checkin',
+    response_template: 'Standard check-in time starts at 3:00 PM and check-out is by 11:00 AM. Early check-in or late check-out can be requested via our concierge.',
+    channel: 'all',
+    is_active: true
+  },
+  {
+    name: 'AC & Climate Control',
+    trigger_event: 'keyword',
+    trigger_keyword: 'ac',
+    response_template: 'All our luxury sanctuaries and chambers feature climate-controlled Air Conditioning (AC) with individual room thermostats for maximum guest comfort.',
+    channel: 'all',
+    is_active: true
+  },
+  {
+    name: 'Amenities & Tools',
+    trigger_event: 'keyword',
+    trigger_keyword: 'amenities',
+    response_template: 'Our sanctuaries offer premium amenities including high-speed Wi-Fi, fully equipped gourmet kitchen tools, climate-controlled AC, luxury linens, private pool access, and 24/7 concierge support.',
     channel: 'all',
     is_active: true
   },
@@ -50,22 +74,6 @@ const defaultFlows = [
     trigger_event: 'booking_confirmed',
     trigger_keyword: null,
     response_template: 'Thank you for booking with us, {{guest_name}}! Your stay at {{space_title}} from {{check_in_date}} to {{check_out_date}} is confirmed.',
-    channel: 'all',
-    is_active: true
-  },
-  {
-    name: 'Check-in Information',
-    trigger_event: 'check_in',
-    trigger_keyword: null,
-    response_template: 'Welcome! Today is your check-in day at {{space_title}}. Check-in time starts at 2:00 PM. The property access code is 1234. Let us know if you need any assistance!',
-    channel: 'all',
-    is_active: true
-  },
-  {
-    name: 'Check-out Information',
-    trigger_event: 'check_out',
-    trigger_keyword: null,
-    response_template: 'Good morning! Today is your check-out day. Please remember that check-out time is 11:00 AM. We hope you had a wonderful stay!',
     channel: 'all',
     is_active: true
   }

@@ -33,7 +33,14 @@ export default function EditSpacePage({ params }: { params: Promise<{ id: string
     featured_image: '',
     active: true,
     airbnb_listing_id: '',
-    airbnb_ical_url: ''
+    airbnb_ical_url: '',
+    check_in_time: '3:00 PM',
+    check_out_time: '11:00 AM',
+    key_instructions: '',
+    pre_arrival_template: '',
+    post_checkout_feedback_template: '',
+    cleaner_name: 'Housekeeping Team',
+    cleaner_phone: '',
   });
 
   const [images, setImages] = useState<string[]>([]);
@@ -77,7 +84,14 @@ export default function EditSpacePage({ params }: { params: Promise<{ id: string
         featured_image: space.featured_image || '',
         active: space.active !== false,
         airbnb_listing_id: space.airbnb_listing_id || '',
-        airbnb_ical_url: space.airbnb_ical_url || ''
+        airbnb_ical_url: space.airbnb_ical_url || '',
+        check_in_time: space.check_in_time || '3:00 PM',
+        check_out_time: space.check_out_time || '11:00 AM',
+        key_instructions: space.key_instructions || 'Keys are kept in the lockbox near the main door (code 1234).',
+        pre_arrival_template: space.pre_arrival_template || 'Hello {{guest_name}}! Check-in starts at {{check_in_time}}. Key location: {{key_instructions}}.',
+        post_checkout_feedback_template: space.post_checkout_feedback_template || 'Dear {{guest_name}}, thank you for staying at {{space_title}}! Please share your private feedback with us.',
+        cleaner_name: space.cleaner_name || 'Housekeeping Team',
+        cleaner_phone: space.cleaner_phone || '',
       });
       
       setImages(space.images || []);
@@ -502,6 +516,97 @@ export default function EditSpacePage({ params }: { params: Promise<{ id: string
                 <Plus className="w-3 h-3" /> Add Rule
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Autonomous Operations, Key Storage & Cleaner Contacts */}
+        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 md:p-8 space-y-6">
+          <div className="border-b border-white/10 pb-4">
+            <h2 className="font-serif text-xl text-white">Autonomous Operations & Key Storage</h2>
+            <p className="text-xs text-white/50 mt-1">Configure listing timings, key location instructions, cleaner contacts, and guest feedback templates.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40">Check-in Start Time</label>
+              <input 
+                type="text" 
+                value={formData.check_in_time}
+                onChange={(e) => setFormData({...formData, check_in_time: e.target.value})}
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+                placeholder="e.g. 3:00 PM"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40">Check-out Time</label>
+              <input 
+                type="text" 
+                value={formData.check_out_time}
+                onChange={(e) => setFormData({...formData, check_out_time: e.target.value})}
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+                placeholder="e.g. 11:00 AM"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-white/40">Key Location & Access Instructions</label>
+            <textarea 
+              rows={3}
+              value={formData.key_instructions}
+              onChange={(e) => setFormData({...formData, key_instructions: e.target.value})}
+              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+              placeholder="e.g., Keys are kept in the lockbox near the main entrance door. Lockbox code is 4829."
+            />
+            <p className="text-[10px] text-white/30">Auto-sent when guests ask about keys, access, or lockbox location in chat.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40">Assigned Housekeeper Name</label>
+              <input 
+                type="text" 
+                value={formData.cleaner_name}
+                onChange={(e) => setFormData({...formData, cleaner_name: e.target.value})}
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+                placeholder="e.g., Ramesh Kumar"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40">Housekeeper WhatsApp Phone</label>
+              <input 
+                type="text" 
+                value={formData.cleaner_phone}
+                onChange={(e) => setFormData({...formData, cleaner_phone: e.target.value})}
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50 font-mono"
+                placeholder="e.g., +919876543210"
+              />
+              <p className="text-[10px] text-white/30">Receives auto-dispatched turnover WhatsApp alerts upon check-out.</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-white/40">Pre-Arrival Message Template</label>
+            <textarea 
+              rows={3}
+              value={formData.pre_arrival_template}
+              onChange={(e) => setFormData({...formData, pre_arrival_template: e.target.value})}
+              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+              placeholder="Hello {{guest_name}}! Check-in starts at {{check_in_time}}. Key location: {{key_instructions}}"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-white/40">Post-Checkout Private Feedback Request Template</label>
+            <textarea 
+              rows={3}
+              value={formData.post_checkout_feedback_template}
+              onChange={(e) => setFormData({...formData, post_checkout_feedback_template: e.target.value})}
+              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+              placeholder="Dear {{guest_name}}, thank you for staying at {{space_title}}! Please share your private feedback with our team."
+            />
           </div>
         </div>
         

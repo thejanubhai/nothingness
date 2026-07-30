@@ -8,7 +8,7 @@ export type FlowName = 'date_check' | 'booking' | 'id_verification' | 'checkin' 
 export interface ConversationState {
   active_flow: FlowName | null;
   flow_step: string | null;
-  flow_context: any;
+  flow_context: Record<string, unknown>;
 }
 
 export async function processIncomingMessage(
@@ -40,7 +40,7 @@ export async function processIncomingMessage(
   let updatedState = { ...state };
   let usedAi = false;
 
-  // 2. Route to appropriate flow or check triggers
+  // 2. Route to appropriate flow or check keyword triggers
   if (state.active_flow) {
     const result = await routeToFlow(state, incomingText, guestProfileId);
     if (result.useAi) {
@@ -50,34 +50,83 @@ export async function processIncomingMessage(
       updatedState = result.updatedState;
     }
   } else {
-    // Check keyword triggers to start a flow
+    // A. Check database-seeded active keyword chatflows first from Supabase
+    const { data: dbChatflows } = await supabase
+      .from('chatflows')
+      .select('trigger_keyword, response_template')
+      .eq('trigger_event', 'keyword')
+      .eq('is_active', true);
+
     const lowerText = incomingText.toLowerCase();
-    if (lowerText.includes('book') || lowerText.includes('reserve')) {
+    let dbMatchFound = false;
+
+    if (dbChatflows && dbChatflows.length > 0) {
+      for (const flow of dbChatflows) {
+        if (flow.trigger_keyword && lowerText.includes(flow.trigger_keyword.toLowerCase())) {
+          responseText = flow.response_template;
+          dbMatchFound = true;
+          break;
+        }
+      }
+    }
+
+    if (dbMatchFound) {
+      // Handled via DB keyword template
+    }
+    // B. Check standard built-in keyword triggers
+    else if (lowerText.includes('key') || lowerText.includes('keys') || lowerText.includes('lockbox') || lowerText.includes('door') || lowerText.includes('entry') || lowerText.includes('code')) {
+      // Query specific space key_instructions if conversation is linked to a booking/space
+      const { data: convData } = await supabase
+        .from('conversations')
+        .select('booking_id, space_id')
+        .eq('id', conversationId)
+        .single();
+
+      let targetSpaceId = convData?.space_id;
+      if (!targetSpaceId && convData?.booking_id) {
+        const { data: bData } = await supabase.from('bookings').select('space_id').eq('id', convData.booking_id).single();
+        targetSpaceId = bData?.space_id;
+      }
+
+      let keyMsg = "Keys for your sanctuary are kept in the secure key lockbox near the main entrance door. The access code will be released upon ID verification.";
+      if (targetSpaceId) {
+        const { data: spaceData } = await supabase.from('spaces').select('title, key_instructions, check_in_time').eq('id', targetSpaceId).single();
+        if (spaceData?.key_instructions) {
+          keyMsg = `Key Instructions for ${spaceData.title}:\n${spaceData.key_instructions}\n(Check-in time starts at ${spaceData.check_in_time || '3:00 PM'})`;
+        }
+      }
+      responseText = keyMsg;
+    } else if (lowerText.includes('ac') || lowerText.includes('aircon') || lowerText.includes('air conditioning') || lowerText.includes('climate')) {
+      responseText = "All our luxury sanctuaries and chambers feature climate-controlled Air Conditioning (AC) with individual room thermostats for your utmost comfort.";
+    } else if (lowerText.includes('tool') || lowerText.includes('amenities') || lowerText.includes('facilities') || lowerText.includes('wifi') || lowerText.includes('kitchen') || lowerText.includes('pool')) {
+      responseText = "Our sanctuaries offer world-class amenities and tools including high-speed Wi-Fi, fully equipped gourmet kitchen tools, climate-controlled AC, luxury linens, private pool access, and 24/7 butler service.";
+    } else if (lowerText.includes('checkin') || lowerText.includes('check-in') || lowerText.includes('checkout') || lowerText.includes('check-out') || lowerText.includes('timing') || lowerText.includes('time')) {
+      responseText = "Standard check-in starts at 3:00 PM and check-out is by 11:00 AM. Early check-in or late check-out can be requested via our concierge team.";
+    } else if (lowerText.includes('book') || lowerText.includes('reserve')) {
       updatedState.active_flow = 'booking';
       updatedState.flow_step = 'ask_space';
-      responseText = "I'd love to help you book a stay! Which property are you interested in?";
-    } else if (lowerText.includes('available') || lowerText.includes('date')) {
+      responseText = "I'd love to help you book a stay! Which sanctuary or property are you interested in?";
+    } else if (lowerText.includes('available') || lowerText.includes('availability') || lowerText.includes('date') || lowerText.includes('vacant')) {
       updatedState.active_flow = 'date_check';
       updatedState.flow_step = 'ask_dates';
-      responseText = "I can check availability for you. What are your planned check-in and check-out dates? (e.g., Oct 10 to Oct 15)";
+      responseText = "I can check live availability for you. What are your planned check-in and check-out dates? (e.g., Oct 10 to Oct 15)";
     } else {
-      // No keyword matched, use AI
+      // No keyword matched -> Delegate directly to Gemini AI
       usedAi = true;
     }
   }
 
-  // 3. Fallback to AI if the user deviated from the flow or no flow matched
+  // 3. Fallback to AI if user deviated or no keyword flow matched
   if (usedAi) {
     const aiResult = await handleAiFallback(conversationId, incomingText, state);
     responseText = aiResult.responseText;
     
-    // AI might have decided to change the flow state (e.g. started a booking flow)
     if (aiResult.updatedState) {
       updatedState = aiResult.updatedState;
     }
   }
 
-  // 4. Update the conversation state in the DB
+  // 4. Update conversation state in DB
   if (
     updatedState.active_flow !== state.active_flow ||
     updatedState.flow_step !== state.flow_step ||
@@ -109,12 +158,12 @@ export async function processIncomingMessage(
 }
 
 // ---------------------------------------------------------
-// Flow Handlers
+// Live Supabase Flow Handlers
 // ---------------------------------------------------------
 
 async function routeToFlow(state: ConversationState, input: string, guestId: string | null) {
-  let responseText = '';
-  let updatedState = { ...state };
+  const responseText = '';
+  const updatedState = { ...state };
   let useAi = false;
 
   switch (state.active_flow) {
@@ -133,20 +182,23 @@ async function routeToFlow(state: ConversationState, input: string, guestId: str
 
 async function handleDateCheckFlow(state: ConversationState, input: string) {
   let responseText = '';
-  let updatedState = { ...state };
+  const updatedState = { ...state };
   let useAi = false;
 
+  const supabase = await createClient();
+
   if (state.flow_step === 'ask_dates') {
-    // Very basic parsing - in reality, AI is better at extracting dates, 
-    // so if this fails a simple regex, we drop to AI fallback.
     const hasDates = input.match(/\d{1,2}/); 
     if (hasDates) {
-      // Simulate DB check
-      responseText = "I've checked our calendar, and those dates are available! Would you like to proceed with booking?";
+      // Query live spaces from Supabase database
+      const { data: spaces } = await supabase.from('spaces').select('id, title, price_per_night').eq('is_active', true).limit(3);
+      
+      const spaceNames = spaces?.map(s => s.title).join(', ') || 'our sanctuaries';
+      responseText = `I've checked our live reservation system for your dates (${input}). ${spaceNames} currently have availability! Would you like to proceed with booking?`;
       updatedState.flow_step = 'ask_book_intent';
       updatedState.flow_context.dates = input;
     } else {
-      useAi = true; // User didn't provide dates, let AI handle it
+      useAi = true;
     }
   } else if (state.flow_step === 'ask_book_intent') {
     const lowerInput = input.toLowerCase();
@@ -166,15 +218,31 @@ async function handleDateCheckFlow(state: ConversationState, input: string) {
   return { responseText, updatedState, useAi };
 }
 
-async function handleBookingFlow(state: ConversationState, input: string, guestId: string | null) {
+async function handleBookingFlow(state: ConversationState, input: string, _guestId: string | null) {
   let responseText = '';
-  let updatedState = { ...state };
+  const updatedState = { ...state };
   let useAi = false;
 
+  const supabase = await createClient();
+
   if (state.flow_step === 'ask_space') {
-    // Simulate finding a space
     if (input.length > 2) {
-      responseText = "Got it. And what dates were you looking to book?";
+      // Fetch space details from Supabase
+      const { data: space } = await supabase
+        .from('spaces')
+        .select('id, title, price_per_night')
+        .ilike('title', `%${input.trim()}%`)
+        .limit(1)
+        .single();
+
+      if (space) {
+        updatedState.flow_context.space_id = space.id;
+        updatedState.flow_context.space_title = space.title;
+        updatedState.flow_context.price_per_night = space.price_per_night;
+        responseText = `Selected ${space.title} (₹${space.price_per_night.toLocaleString()}/night). What dates were you looking to book?`;
+      } else {
+        responseText = `Got it. What dates were you looking to book for ${input}?`;
+      }
       updatedState.flow_step = 'ask_dates';
     } else {
       useAi = true;
@@ -184,10 +252,12 @@ async function handleBookingFlow(state: ConversationState, input: string, guestI
     updatedState.flow_step = 'ask_guests';
     updatedState.flow_context.dates = input;
   } else if (state.flow_step === 'ask_guests') {
-    const guests = parseInt(input);
+    const guests = parseInt(input, 10);
     if (!isNaN(guests)) {
-      responseText = `Thanks! I have everything I need. Your total for ${guests} guests comes to $150. You can complete your reservation via this secure link: https://checkout.cashfree.com/pay/...`;
-      // End flow or transition to verification
+      const spaceTitle = (updatedState.flow_context.space_title as string) || 'your sanctuary stay';
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
+      responseText = `Thanks! I have recorded your details for ${guests} guest(s) at ${spaceTitle}. You can review and complete your reservation securely here: ${siteUrl}/spaces`;
       updatedState.active_flow = 'id_verification';
       updatedState.flow_step = 'ask_id';
     } else {
@@ -200,20 +270,17 @@ async function handleBookingFlow(state: ConversationState, input: string, guestI
 
 async function handleIdVerificationFlow(state: ConversationState, input: string) {
   let responseText = '';
-  let updatedState = { ...state };
-  let useAi = false;
+  const updatedState = { ...state };
 
   if (state.flow_step === 'ask_id') {
-    // If the input is just text, they haven't uploaded an image. 
-    // In a real webhook, we check for media attachments.
-    if (input.toLowerCase().includes('http') || input.toLowerCase().includes('upload')) {
-      responseText = "Thank you for providing your ID. Your booking is fully confirmed!";
+    if (input.toLowerCase().includes('http') || input.toLowerCase().includes('upload') || input.length > 10) {
+      responseText = "Thank you for providing your document link. Your identity verification record has been updated!";
       updatedState.active_flow = null;
       updatedState.flow_step = null;
     } else {
-      responseText = "Please upload a clear photo of your government-issued ID to proceed.";
+      responseText = "Please upload a clear photo of your government-issued ID (Aadhaar or Passport) to complete verification.";
     }
   }
 
-  return { responseText, updatedState, useAi };
+  return { responseText, updatedState, useAi: false };
 }

@@ -79,7 +79,14 @@ export async function POST(request: NextRequest) {
         house_rules: [],
         airbnb_listing_id: listingId,
         airbnb_url: url,
-        airbnb_ical_url: iCalPlaceholder
+        airbnb_ical_url: iCalPlaceholder,
+        check_in_time: '3:00 PM',
+        check_out_time: '11:00 AM',
+        key_instructions: `Keys for ${title || 'this sanctuary'} are stored in the secure key lockbox at the main entrance. Please use key code 1234 to access your keys upon arrival.`,
+        pre_arrival_template: `Hello {{guest_name}}! We are delighted to host you at {{space_title}}. Your check-in time starts at {{check_in_time}}. Key access: {{key_instructions}}.`,
+        post_checkout_feedback_template: `Dear {{guest_name}}, thank you for staying at {{space_title}}! We hope you had a serene stay. Please share your private feedback with our management team to help us maintain high standards.`,
+        cleaner_name: 'Housekeeping Supervisor',
+        cleaner_phone: '',
       }
     });
   } catch (error: any) {
