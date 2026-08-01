@@ -1,170 +1,81 @@
-import Hero from "@/components/Hero";
-import BookingWidget from "@/components/BookingWidget";
-import SpaceCard from "@/components/SpaceCard";
-import SpaceSkeleton from "@/components/SpaceSkeleton";
-import { createClient } from "@/lib/supabase/server";
-import { Suspense } from "react";
+import React from 'react';
+import PropertySwipeDeck from '@/components/PropertySwipeDeck';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import Link from 'next/link';
+import { ShieldCheck, Key, Sparkles, Building2, Smartphone, Calendar, Award } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // Cache for 1 hour
 
-async function SpaceList() {
-  let spaces: any[] = [];
-
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from('spaces')
-      .select('*')
-      .eq('active', true)
-      .order('created_at', { ascending: false })
-      .limit(4);
-    if (data) spaces = data;
-  } catch (e) {
-    console.error("Supabase connection failed:", e);
-  }
-
-  const displaySpaces = spaces.map(p => ({
-    id: p.id,
-    title: p.title,
-    location: `${p.area || ''}, ${p.city || ''}`.replace(/^, /, ''),
-    image: p.featured_image || p.images?.[0] || "/images/property-1.png",
-    price: p.nightly_price,
-    slug: p.slug
-  }));
-
-  if (displaySpaces.length === 0) return null;
-
+export default function HomePage() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-      {displaySpaces.map((prop) => (
-        <SpaceCard 
-          key={prop.id}
-          title={prop.title} 
-          location={prop.location}
-          image={prop.image}
-          price={prop.price}
-          slug={prop.slug}
-        />
-      ))}
-    </div>
-  );
-}
+    <div className="min-h-screen bg-black text-white selection:bg-rose-500/30">
+      
+      {/* Hero Section */}
+      <section className="relative pt-28 pb-16 px-4 sm:px-6 max-w-6xl mx-auto text-center overflow-hidden">
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
-export default async function Home() {
-  let spaces: any[] = [];
-
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from('spaces')
-      .select('slug, title')
-      .eq('active', true);
-    if (data) spaces = data;
-  } catch (e) {
-    console.error("Supabase connection failed:", e);
-  }
-
-  const widgetSpaces = spaces.map(p => ({ slug: p.slug, title: p.title }));
-
-  return (
-    <main className="min-h-screen">
-      {/* Hero + Booking Widget */}
-      <div className="relative">
-        <Hero />
-        <BookingWidget spaces={widgetSpaces || []} />
-      </div>
-
-      {/* Spaces Section */}
-      <section className="py-24 md:py-32 px-5 md:px-8 max-w-7xl mx-auto">
-        <div className="mb-16 md:mb-20 text-center max-w-2xl mx-auto">
-          <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4">Our Spaces</p>
-          <h2 className="font-serif text-4xl md:text-5xl leading-tight mb-5 text-white">
-            Nothingness isn't following trends.
-            <br className="hidden md:block" />
-            It's setting them.
-          </h2>
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <span className="text-xl">🏆</span>
-            <span className="text-accent-gold text-sm tracking-wide font-medium">Airbnb Superhost, 6 Times in a Row</span>
+        <div className="relative z-10 space-y-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-zinc-900/80 border border-zinc-800 text-rose-400 text-xs font-mono font-bold rounded-full shadow-lg">
+            <Sparkles className="w-3.5 h-3.5" /> India's Premier Luxury Private Sanctuaries
           </div>
-          <p className="text-white/50 text-[15px] leading-relaxed">
-            A next-generation hospitality brand founded in Delhi. Discover a hidden world designed for privacy, comfort, and expression.
+
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold font-serif tracking-tight text-white max-w-4xl mx-auto leading-tight">
+            Cinematic Private Stays. <br />
+            <span className="bg-gradient-to-r from-rose-400 via-purple-400 to-amber-300 bg-clip-text text-transparent">
+              Ultra-Discreet Hospitality.
+            </span>
+          </h1>
+
+          <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+            High-design private sanctuaries featuring keyless digital check-in, Jacuzzi bath soaks, aesthetic interiors, and 100% ID-vetted discretion.
           </p>
         </div>
-
-        <Suspense fallback={
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-            <SpaceSkeleton />
-            <SpaceSkeleton />
-          </div>
-        }>
-          <SpaceList />
-        </Suspense>
       </section>
 
-      {/* Brand Ethos */}
-      <section className="py-24 md:py-32 px-5 md:px-8 max-w-6xl mx-auto border-t border-white/5">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
-          {[
-            {
-              title: "Privacy & Safety",
-              description: "Designed for an absolute sense of safety and freedom, especially for women travelers.",
-              icon: "🔒"
-            },
-            {
-              title: "Experience-Driven",
-              description: "Not just rooms. Carefully curated environments that create lasting, visceral memories.",
-              icon: "✦"
-            },
-            {
-              title: "Female-First Community",
-              description: "Built on a powerful foundation of trust and loyalty, organically grown through word-of-mouth.",
-              icon: "♡"
-            }
-          ].map((item, i) => (
-            <div key={i} className="text-center md:text-left group">
-              <span className="text-2xl mb-5 block opacity-60 group-hover:opacity-100 transition-opacity duration-500">{item.icon}</span>
-              <h3 className="text-lg font-medium text-white mb-3 tracking-wide">{item.title}</h3>
-              <p className="text-white/45 text-[14px] leading-relaxed">{item.description}</p>
+      {/* Interactive Swipe-to-Switch Property Card Deck */}
+      <section className="py-6 pb-16 px-4 sm:px-6">
+        <PropertySwipeDeck />
+      </section>
+
+      {/* Trust & Discretion Highlights (Payment Gateway Friendly) */}
+      <section className="py-16 bg-zinc-950 border-t border-b border-zinc-900 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+          
+          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl space-y-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+              <Key className="w-5 h-5" />
             </div>
-          ))}
+            <h3 className="text-base font-bold text-white font-serif">100% Autonomous Keyless Check-In</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              No front desk lines or intrusion. Receive your encrypted lockbox pin directly on WhatsApp 30 minutes before check-in.
+            </p>
+          </div>
+
+          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl space-y-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white font-serif">Delhi Police Verified Guest Protocol</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Legal guest compliance with 180-day reusable ID verification. Aadhaar &amp; Passport vetting ensures high safety &amp; discretion.
+            </p>
+          </div>
+
+          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl space-y-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <Award className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white font-serif">Aesthetic Cinematic Interiors</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Custom mood lighting, private Jacuzzi tubs, plush bedding, and high-speed Wi-Fi designed for relaxation and photo aesthetics.
+            </p>
+          </div>
+
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-24 md:py-32 px-5 md:px-8 max-w-7xl mx-auto border-t border-white/5">
-        <div className="text-center mb-16">
-          <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4">Community</p>
-          <h2 className="font-serif text-4xl mb-3 text-white">Loved by the Community</h2>
-          <p className="text-white/40 text-[14px]">Consistently rated 5.0 stars on Airbnb.</p>
-        </div>
-        
-        <div className="relative w-full overflow-hidden flex items-center group mask-fade-edges pb-4">
-          <div className="flex w-max animate-marquee gap-6 hover:[animation-play-state:paused] touch-pan-x">
-            {[
-              { text: "This place is on another level! The vibe, the aesthetics, the privacy... everything was just perfect. Felt so safe and comfortable. Can't wait to visit again!", name: "Riya" },
-              { text: "Honestly exceeded all expectations. The room was stunning, super clean and the whole experience was so unique and memorable. Totally worth it!", name: "Aarav" },
-              { text: "Beautifully designed space with so much attention to detail. Perfect for a getaway with your partner. We loved every bit of our stay 🖤 Highly recommended!", name: "Prerna" },
-              { text: "One of the most unique stays I've ever had in India. It's not just a place to stay, it's an experience in itself. 10/10 would absolutely come back!", name: "Simran" },
-              { text: "If you're looking for something different, this is it. Super private, super aesthetic and the host is amazing. We had a fantastic time!", name: "Karan" },
-              { text: "This place is on another level! The vibe, the aesthetics, the privacy... everything was just perfect. Felt so safe and comfortable. Can't wait to visit again!", name: "Riya" },
-              { text: "Honestly exceeded all expectations. The room was stunning, super clean and the whole experience was so unique and memorable. Totally worth it!", name: "Aarav" },
-              { text: "Beautifully designed space with so much attention to detail. Perfect for a getaway with your partner. We loved every bit of our stay 🖤 Highly recommended!", name: "Prerna" },
-              { text: "One of the most unique stays I've ever had in India. It's not just a place to stay, it's an experience in itself. 10/10 would absolutely come back!", name: "Simran" },
-              { text: "If you're looking for something different, this is it. Super private, super aesthetic and the host is amazing. We had a fantastic time!", name: "Karan" },
-            ].map((review, i) => (
-              <div key={i} className="flex-shrink-0 w-[300px] md:w-[380px] bg-white/[0.03] backdrop-blur-sm border border-white/5 p-7 rounded-2xl hover:border-white/10 transition-colors duration-500">
-                <div className="flex items-center gap-1 mb-5 text-accent-gold text-sm tracking-wider">★★★★★</div>
-                <p className="text-white/70 text-[14px] leading-relaxed mb-6">"{review.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[11px] font-semibold text-white/60">{review.name[0]}</div>
-                  <span className="text-[12px] font-medium text-white/50 tracking-wider uppercase">{review.name}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    </main>
+      {/* PWA Home Screen Installation Banner */}
+      <PWAInstallPrompt />
+    </div>
   );
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Send, Lock, ShieldCheck, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { X, Send, Lock, ShieldCheck, Sparkles, Image as ImageIcon, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import JointBookingModal from '@/components/kinkster/JointBookingModal';
 
 interface Message {
   id: string;
@@ -23,8 +24,9 @@ interface KinksterInboxDrawerProps {
 export default function KinksterInboxDrawer({ isOpen, onClose, targetAlias }: KinksterInboxDrawerProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [receiver, setReceiver] = useState<{ id: string; alias: string; avatar_url: string } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [receiver, setReceiver] = useState<any>(null);
+  const [showJointBookingModal, setShowJointBookingModal] = useState(false);
 
   const fetchThread = async () => {
     if (!targetAlias) return;
@@ -103,10 +105,19 @@ export default function KinksterInboxDrawer({ isOpen, onClose, targetAlias }: Ki
         </button>
       </div>
 
-      {/* Discretion Warning Banner */}
-      <div className="bg-rose-950/20 border-b border-rose-500/20 p-2.5 px-4 text-[11px] text-rose-300 flex items-center gap-2 font-mono">
-        <Sparkles className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-        Phone numbers &amp; identity are 100% encrypted &amp; hidden.
+      {/* Discretion Warning Banner & Reserve Joint Stay Trigger */}
+      <div className="bg-rose-950/20 border-b border-rose-500/20 p-2.5 px-4 flex items-center justify-between gap-2 text-[11px] text-rose-300 font-mono">
+        <div className="flex items-center gap-1.5 truncate">
+          <Sparkles className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+          <span className="truncate">Encrypted Discretion Chat</span>
+        </div>
+        <button
+          onClick={() => setShowJointBookingModal(true)}
+          className="px-2.5 py-1 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold text-[10px] rounded-lg shrink-0 flex items-center gap-1 shadow-md"
+        >
+          <Building2 className="w-3 h-3" />
+          Reserve Joint Stay 🔑
+        </button>
       </div>
 
       {/* Chat Messages */}
@@ -159,6 +170,13 @@ export default function KinksterInboxDrawer({ isOpen, onClose, targetAlias }: Ki
           <Send className="w-4 h-4" />
         </button>
       </form>
+
+      {/* Joint Sanctuary Booking Modal */}
+      <JointBookingModal
+        isOpen={showJointBookingModal}
+        onClose={() => setShowJointBookingModal(false)}
+        targetAlias={targetAlias}
+      />
     </div>
   );
 }

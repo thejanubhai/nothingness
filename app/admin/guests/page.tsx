@@ -1,13 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
-import { Search, UserCheck, UserX, Plus } from "lucide-react";
+import { Search, UserCheck, UserX, Plus, ShieldCheck, Sparkles, Star } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
-import ComingSoonButton from "@/components/ComingSoonButton";
+import TrustedHostToggle from "@/components/admin/TrustedHostToggle";
+
 export const dynamic = 'force-dynamic';
 
 export default async function AdminGuests() {
   const supabase = await createClient();
   
+  // 1. Fetch Guest Profiles
   const { data: guests } = await supabase
     .from('guest_profiles')
     .select(`
@@ -18,26 +20,26 @@ export default async function AdminGuests() {
     `)
     .order('created_at', { ascending: false });
 
+  // 2. Fetch Kinkster Profiles
+  const { data: kinksterProfiles } = await supabase
+    .from('kinkster_profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
+      
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="font-serif text-3xl md:text-4xl mb-2 text-white">Guest CRM</h1>
-          <p className="text-white/50 text-sm tracking-wide">Centralized guest intelligence and verification records.</p>
+          <h1 className="font-serif text-3xl md:text-4xl mb-2 text-white">Guest CRM &amp; Kinkster Command Center</h1>
+          <p className="text-white/50 text-sm tracking-wide">Centralized guest intelligence, ID verification, and Kinkster Trusted Host permissions.</p>
         </div>
         
         <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="relative w-full md:w-64">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-            <input 
-              type="text" 
-              placeholder="Search guests..." 
-              className="w-full bg-white/5 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-accent-gold/50 focus:ring-1 focus:ring-accent-gold/50 transition-all"
-            />
-          </div>
           <Link 
             href="/admin/guests/new" 
-            className="flex items-center gap-2 bg-accent-gold text-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent-gold/90 transition-colors whitespace-nowrap"
+            className="flex items-center gap-2 bg-accent-gold text-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent-gold/90 transition-colors whitespace-nowrap shadow-md"
           >
             <Plus className="w-4 h-4" />
             Add Guest
@@ -45,7 +47,66 @@ export default async function AdminGuests() {
         </div>
       </div>
 
+      {/* Section 1: Kinkster Profiles & Trusted Host Controls */}
+      <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-rose-400 font-mono mb-4">
+          <Sparkles className="w-4 h-4" /> Kinkster Circle &amp; Sanctuary Soirée Hosts
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-zinc-900/60 border-b border-zinc-800 text-[10px] uppercase tracking-widest text-zinc-400">
+              <tr>
+                <th className="px-4 py-3 font-medium">Kinkster Alias</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Trusted Host Permission</th>
+                <th className="px-4 py-3 font-medium">Joined Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-900">
+              {kinksterProfiles?.map((kp) => (
+                <tr key={kp.id} className="hover:bg-zinc-900/40 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <img src={kp.avatar_url} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-rose-500/40" />
+                      <span className="text-white font-mono font-bold text-xs">@{kp.alias}</span>
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {kp.is_activated ? (
+                      <span className="text-rose-400 bg-rose-950/40 border border-rose-500/30 px-2 py-0.5 rounded-md font-mono text-[10px]">
+                        Active Kinkster
+                      </span>
+                    ) : (
+                      <span className="text-zinc-500">Inactive</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <TrustedHostToggle alias={kp.alias} initialStatus={kp.is_trusted_host || false} />
+                  </td>
+                  <td className="px-4 py-3 text-zinc-500 text-xs font-mono">
+                    {format(new Date(kp.created_at), 'MMM dd, yyyy')}
+                  </td>
+                </tr>
+              ))}
+              {(!kinksterProfiles || kinksterProfiles.length === 0) && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-zinc-500 text-xs">
+                    No active Kinkster profiles found yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Section 2: ID Verified Guests */}
       <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">
+        <div className="p-4 border-b border-white/5 font-serif text-lg text-white">
+          Verified Guest Registry
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-white/[0.02] border-b border-white/10 text-[10px] uppercase tracking-widest text-white/40">

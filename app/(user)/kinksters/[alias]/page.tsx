@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { ShieldCheck, Flame, UserPlus, UserCheck, Lock, Grid, Film, Sparkles, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import AudioVibePlayer from '@/components/kinkster/AudioVibePlayer';
 import HealthBadgeModal, { HealthBadge } from '@/components/kinkster/HealthBadgeModal';
 import KinksterInboxDrawer from '@/components/kinkster/KinksterInboxDrawer';
+import DiscretionRatingModal from '@/components/kinkster/DiscretionRatingModal';
 
 interface ProfileData {
   id: string;
@@ -15,6 +17,8 @@ interface ProfileData {
   cover_url?: string;
   interests: string[];
   health_badges?: HealthBadge[];
+  audio_vibe_url?: string;
+  is_trusted_host?: boolean;
 }
 
 interface Post {
@@ -38,6 +42,7 @@ export default function KinksterProfilePage() {
   // Modals
   const [selectedHealthBadge, setSelectedHealthBadge] = useState<HealthBadge | null>(null);
   const [showChatDrawer, setShowChatDrawer] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   const fetchProfileDetails = async () => {
     if (!alias) return;
@@ -146,8 +151,20 @@ export default function KinksterProfilePage() {
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold font-mono text-white">@{profile.alias}</h1>
                 <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                {profile.is_trusted_host && (
+                  <span className="px-2 py-0.5 bg-rose-950/60 border border-rose-500/40 text-rose-300 text-[10px] font-mono rounded-md">
+                    Trusted Host
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-zinc-400 mt-1">ID Vetted • High Discretion Member</p>
+              <p className="text-xs text-zinc-400 mt-1">ID Vetted • 4.9 ★ Discretion Score</p>
+
+              {/* Audio Vibe Clip */}
+              {profile.audio_vibe_url && (
+                <div className="mt-3">
+                  <AudioVibePlayer audioUrl={profile.audio_vibe_url} alias={profile.alias} />
+                </div>
+              )}
 
               {/* Concise Micro Health Badges Section */}
               <div className="flex flex-wrap gap-1.5 mt-3">
@@ -181,11 +198,19 @@ export default function KinksterProfilePage() {
             </div>
           </div>
 
-          {/* Action Buttons: Spice Up 🔥 & Follow */}
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          {/* Action Buttons: Spice Up 🔥, Follow, & Rate Discretion */}
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <button
+              onClick={() => setShowRatingModal(true)}
+              className="px-3.5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-400 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5"
+            >
+              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              Rate Discretion
+            </button>
+
             <button
               onClick={handleFollow}
-              className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border ${
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border ${
                 isFollowing
                   ? 'bg-zinc-900 border-zinc-800 text-zinc-300'
                   : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-700 text-white'
@@ -197,7 +222,7 @@ export default function KinksterProfilePage() {
 
             <button
               onClick={spiceStatus === 'mutual' ? () => setShowChatDrawer(true) : handleSpiceUp}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-2"
+              className="px-5 py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-2"
             >
               <Flame className="w-4 h-4" />
               {spiceStatus === 'mutual'
@@ -250,6 +275,14 @@ export default function KinksterProfilePage() {
       <HealthBadgeModal
         badge={selectedHealthBadge}
         onClose={() => setSelectedHealthBadge(null)}
+      />
+
+      {/* Discretion Rating Modal */}
+      <DiscretionRatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        targetAlias={alias}
+        onRatingSubmitted={fetchProfileDetails}
       />
 
       {/* Chat Drawer */}
