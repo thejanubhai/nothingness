@@ -22,6 +22,36 @@ interface SyncResult {
   }>;
 }
 
+export function formatIcalEventDate(dateObj: any): string {
+  if (!dateObj) return '';
+  
+  if (dateObj.dateOnly || dateObj.datetype === 'date') {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  if (dateObj instanceof Date && !isNaN(dateObj.getTime())) {
+    if ((dateObj as any).dateOnly) {
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return dateObj.toISOString().split('T')[0];
+  }
+
+  if (typeof dateObj === 'string') {
+    const clean = dateObj.replace(/[^0-9]/g, '');
+    if (clean.length >= 8) {
+      return `${clean.slice(0, 4)}-${clean.slice(4, 6)}-${clean.slice(6, 8)}`;
+    }
+  }
+
+  return '';
+}
+
 /**
  * Sync external iCal feeds for all or a specific space.
  * Fetches each active calendar_sync_source, parses the iCal data,
@@ -86,10 +116,12 @@ export async function syncCalendars(
         const vevent = event as ical.VEvent;
         if (!vevent.start || !vevent.end) continue;
 
-        const startDate = new Date(vevent.start).toISOString().split('T')[0];
-        const endDate = new Date(vevent.end).toISOString().split('T')[0];
+        const startDate = formatIcalEventDate(vevent.start);
+        const endDate = formatIcalEventDate(vevent.end);
+        if (!startDate || !endDate) continue;
+
         const externalUid = vevent.uid || `${source.id}-${startDate}-${endDate}`;
-        const summary = vevent.summary || 'Blocked (External)';
+        const summary = vevent.summary || 'Reserved (External)';
 
         activeUids.add(externalUid);
 

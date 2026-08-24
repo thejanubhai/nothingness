@@ -30,11 +30,11 @@ export async function syncIcal(listingId: string, icalUrl: string, platform: 'ai
           const checkOut = (vEvent.end as Date).toISOString().split('T')[0]
           
           bookingsToUpsert.push({
-            listing_id: listingId,
+            space_id: listingId,
             platform,
             check_in: checkIn,
             check_out: checkOut,
-            status: 'blocked', // Assume external calendar events are blocks/confirmed bookings
+            status: 'blocked',
             external_ical_id: externalIcalId
           })
         }
@@ -44,10 +44,7 @@ export async function syncIcal(listingId: string, icalUrl: string, platform: 'ai
     if (bookingsToUpsert.length === 0) return { success: true, count: 0 }
 
     // 3. Upsert into database
-    // We use external_ical_id to prevent duplicates
     for (const booking of bookingsToUpsert) {
-      // Supabase standard JS client upsert with onConflict requires a unique constraint
-      // Our schema has external_ical_id UNIQUE, so we can use onConflict.
       const { error } = await supabase
         .from('bookings')
         .upsert(booking, { onConflict: 'external_ical_id' })

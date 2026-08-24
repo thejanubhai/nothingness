@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { syncCalendars } from '@/lib/calendar-sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,24 +12,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Call our own sync API to do the work
-    // We use absolute URL for fetch in Route Handlers
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    
-    const response = await fetch(`${baseUrl}/api/spaces/sync-calendar`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({}),
+    const supabase = await createClient();
+    const result = await syncCalendars(supabase);
+
+    return NextResponse.json({
+      success: true,
+      synced: result.synced,
+      errors: result.errors,
+      details: result.details
     });
-
-    if (!response.ok) {
-      throw new Error(`Sync API failed with status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
 
   } catch (error: any) {
     console.error('Cron Calendar Sync Error:', error);

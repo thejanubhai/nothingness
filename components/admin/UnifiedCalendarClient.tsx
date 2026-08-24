@@ -276,10 +276,10 @@ export default function UnifiedCalendarClient({
 
   const copyOutboundUrl = (slug: string) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia';
-    const url = `${origin}/api/spaces/${slug}/ical`;
+    const url = `${origin}/api/spaces/${slug}/calendar.ics`;
     navigator.clipboard.writeText(url);
     setCopiedSlug(slug);
-    toast.success('Outbound iCal URL copied to clipboard!');
+    toast.success('Outbound iCal .ics URL copied to clipboard!');
     setTimeout(() => setCopiedSlug(null), 2500);
   };
 
@@ -582,13 +582,13 @@ export default function UnifiedCalendarClient({
                   {/* Outbound Feed Link */}
                   <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
                     <p className="text-[10px] uppercase tracking-widest text-accent-gold font-bold">
-                      Outbound iCal Export (Copy to Airbnb / Booking.com)
+                      Outbound iCal Export (Copy to Airbnb / Booking.com / MMT)
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="text"
                         readOnly
-                        value={`${typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia'}/api/spaces/${space.slug}/ical`}
+                        value={`${typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia'}/api/spaces/${space.slug}/calendar.ics`}
                         className="flex-1 bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-white/70 font-mono focus:outline-none"
                       />
                       <button
@@ -596,7 +596,7 @@ export default function UnifiedCalendarClient({
                         className="flex items-center justify-center gap-1.5 px-4 py-2 bg-accent-gold/10 hover:bg-accent-gold text-accent-gold hover:text-black rounded-lg text-xs font-bold transition-all border border-accent-gold/30 whitespace-nowrap"
                       >
                         {copiedSlug === space.slug ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        {copiedSlug === space.slug ? 'Copied' : 'Copy Export URL'}
+                        {copiedSlug === space.slug ? 'Copied' : 'Copy .ics Link'}
                       </button>
                     </div>
                   </div>

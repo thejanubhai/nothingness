@@ -1,60 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import ical from 'ical-generator'
+import { NextRequest, NextResponse } from 'next/server';
+import { generateIcalResponse } from '@/lib/calendar/ical-feed';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
 export async function GET(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ listingId: string }> }
 ) {
-  try {
-    const { listingId } = await params;
-    const supabase = await createClient()
+  const { listingId } = await params;
+  return generateIcalResponse(listingId, request);
+}
 
-    // Fetch the listing to name the calendar
-    const { data: listing, error: listingError } = await supabase
-      .from('listings')
-      .select('name')
-      .eq('id', listingId)
-      .single()
+export async function HEAD(
+  request: NextRequest,
+  { params }: { params: Promise<{ listingId: string }> }
+) {
+  const { listingId } = await params;
+  return generateIcalResponse(listingId, request, true);
+}
 
-    if (listingError || !listing) {
-      return new NextResponse('Listing Not Found', { status: 404 })
-    }
-
-    // Fetch all confirmed/blocked bookings
-    const { data: bookings, error: bookingsError } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('listing_id', listingId)
-      .in('status', ['confirmed', 'blocked'])
-
-    if (bookingsError) {
-      throw bookingsError
-    }
-
-    const calendar = ical({ name: `Nothingness - ${listing.name}` })
-
-    bookings?.forEach((booking) => {
-      calendar.createEvent({
-        start: new Date(booking.check_in),
-        end: new Date(booking.check_out),
-        summary: booking.status === 'confirmed' ? 'Reserved' : 'Blocked',
-        allDay: true,
-        id: booking.id // Unique identifier for the event
-      })
-    })
-
-    return new NextResponse(calendar.toString(), {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/calendar; charset=utf-8',
-        'Content-Disposition': `attachment; filename="listing-${listingId}.ics"`,
-      },
-    })
-  } catch (error) {
-    console.error('Error generating iCal export:', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
-  }
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }

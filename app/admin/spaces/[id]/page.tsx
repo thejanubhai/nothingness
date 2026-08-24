@@ -637,24 +637,24 @@ export default function EditSpacePage({ params }: { params: Promise<{ id: string
           <div className="space-y-6">
             {/* Outbound Feed */}
             <div className="bg-black/40 border border-white/10 rounded-xl p-4">
-              <p className="text-[10px] uppercase tracking-widest text-accent-gold font-bold mb-2">Our Live iCal Feed (Export to Airbnb / Booking.com)</p>
+              <p className="text-[10px] uppercase tracking-widest text-accent-gold font-bold mb-2">Our Live iCal Feed (Export to Airbnb / Booking.com / MMT)</p>
               <div className="flex gap-2">
                 <input 
                   type="text" 
                   readOnly
-                  value={`${typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia'}/api/spaces/${formData.slug || id}/ical`}
+                  value={`${typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia'}/api/spaces/${formData.slug || id}/calendar.ics`}
                   className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white/70 font-mono focus:outline-none"
                 />
                 <button 
                   type="button"
                   onClick={() => {
                     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia';
-                    navigator.clipboard.writeText(`${origin}/api/spaces/${formData.slug || id}/ical`);
-                    toast.success('iCal URL copied to clipboard');
+                    navigator.clipboard.writeText(`${origin}/api/spaces/${formData.slug || id}/calendar.ics`);
+                    toast.success('iCal .ics URL copied to clipboard');
                   }}
                   className="px-5 bg-accent-gold text-black hover:bg-accent-gold/90 rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
                 >
-                  Copy Live URL
+                  Copy .ics Link
                 </button>
               </div>
               <p className="text-xs text-white/40 mt-2">

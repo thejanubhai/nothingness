@@ -516,19 +516,19 @@ export default function AddSpacePage() {
                 <input 
                   type="text" 
                   readOnly
-                  value={`${typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia'}/api/spaces/${formData.slug || '[slug]'}/ical`}
+                  value={`${typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia'}/api/spaces/${formData.slug || '[slug]'}/calendar.ics`}
                   className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white/70 font-mono focus:outline-none"
                 />
                 <button 
                   type="button"
                   onClick={() => {
                     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia';
-                    navigator.clipboard.writeText(`${origin}/api/spaces/${formData.slug || '[slug]'}/ical`);
-                    toast.success('iCal URL copied to clipboard');
+                    navigator.clipboard.writeText(`${origin}/api/spaces/${formData.slug || '[slug]'}/calendar.ics`);
+                    toast.success('iCal .ics URL copied to clipboard');
                   }}
                   className="px-5 bg-accent-gold text-black hover:bg-accent-gold/90 rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
                 >
-                  Copy Live URL
+                  Copy .ics Link
                 </button>
               </div>
               <p className="text-xs text-white/40 mt-2">
