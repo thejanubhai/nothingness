@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ical, { ICalEventStatus, ICalEventTransparency } from 'ical-generator';
 import { createClient } from '@/lib/supabase/server';
 
 export interface SpaceRecord {
@@ -63,6 +62,73 @@ export async function resolveSpace(slugOrId: string, supabase: any): Promise<Spa
   return matched || null;
 }
 
+function formatDateToIcalDate(dateInput: string | Date): string {
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return '';
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return `${yyyy}${mm}${dd}`;
+}
+
+function getUtcTimestamp(d: Date = new Date()): string {
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const min = String(d.getUTCMinutes()).padStart(2, '0');
+  const ss = String(d.getUTCSeconds()).padStart(2, '0');
+  return `${yyyy}${mm}${dd}T${hh}${min}${ss}Z`;
+}
+
+/**
+ * Builds a strict RFC 5545 compliant iCalendar string compatible with
+ * InGo-MMT (MakeMyTrip / Goibibo), Airbnb, Booking.com, Google Calendar, and Apple iCal.
+ */
+export function buildRfc5545IcalString(
+  spaceTitle: string,
+  events: Array<{
+    uid: string;
+    startDate: string;
+    endDate: string;
+    summary?: string;
+    description?: string;
+  }>
+): string {
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Nothingness//Sanctuary Calendar 1.0//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    `X-WR-CALNAME:${spaceTitle || 'Nothingness Sanctuary'}`,
+    'X-WR-TIMEZONE:UTC',
+  ];
+
+  const dtStamp = getUtcTimestamp();
+
+  events.forEach((event) => {
+    const start = formatDateToIcalDate(event.startDate);
+    const end = formatDateToIcalDate(event.endDate);
+
+    if (!start || !end) return;
+
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${event.uid}`);
+    lines.push(`DTSTAMP:${dtStamp}`);
+    lines.push(`DTSTART;VALUE=DATE:${start}`);
+    lines.push(`DTEND;VALUE=DATE:${end}`);
+    lines.push(`SUMMARY:${event.summary || 'Reserved'}`);
+    lines.push('STATUS:CONFIRMED');
+    lines.push('TRANSP:OPAQUE');
+    lines.push(`DESCRIPTION:${event.description || 'Reserved on Nothingness Sanctuary'}`);
+    lines.push('END:VEVENT');
+  });
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n') + '\r\n';
+}
+
 /**
  * Generates an RFC 5545 compliant iCalendar feed and NextResponse
  */
@@ -75,115 +141,60 @@ export async function generateIcalResponse(
     const supabase = await createClient();
     const space = await resolveSpace(slugOrId, supabase);
 
-    const siteOrigin =
-      (request && new URL(request.url).origin) ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      'https://nothingness.asia';
+    const spaceTitle = space?.title || slugOrId.replace(/\.(ics|ical)$/i, '').replace(/[-_]+/g, ' ');
 
-    if (!space) {
-      // Return a valid, RFC 5545 compliant empty iCal calendar feed so aggregators
-      // (like Airbnb / Booking.com) immediately verify and connect without failing with 404
-      const cleanSlug = slugOrId.replace(/\.(ics|ical)$/i, '');
-      const cleanTitle = cleanSlug.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      
-      const fallbackCalendar = ical({
-        name: `Nothingness - ${cleanTitle || 'Sanctuary'}`,
-        description: `Live reservation calendar for Nothingness Sanctuary`,
-        prodId: {
-          company: 'Nothingness Asia',
-          product: 'Sanctuary Calendar Feed',
-          language: 'EN',
-        },
-        url: `${siteOrigin}/api/spaces/${cleanSlug}/calendar.ics`,
-        timezone: 'UTC',
+    const eventsList: Array<{
+      uid: string;
+      startDate: string;
+      endDate: string;
+      summary?: string;
+      description?: string;
+    }> = [];
+
+    if (space) {
+      // 1. Fetch confirmed / pending internal bookings
+      const { data: bookings } = await supabase
+        .from('bookings')
+        .select('id, check_in, check_out, guests, status')
+        .eq('space_id', space.id)
+        .neq('status', 'cancelled');
+
+      bookings?.forEach((b) => {
+        eventsList.push({
+          uid: `booking-${b.id}@nothingness.asia`,
+          startDate: b.check_in,
+          endDate: b.check_out,
+          summary: 'Reserved',
+          description: `Reserved via Nothingness Sanctuary (Ref: ${b.id.slice(0, 8)})`,
+        });
       });
 
-      const responseHeaders = {
-        'Content-Type': 'text/calendar; charset=utf-8',
-        'Content-Disposition': `inline; filename="nothingness-${cleanSlug}.ics"`,
-        'Cache-Control': 'no-cache, no-store, max-age=0, must-revalidate',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      };
+      // 2. Fetch external blocked dates
+      const { data: externalDates } = await supabase
+        .from('external_blocked_dates')
+        .select('id, start_date, end_date, summary, external_uid')
+        .eq('space_id', space.id);
 
-      if (isHeadOnly) {
-        return new NextResponse(null, { status: 200, headers: responseHeaders });
-      }
+      externalDates?.forEach((blocked) => {
+        const uid = blocked.external_uid
+          ? (blocked.external_uid.includes('@') ? blocked.external_uid : `${blocked.external_uid}@nothingness.asia`)
+          : `block-${blocked.id}@nothingness.asia`;
 
-      return new NextResponse(fallbackCalendar.toString(), {
-        status: 200,
-        headers: responseHeaders,
+        eventsList.push({
+          uid,
+          startDate: blocked.start_date,
+          endDate: blocked.end_date,
+          summary: blocked.summary || 'Reserved',
+          description: 'Reserved / Blocked on Nothingness Sanctuary',
+        });
       });
     }
 
-    // 1. Fetch confirmed / pending internal bookings
-    const { data: bookings } = await supabase
-      .from('bookings')
-      .select('id, check_in, check_out, guests, status')
-      .eq('space_id', space.id)
-      .neq('status', 'cancelled');
-
-    // 2. Fetch external blocked dates
-    const { data: externalDates } = await supabase
-      .from('external_blocked_dates')
-      .select('id, start_date, end_date, summary, external_uid')
-      .eq('space_id', space.id);
-
-    const calendarUrl = `${siteOrigin}/api/spaces/${space.slug}/calendar.ics`;
-
-    // 3. Construct RFC 5545 compliant calendar
-    const calendar = ical({
-      name: `Nothingness - ${space.title}`,
-      description: space.description || `Live reservation calendar for ${space.title}`,
-      prodId: {
-        company: 'Nothingness Asia',
-        product: `${space.title} Sanctuary Calendar`,
-        language: 'EN',
-      },
-      url: calendarUrl,
-      timezone: 'UTC',
-    });
-
-    // 4. Add internal bookings as opaque all-day events
-    bookings?.forEach((booking) => {
-      calendar.createEvent({
-        id: `booking-${booking.id}@nothingness.asia`,
-        start: new Date(booking.check_in),
-        end: new Date(booking.check_out),
-        summary: 'Reserved',
-        description: `Reserved via Nothingness Sanctuary (Ref: ${booking.id.slice(0, 8)})`,
-        allDay: true,
-        transparency: ICalEventTransparency.OPAQUE,
-        status: ICalEventStatus.CONFIRMED,
-        sequence: 0,
-      });
-    });
-
-    // 5. Add external/manual blocks
-    externalDates?.forEach((blocked) => {
-      const eventUid = blocked.external_uid
-        ? (blocked.external_uid.includes('@') ? blocked.external_uid : `${blocked.external_uid}@nothingness.asia`)
-        : `block-${blocked.id}@nothingness.asia`;
-
-      calendar.createEvent({
-        id: eventUid,
-        start: new Date(blocked.start_date),
-        end: new Date(blocked.end_date),
-        summary: blocked.summary || 'Reserved',
-        description: 'Reserved / Blocked on Nothingness Sanctuary',
-        allDay: true,
-        transparency: ICalEventTransparency.OPAQUE,
-        status: ICalEventStatus.CONFIRMED,
-        sequence: 0,
-      });
-    });
-
-    const calendarString = calendar.toString();
+    const calendarString = buildRfc5545IcalString(spaceTitle, eventsList);
 
     const responseHeaders = {
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': `inline; filename="nothingness-${space.slug}.ics"`,
+      'Content-Disposition': `inline; filename="nothingness-${space?.slug || 'calendar'}.ics"`,
       'Cache-Control': 'no-cache, no-store, max-age=0, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0',
