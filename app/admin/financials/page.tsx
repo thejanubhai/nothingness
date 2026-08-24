@@ -9,11 +9,23 @@ export default async function AdminFinancials() {
   const { data: bookings } = await supabase
     .from('bookings')
     .select(`
-      id, space_id, total_price, status, payment_status, check_in, check_out, created_at, guest_name,
+      id, space_id, total_price, status, payment_status, check_in, check_out, created_at,
       spaces (id, title),
-      guest_profiles (full_name)
+      booking_guests (
+        name,
+        guest_profiles (full_name)
+      )
     `)
     .order('created_at', { ascending: false });
 
-  return <AdminFinancialsClient initialBookings={(bookings as any) || []} />;
+  const normalizedBookings = (bookings || []).map((b: any) => {
+    const mainGuest = b.booking_guests?.[0];
+    const guestName = mainGuest?.guest_profiles?.full_name || mainGuest?.name || 'Direct Guest';
+    return {
+      ...b,
+      guest_name: guestName
+    };
+  });
+
+  return <AdminFinancialsClient initialBookings={normalizedBookings as any} />;
 }

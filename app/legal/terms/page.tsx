@@ -17,10 +17,10 @@ export default function TermsPage() {
         <p>By accessing or using the services provided by Nothingness Inc. ("Nothingness", "we", "us", or "our"), including booking a stay at any of our properties, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.</p>
 
         <h2>2. Age and Identification Requirements</h2>
-        <p>Nothingness properties are exclusively for adults. You must be at least 18 years of old to book or stay at our properties. A valid government-issued ID (Aadhar, Passport, or Driver's License) is mandatory for all guests and must be presented prior to check-in. Failure to provide valid ID will result in immediate cancellation without refund.</p>
+        <p>Nothingness properties are exclusively for adults. You must be at least 18 years old to book or stay at our properties. A valid government-issued ID (Aadhaar Card or Passport) is mandatory for all guests and must be verified digitally prior to check-in per Delhi Police regulations. Driving License and Voter ID are not accepted. Failure to provide valid ID will result in immediate cancellation without refund.</p>
 
         <h2>3. Booking and Payments</h2>
-        <p>All bookings must be paid in full at the time of reservation. We use secure third-party payment processors (Razorpay/Stripe). By submitting payment information, you authorize us to charge the specified amount for your stay.</p>
+        <p>All bookings must be paid in full at the time of reservation. We use secure PCI-DSS compliant third-party payment gateways (Cashfree Payments). By submitting payment information, you authorize us to charge the specified amount for your stay.</p>
 
         <h2>4. Property Rules & Damages</h2>
         <p>Guests are expected to treat the property with respect. Any damages to the property, furnishings, or specialized equipment will be charged to the payment method on file. specialized equipment must be used safely and at the guest's own risk.</p>

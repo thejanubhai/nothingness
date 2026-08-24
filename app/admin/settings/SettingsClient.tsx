@@ -62,28 +62,20 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
     setLoading(true);
     
     try {
-      const supabase = createClient();
-      
-      const updateData = { ...formData } as any;
-      delete updateData.id; // remove ID from update payload
-      
-      let error;
-      if (formData.id) {
-        const { error: err } = await supabase
-          .from('platform_settings')
-          .update(updateData)
-          .eq('id', formData.id);
-        error = err;
-      } else {
-        const { error: err } = await supabase
-          .from('platform_settings')
-          .insert([updateData]);
-        error = err;
-      }
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
 
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update settings');
+
+      if (data.settings?.id) {
+        setFormData(prev => ({ ...prev, id: data.settings.id }));
+      }
       
-      toast.success('Settings updated successfully!');
+      toast.success('Settings updated successfully in Supabase!');
       router.refresh();
     } catch (err: any) {
       console.error(err);

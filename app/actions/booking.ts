@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { normalizeIdentifier } from '@/lib/auth-utils';
+import { env } from '@/lib/env';
 
 import { getBlockedIntervals } from './calendar';
 import { areIntervalsOverlapping } from 'date-fns';
@@ -63,7 +65,6 @@ export async function cancelBooking(bookingId: string, formData?: FormData): Pro
     return { error: 'Unauthorized' };
   }
 
-  // Ensure user owns booking or is admin
   const { data: booking } = await supabase
     .from('bookings')
     .select('user_id')
@@ -72,7 +73,12 @@ export async function cancelBooking(bookingId: string, formData?: FormData): Pro
 
   if (!booking) return { error: 'Booking not found' };
 
-  if (booking.user_id !== user.id && !user.email?.includes('admin') && !user.email?.includes('hudav')) {
+  const adminIdentifier = env.ADMIN ? normalizeIdentifier(env.ADMIN) : null;
+  const userPhone = user.phone ? normalizeIdentifier(user.phone) : null;
+  const isAdmin = (adminIdentifier && userPhone === adminIdentifier) || 
+                  Boolean(user.email && (user.email.includes('admin') || user.email.includes('hudav')));
+
+  if (booking.user_id !== user.id && !isAdmin) {
     return { error: 'Unauthorized' };
   }
 

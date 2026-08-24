@@ -41,7 +41,7 @@ export default async function AdminCalendarPage() {
       id, space_id, platform, inbound_ical_url, is_active, last_synced_at, sync_status, sync_error,
       spaces (id, title, slug)
     `)
-    .order('updated_at', { ascending: false });
+    .order('created_at', { ascending: false });
 
   return (
     <UnifiedCalendarClient

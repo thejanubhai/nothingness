@@ -108,24 +108,26 @@ export default function AddSpacePage() {
     setError(null);
 
     try {
-      const supabase = createClient();
-      
-      // 1. Insert the space
-      const { data: space, error: insertError } = await supabase
-        .from('spaces')
-        .insert({
+      // 1. Insert the space via /api/spaces
+      const res = await fetch('/api/spaces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           ...formData,
           images,
           amenities: amenities.filter(a => a.trim() !== ''),
           rules: rules.filter(r => r.trim() !== '').join('\n'),
         })
-        .select()
-        .single();
+      });
 
-      if (insertError) throw insertError;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create space');
       
+      const space = data.space;
+
       // 2. Insert calendar sync sources if any
       if (syncSources.length > 0 && space) {
+        const supabase = createClient();
         const sourcesToInsert = syncSources.map(source => ({
           space_id: space.id,
           platform: source.platform,
@@ -144,13 +146,13 @@ export default function AddSpacePage() {
         }
       }
       
-      toast.success('Space created successfully!');
+      toast.success('Space created successfully in Supabase!');
       router.push('/admin/spaces');
       router.refresh();
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to create space');
-      toast.error('Failed to create space');
+      toast.error(err.message || 'Failed to create space');
     } finally {
       setLoading(false);
     }

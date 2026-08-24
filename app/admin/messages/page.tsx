@@ -77,11 +77,11 @@ export default async function AdminMessages() {
         </div>
       </section>
 
-      {/* Franchise Leads Section */}
+      {/* Franchise & Partner Leads Section */}
       <section className="space-y-6 pt-6">
         <div className="flex items-center gap-3 border-b border-white/10 pb-4">
           <Briefcase className="w-5 h-5 text-accent-gold" />
-          <h2 className="font-serif text-2xl text-white">Franchise Applications</h2>
+          <h2 className="font-serif text-2xl text-white">nothingness. Partner Applications</h2>
         </div>
         
         <div className="grid grid-cols-1 gap-4">
@@ -122,10 +122,10 @@ export default async function AdminMessages() {
                 </div>
                 
                 <div>
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-2">Experience / Background</p>
-                  <p className="text-sm text-white/60 leading-relaxed bg-white/5 p-4 rounded-xl border border-white/5 h-[calc(100%-24px)]">
-                    {lead.experience || 'No background information provided.'}
-                  </p>
+                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-2">Space Details / Notes</p>
+                  <div className="text-xs text-white/70 leading-relaxed bg-white/5 p-4 rounded-xl border border-white/5 h-[calc(100%-24px)] whitespace-pre-wrap overflow-y-auto max-h-48 font-mono">
+                    {lead.message || lead.experience || 'No additional details provided.'}
+                  </div>
                 </div>
               </div>
             </div>

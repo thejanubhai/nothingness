@@ -29,15 +29,28 @@ export async function POST(req: NextRequest) {
     // Format alias cleanly (lowercase, alphanumeric + underscores)
     const formattedAlias = alias.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
 
-    // 1. Verify Guest ID status in guest_profiles or profiles
-    const { data: guestProfile } = await supabase
-      .from('guest_profiles')
-      .select('is_verified, phone')
-      .eq('user_id', user.id)
-      .single();
+    // 1. Verify Guest ID status in guest_profiles by phone or user_id
+    let isIdVerified = false;
+    if (user.phone) {
+      const cleanPhone = user.phone.replace(/[^0-9+]/g, '');
+      const { data: gpByPhone } = await supabase
+        .from('guest_profiles')
+        .select('is_verified')
+        .eq('phone', cleanPhone)
+        .eq('is_verified', true)
+        .maybeSingle();
+      if (gpByPhone?.is_verified) isIdVerified = true;
+    }
 
-    // Check if user is verified
-    const isIdVerified = guestProfile?.is_verified ?? false;
+    if (!isIdVerified) {
+      const { data: gpByUserId } = await supabase
+        .from('guest_profiles')
+        .select('is_verified')
+        .eq('user_id', user.id)
+        .eq('is_verified', true)
+        .maybeSingle();
+      if (gpByUserId?.is_verified) isIdVerified = true;
+    }
 
     if (!isIdVerified) {
       return NextResponse.json(

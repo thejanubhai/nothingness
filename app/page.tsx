@@ -55,9 +55,9 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-white font-serif">Delhi Police Verified Guest Protocol</h3>
+            <h3 className="text-base font-bold text-white font-serif">Digital State Police &amp; Govt ID Compliance</h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Legal guest compliance with 180-day reusable ID verification. Aadhaar &amp; Passport vetting ensures high safety &amp; discretion.
+              100% online guest vetting compliant with state hospitality regulations. 180-day reusable Aadhaar &amp; Passport ID verification prevents local harassment &amp; guarantees discretion.
             </p>
           </div>
 

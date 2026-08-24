@@ -7,9 +7,10 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
     const body = await req.json();
-    const { space_id, scheduled_date, description, assigned_to } = body;
+    const { space_id, scheduled_date, due_date, description, notes, assigned_to } = body;
+    const taskDueDate = due_date || scheduled_date;
 
-    if (!space_id || !scheduled_date) {
+    if (!space_id || !taskDueDate) {
       return NextResponse.json({ success: false, error: 'Space and date are required' }, { status: 400 });
     }
 
@@ -17,8 +18,8 @@ export async function POST(req: NextRequest) {
       .from('housekeeping_tasks')
       .insert({
         space_id,
-        scheduled_date,
-        description: description || 'Scheduled Sanctuary Cleaning',
+        due_date: taskDueDate,
+        notes: notes || description || 'Scheduled Sanctuary Turnover',
         assigned_to: assigned_to || 'Housekeeping Team',
         status: 'pending',
         task_type: 'turnover'

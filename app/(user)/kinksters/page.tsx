@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import KinksterOnboardingWizard from '@/components/kinkster/KinksterOnboardingWizard';
 import CreatePostModal from '@/components/kinkster/CreatePostModal';
 import IDUploadModal from '@/components/IDUploadModal';
+import FranchiseCrossPromoCard from '@/components/kinkster/FranchiseCrossPromoCard';
 
 interface Post {
   id: string;
@@ -213,6 +214,9 @@ export default function KinkstersFeedPage() {
               </div>
             ))
           )}
+
+          {/* Discreet VIP Host Cross-Promotion */}
+          <FranchiseCrossPromoCard />
         </div>
       )}
 

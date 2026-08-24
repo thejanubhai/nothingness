@@ -10,11 +10,12 @@ interface IDUploadModalProps {
   onClose: () => void;
   guestId?: string;
   token?: string;
+  phone?: string;
   bookingId?: string;
   onSuccess: (name: string) => void;
 }
 
-export default function IDUploadModal({ isOpen, onClose, guestId, token, bookingId, onSuccess }: IDUploadModalProps) {
+export default function IDUploadModal({ isOpen, onClose, guestId, token, phone, bookingId, onSuccess }: IDUploadModalProps) {
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
   
@@ -69,6 +70,7 @@ export default function IDUploadModal({ isOpen, onClose, guestId, token, booking
         payload.bookingId = bookingId;
         payload.guestId = guestId;
       }
+      if (phone) payload.phone = phone;
 
       const res = await fetch('/api/verify-id', {
         method: 'POST',

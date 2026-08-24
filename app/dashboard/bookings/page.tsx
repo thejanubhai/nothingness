@@ -17,7 +17,7 @@ export default async function BookingsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
-    redirect('/auth/login');
+    redirect('/auth');
   }
 
   const { data: bookings } = await supabase
@@ -120,8 +120,8 @@ export default async function BookingsPage() {
       ) : (
         <div className="text-center py-20 border border-white/5 rounded-3xl bg-white/[0.01]">
           <p className="text-white/40 mb-6">You have no reservations on record.</p>
-          <Link href="/booking" className="inline-block border border-accent-gold/50 text-accent-gold px-8 py-4 rounded-xl text-[12px] font-bold tracking-[0.15em] uppercase hover:bg-accent-gold hover:text-black transition-all duration-300">
-            Explore Spaces
+          <Link href="/spaces" className="inline-block border border-accent-gold/50 text-accent-gold px-8 py-4 rounded-xl text-[12px] font-bold tracking-[0.15em] uppercase hover:bg-accent-gold hover:text-black transition-all duration-300">
+            Explore Sanctuaries
           </Link>
         </div>
       )}

@@ -20,11 +20,15 @@ export async function POST(req: NextRequest) {
 
     // 1. Update guest_profile if ID provided
     if (guestProfileId) {
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
       const { data: profile, error: profErr } = await supabase
         .from('guest_profiles')
         .update({
           is_verified: status === 'verified',
-          updated_at: new Date().toISOString()
+          verification_timestamp: status === 'verified' ? now.toISOString() : null,
+          verification_expires_at: status === 'verified' ? expiresAt.toISOString() : null,
+          police_register_status: status === 'verified' ? 'verified_compliant' : 'action_required'
         })
         .eq('id', guestProfileId)
         .select()

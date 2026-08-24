@@ -64,7 +64,7 @@ export default function KinksterProfilePage() {
       }
     } catch (err) {
       console.error('Error fetching kinkster profile:', err);
-    } fontally: {
+    } finally {
       setLoading(false);
     }
   };

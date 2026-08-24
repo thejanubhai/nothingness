@@ -123,26 +123,27 @@ export default function EditSpacePage({ params }: { params: Promise<{ id: string
     setError(null);
 
     try {
-      const supabase = createClient();
-      
-      const { error: updateError } = await supabase
-        .from('spaces')
-        .update({
+      const res = await fetch('/api/spaces', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
           ...formData,
           images,
           amenities: amenities.filter(a => a.trim() !== ''),
           rules: rules.filter(r => r.trim() !== '').join('\n'),
         })
-        .eq('id', id);
+      });
 
-      if (updateError) throw updateError;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update space');
       
-      toast.success('Space updated successfully!');
+      toast.success('Space updated successfully in Supabase!');
       router.refresh();
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to update space');
-      toast.error('Failed to update space');
+      toast.error(err.message || 'Failed to update space');
     } finally {
       setSaving(false);
     }
@@ -180,20 +181,19 @@ export default function EditSpacePage({ params }: { params: Promise<{ id: string
     
     setDeleting(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('spaces')
-        .delete()
-        .eq('id', id);
-        
-      if (error) throw error;
+      const res = await fetch(`/api/spaces?id=${id}`, {
+        method: 'DELETE'
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete space');
       
-      toast.success('Space deleted');
+      toast.success('Space deleted from Supabase');
       router.push('/admin/spaces');
       router.refresh();
     } catch (err: any) {
       console.error(err);
-      toast.error('Failed to delete space');
+      toast.error(err.message || 'Failed to delete space');
       setDeleting(false);
     }
   };

@@ -9,7 +9,6 @@ import {
   Building2, 
   CalendarDays, 
   Users, 
-  MessageSquare, 
   CreditCard, 
   Sparkles, 
   Settings,
@@ -29,7 +28,7 @@ export default async function AdminLayout({
   const userPhone = user?.phone ? normalizeIdentifier(user.phone) : null;
 
   if (!user || (userPhone !== adminIdentifier && !user.email?.includes('admin') && !user.email?.includes('hudav'))) {
-    redirect('/');
+    redirect('/auth');
   }
 
   const navItems = [

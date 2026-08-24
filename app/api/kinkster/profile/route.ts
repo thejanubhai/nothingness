@@ -29,14 +29,28 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check user ID verification status
-    const { data: guestProfile } = await supabase
-      .from('guest_profiles')
-      .select('is_verified')
-      .eq('user_id', user.id)
-      .single();
+    // Check user ID verification status by phone or user_id
+    let isIdVerified = false;
+    if (user.phone) {
+      const cleanPhone = user.phone.replace(/[^0-9+]/g, '');
+      const { data: gpByPhone } = await supabase
+        .from('guest_profiles')
+        .select('is_verified')
+        .eq('phone', cleanPhone)
+        .eq('is_verified', true)
+        .maybeSingle();
+      if (gpByPhone?.is_verified) isIdVerified = true;
+    }
 
-    const isIdVerified = guestProfile?.is_verified ?? false;
+    if (!isIdVerified) {
+      const { data: gpByUserId } = await supabase
+        .from('guest_profiles')
+        .select('is_verified')
+        .eq('user_id', user.id)
+        .eq('is_verified', true)
+        .maybeSingle();
+      if (gpByUserId?.is_verified) isIdVerified = true;
+    }
 
     // Fetch user's active kinkster profile
     const { data: kinksterProfile } = await supabase

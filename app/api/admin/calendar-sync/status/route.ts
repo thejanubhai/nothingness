@@ -14,7 +14,7 @@ export async function GET() {
         *,
         spaces (id, title, slug)
       `)
-      .order('updated_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (sourcesErr) {
       console.error('Error fetching calendar_sync_sources:', sourcesErr);

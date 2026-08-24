@@ -18,7 +18,7 @@ export default async function SettingsPage() {
   const { data: passkeys, error: passkeysError } = await supabase.auth.passkey.list();
   
   if (!user) {
-    redirect('/auth/login');
+    redirect('/auth');
   }
 
   return (

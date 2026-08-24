@@ -78,18 +78,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to create booking record' }, { status: 500 });
     }
 
+    const cleanPhone = user.phone ? user.phone.replace(/[^0-9]/g, '') : "9999999999";
+    const customerPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : "9999999999";
+
     // Now create Cashfree Order with the correct return_url
     const request = {
       order_amount: finalAmount,
       order_currency: "INR",
       order_id: orderId,
       customer_details: {
-        customer_id: `guest_${Date.now()}`,
-        customer_phone: "9999999999",
-        customer_name: "Nothingness Guest"
+        customer_id: user.id,
+        customer_phone: customerPhone,
+        customer_email: user.email || undefined,
+        customer_name: user.user_metadata?.full_name || "Nothingness Guest"
       },
       order_meta: {
-        return_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/booking/${booking.id}/verify`
+        return_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia'}/booking/${booking.id}/verify`
       }
     };
     const response = await cashfree.PGCreateOrder(request);

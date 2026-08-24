@@ -28,14 +28,22 @@ export default function AddGuestPage() {
     try {
       const supabase = createClient();
       
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
+      const cleanPhone = formData.phone_number ? formData.phone_number.replace(/[^0-9+]/g, '') : null;
+
       const { error: insertError } = await supabase
         .from('guest_profiles')
         .insert({
           full_name: formData.full_name,
-          phone_number: formData.phone_number || null, // send null if empty to avoid unique constraint issues
+          phone_number: cleanPhone,
+          phone: cleanPhone,
           id_document_type: formData.id_document_type,
           document_number: formData.document_number || null,
           is_verified: formData.is_verified,
+          verification_timestamp: formData.is_verified ? now.toISOString() : null,
+          verification_expires_at: formData.is_verified ? expiresAt.toISOString() : null,
+          police_register_status: formData.is_verified ? 'verified_compliant' : 'action_required'
         });
 
       if (insertError) throw insertError;

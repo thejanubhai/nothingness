@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LayoutDashboard, Building2, CalendarDays, Users, MessageSquare, CreditCard, Sparkles, Settings } from 'lucide-react';
+import { Menu, X, LayoutDashboard, Building2, CalendarDays, Users, CreditCard, Sparkles, Settings } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },

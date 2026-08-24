@@ -115,7 +115,7 @@ export default function Footer() {
             <ul className="flex flex-col gap-1.5 sm:gap-2">
               <li>
                 <Link href="/franchise" className={linkClass}>
-                  Franchise &amp; Host
+                  nothingness. Partner
                   <span className={underlineClass} />
                 </Link>
               </li>
@@ -152,7 +152,7 @@ export default function Footer() {
             </Tooltip>
             <span className="w-1 h-1 rounded-full bg-white/15" />
             <Tooltip content="Identity verification required before check-in">
-              <span className="text-white/30 text-[10px] sm:text-[11px] tracking-[0.15em] uppercase font-mono">Delhi Police Verified</span>
+              <span className="text-white/30 text-[10px] sm:text-[11px] tracking-[0.15em] uppercase font-mono">Govt ID &amp; Police Compliant</span>
             </Tooltip>
           </div>
         </div>

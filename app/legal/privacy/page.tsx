@@ -19,14 +19,15 @@ export default function PrivacyPage() {
         <p>We collect personal information that you voluntarily provide to us when you register on the website, express an interest in obtaining information about us or our products and services, or otherwise contact us.</p>
         <ul>
           <li><strong>Personal details:</strong> Name, phone number, email address, and government-issued ID (collected securely prior to check-in).</li>
-          <li><strong>Payment data:</strong> We collect data necessary to process your payment if you make purchases, such as your payment instrument number. All payment data is stored securely by our payment processor (Razorpay).</li>
+          <li><strong>Payment data:</strong> We collect data necessary to process your payment if you make purchases, such as your payment instrument number. All payment data is stored securely by our PCI-DSS Level 1 certified payment gateway (Cashfree Payments).</li>
         </ul>
 
         <h2>2. How We Use Your Information</h2>
         <p>We use personal information collected via our website for a variety of business purposes described below:</p>
         <ul>
-          <li>To facilitate account creation and logon process.</li>
+          <li>To facilitate account creation, OTP verification, and biometric Passkey authentication.</li>
           <li>To fulfill and manage your bookings, payments, and returns.</li>
+          <li>To comply with statutory Delhi Police Form C and local hospitality security registrations.</li>
           <li>To enforce our terms, conditions, and policies for business purposes, legal reasons, and contractual obligations.</li>
           <li>To respond to legal requests and prevent harm.</li>
         </ul>
@@ -35,7 +36,7 @@ export default function PrivacyPage() {
         <p>We only share information with your consent, to comply with laws, to provide you with services, to protect your rights, or to fulfill business obligations. We absolutely DO NOT sell your data to third parties.</p>
 
         <h2>4. How Long Do We Keep Your Information?</h2>
-        <p>We keep your information for as long as necessary to fulfill the purposes outlined in this privacy policy unless otherwise required by law (such as tax, accounting, or other legal requirements). Government IDs are securely purged after your stay is completed.</p>
+        <p>We keep your information for as long as necessary to fulfill the purposes outlined in this privacy policy. In accordance with digital hospitality guidelines, guest ID vetting records are maintained for 180 days across bookings to allow reusable access, after which document images are automatically purged from our servers.</p>
 
         <h2>5. Security of Your Information</h2>
         <p>We have implemented appropriate technical and organizational security measures designed to protect the security of any personal information we process. However, please also remember that we cannot guarantee that the internet itself is 100% secure.</p>
