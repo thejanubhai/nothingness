@@ -60,7 +60,7 @@ export default function Header() {
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
             </Link>
             <Link href="/kinksters" className="text-[12px] font-medium tracking-[0.2em] uppercase text-rose-400/90 hover:text-rose-400 transition-colors duration-300 relative group py-2 flex items-center gap-1">
-              Kinksters 🔥
+              Lifestyle 🔥
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-rose-500 group-hover:w-full transition-all duration-300" />
             </Link>
             <Link href="/franchise" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
@@ -77,13 +77,12 @@ export default function Header() {
             </Magnetic>
           </nav>
 
-          {/* Mobile Hamburger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden w-10 h-10 flex items-center justify-center text-white"
+            className="md:hidden w-11 h-11 flex items-center justify-center text-white rounded-full bg-white/5 border border-white/10 active:scale-95 transition-all"
             aria-label="Toggle menu"
           >
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileOpen ? <X className="w-5 h-5 text-accent-gold" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </header>
@@ -92,27 +91,46 @@ export default function Header() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-40 bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6"
+            className="fixed inset-0 z-40 bg-black/95 backdrop-blur-3xl flex flex-col justify-between p-6 pt-28 pb-[calc(2rem+env(safe-area-inset-bottom))] overflow-y-auto"
           >
-            <div className="flex flex-col space-y-6 text-center w-full max-w-xs">
-              <Link href="/" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors py-2" onClick={() => setMobileOpen(false)}>
+            <div className="flex flex-col space-y-4 text-center w-full max-w-sm mx-auto">
+              <Link href="/" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors py-2 border-b border-white/5" onClick={() => setMobileOpen(false)}>
                 Home
               </Link>
-              <Link href="/spaces" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors py-2" onClick={() => setMobileOpen(false)}>
-                Spaces
+              <Link href="/spaces" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors py-2 border-b border-white/5" onClick={() => setMobileOpen(false)}>
+                Spaces &amp; Sanctuaries
               </Link>
-              <Link href="/kinksters" className="text-2xl font-serif text-rose-400 hover:text-rose-300 transition-colors py-2 flex items-center justify-center gap-2" onClick={() => setMobileOpen(false)}>
-                Kinksters 🔥
+              <Link href="/kinksters" className="text-2xl font-serif text-rose-400 hover:text-rose-300 transition-colors py-2 border-b border-white/5 flex items-center justify-center gap-2" onClick={() => setMobileOpen(false)}>
+                Lifestyle 🔥
               </Link>
-              <Link href="/franchise" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors py-2" onClick={() => setMobileOpen(false)}>
-                Franchise
+              <Link href="/about" className="text-xl font-serif text-white/80 hover:text-accent-gold transition-colors py-1.5" onClick={() => setMobileOpen(false)}>
+                The Philosophy
               </Link>
-              <Link href="/auth" className="mt-4 py-3 bg-gradient-to-r from-accent-gold to-amber-600 text-black font-bold text-sm tracking-widest uppercase rounded-full shadow-lg" onClick={() => setMobileOpen(false)}>
-                Guest Portal
+              <Link href="/journal" className="text-xl font-serif text-white/80 hover:text-accent-gold transition-colors py-1.5" onClick={() => setMobileOpen(false)}>
+                Journal
+              </Link>
+              <Link href="/franchise" className="text-xl font-serif text-white/80 hover:text-accent-gold transition-colors py-1.5" onClick={() => setMobileOpen(false)}>
+                Franchise &amp; Partner
+              </Link>
+              <Link href="/faq" className="text-xl font-serif text-white/80 hover:text-accent-gold transition-colors py-1.5" onClick={() => setMobileOpen(false)}>
+                FAQ
+              </Link>
+              <Link href="/contact" className="text-xl font-serif text-white/80 hover:text-accent-gold transition-colors py-1.5" onClick={() => setMobileOpen(false)}>
+                Contact Concierge
+              </Link>
+            </div>
+
+            <div className="w-full max-w-sm mx-auto pt-6">
+              <Link 
+                href="/auth" 
+                className="w-full block py-4 bg-gradient-to-r from-accent-gold to-amber-600 text-black font-bold text-xs tracking-widest uppercase rounded-2xl shadow-xl text-center" 
+                onClick={() => setMobileOpen(false)}
+              >
+                Guest Portal Login
               </Link>
             </div>
           </motion.div>

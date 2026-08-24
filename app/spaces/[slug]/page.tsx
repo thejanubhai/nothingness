@@ -64,7 +64,7 @@ export default async function SpacePage({ params }: { params: Promise<{ slug: st
     location: `${space.area || ''}, ${space.city || ''}`.replace(/^, /, ''),
     description: space.description,
     price: space.nightly_price,
-    images: space.images && space.images.length > 0 ? space.images : [space.featured_image || "/images/property-1.png"],
+    images: space.images && space.images.length > 0 ? space.images : [space.featured_image || "/images/The Void.png"],
     amenities: space.amenities || [],
     rules: space.rules ? space.rules.split('\n') : [],
     bookings: space.bookings || []

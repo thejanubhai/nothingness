@@ -3,13 +3,13 @@ import Magnetic from "@/components/Magnetic";
 
 export const metadata = {
   title: "Media & Press | Nothingness",
-  description: "Press coverage and media features for Nothingness - India's First & Only BDSM & Kink Hospitality Brand.",
+  description: "Press coverage and media features for Nothingness - India's Premier Alternate Lifestyle Hospitality Brand.",
 };
 
 const mediaFeatures = [
   {
     publisher: "Homegrown",
-    title: "Inside India's First Kink-Friendly Hospitality Brand",
+    title: "Inside India's First Alternate Lifestyle Hospitality Brand",
     excerpt: "Nothingness is redefining luxury intimacy in New Delhi with its deeply cinematic and meticulously crafted underground stays.",
     image: "/images/media/media_homegrown_1779913186925.png",
     link: "#",
@@ -46,7 +46,7 @@ export default function MediaPage() {
     <main className="min-h-screen bg-background pt-32 pb-24 px-4 md:px-12 max-w-7xl mx-auto">
       <div className="mb-16">
         <h1 className="font-serif text-5xl md:text-7xl tracking-tight mb-4 text-foreground">Press & Media</h1>
-        <p className="text-xl text-accent-gold font-serif italic mb-6">India's First & Only BDSM & Kink Hospitality Brand</p>
+        <p className="text-xl text-accent-gold font-serif italic mb-6">India's Premier Alternate Lifestyle Hospitality Brand</p>
         <p className="text-foreground/70 max-w-2xl text-lg">
           Nothingness has redefined luxury hospitality by creating private, judgment-free sanctuaries designed for absolute intimacy, exploration, and cinematic stays. Explore our features across social media and digital publications.
         </p>

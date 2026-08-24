@@ -25,8 +25,8 @@ export default function Hero() {
         className="absolute inset-0 z-0 origin-bottom"
       >
         <Image
-          src="/images/the-chamber/image-1.jpg"
-          alt="The Chamber by Nothingness"
+          src="/images/IMG_9955.jpg"
+          alt="Nothingness Private Sanctuary"
           fill
           priority
           className="object-cover"

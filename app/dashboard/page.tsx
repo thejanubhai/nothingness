@@ -149,7 +149,7 @@ export default async function DashboardOverview() {
               <div key={booking.id} className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden group">
                 <div className="h-40 relative overflow-hidden">
                   <img 
-                    src={booking.spaces.featured_image || '/images/property-1.png'} 
+                    src={booking.spaces.featured_image || '/images/The Void.png'} 
                     alt={booking.spaces.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />

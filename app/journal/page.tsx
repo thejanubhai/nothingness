@@ -3,16 +3,16 @@ import Image from "next/image";
 
 const posts = [
   {
-    title: "The Architecture of Isolation",
+    title: "The Architecture of Sensual Isolation",
     date: "October 12, 2026",
-    excerpt: "Exploring the brutalist concepts that inspired The Concrete Villa, and why heavy, unforgiving materials can create the most profound sense of safety.",
-    image: "/images/property-1.png",
+    excerpt: "Exploring the brutalist concepts that inspired our dark sanctuary rooms, and why heavy, unforgiving materials create the deepest sense of intimacy.",
+    image: "/images/IMG_2828.jpeg",
   },
   {
-    title: "Curating the Underground Loft",
+    title: "Curating The Void: Cinema & Atmosphere",
     date: "September 04, 2026",
-    excerpt: "A look inside the selection of contemporary art and vintage audio equipment that gives our Berlin sanctuary its unmistakable energy.",
-    image: "/images/property-2.png",
+    excerpt: "A look inside the tactile Italian textures, private cinema setup, and ambient backlit fixtures that give The Void its unforgettable glow.",
+    image: "/images/The Void (1).png",
   }
 ];
 

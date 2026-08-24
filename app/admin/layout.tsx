@@ -34,14 +34,12 @@ export default async function AdminLayout({
 
   const navItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Spaces', href: '/admin/spaces', icon: Building2 },
+    { name: 'Sanctuaries', href: '/admin/spaces', icon: Building2 },
+    { name: 'Calendar & Channels', href: '/admin/calendar', icon: CalendarDays },
     { name: 'Bookings', href: '/admin/bookings', icon: CalendarDays },
-    { name: 'Calendar Sync', href: '/admin/calendar', icon: CalendarDays },
-    { name: 'Guests CRM', href: '/admin/guests', icon: Users },
-    { name: 'Inbox', href: '/admin/inbox', icon: MessageSquare },
-    { name: 'Financials', href: '/admin/financials', icon: CreditCard },
+    { name: 'Guest CRM & Police', href: '/admin/guests', icon: Users },
     { name: 'Housekeeping', href: '/admin/housekeeping', icon: Sparkles },
-    { name: 'WhatsApp Connect', href: '/admin/whatsapp-connect', icon: MessageSquare },
+    { name: 'Financials', href: '/admin/financials', icon: CreditCard },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 

@@ -70,7 +70,7 @@ export default function KinkstersFeedPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-rose-400 via-purple-400 to-amber-300 bg-clip-text text-transparent">
-              Nothingness Kinksters
+              Nothingness Lifestyle
             </h1>
             <span className="px-2.5 py-1 bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-bold rounded-full flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
@@ -78,7 +78,7 @@ export default function KinkstersFeedPage() {
             </span>
           </div>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Exclusive Instagram-style private feed for vetted members under unique aliases.
+            Exclusive private feed for vetted alternate lifestyle community members under unique aliases.
           </p>
         </div>
 
@@ -102,7 +102,7 @@ export default function KinkstersFeedPage() {
             className="px-5 py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg flex items-center gap-2 animate-pulse"
           >
             <Sparkles className="w-4 h-4" />
-            Activate Kinkster Mode
+            Activate Lifestyle Profile
           </button>
         )}
       </div>
@@ -123,7 +123,7 @@ export default function KinkstersFeedPage() {
               onClick={() => setShowActivationModal(true)}
               className="mt-2 px-6 py-3 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs shadow-xl transition-all"
             >
-              Activate Kinkster Mode Now
+              Activate Lifestyle Profile Now
             </button>
           </div>
         </div>

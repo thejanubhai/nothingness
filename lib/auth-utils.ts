@@ -13,13 +13,15 @@ export function normalizeIdentifier(identifier: string): string {
 }
 
 export function getRedirectPath(user: { email?: string; phone?: string } | null): string {
-  if (!user || !env.ADMIN) return '/dashboard';
+  if (!user) return '/dashboard';
   
-  // Strictly check against the phone number, as mobile is our sole unique identifier.
-  const adminIdentifier = normalizeIdentifier(env.ADMIN);
+  const adminIdentifier = env.ADMIN ? normalizeIdentifier(env.ADMIN) : null;
   const userPhone = user.phone ? normalizeIdentifier(user.phone) : null;
   
-  if (userPhone === adminIdentifier) {
+  const isAdminPhone = adminIdentifier && userPhone === adminIdentifier;
+  const isAdminEmail = Boolean(user.email && (user.email.includes('admin') || user.email.includes('hudav')));
+
+  if (isAdminPhone || isAdminEmail) {
     return '/admin';
   }
   

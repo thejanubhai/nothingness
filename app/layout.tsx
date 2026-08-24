@@ -36,16 +36,16 @@ export const metadata: Metadata = {
     template: '%s | Nothingness',
     default: 'Nothingness | A State of Mind',
   },
-  description: "India's First & Only Kink & BDSM Hospitality Brand. An emotionally immersive, culturally underground, Gen-Z-forward accommodation brand focused on privacy, aesthetics, intimacy, and cinematic stays.",
-  keywords: ["luxury hospitality", "kink friendly hotel india", "bdsm friendly airbnb", "cinematic stays", "underground culture", "delhi secret stay"],
+  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. An emotionally immersive, culturally underground, Gen-Z-forward accommodation brand focused on privacy, aesthetics, intimacy, and cinematic stays.",
+  keywords: ["luxury hospitality", "alternate lifestyle hotel india", "private sanctuary airbnb", "cinematic stays", "underground culture", "delhi secret stay", "luxury boutique stay"],
   openGraph: {
     title: 'Nothingness | A State of Mind',
-    description: "India's First & Only Kink & BDSM Hospitality Brand.",
+    description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand.",
     url: 'https://nothingness.asia',
     siteName: 'Nothingness',
     images: [
       {
-        url: '/images/og-image.jpg',
+        url: '/images/IMG_9955.jpg',
         width: 1200,
         height: 630,
         alt: 'Nothingness - A State of Mind',
@@ -57,8 +57,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Nothingness | A State of Mind',
-    description: "India's First & Only Kink & BDSM Hospitality Brand.",
-    images: ['/images/og-image.jpg'],
+    description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand.",
+    images: ['/images/IMG_9955.jpg'],
   },
   robots: {
     index: true,

@@ -6,10 +6,10 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { listingId: string } }
+  { params }: { params: Promise<{ listingId: string }> }
 ) {
   try {
-    const { listingId } = params
+    const { listingId } = await params;
     const supabase = await createClient()
 
     // Fetch the listing to name the calendar

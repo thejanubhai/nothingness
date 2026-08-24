@@ -16,7 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${baseUrl}/properties`,
+      url: `${baseUrl}/spaces`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.9,
@@ -35,20 +35,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   ];
 
-  // Dynamic property routes
-  const { data: properties } = await supabase
-    .from('properties')
+  // Dynamic space routes
+  const { data: spaces } = await supabase
+    .from('spaces')
     .select('slug, updated_at')
     .eq('active', true);
 
-  if (properties) {
-    const propertyRoutes = properties.map((property) => ({
-      url: `${baseUrl}/properties/${property.slug}`,
-      lastModified: new Date(property.updated_at || new Date()),
+  if (spaces) {
+    const spaceRoutes = spaces.map((space) => ({
+      url: `${baseUrl}/spaces/${space.slug}`,
+      lastModified: new Date(space.updated_at || new Date()),
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     }));
-    routes.push(...propertyRoutes);
+    routes.push(...spaceRoutes);
   }
 
   return routes;

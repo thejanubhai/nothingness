@@ -1,7 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  serverExternalPackages: ['node-ical'],
+  serverExternalPackages: [
+    '@whiskeysockets/baileys',
+    'qrcode',
+    'node-ical',
+    'cashfree-pg',
+    '@google/genai'
+  ],
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      'date-fns',
+      'clsx',
+      'tailwind-merge'
+    ]
+  },
   images: {
     remotePatterns: [
       {

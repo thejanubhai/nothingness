@@ -11,9 +11,12 @@ interface Space {
   slug: string;
   tagline?: string;
   description: string;
-  price_per_night: number;
+  price_per_night?: number;
+  nightly_price?: number;
   city: string;
+  area?: string;
   images: string[];
+  featured_image?: string;
   max_guests?: number;
 }
 
@@ -65,13 +68,28 @@ export default function PropertySwipeDeck() {
   }
 
   if (spaces.length === 0) {
-    return null;
+    return (
+      <div className="w-full max-w-xl mx-auto p-12 bg-zinc-950/80 border border-zinc-800 rounded-3xl text-center space-y-4">
+        <Building2 className="w-10 h-10 text-rose-400 mx-auto opacity-70" />
+        <h3 className="text-lg font-bold text-white font-serif">No Active Sanctuaries Yet</h3>
+        <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+          Add properties directly via the Admin Dashboard to feature them here.
+        </p>
+        <Link
+          href="/admin/spaces/new"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent-gold text-black font-bold text-xs rounded-xl hover:bg-white transition-all shadow-lg"
+        >
+          <Sparkles className="w-4 h-4" /> Add Sanctuary via Admin
+        </Link>
+      </div>
+    );
   }
 
   const currentSpace = spaces[currentIndex];
-  const spaceImages = currentSpace.images && currentSpace.images.length > 0
+  const rawImages = (currentSpace.images && currentSpace.images.length > 0)
     ? currentSpace.images
-    : ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=1200'];
+    : (currentSpace.featured_image ? [currentSpace.featured_image] : ['/images/The Void.png']);
+  const spaceImages = rawImages.filter(Boolean);
 
   const handleNextSpace = () => {
     setCurrentIndex((prev) => (prev + 1) % spaces.length);
@@ -167,7 +185,7 @@ export default function PropertySwipeDeck() {
             <div>
               <span className="text-[10px] text-zinc-400 font-mono uppercase block">Nightly Tariff</span>
               <span className="text-lg font-extrabold text-white font-mono">
-                ₹{currentSpace.price_per_night?.toLocaleString('en-IN')}
+                ₹{(currentSpace.nightly_price || currentSpace.price_per_night || 0).toLocaleString('en-IN')}
                 <span className="text-xs font-normal text-zinc-400"> / night</span>
               </span>
             </div>

@@ -1,51 +1,54 @@
 import { createClient } from "@/lib/supabase/server";
-import ICalSyncMonitor from "@/components/admin/ICalSyncMonitor";
+import UnifiedCalendarClient from "@/components/admin/UnifiedCalendarClient";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminCalendarPage() {
   const supabase = await createClient();
 
-  // Initial SSR fetch of sync sources & stats
-  const { data: sources } = await supabase
+  // 1. Fetch active spaces
+  const { data: spaces } = await supabase
+    .from('spaces')
+    .select('id, title, slug, nightly_price, featured_image')
+    .order('created_at', { ascending: false });
+
+  // 2. Fetch all bookings with spaces and guests
+  const { data: bookings } = await supabase
+    .from('bookings')
+    .select(`
+      id, space_id, check_in, check_out, status, payment_status, total_price, guests, user_id,
+      spaces (id, title, slug),
+      booking_guests (
+        name,
+        guest_profiles (full_name, phone_number, document_number)
+      )
+    `)
+    .order('check_in', { ascending: true });
+
+  // 3. Fetch all external/internal blocked dates
+  const { data: blockedDates } = await supabase
+    .from('external_blocked_dates')
+    .select(`
+      id, space_id, start_date, end_date, summary,
+      spaces (id, title, slug)
+    `)
+    .order('start_date', { ascending: true });
+
+  // 4. Fetch all calendar sync sources
+  const { data: syncSources } = await supabase
     .from('calendar_sync_sources')
     .select(`
-      *,
+      id, space_id, platform, inbound_ical_url, is_active, last_synced_at, sync_status, sync_error,
       spaces (id, title, slug)
     `)
     .order('updated_at', { ascending: false });
 
-  const { count: totalBlockedDates } = await supabase
-    .from('external_blocked_dates')
-    .select('*', { count: 'exact', head: true });
-
-  const totalSources = sources?.length || 0;
-  const activeSources = sources?.filter(s => s.is_active)?.length || 0;
-  const errorSources = sources?.filter(s => s.sync_status === 'error')?.length || 0;
-  const successSources = sources?.filter(s => s.sync_status === 'success')?.length || 0;
-
-  const initialData = {
-    stats: {
-      totalSources,
-      activeSources,
-      successSources,
-      errorSources,
-      totalBlockedDates: totalBlockedDates || 0,
-      lastCronCheck: new Date().toISOString(),
-    },
-    sources: sources || [],
-  };
-
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      <div>
-        <h1 className="font-serif text-3xl md:text-4xl mb-2 text-white">Calendar Sync Monitoring</h1>
-        <p className="text-white/50 text-sm tracking-wide">
-          Manage and monitor external iCal feeds (Airbnb, Vrbo, Booking.com, Google) to prevent double bookings.
-        </p>
-      </div>
-
-      <ICalSyncMonitor initialData={initialData} />
-    </div>
+    <UnifiedCalendarClient
+      initialSpaces={spaces || []}
+      initialBookings={(bookings as any) || []}
+      initialBlockedDates={(blockedDates as any) || []}
+      initialSyncSources={(syncSources as any) || []}
+    />
   );
 }

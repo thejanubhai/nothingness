@@ -51,7 +51,7 @@ export default function AddBookingPage() {
       const { data: booking, error: insertError } = await supabase
         .from('bookings')
         .insert({
-          property_id: formData.space_id,
+          space_id: formData.space_id,
           check_in: formData.check_in,
           check_out: formData.check_out,
           guests: formData.guests,
