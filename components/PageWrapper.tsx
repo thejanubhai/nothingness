@@ -1,8 +1,20 @@
 "use client";
 
 import { motion } from 'framer-motion';
+import { usePathname } from 'next/navigation';
 
 export default function PageWrapper({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const pathname = usePathname();
+  const isAdmin = pathname?.startsWith('/admin');
+
+  if (isAdmin) {
+    return (
+      <div className={`flex-grow h-full flex flex-col min-h-0 w-full ${className}`}>
+        {children}
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}

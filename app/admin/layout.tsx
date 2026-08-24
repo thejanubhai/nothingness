@@ -43,10 +43,10 @@ export default async function AdminLayout({
   ];
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-background overflow-hidden selection:bg-accent-gold/30">
+    <div className="flex flex-col md:flex-row h-screen h-[100dvh] max-h-[100dvh] bg-background overflow-hidden selection:bg-accent-gold/30 w-full">
       <MobileNav />
       {/* Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white/[0.02] border-r border-white/5 flex-col">
+      <aside className="hidden md:flex w-64 bg-white/[0.02] border-r border-white/5 flex-col shrink-0 h-full">
         <div className="p-6 border-b border-white/5">
           <Link href="/admin" className="font-serif text-2xl text-accent-gold tracking-wide">
             Nothingness
@@ -54,7 +54,7 @@ export default async function AdminLayout({
           <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 mt-1">Command Center</p>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4">
+        <nav className="flex-1 overflow-y-auto py-4" data-lenis-prevent>
           <ul className="space-y-1 px-3">
             {navItems.map((item) => (
               <li key={item.name}>
@@ -85,7 +85,10 @@ export default async function AdminLayout({
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden bg-black relative w-full">
+      <main 
+        className="flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden bg-black relative w-full overscroll-contain"
+        data-lenis-prevent
+      >
         <div className="fixed inset-0 bg-grain opacity-[0.02] pointer-events-none z-0" />
         <div className="min-h-full p-4 sm:p-8 md:p-12 max-w-7xl mx-auto relative z-10 pb-20 md:pb-12">
           {children}
