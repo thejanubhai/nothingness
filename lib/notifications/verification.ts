@@ -189,3 +189,74 @@ export async function sendVerificationRejectedNotification({
     return { success: false, error: msg };
   }
 }
+
+export async function sendAdditionalGuestInviteNotification({
+  phone,
+  email,
+  guestName,
+  spaceTitle,
+  primaryGuestName,
+  checkInDate,
+  checkOutDate,
+  verificationToken,
+  isSelfPay,
+  paymentAmount,
+}: {
+  phone?: string;
+  email?: string;
+  guestName: string;
+  spaceTitle: string;
+  primaryGuestName: string;
+  checkInDate: string;
+  checkOutDate: string;
+  verificationToken: string;
+  isSelfPay: boolean;
+  paymentAmount?: number;
+}) {
+  const siteUrl = env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
+  const verificationLink = `${siteUrl}/verify-guest/${verificationToken}`;
+
+  console.log(`[Guest Invite] Dispatching invitation to ${guestName} (${phone || email}) - Link: ${verificationLink}`);
+
+  if (email && env.RESEND_API_KEY) {
+    try {
+      const resend = new Resend(env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: 'Nothingness Concierge <concierge@nothingness.asia>',
+        to: email,
+        subject: `Guest Invitation & Verification - ${spaceTitle}`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0c0c0e; color: #f3f3f3; padding: 40px 24px; border-radius: 16px; border: 1px solid #1a1a22;">
+            <h1 style="font-family: Georgia, serif; font-size: 22px; color: #e2b866; text-align: center; text-transform: uppercase;">Nothingness</h1>
+            <p style="text-align: center; color: #888899; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Guest Stay Invitation</p>
+            <div style="padding: 24px 0;">
+              <p>Dear <strong>${guestName}</strong>,</p>
+              <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">
+                <strong>${primaryGuestName}</strong> has registered you as a guest for a private sanctuary stay at <strong>${spaceTitle}</strong> (${checkInDate} to ${checkOutDate}).
+              </p>
+              ${
+                isSelfPay && paymentAmount
+                  ? `<p style="color: #e2b866; font-size: 14px; background: rgba(226,184,102,0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(226,184,102,0.2);">
+                      <strong>Stay Tariff Contribution:</strong> ₹${paymentAmount} (to be paid upon verification)
+                    </p>`
+                  : `<p style="color: #4ade80; font-size: 14px;">Your stay tariff has been completely settled by ${primaryGuestName}.</p>`
+              }
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="${verificationLink}" style="display: inline-block; background-color: #e2b866; color: #000000; font-weight: bold; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-size: 13px; text-transform: uppercase;">
+                  ${isSelfPay ? 'Pay Tariff & Upload ID' : 'Upload ID Document'}
+                </a>
+              </div>
+            </div>
+          </div>
+        `
+      });
+    } catch (e) {
+      console.error('[Guest Invite] Email send error:', e);
+    }
+  }
+
+  return {
+    success: true,
+    verificationLink,
+  };
+}

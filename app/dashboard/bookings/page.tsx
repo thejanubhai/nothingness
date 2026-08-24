@@ -46,8 +46,8 @@ export default async function BookingsPage() {
             <div key={booking.id} className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-8">
               <div className="w-full md:w-48 aspect-[4/3] relative rounded-2xl overflow-hidden shrink-0 border border-white/10">
                 <img 
-                  src={booking.spaces.featured_image || '/images/The Void.png'} 
-                  alt={booking.spaces.title}
+                  src={booking.spaces?.featured_image || ''} 
+                  alt={booking.spaces?.title || 'Sanctuary'}
                   className="w-full h-full object-cover"
                 />
               </div>

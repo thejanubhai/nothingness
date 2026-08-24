@@ -88,7 +88,7 @@ export default function PropertySwipeDeck() {
   const currentSpace = spaces[currentIndex];
   const rawImages = (currentSpace.images && currentSpace.images.length > 0)
     ? currentSpace.images
-    : (currentSpace.featured_image ? [currentSpace.featured_image] : ['/images/The Void.png']);
+    : (currentSpace.featured_image ? [currentSpace.featured_image] : []);
   const spaceImages = rawImages.filter(Boolean);
 
   const handleNextSpace = () => {

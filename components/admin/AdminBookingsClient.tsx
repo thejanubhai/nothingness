@@ -15,7 +15,12 @@ import { useRouter } from 'next/navigation';
 interface BookingGuest {
   id: string;
   name?: string;
+  phone?: string;
   verification_status?: string;
+  payment_status?: string;
+  payment_amount?: number;
+  paid_at?: string;
+  is_primary?: boolean;
   guest_index: number;
   guest_profiles?: {
     full_name?: string;
@@ -36,6 +41,11 @@ interface Booking {
   guest_name?: string;
   guest_email?: string;
   guest_phone?: string;
+  guests?: number;
+  default_guests?: number;
+  additional_guests_count?: number;
+  additional_guest_payment_mode?: string;
+  additional_guest_total_amount?: number;
   created_at: string;
   spaces?: {
     title: string;
@@ -214,7 +224,7 @@ export default function AdminBookingsClient({ initialBookings }: { initialBookin
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-xs bg-white/[0.01] border border-white/5 p-3 rounded-xl">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-white/[0.01] border border-white/5 p-3 rounded-xl">
                   <div>
                     <p className="text-white/30 uppercase font-mono text-[9px] mb-0.5">Stay Dates</p>
                     <p className="text-white font-medium">
@@ -224,6 +234,12 @@ export default function AdminBookingsClient({ initialBookings }: { initialBookin
                   <div>
                     <p className="text-white/30 uppercase font-mono text-[9px] mb-0.5">Total Tariff</p>
                     <p className="text-accent-gold font-bold font-mono">₹{Number(booking.total_price).toLocaleString('en-IN')}</p>
+                  </div>
+                  <div>
+                    <p className="text-white/30 uppercase font-mono text-[9px] mb-0.5">Guests &amp; Split</p>
+                    <p className="text-white font-medium font-mono text-[11px]">
+                      {booking.guests || 2} Guests {booking.additional_guest_payment_mode === 'split_self_pay' ? '(Split Pay)' : '(All Paid)'}
+                    </p>
                   </div>
                 </div>
 
@@ -258,7 +274,7 @@ export default function AdminBookingsClient({ initialBookings }: { initialBookin
               {/* Right Column: Guest Protocol & ID Verification */}
               <div className="w-full lg:w-2/3 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-8 space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Delhi Police Guest Compliance</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Delhi Police Guest Compliance &amp; Tariff</p>
                   {isVerified ? (
                     <span className="flex items-center gap-1 text-[10px] text-green-400 font-mono">
                       <ShieldCheck className="w-3.5 h-3.5" /> 180-Day Vetted Guest
@@ -272,33 +288,59 @@ export default function AdminBookingsClient({ initialBookings }: { initialBookin
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {booking.booking_guests && booking.booking_guests.length > 0 ? (
-                    booking.booking_guests.map((guest, idx) => (
-                      <div key={guest.id || idx} className="bg-white/[0.02] border border-white/10 rounded-xl p-4 flex justify-between items-center">
-                        <div className="min-w-0">
-                          <p className="text-[9px] uppercase tracking-widest text-white/40 mb-0.5">
-                            {guest.guest_index === 0 ? 'Primary Guest' : `Additional Guest ${guest.guest_index + 1}`}
-                          </p>
-                          <p className="text-white text-sm font-medium truncate">
-                            {guest.guest_profiles?.full_name || guest.name || 'Awaiting Upload'}
-                          </p>
-                          {guest.guest_profiles?.document_number && (
-                            <p className="text-white/40 text-[10px] font-mono mt-1">ID: {guest.guest_profiles.document_number}</p>
-                          )}
-                        </div>
+                    booking.booking_guests.map((guest, idx) => {
+                      const isPendingPayment = guest.payment_status === 'pending';
+                      const isPaidPayment = guest.payment_status === 'paid';
 
-                        <div>
-                          {guest.verification_status === 'verified' ? (
-                            <span className="flex items-center gap-1 text-green-400 text-[10px] font-bold uppercase tracking-wider bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20">
-                              <CheckCircle2 className="w-3 h-3" /> OK
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1 text-accent-gold text-[10px] font-bold uppercase tracking-wider bg-accent-gold/10 px-2 py-1 rounded-md border border-accent-gold/20">
-                              <Clock className="w-3 h-3" /> PEND
-                            </span>
-                          )}
+                      return (
+                        <div key={guest.id || idx} className="bg-white/[0.02] border border-white/10 rounded-xl p-4 flex justify-between items-start gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[9px] uppercase tracking-widest text-white/40 mb-0.5">
+                              {guest.guest_index === 0 ? 'Primary Guest' : `Additional Guest ${guest.guest_index + 1}`}
+                            </p>
+                            <p className="text-white text-sm font-medium truncate">
+                              {guest.guest_profiles?.full_name || guest.name || 'Awaiting Upload'}
+                            </p>
+                            {guest.phone && (
+                              <p className="text-white/40 text-[10px] font-mono mt-0.5">📞 {guest.phone}</p>
+                            )}
+                            {guest.guest_profiles?.document_number && (
+                              <p className="text-white/40 text-[10px] font-mono mt-0.5">ID: {guest.guest_profiles.document_number}</p>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col items-end gap-1.5 shrink-0">
+                            {/* ID Verification Badge */}
+                            {guest.verification_status === 'verified' ? (
+                              <span className="flex items-center gap-1 text-green-400 text-[10px] font-bold uppercase tracking-wider bg-green-500/10 px-2 py-0.5 rounded-md border border-green-500/20">
+                                <CheckCircle2 className="w-3 h-3" /> Verified
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-accent-gold text-[10px] font-bold uppercase tracking-wider bg-accent-gold/10 px-2 py-0.5 rounded-md border border-accent-gold/20">
+                                <Clock className="w-3 h-3" /> ID PEND
+                              </span>
+                            )}
+
+                            {/* Payment Status Badge */}
+                            {isPendingPayment && (
+                              <span className="text-[9px] font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                                ₹{guest.payment_amount} Due
+                              </span>
+                            )}
+                            {isPaidPayment && (
+                              <span className="text-[9px] font-mono text-green-400 bg-green-500/10 px-2 py-0.5 rounded-md border border-green-500/20">
+                                Paid (Self)
+                              </span>
+                            )}
+                            {guest.payment_status === 'not_required' && (
+                              <span className="text-[9px] font-mono text-white/40">
+                                Paid
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="col-span-2 bg-white/[0.01] border border-dashed border-white/10 rounded-xl p-4 flex items-center justify-between">
                       <div>

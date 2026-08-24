@@ -43,10 +43,10 @@ export default async function AdminLayout({
   ];
 
   return (
-    <div className="flex flex-col md:flex-row h-screen h-[100dvh] max-h-[100dvh] bg-background overflow-hidden selection:bg-accent-gold/30 w-full">
+    <div className="min-h-screen bg-black text-foreground selection:bg-accent-gold/30 w-full relative">
       <MobileNav />
-      {/* Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white/[0.02] border-r border-white/5 flex-col shrink-0 h-full">
+      {/* Sidebar - Fixed on desktop */}
+      <aside className="hidden md:flex w-64 bg-white/[0.02] border-r border-white/5 flex-col fixed inset-y-0 left-0 z-30 h-screen">
         <div className="p-6 border-b border-white/5">
           <Link href="/admin" className="font-serif text-2xl text-accent-gold tracking-wide">
             Nothingness
@@ -54,7 +54,7 @@ export default async function AdminLayout({
           <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 mt-1">Command Center</p>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4" data-lenis-prevent>
+        <nav className="flex-1 overflow-y-auto py-4">
           <ul className="space-y-1 px-3">
             {navItems.map((item) => (
               <li key={item.name}>
@@ -84,13 +84,10 @@ export default async function AdminLayout({
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main 
-        className="flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden bg-black relative w-full overscroll-contain"
-        data-lenis-prevent
-      >
+      {/* Main Content Area - Naturally scrolls on desktop & mobile */}
+      <main className="md:pl-64 min-h-screen bg-black relative w-full flex-1">
         <div className="fixed inset-0 bg-grain opacity-[0.02] pointer-events-none z-0" />
-        <div className="min-h-full p-4 sm:p-8 md:p-12 max-w-7xl mx-auto relative z-10 pb-20 md:pb-12">
+        <div className="min-h-full p-4 sm:p-8 md:p-12 max-w-7xl mx-auto relative z-10 pb-28 md:pb-20">
           {children}
         </div>
       </main>

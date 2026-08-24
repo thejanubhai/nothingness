@@ -23,7 +23,7 @@ export default async function SpacesPage() {
     id: p.id,
     title: p.title,
     location: `${p.area || ''}, ${p.city || ''}`.replace(/^, /, '') || 'Delhi NCR',
-    image: p.featured_image || p.images?.[0] || "/images/The Void.png",
+    image: p.featured_image || p.images?.[0] || "",
     price: p.nightly_price || 0,
     slug: p.slug
   }));

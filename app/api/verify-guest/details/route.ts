@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const token = searchParams.get('token');
+
+    if (!token) {
+      return NextResponse.json({ error: 'Token is required' }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+
+    const { data: guest, error: guestError } = await supabase
+      .from('booking_guests')
+      .select(`
+        id,
+        guest_index,
+        name,
+        phone,
+        verification_status,
+        verification_token,
+        payment_status,
+        payment_amount,
+        paid_at,
+        is_primary,
+        bookings (
+          id,
+          check_in,
+          check_out,
+          guests,
+          additional_guest_payment_mode,
+          guest_name,
+          spaces (
+            id,
+            title,
+            slug,
+            city,
+            area,
+            featured_image
+          )
+        )
+      `)
+      .eq('verification_token', token)
+      .single();
+
+    if (guestError || !guest) {
+      return NextResponse.json({ error: 'Invalid or expired verification token' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      guest
+    });
+
+  } catch (error: any) {
+    console.error('Fetch guest details error:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}

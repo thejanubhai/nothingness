@@ -43,10 +43,24 @@ export async function POST(req: Request) {
 
       const supabase = await createClient();
       
-      // Idempotency check: see if already paid
+      // Check if this is an additional guest self-pay order
+      if (orderId.startsWith('guest_pay_')) {
+        await supabase
+          .from('booking_guests')
+          .update({
+            payment_status: 'paid',
+            payment_id: orderId,
+            paid_at: new Date().toISOString()
+          })
+          .eq('payment_order_id', orderId);
+
+        return NextResponse.json({ status: 'ok', message: 'Guest self-payment processed' }, { status: 200 });
+      }
+
+      // Main booking payment
       const { data: existingBooking } = await supabase
         .from('bookings')
-        .select('payment_status')
+        .select('id, payment_status, check_in, check_out, guest_name, spaces(title), booking_guests(id, name, phone, email, verification_token, is_primary, payment_status, payment_amount)')
         .eq('payment_order_id', orderId)
         .single();
         
@@ -64,8 +78,28 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
       }
 
-      // Booking confirmation email is now handled by the database trigger
-      // in /api/webhooks/bookings/route.ts which listens to status changes.
+      // Dispatch invitation & verification links to additional guests
+      if (existingBooking?.booking_guests) {
+        const { sendAdditionalGuestInviteNotification } = await import('@/lib/notifications/verification');
+        const spaceRecord: any = Array.isArray(existingBooking.spaces) ? existingBooking.spaces[0] : existingBooking.spaces;
+
+        for (const guest of existingBooking.booking_guests) {
+          if (!guest.is_primary && (guest.phone || guest.email)) {
+            sendAdditionalGuestInviteNotification({
+              phone: guest.phone,
+              email: guest.email,
+              guestName: guest.name || 'Guest',
+              spaceTitle: spaceRecord?.title || 'Sanctuary',
+              primaryGuestName: existingBooking.guest_name || 'Primary Guest',
+              checkInDate: existingBooking.check_in,
+              checkOutDate: existingBooking.check_out,
+              verificationToken: guest.verification_token,
+              isSelfPay: guest.payment_status === 'pending',
+              paymentAmount: guest.payment_amount,
+            }).catch(console.error);
+          }
+        }
+      }
     }
 
     return NextResponse.json({ status: 'ok' }, { status: 200 });

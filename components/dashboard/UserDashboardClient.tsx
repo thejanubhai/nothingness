@@ -299,7 +299,7 @@ export default function UserDashboardClient({
               <div key={booking.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden group shadow-lg">
                 <div className="h-40 relative overflow-hidden">
                   <img 
-                    src={booking.spaces?.featured_image || '/images/The Void.png'} 
+                    src={booking.spaces?.featured_image || ''} 
                     alt={booking.spaces?.title || 'Sanctuary'}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />

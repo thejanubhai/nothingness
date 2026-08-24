@@ -22,9 +22,16 @@ const cashfree = new Cashfree(
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { guests, spaceId, checkIn, checkOut, amount } = body;
+    const { 
+      guests, 
+      spaceId, 
+      checkIn, 
+      checkOut, 
+      additionalGuests = [], 
+      additionalGuestPaymentMode = 'primary_pays' 
+    } = body;
 
-    if (!spaceId || !checkIn || !checkOut || !amount || !guests) {
+    if (!spaceId || !checkIn || !checkOut || !guests) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -38,7 +45,7 @@ export async function POST(req: Request) {
     // Verify space exists and get actual price to prevent tampering
     const { data: space, error: propError } = await supabase
       .from('spaces')
-      .select('nightly_price')
+      .select('id, title, nightly_price, default_guests, max_guests, additional_guest_fee, cleaning_fee')
       .eq('id', spaceId)
       .single();
 
@@ -70,14 +77,35 @@ export async function POST(req: Request) {
 
     const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 3600 * 24));
     
-    // Base price + 2500 cleaning + extra guests + 18% GST
-    const baseTotal = (space.nightly_price * nights) + 2500;
-    const extraGuestAmount = guests > 2 ? (guests - 2) * 500 * nights : 0;
-    const finalAmount = Math.round((baseTotal + extraGuestAmount) * 1.18); // Including GST
+    // Space guest policy calculations
+    const defaultGuests = space.default_guests || 2;
+    const additionalGuestFeePerNight = space.additional_guest_fee || 500;
+    const cleaningFee = space.cleaning_fee || 2500;
+    
+    const extraGuestCount = Math.max(0, guests - defaultGuests);
+    const extraGuestTotal = extraGuestCount * additionalGuestFeePerNight * nights;
+    const baseStayTotal = (space.nightly_price * nights) + cleaningFee;
+
+    // Per extra guest share
+    const perGuestFeeWithTax = extraGuestCount > 0 
+      ? Math.round((additionalGuestFeePerNight * nights) * 1.18) 
+      : 0;
+
+    // Primary payable amount depends on whether primary pays for extra guests or guests pay themselves
+    let primaryPayableAmount = 0;
+    if (additionalGuestPaymentMode === 'primary_pays') {
+      primaryPayableAmount = Math.round((baseStayTotal + extraGuestTotal) * 1.18);
+    } else {
+      // Split self-pay: Primary only pays base stay + cleaning + GST
+      primaryPayableAmount = Math.round(baseStayTotal * 1.18);
+    }
 
     const orderId = `order_${Date.now()}`;
+    const cleanPhone = user.phone ? user.phone.replace(/[^0-9]/g, '') : "9999999999";
+    const customerPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : "9999999999";
+    const primaryName = user.user_metadata?.full_name || "Nothingness Guest";
 
-    // Save preliminary booking to Supabase FIRST to get the booking.id
+    // Save preliminary booking to Supabase
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
@@ -86,7 +114,16 @@ export async function POST(req: Request) {
         check_in: checkIn,
         check_out: checkOut,
         guests: guests,
-        total_price: finalAmount,
+        default_guests: defaultGuests,
+        additional_guests_count: extraGuestCount,
+        additional_guest_fee_per_night: additionalGuestFeePerNight,
+        additional_guest_total_amount: extraGuestTotal,
+        additional_guest_payment_mode: additionalGuestPaymentMode,
+        base_price: space.nightly_price,
+        total_price: primaryPayableAmount,
+        guest_name: primaryName,
+        guest_phone: customerPhone,
+        guest_email: user.email || null,
         status: 'pending',
         payment_order_id: orderId
       })
@@ -98,19 +135,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to create booking record' }, { status: 500 });
     }
 
-    const cleanPhone = user.phone ? user.phone.replace(/[^0-9]/g, '') : "9999999999";
-    const customerPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : "9999999999";
-
-    // Now create Cashfree Order with the correct return_url
+    // Now create Cashfree Order for primary guest
     const request = {
-      order_amount: finalAmount,
+      order_amount: primaryPayableAmount,
       order_currency: "INR",
       order_id: orderId,
       customer_details: {
         customer_id: user.id,
         customer_phone: customerPhone,
         customer_email: user.email || undefined,
-        customer_name: user.user_metadata?.full_name || "Nothingness Guest"
+        customer_name: primaryName
       },
       order_meta: {
         return_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia'}/booking/${booking.id}/verify`
@@ -119,12 +153,37 @@ export async function POST(req: Request) {
     const response = await cashfree.PGCreateOrder(request);
     const paymentSessionId = response.data.payment_session_id;
 
-    // Create booking_guests entries
-    const guestEntries = Array.from({ length: guests }).map((_, index) => ({
+    // Create booking_guests entries (Guest 0 = Primary, Guest 1..N = Additional)
+    const guestEntries = [];
+    
+    // Primary guest entry
+    guestEntries.push({
       booking_id: booking.id,
-      guest_index: index,
-      verification_status: 'pending'
-    }));
+      guest_index: 0,
+      name: primaryName,
+      phone: customerPhone,
+      is_primary: true,
+      verification_status: 'pending',
+      payment_status: 'not_required',
+      payment_amount: 0
+    });
+
+    // Additional guests entries
+    for (let i = 0; i < extraGuestCount; i++) {
+      const extraGuestInfo = additionalGuests[i] || {};
+      const isSelfPay = additionalGuestPaymentMode === 'split_self_pay';
+      
+      guestEntries.push({
+        booking_id: booking.id,
+        guest_index: i + 1,
+        name: extraGuestInfo.name || `Guest ${i + 2}`,
+        phone: extraGuestInfo.phone || '',
+        is_primary: false,
+        verification_status: 'pending',
+        payment_status: isSelfPay ? 'pending' : 'not_required',
+        payment_amount: isSelfPay ? perGuestFeeWithTax : 0
+      });
+    }
 
     const { error: guestsError } = await supabase
       .from('booking_guests')
@@ -132,7 +191,6 @@ export async function POST(req: Request) {
 
     if (guestsError) {
       console.error('Booking Guests Error:', guestsError);
-      // Non-blocking error, but we should log it
     }
 
     return NextResponse.json({ 

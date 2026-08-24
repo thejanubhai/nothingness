@@ -9,10 +9,12 @@ export default async function AdminBookings() {
   const { data: bookings } = await supabase
     .from('bookings')
     .select(`
-      id, space_id, check_in, check_out, total_price, status, payment_status, guest_name, guest_email, guest_phone, created_at,
+      id, space_id, check_in, check_out, total_price, status, payment_status, 
+      guest_name, guest_email, guest_phone, guests, default_guests, 
+      additional_guests_count, additional_guest_payment_mode, additional_guest_total_amount, created_at,
       spaces (title),
       booking_guests (
-        id, name, verification_status, guest_index, 
+        id, name, phone, verification_status, guest_index, payment_status, payment_amount, paid_at, is_primary,
         guest_profiles (document_number, full_name, is_verified, phone_number)
       )
     `)

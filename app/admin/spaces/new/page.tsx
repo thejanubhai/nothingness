@@ -23,7 +23,10 @@ export default function AddSpacePage() {
     state: 'Delhi',
     country: 'India',
     nightly_price: 15000,
-    max_guests: 2,
+    default_guests: 2,
+    max_additional_guests: 2,
+    additional_guest_fee: 500,
+    max_guests: 4,
     bedrooms: 1,
     bathrooms: 1,
     featured_image: '',
@@ -68,6 +71,9 @@ export default function AddSpacePage() {
       }
       
       const data = result.data;
+      const parsedMaxGuests = data.max_guests || 4;
+      const defaultGuests = 2;
+      const maxAdditional = Math.max(0, parsedMaxGuests - defaultGuests);
       
       setFormData(prev => ({
         ...prev,
@@ -79,7 +85,10 @@ export default function AddSpacePage() {
         state: data.location?.state || prev.state,
         country: data.location?.country || prev.country,
         nightly_price: data.price_per_night || prev.nightly_price,
-        max_guests: data.max_guests || prev.max_guests,
+        default_guests: defaultGuests,
+        max_additional_guests: maxAdditional,
+        additional_guest_fee: 500,
+        max_guests: parsedMaxGuests,
         bedrooms: data.bedrooms || prev.bedrooms,
         bathrooms: data.bathrooms || prev.bathrooms,
         airbnb_listing_id: data.airbnb_listing_id || prev.airbnb_listing_id,
@@ -410,22 +419,35 @@ export default function AddSpacePage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40">Nightly Price (₹)</label>
+              <label className="text-[10px] uppercase tracking-widest text-white/40">State</label>
+              <input 
+                required
+                type="text" 
+                value={formData.state}
+                onChange={(e) => setFormData({...formData, state: e.target.value})}
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40">Country</label>
+              <input 
+                required
+                type="text" 
+                value={formData.country}
+                onChange={(e) => setFormData({...formData, country: e.target.value})}
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40">Base Nightly Price (₹)</label>
               <input 
                 required
                 type="number" 
                 value={formData.nightly_price}
                 onChange={(e) => setFormData({...formData, nightly_price: Number(e.target.value)})}
-                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40">Max Guests</label>
-              <input 
-                required
-                type="number" 
-                value={formData.max_guests}
-                onChange={(e) => setFormData({...formData, max_guests: Number(e.target.value)})}
                 className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
               />
             </div>
@@ -448,6 +470,82 @@ export default function AddSpacePage() {
                 onChange={(e) => setFormData({...formData, bathrooms: Number(e.target.value)})}
                 className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
               />
+            </div>
+          </div>
+
+          {/* Guest Capacity & Additional Guest Pricing Policy */}
+          <div className="mt-6 pt-6 border-t border-white/10 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-white">Guest Capacity &amp; Additional Guest Policy</h3>
+                <p className="text-xs text-white/50">Configure base included guests and individual extra guest fees.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-accent-gold">Default Guests Included</label>
+                <input 
+                  required
+                  type="number" 
+                  min={1}
+                  value={formData.default_guests}
+                  onChange={(e) => {
+                    const def = Number(e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      default_guests: def,
+                      max_guests: def + prev.max_additional_guests
+                    }));
+                  }}
+                  className="w-full bg-accent-gold/5 border border-accent-gold/30 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold"
+                />
+                <span className="text-[10px] text-white/40 block">Included in base price</span>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-white/40">Max Additional Guests</label>
+                <input 
+                  required
+                  type="number" 
+                  min={0}
+                  value={formData.max_additional_guests}
+                  onChange={(e) => {
+                    const extra = Number(e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      max_additional_guests: extra,
+                      max_guests: prev.default_guests + extra
+                    }));
+                  }}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+                />
+                <span className="text-[10px] text-white/40 block">Extra allowed beyond base</span>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-white/40">Additional Guest Fee (₹/night)</label>
+                <input 
+                  required
+                  type="number" 
+                  min={0}
+                  value={formData.additional_guest_fee}
+                  onChange={(e) => setFormData({...formData, additional_guest_fee: Number(e.target.value)})}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+                />
+                <span className="text-[10px] text-white/40 block">Per extra guest per night</span>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-white/40">Total Max Capacity</label>
+                <input 
+                  disabled
+                  type="number" 
+                  value={formData.max_guests}
+                  className="w-full bg-white/10 border border-white/10 rounded-lg p-3 text-sm text-white/70 cursor-not-allowed"
+                />
+                <span className="text-[10px] text-white/40 block">Total maximum guests</span>
+              </div>
             </div>
           </div>
         </div>

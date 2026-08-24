@@ -129,10 +129,12 @@ const MOCK_BOOKINGS: MockBooking[] = [
 interface Props {
   profile: PartnerProfile;
   properties: PartnerProperty[];
+  initialBookings?: MockBooking[];
 }
 
-export default function PartnerDashboardClient({ profile, properties }: Props) {
+export default function PartnerDashboardClient({ profile, properties, initialBookings = [] }: Props) {
   const [activeTab, setActiveTab] = useState<'calendar' | 'financials' | 'inventory' | 'lounge' | 'protection'>('calendar');
+  const [bookings] = useState<MockBooking[]>(initialBookings);
   
   // Selected Booking for Legal Dossier Printout
   const [selectedBookingForPrint, setSelectedBookingForPrint] = useState<BookingGuestDetail | null>(null);
@@ -149,12 +151,12 @@ export default function PartnerDashboardClient({ profile, properties }: Props) {
   const [upiId, setUpiId] = useState(profile.upi_id || '');
   const [savingPayout, setSavingPayout] = useState(false);
 
-  // Financial Aggregations (70% Partner / 30% nothingness.)
-  const totalGrossRevenue = 186000;
+  // Dynamic Financial Aggregations (70% Partner / 30% nothingness.)
+  const totalGrossRevenue = bookings.reduce((sum, b) => sum + (b.grossAmount || 0), 0);
   const partnerNetEarnings = Math.round(totalGrossRevenue * 0.70); // 70%
   const platformOpsFee = Math.round(totalGrossRevenue * 0.30);    // 30%
-  const eventsRevenueShare = 24000;
-  const loungeRevenueShare = 36000;
+  const eventsRevenueShare = 0;
+  const loungeRevenueShare = 0;
   const totalNetTakeHome = partnerNetEarnings + eventsRevenueShare + loungeRevenueShare;
 
   const handleSavePayoutSettings = async (e: React.FormEvent) => {
@@ -321,7 +323,16 @@ export default function PartnerDashboardClient({ profile, properties }: Props) {
           </div>
 
           <div className="space-y-4">
-            {MOCK_BOOKINGS.map((booking) => (
+            {bookings.length === 0 ? (
+              <div className="p-12 rounded-2xl bg-white/[0.02] border border-white/10 text-center space-y-3">
+                <ShieldCheck className="w-10 h-10 text-accent-gold/60 mx-auto" />
+                <h4 className="font-serif text-lg text-white">No Live Reservations Yet</h4>
+                <p className="text-xs text-white/50 max-w-md mx-auto">
+                  When guests reserve your managed sanctuaries, their verified compliance records, check-in dates, and 70% net payout splits will appear here in real-time.
+                </p>
+              </div>
+            ) : (
+              bookings.map((booking) => (
               <div
                 key={booking.id}
                 className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 hover:border-accent-gold/30 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6"
@@ -386,7 +397,7 @@ export default function PartnerDashboardClient({ profile, properties }: Props) {
                   </button>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       )}
@@ -575,25 +586,21 @@ export default function PartnerDashboardClient({ profile, properties }: Props) {
               <span>Automated Housekeeping Turnover Pipeline</span>
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-white text-sm">The Amber Haven Sanctuary</p>
-                  <p className="text-xs text-white/40 font-mono mt-0.5">Next Check-In: 25 Aug (14:00 PM)</p>
-                </div>
-                <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  Ready &amp; Inspected ✓
-                </span>
-              </div>
-
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-white text-sm">The Obsidian Suite</p>
-                  <p className="text-xs text-white/40 font-mono mt-0.5">Active Stay &rarr; Checkout 24 Aug</p>
-                </div>
-                <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded-md bg-amber-500/10 text-accent-gold border border-accent-gold/20">
-                  Turnover Dispatched
-                </span>
-              </div>
+              {properties.length === 0 ? (
+                <p className="text-white/40 text-xs py-4 col-span-2">No managed properties enrolled yet.</p>
+              ) : (
+                properties.map((prop) => (
+                  <div key={prop.id} className="p-4 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-white text-sm">{prop.title}</p>
+                      <p className="text-xs text-white/40 font-mono mt-0.5">{prop.locality}, {prop.city}</p>
+                    </div>
+                    <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      Ready &amp; Inspected ✓
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
