@@ -29,7 +29,14 @@ export default function AddSpacePage() {
     featured_image: '',
     active: true,
     airbnb_listing_id: '',
-    airbnb_ical_url: ''
+    airbnb_ical_url: '',
+    check_in_time: '3:00 PM',
+    check_out_time: '11:00 AM',
+    key_instructions: '',
+    pre_arrival_template: '',
+    post_checkout_feedback_template: '',
+    cleaner_name: 'Housekeeping Team',
+    cleaner_phone: '',
   });
 
   const [images, setImages] = useState<string[]>([]);
@@ -65,14 +72,25 @@ export default function AddSpacePage() {
       setFormData(prev => ({
         ...prev,
         title: data.title || prev.title,
-        slug: data.title ? data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') : prev.slug,
+        slug: data.slug || (data.title ? data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') : prev.slug),
         description: data.description || prev.description,
+        area: data.location?.area || prev.area,
+        city: data.location?.city || prev.city,
+        state: data.location?.state || prev.state,
+        country: data.location?.country || prev.country,
         nightly_price: data.price_per_night || prev.nightly_price,
         max_guests: data.max_guests || prev.max_guests,
         bedrooms: data.bedrooms || prev.bedrooms,
         bathrooms: data.bathrooms || prev.bathrooms,
         airbnb_listing_id: data.airbnb_listing_id || prev.airbnb_listing_id,
         airbnb_ical_url: data.airbnb_ical_url || prev.airbnb_ical_url,
+        check_in_time: data.check_in_time || prev.check_in_time,
+        check_out_time: data.check_out_time || prev.check_out_time,
+        key_instructions: data.key_instructions || prev.key_instructions,
+        pre_arrival_template: data.pre_arrival_template || prev.pre_arrival_template,
+        post_checkout_feedback_template: data.post_checkout_feedback_template || prev.post_checkout_feedback_template,
+        cleaner_name: data.cleaner_name || prev.cleaner_name,
+        cleaner_phone: data.cleaner_phone || prev.cleaner_phone,
       }));
       
       if (data.photos && data.photos.length > 0) {
@@ -93,7 +111,7 @@ export default function AddSpacePage() {
         setSyncSources([{ platform: 'airbnb', url: data.airbnb_ical_url }]);
       }
       
-      toast.success('Airbnb listing imported successfully!');
+      toast.success('Airbnb listing imported successfully with all photos, specs & amenities!');
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Error importing Airbnb listing');
@@ -143,6 +161,16 @@ export default function AddSpacePage() {
         if (syncError) {
           console.error("Failed to add sync sources", syncError);
           toast.warning('Space created, but some calendar sources failed to save.');
+        } else {
+          // Trigger initial sync if real iCal URL provided (without YOUR_HASH_HERE)
+          const validSources = syncSources.filter(s => !s.url.includes('YOUR_HASH_HERE'));
+          if (validSources.length > 0) {
+            fetch('/api/spaces/sync-calendar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ space_id: space.id })
+            }).catch(console.error);
+          }
         }
       }
       
@@ -483,31 +511,47 @@ export default function AddSpacePage() {
           <div className="space-y-6">
             {/* Outbound Feed */}
             <div className="bg-black/40 border border-white/10 rounded-xl p-4">
-              <p className="text-[10px] uppercase tracking-widest text-white/40 mb-2">Our iCal Feed (Export)</p>
+              <p className="text-[10px] uppercase tracking-widest text-accent-gold font-bold mb-2">Our Live iCal Feed (Export to Airbnb / Booking.com)</p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input 
                   type="text" 
                   readOnly
-                  value={`https://nothingness.asia/api/spaces/${formData.slug || '[slug]'}/ical`}
-                  className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white/50 focus:outline-none"
+                  value={`${typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia'}/api/spaces/${formData.slug || '[slug]'}/ical`}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white/70 font-mono focus:outline-none"
                 />
                 <button 
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(`https://nothingness.asia/api/spaces/${formData.slug || '[slug]'}/ical`);
-                    toast.success('iCal URL copied');
+                    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia';
+                    navigator.clipboard.writeText(`${origin}/api/spaces/${formData.slug || '[slug]'}/ical`);
+                    toast.success('iCal URL copied to clipboard');
                   }}
-                  className="px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm font-medium"
+                  className="px-5 bg-accent-gold text-black hover:bg-accent-gold/90 rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
                 >
-                  Copy
+                  Copy Live URL
                 </button>
               </div>
-              <p className="text-xs text-white/30 mt-2">Paste this URL into Airbnb, Booking.com, etc., to block their calendars when a booking is made here.</p>
+              <p className="text-xs text-white/40 mt-2">
+                Paste this URL into Airbnb (Listing &gt; Pricing and availability &gt; Calendar sync &gt; Import calendar) so Airbnb blocks dates whenever someone books on Nothingness.
+              </p>
             </div>
 
             {/* Inbound Feeds */}
             <div className="space-y-4">
-              <p className="text-[10px] uppercase tracking-widest text-white/40">Connected Platforms (Import)</p>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-widest text-white/40">Connected Platforms (Import into Nothingness)</p>
+              </div>
+              
+              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 text-xs text-white/60 space-y-1">
+                <p className="font-semibold text-accent-gold flex items-center gap-1.5">
+                  <span>ℹ️</span> How to get your Airbnb Calendar Link:
+                </p>
+                <p className="text-[11px] text-white/40">
+                  1. In Airbnb Host Mode, open this Listing &gt; Pricing and availability.<br />
+                  2. Scroll down to <strong>Calendar sync</strong> &gt; Click <strong>Export calendar</strong>.<br />
+                  3. Copy the full <code className="text-white/70 bg-white/10 px-1 py-0.5 rounded">.ics</code> URL and paste it below.
+                </p>
+              </div>
               
               {syncSources.map((source, i) => (
                 <div key={i} className="flex items-center gap-3 bg-white/5 border border-white/10 p-3 rounded-lg">
@@ -515,8 +559,15 @@ export default function AddSpacePage() {
                     <LinkIcon className="w-4 h-4 text-accent-gold" />
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <p className="text-xs font-medium text-white capitalize">{source.platform}</p>
-                    <p className="text-[10px] text-white/50 truncate">{source.url}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-medium text-white capitalize">{source.platform}</p>
+                      {source.url.includes('YOUR_HASH_HERE') && (
+                        <span className="text-[9px] uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded">
+                          Replace with real .ics URL
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-white/50 truncate font-mono">{source.url}</p>
                   </div>
                   <button type="button" onClick={() => removeArrayItem(setSyncSources, i, syncSources)} className="p-2 text-white/30 hover:text-red-400 transition-colors">
                     <X className="w-4 h-4" />
@@ -543,8 +594,8 @@ export default function AddSpacePage() {
                   type="url" 
                   value={newSourceUrl}
                   onChange={(e) => setNewSourceUrl(e.target.value)}
-                  placeholder="https://... (.ics url)"
-                  className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+                  placeholder="https://www.airbnb.com/calendar/ical/...ics?s=..."
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50 font-mono text-xs"
                 />
                 <button 
                   type="button" 

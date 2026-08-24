@@ -9,10 +9,11 @@ export const dynamic = 'force-dynamic';
 export default async function AdminInbox({
   searchParams
 }: {
-  searchParams: { tab?: string }
+  searchParams: Promise<{ tab?: string }>;
 }) {
+  const resolvedSearchParams = await searchParams;
+  const currentTab = resolvedSearchParams?.tab || 'messages';
   const supabase = await createClient();
-  const currentTab = searchParams.tab || 'messages';
   
   // Fetch messages
   const { data: messages } = await supabase

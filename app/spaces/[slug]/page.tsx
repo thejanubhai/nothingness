@@ -44,11 +44,18 @@ export default async function SpacePage({ params }: { params: Promise<{ slug: st
         .from('bookings')
         .select('check_in, check_out')
         .eq('space_id', space.id)
-        .eq('status', 'confirmed');
+        .neq('status', 'cancelled');
         
-      if (bookingData) {
-        space.bookings = bookingData;
-      }
+      const { data: externalBlockedData } = await supabase
+        .from('external_blocked_dates')
+        .select('start_date, end_date')
+        .eq('space_id', space.id);
+
+      const allBlocked = [
+        ...(bookingData || []).map(b => ({ check_in: b.check_in, check_out: b.check_out })),
+        ...(externalBlockedData || []).map(b => ({ check_in: b.start_date, check_out: b.end_date }))
+      ];
+      space.bookings = allBlocked;
     }
   } catch (e) {
     console.error("Supabase connection failed:", e);

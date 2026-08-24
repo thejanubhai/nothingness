@@ -10,28 +10,28 @@ interface FaqItem {
 
 const FAQS: FaqItem[] = [
   {
+    question: 'What is the commercial revenue split between Partner and nothingness.?',
+    answer: 'The commercial structure is strictly 70% to the Partner and 30% to nothingness. Partners receive 70% of all gross sanctuary stays revenue, plus their share from integrated vetted members-only events and nothingness. Lounge F&B passes. Payouts are deposited directly into your bank account on your choice of Monthly (1st of month), Quarterly, or Annual schedule.'
+  },
+  {
     question: 'What is included in the ₹3 Lakh nothingness. Partner Setup Fee?',
     answer: 'The ₹3,00,000 base fee (PAN India) covers the complete operational onboarding of your property into the nothingness. ecosystem. This includes brand rights, hardware & IoT integration (encrypted WhatsApp smart lockbox access), local vendor supply chain setup (linens, luxury toiletries, aesthetic decor), parking & valet co-ordination, in-suite dining/food service integrations, and our automated State Police & Hospitality Statutory ID verification engine.'
+  },
+  {
+    question: 'What are the property ownership and NOC affidavit requirements?',
+    answer: 'Property ownership is strictly mandatory. The nothingness. portal automatically generates a legally valid Operational NOC & Affidavit draft governed under local and national hospitality statutes. The Partner prints, notarizes on stamp paper, and uploads the scan. The document is archived and verified manually by the nothingness admin team prior to go-live.'
   },
   {
     question: 'What is the cost difference between Budget and Luxury spaces?',
     answer: 'Fit-outs are executed on a 100% cost-to-cost basis. A Budget Space lands between ₹1 Lakh to ₹2 Lakhs per unit (clean, minimalist private sanctuary with mood lighting and acoustic privacy). A Luxury Space lands between ₹2 Lakhs to ₹4 Lakhs per unit (bespoke cinematic finishes, sensory ambient lighting, and high-end materials designed for top-tier RevPAR).'
   },
   {
-    question: 'How does the nothingness. Lounge unlock work?',
-    answer: 'Partners operating more than 2 active properties in the same state (3+ spaces) unlock the exclusive nothingness. Lounge model. This creates a gated, members-only community lounge for vetted nothingness. members, generating its own high-margin F&B, event ticketing, and membership revenue stream.'
+    question: 'How does the nothingness. Lounge unlock work and who can enter?',
+    answer: 'Partners operating more than 2 active properties in the same state (3+ spaces) unlock the exclusive nothingness. Lounge model, which can be configured on an open terrace, basement, or nearby suite. Entry is strictly gated via QR verification: a member must have an active nothingness account and must have completed at least 1 stay across ANY nothingness sanctuary in India. Direct walk-ins are prohibited.'
   },
   {
-    question: 'How do integrated vetted members-only events generate revenue?',
-    answer: 'Unlike generic Airbnbs, nothingness. connects to a private, highly active vetted lifestyle and creative community. Partners participate in curated events, host networking sessions, and member gathering activations, creating an auxiliary revenue stream of ₹15,000–₹35,000+ monthly on top of stay bookings.'
-  },
-  {
-    question: 'How is guest discretion, legal compliance, and property safety strictly enforced?',
-    answer: 'Every guest undergoes automated Aadhaar/Passport ID verification complying with respective state homestay, hotel, and local police check-in regulations. Because check-in is 100% digital, legal, and pre-vetted, property owners operate with total peace of mind—free from licensing department or police harassment, with zero unauthorized visitors and strict zero-party rules.'
-  },
-  {
-    question: 'What are the expansion priority states?',
-    answer: 'Our rollout begins in Delhi (active flagship), followed by Haryana (Gurgaon/NCR), Uttar Pradesh (Noida/Lucknow), Maharashtra (Mumbai/Pune), Karnataka (Bengaluru), Goa, and Manipur, before expanding into other Pan-India high-demand corridors.'
+    question: 'How is guest discretion, legal compliance, and police harassment prevention handled?',
+    answer: 'Every guest undergoes automated Aadhaar/Passport ID verification complying with respective state homestay, hotel, and local police check-in regulations. The partner dashboard includes an instant 1-click legal printout of guest dossiers if legally required by local authorities. Everything is 100% digital, transparent, and pre-vetted with strict zero-party rules.'
   }
 ];
 

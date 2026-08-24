@@ -222,7 +222,7 @@ export default function EditSpacePage({ params }: { params: Promise<{ id: string
         .insert({
           space_id: id,
           platform: newSourcePlatform,
-          inbound_ical_url: newSourceUrl,
+          inbound_ical_url: newSourceUrl.trim(),
           is_active: true,
           sync_status: 'pending'
         })
@@ -232,8 +232,14 @@ export default function EditSpacePage({ params }: { params: Promise<{ id: string
       if (error) throw error;
       
       setSyncSources([...syncSources, data]);
+      const addedUrl = newSourceUrl;
       setNewSourceUrl('');
       toast.success('Calendar source added');
+
+      // Trigger instant sync if valid URL provided (not placeholder)
+      if (!addedUrl.includes('YOUR_HASH_HERE')) {
+        handleManualSync();
+      }
     } catch (err: any) {
       console.error(err);
       toast.error('Failed to add calendar source');
@@ -631,30 +637,47 @@ export default function EditSpacePage({ params }: { params: Promise<{ id: string
           <div className="space-y-6">
             {/* Outbound Feed */}
             <div className="bg-black/40 border border-white/10 rounded-xl p-4">
-              <p className="text-[10px] uppercase tracking-widest text-white/40 mb-2">Our iCal Feed (Export)</p>
+              <p className="text-[10px] uppercase tracking-widest text-accent-gold font-bold mb-2">Our Live iCal Feed (Export to Airbnb / Booking.com)</p>
               <div className="flex gap-2">
                 <input 
                   type="text" 
                   readOnly
-                  value={`https://nothingness.asia/api/spaces/${formData.slug}/ical`}
-                  className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white/50 focus:outline-none"
+                  value={`${typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia'}/api/spaces/${formData.slug || id}/ical`}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white/70 font-mono focus:outline-none"
                 />
                 <button 
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(`https://nothingness.asia/api/spaces/${formData.slug}/ical`);
-                    toast.success('iCal URL copied');
+                    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia';
+                    navigator.clipboard.writeText(`${origin}/api/spaces/${formData.slug || id}/ical`);
+                    toast.success('iCal URL copied to clipboard');
                   }}
-                  className="px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm font-medium"
+                  className="px-5 bg-accent-gold text-black hover:bg-accent-gold/90 rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
                 >
-                  Copy
+                  Copy Live URL
                 </button>
               </div>
+              <p className="text-xs text-white/40 mt-2">
+                Paste this URL into Airbnb (Listing &gt; Pricing and availability &gt; Calendar sync &gt; Import calendar) so Airbnb blocks dates whenever someone books on Nothingness.
+              </p>
             </div>
 
             {/* Inbound Feeds */}
             <div className="space-y-4">
-              <p className="text-[10px] uppercase tracking-widest text-white/40">Connected Platforms (Import)</p>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-widest text-white/40">Connected Platforms (Import into Nothingness)</p>
+              </div>
+
+              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 text-xs text-white/60 space-y-1">
+                <p className="font-semibold text-accent-gold flex items-center gap-1.5">
+                  <span>ℹ️</span> How to get your Airbnb Calendar Link:
+                </p>
+                <p className="text-[11px] text-white/40">
+                  1. In Airbnb Host Mode, open this Listing &gt; Pricing and availability.<br />
+                  2. Scroll down to <strong>Calendar sync</strong> &gt; Click <strong>Export calendar</strong>.<br />
+                  3. Copy the full <code className="text-white/70 bg-white/10 px-1 py-0.5 rounded">.ics</code> URL and paste it below.
+                </p>
+              </div>
               
               {syncSources.map((source, i) => (
                 <div key={source.id || i} className="flex items-center gap-3 bg-white/5 border border-white/10 p-3 rounded-lg">

@@ -369,23 +369,23 @@ export default function FranchisePage() {
           {[
             {
               step: '01',
-              title: 'Account & Feasibility',
-              desc: 'Create or connect your verified nothingness. account and submit property location, floor plans, and photos for discretion evaluation.'
+              title: 'Setup Fee & 70/30 MoU',
+              desc: 'Pay the ₹3L PAN India setup fee and execute the digital 70/30 franchise MoU governed under Indian Contract Act 1872 & state hospitality norms.'
             },
             {
               step: '02',
-              title: 'Fit-Out & Setup Blueprint',
-              desc: 'Pay the ₹3L PAN India partner setup fee and receive a cost-to-cost fit-out bill of quantities (₹1-2L Budget / ₹2-4L Luxury per unit).'
+              title: 'Property NOC Affidavit',
+              desc: 'Mandatory property ownership verification. Print our generated NOC draft, notarize on stamp paper, and upload for manual admin approval.'
             },
             {
               step: '03',
-              title: 'Hardware & Vendor Setup',
-              desc: 'Installation of encrypted WhatsApp smart lockboxes, local vendor onboarding (linen, cleaning, valet, in-suite dining integration).'
+              title: 'Fit-Out & Vendor Setup',
+              desc: 'Cost-to-cost landing fit-out (₹1-2L Budget / ₹2-4L Luxury), smart keyless lockboxes, linen supply chain, valet & dining integrations.'
             },
             {
               step: '04',
-              title: 'Go-Live & Events Unlock',
-              desc: 'Instant booking activation via our waitlisted vetted members network, private event routing, and optional nothingness. Lounge activation.'
+              title: 'Partner Dashboard & Cashflow',
+              desc: 'Instant access to your hyper-personalised Partner Dashboard, 1-click legal guest printouts, live bookings, and gated Lounge activation.'
             }
           ].map((item, idx) => (
             <div key={idx} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">

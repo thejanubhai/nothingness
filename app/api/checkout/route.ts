@@ -48,6 +48,26 @@ export async function POST(req: Request) {
 
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
+
+    // Verify requested dates are not blocked by direct booking or Airbnb sync
+    const { getBlockedIntervals } = await import('@/app/actions/calendar');
+    const blockedIntervals = await getBlockedIntervals(spaceId);
+    const reqStart = checkInDate.getTime();
+    const reqEnd = checkOutDate.getTime();
+
+    const isOverlap = blockedIntervals.some((interval) => {
+      const bStart = new Date(interval.start).getTime();
+      const bEnd = new Date(interval.end).getTime();
+      return reqStart < bEnd && reqEnd > bStart;
+    });
+
+    if (isOverlap) {
+      return NextResponse.json(
+        { error: 'These stay dates are no longer available. Please select another date range.' },
+        { status: 409 }
+      );
+    }
+
     const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 3600 * 24));
     
     // Base price + 2500 cleaning + extra guests + 18% GST

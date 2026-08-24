@@ -107,16 +107,12 @@ export default function PartnerCalculator() {
 
     const totalMonthlyGross = monthlyGrossStays + monthlyEventsRevenue + monthlyLoungeRevenue;
 
-    // Operational expenses & revenue distribution
-    // Platform operations, tech OS & marketing support: ~20%
-    // Local housekeeping, linen turnover & consumables: ~14%
-    // Utilities & maintenance reserve: ~8%
-    const platformAndOpsFee = totalMonthlyGross * 0.20;
-    const housekeepingAndConsumables = unitCount * 9000;
-    const utilitiesAndBuffer = unitCount * 4500;
-
-    const totalMonthlyExpenses = platformAndOpsFee + housekeepingAndConsumables + utilitiesAndBuffer;
-    const monthlyNetPartnerTakeHome = Math.max(0, totalMonthlyGross - totalMonthlyExpenses);
+    // Commercial 70/30 Distribution
+    // 70% Partner Primary Gross Share
+    // 30% nothingness. Autonomous Platform & Operations Share
+    const partnerPrimaryShare = monthlyGrossStays * 0.70;
+    const platformOpsFee = monthlyGrossStays * 0.30;
+    const monthlyNetPartnerTakeHome = partnerPrimaryShare + monthlyEventsRevenue + monthlyLoungeRevenue;
     const annualNetPartnerIncome = monthlyNetPartnerTakeHome * 12;
 
     // Realistic Payback period in months
@@ -137,11 +133,12 @@ export default function PartnerCalculator() {
       totalInitialInvestment,
       avgAdr,
       monthlyGrossStays,
+      partnerPrimaryShare,
+      platformOpsFee,
       monthlyEventsRevenue,
       monthlyLoungeRevenue,
       isLoungeEligible,
       totalMonthlyGross,
-      totalMonthlyExpenses,
       monthlyNetPartnerTakeHome,
       annualNetPartnerIncome,
       paybackMonths,
@@ -390,12 +387,16 @@ export default function PartnerCalculator() {
                   <span className="font-mono text-white">₹{calculations.avgAdr.toLocaleString('en-IN')} / night</span>
                 </div>
                 <div className="flex justify-between text-white/60">
-                  <span>Monthly Gross Revenue:</span>
-                  <span className="font-mono text-white">₹{Math.round(calculations.totalMonthlyGross).toLocaleString('en-IN')}</span>
+                  <span>Monthly Stays Gross:</span>
+                  <span className="font-mono text-white">₹{Math.round(calculations.monthlyGrossStays).toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between text-white/50 text-[11px]">
-                  <span>Est. Ops, Cleaning &amp; Tech Share:</span>
-                  <span className="font-mono text-rose-400/80">-₹{Math.round(calculations.totalMonthlyExpenses).toLocaleString('en-IN')}</span>
+                <div className="flex justify-between text-emerald-400 text-xs font-semibold">
+                  <span>Partner Stays Share (70%):</span>
+                  <span className="font-mono">+₹{Math.round(calculations.partnerPrimaryShare).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between text-white/40 text-[11px]">
+                  <span>nothingness. Platform Share (30%):</span>
+                  <span className="font-mono text-rose-400/80">-₹{Math.round(calculations.platformOpsFee).toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>

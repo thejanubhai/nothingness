@@ -25,7 +25,7 @@ interface SyncResult {
 /**
  * Sync external iCal feeds for all or a specific space.
  * Fetches each active calendar_sync_source, parses the iCal data,
- * and upserts events into external_blocked_dates.
+ * upserts active events, and prunes cancelled/deleted events.
  */
 export async function syncCalendars(
   supabase: SupabaseClient,
@@ -56,10 +56,28 @@ export async function syncCalendars(
   // 2. Process each source
   for (const source of sources as SyncSource[]) {
     let eventsUpserted = 0;
+    const activeUids = new Set<string>();
 
     try {
-      // Fetch and parse the iCal feed
-      const events = await ical.async.fromURL(source.inbound_ical_url);
+      if (!source.inbound_ical_url || source.inbound_ical_url.includes('YOUR_HASH_HERE')) {
+        throw new Error('Please configure a valid .ics URL (replace placeholder with your real Airbnb export link)');
+      }
+
+      // Fetch iCal feed with proper headers
+      const res = await fetch(source.inbound_ical_url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 NothingnessCalendarSync/1.0',
+          'Accept': 'text/calendar,text/plain,*/*',
+        },
+        cache: 'no-store'
+      });
+
+      if (!res.ok) {
+        throw new Error(`Remote calendar returned status ${res.status}: ${res.statusText}`);
+      }
+
+      const icsText = await res.text();
+      const events = ical.sync.parseICS(icsText);
 
       // Process each VEVENT
       for (const [, event] of Object.entries(events)) {
@@ -72,6 +90,8 @@ export async function syncCalendars(
         const endDate = new Date(vevent.end).toISOString().split('T')[0];
         const externalUid = vevent.uid || `${source.id}-${startDate}-${endDate}`;
         const summary = vevent.summary || 'Blocked (External)';
+
+        activeUids.add(externalUid);
 
         // Upsert into external_blocked_dates using source_id + external_uid for deduplication
         const { error: upsertError } = await supabase
@@ -101,12 +121,40 @@ export async function syncCalendars(
         eventsUpserted++;
       }
 
-      // Update source status to success
+      // Prune stale / cancelled events for this source
+      if (activeUids.size > 0) {
+        // Fetch all existing external_blocked_dates for this source
+        const { data: existingDates } = await supabase
+          .from('external_blocked_dates')
+          .select('id, external_uid')
+          .eq('source_id', source.id);
+
+        if (existingDates) {
+          const staleIds = existingDates
+            .filter(d => !activeUids.has(d.external_uid))
+            .map(d => d.id);
+
+          if (staleIds.length > 0) {
+            await supabase
+              .from('external_blocked_dates')
+              .delete()
+              .in('id', staleIds);
+          }
+        }
+      } else {
+        // If feed returned 0 events, clean up all previous external blocked dates for this source
+        await supabase
+          .from('external_blocked_dates')
+          .delete()
+          .eq('source_id', source.id);
+      }
+
+      // Update source status to synced
       await supabase
         .from('calendar_sync_sources')
         .update({
           last_synced_at: new Date().toISOString(),
-          sync_status: 'success',
+          sync_status: 'synced',
           sync_error: null,
         })
         .eq('id', source.id);

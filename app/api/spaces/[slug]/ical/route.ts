@@ -1,76 +1,111 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ical from 'ical-generator';
+import ical, { ICalEventStatus, ICalEventTransparency } from 'ical-generator';
 import { createClient } from '@/lib/supabase/server';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await params;
-  const supabase = await createClient();
+  try {
+    const { slug } = await params;
+    const supabase = await createClient();
 
-  // 1. Fetch the space by slug
-  const { data: space, error: spaceError } = await supabase
-    .from('spaces')
-    .select('id, title, description')
-    .eq('slug', slug)
-    .single();
+    // 1. Fetch the space by slug or UUID
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+    let spaceQuery = supabase
+      .from('spaces')
+      .select('id, title, description, slug');
 
-  if (spaceError || !space) {
-    return new NextResponse('Space not found', { status: 404 });
-  }
+    if (isUuid) {
+      spaceQuery = spaceQuery.eq('id', slug);
+    } else {
+      spaceQuery = spaceQuery.eq('slug', slug);
+    }
 
-  // 2. Fetch all confirmed internal bookings for this space
-  const { data: bookings, error: bookError } = await supabase
-    .from('bookings')
-    .select('check_in, check_out, guests, status')
-    .eq('space_id', space.id)
-    .neq('status', 'cancelled');
+    const { data: space, error: spaceError } = await spaceQuery.single();
 
-  if (bookError) {
-    return new NextResponse('Failed to fetch bookings', { status: 500 });
-  }
+    if (spaceError || !space) {
+      return new NextResponse('Space not found', { status: 404 });
+    }
 
-  // 3. Fetch all external blocked dates from synced calendars
-  const { data: externalDates } = await supabase
-    .from('external_blocked_dates')
-    .select('start_date, end_date, summary')
-    .eq('space_id', space.id);
+    // 2. Fetch all active/confirmed internal bookings for this space
+    const { data: bookings, error: bookError } = await supabase
+      .from('bookings')
+      .select('id, check_in, check_out, guests, status')
+      .eq('space_id', space.id)
+      .neq('status', 'cancelled');
 
-  // 4. Generate the iCal feed with BOTH internal + external dates
-  const calendar = ical({
-    name: `Nothingness - ${space.title}`,
-    description: space.description,
-    prodId: `//nothingness.asia//${space.title}//EN`,
-  });
+    if (bookError) {
+      console.error('iCal export bookError:', bookError);
+      return new NextResponse('Failed to fetch bookings', { status: 500 });
+    }
 
-  // Add internal bookings
-  bookings.forEach((booking) => {
-    calendar.createEvent({
-      start: new Date(booking.check_in),
-      end: new Date(booking.check_out),
-      summary: `Reserved - ${booking.status}`,
-      description: `Guests: ${booking.guests}`,
-      allDay: true,
+    // 3. Fetch external blocked dates and manual blocks
+    const { data: externalDates, error: blockedError } = await supabase
+      .from('external_blocked_dates')
+      .select('id, start_date, end_date, summary, external_uid')
+      .eq('space_id', space.id);
+
+    if (blockedError) {
+      console.error('iCal export blockedError:', blockedError);
+    }
+
+    // 4. Generate the iCal feed
+    const calendar = ical({
+      name: `Nothingness - ${space.title}`,
+      description: space.description || `Live calendar for ${space.title}`,
+      prodId: {
+        company: 'Nothingness',
+        product: `${space.title} Sanctuary Calendar`,
+        language: 'EN'
+      },
+      url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia'}/api/spaces/${space.slug}/ical`,
+      timezone: 'UTC'
     });
-  });
 
-  // Add external blocked dates (from Airbnb, Booking.com, etc.)
-  externalDates?.forEach((blocked) => {
-    calendar.createEvent({
-      start: new Date(blocked.start_date),
-      end: new Date(blocked.end_date),
-      summary: blocked.summary || 'Blocked (External)',
-      allDay: true,
+    // Add internal bookings
+    bookings?.forEach((booking) => {
+      calendar.createEvent({
+        id: `booking-${booking.id}@nothingness.asia`,
+        start: new Date(booking.check_in),
+        end: new Date(booking.check_out),
+        summary: 'Reserved',
+        description: `Reserved via Nothingness Sanctuary (Booking #${booking.id.slice(0, 8)})`,
+        allDay: true,
+        transparency: ICalEventTransparency.OPAQUE,
+        status: ICalEventStatus.CONFIRMED,
+      });
     });
-  });
 
-  // 5. Return as standard iCal format
-  return new NextResponse(calendar.toString(), {
-    headers: {
-      'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': `attachment; filename="nothingness-${slug}.ics"`,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-    },
-  });
+    // Add external blocked dates
+    externalDates?.forEach((blocked) => {
+      calendar.createEvent({
+        id: `block-${blocked.external_uid || blocked.id}@nothingness.asia`,
+        start: new Date(blocked.start_date),
+        end: new Date(blocked.end_date),
+        summary: blocked.summary || 'Blocked',
+        description: 'Dates blocked on Nothingness',
+        allDay: true,
+        transparency: ICalEventTransparency.OPAQUE,
+        status: ICalEventStatus.CONFIRMED,
+      });
+    });
+
+    // 5. Return as standard iCal format with live, zero-cache headers
+    return new NextResponse(calendar.toString(), {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/calendar; charset=utf-8',
+        'Content-Disposition': `inline; filename="nothingness-${space.slug}.ics"`,
+        'Cache-Control': 'no-cache, no-store, max-age=0, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
+  } catch (error: any) {
+    console.error('iCal Export Error:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
+  }
 }

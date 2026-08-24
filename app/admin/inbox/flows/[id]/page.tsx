@@ -8,7 +8,10 @@ import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { generateChatflowTemplate } from '@/app/actions/ai';
 
-export default function EditFlowPage({ params }: { params: { id: string } }) {
+import { use } from 'react';
+
+export default function EditFlowPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -24,6 +27,8 @@ export default function EditFlowPage({ params }: { params: { id: string } }) {
     is_active: true,
   });
 
+  const id = resolvedParams.id;
+
   useEffect(() => {
     const fetchFlow = async () => {
       try {
@@ -31,7 +36,7 @@ export default function EditFlowPage({ params }: { params: { id: string } }) {
         const { data, error: fetchErr } = await supabase
           .from('chatflows')
           .select('*')
-          .eq('id', params.id)
+          .eq('id', id)
           .single();
 
         if (fetchErr) throw fetchErr;
@@ -55,10 +60,10 @@ export default function EditFlowPage({ params }: { params: { id: string } }) {
       }
     };
 
-    if (params.id) {
+    if (id) {
       void fetchFlow();
     }
-  }, [params.id]);
+  }, [id]);
 
   const handleAiGenerate = async () => {
     setIsAiGenerating(true);
@@ -102,7 +107,7 @@ export default function EditFlowPage({ params }: { params: { id: string } }) {
           channel: formData.channel,
           is_active: formData.is_active,
         })
-        .eq('id', params.id);
+        .eq('id', id);
 
       if (updateError) throw updateError;
       
@@ -124,7 +129,7 @@ export default function EditFlowPage({ params }: { params: { id: string } }) {
     setSaving(true);
     try {
       const supabase = createClient();
-      const { error: delErr } = await supabase.from('chatflows').delete().eq('id', params.id);
+      const { error: delErr } = await supabase.from('chatflows').delete().eq('id', id);
       if (delErr) throw delErr;
       
       toast.success('Chatflow deleted successfully!');

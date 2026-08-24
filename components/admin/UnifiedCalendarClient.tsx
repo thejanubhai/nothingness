@@ -242,10 +242,27 @@ export default function UnifiedCalendarClient({
   // Add Channel Source
   const handleAddChannel = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newIcalUrl.trim()) return;
-    setChannelSubmitting(true);
-
     try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: newSource, error: insertError } = await supabase
+        .from('calendar_sync_sources')
+        .insert({
+          space_id: selectedSpaceForChannel,
+          platform: newPlatform,
+          inbound_ical_url: newIcalUrl.trim(),
+          is_active: true,
+          sync_status: 'pending'
+        })
+        .select(`
+          id, space_id, platform, inbound_ical_url, is_active, last_synced_at, sync_status, sync_error,
+          spaces (id, title, slug)
+        `)
+        .single();
+
+      if (insertError) throw insertError;
+
+      setSyncSources(prev => [newSource as any, ...prev]);
       toast.success('Channel linked! Triggering first sync...');
       setShowAddChannelModal(false);
       setNewIcalUrl('');
@@ -258,7 +275,8 @@ export default function UnifiedCalendarClient({
   };
 
   const copyOutboundUrl = (slug: string) => {
-    const url = `https://nothingness.asia/api/spaces/${slug}/ical`;
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia';
+    const url = `${origin}/api/spaces/${slug}/ical`;
     navigator.clipboard.writeText(url);
     setCopiedSlug(slug);
     toast.success('Outbound iCal URL copied to clipboard!');
@@ -570,7 +588,7 @@ export default function UnifiedCalendarClient({
                       <input
                         type="text"
                         readOnly
-                        value={`https://nothingness.asia/api/spaces/${space.slug}/ical`}
+                        value={`${typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia'}/api/spaces/${space.slug}/ical`}
                         className="flex-1 bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-white/70 font-mono focus:outline-none"
                       />
                       <button
