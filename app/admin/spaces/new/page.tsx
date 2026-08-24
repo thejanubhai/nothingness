@@ -115,12 +115,7 @@ export default function AddSpacePage() {
         setRules(data.house_rules);
       }
       
-      // Auto-add the iCal source if we got the placeholder URL
-      if (data.airbnb_ical_url) {
-        setSyncSources([{ platform: 'airbnb', url: data.airbnb_ical_url }]);
-      }
-      
-      toast.success('Airbnb listing imported successfully with all photos, specs & amenities!');
+      toast.success('Airbnb listing imported successfully! Review details and click Save Space.');
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Error importing Airbnb listing');
@@ -607,6 +602,17 @@ export default function AddSpacePage() {
           </div>
           
           <div className="space-y-6">
+            <div className="bg-accent-gold/10 border border-accent-gold/20 rounded-xl p-4 text-xs text-white/80 space-y-1">
+              <p className="font-bold text-accent-gold flex items-center gap-1.5 font-mono uppercase text-[11px]">
+                ⚡ Recommended 2-Way Sync Flow
+              </p>
+              <p className="text-white/60 leading-relaxed">
+                1. Click <strong>Save Space</strong> above to create your sanctuary.<br />
+                2. Once saved, copy our live <strong>.ics Export URL</strong> below and paste it into your Airbnb / OTA Host Calendar (Step 2 on Airbnb).<br />
+                3. Copy your real <strong>Airbnb Export .ics link</strong> and paste it under Connected Platforms below to pull in existing bookings.
+              </p>
+            </div>
+
             {/* Outbound Feed */}
             <div className="bg-black/40 border border-white/10 rounded-xl p-4">
               <p className="text-[10px] uppercase tracking-widest text-accent-gold font-bold mb-2">Our Live iCal Feed (Export to Airbnb / Booking.com)</p>

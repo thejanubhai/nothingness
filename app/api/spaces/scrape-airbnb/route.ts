@@ -295,8 +295,6 @@ function parseAirbnbHtml(html: string, url: string, listingId: string) {
     }
   }
 
-  const iCalPlaceholder = `https://www.airbnb.com/calendar/ical/${listingId}.ics?s=YOUR_HASH_HERE`;
-
   return {
     title,
     slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
@@ -316,7 +314,7 @@ function parseAirbnbHtml(html: string, url: string, listingId: string) {
     house_rules: Array.from(rulesSet),
     airbnb_listing_id: listingId,
     airbnb_url: url,
-    airbnb_ical_url: iCalPlaceholder,
+    airbnb_ical_url: '',
     check_in_time: checkInTime,
     check_out_time: checkOutTime,
     key_instructions: `Keys for ${title} are stored in the secure key lockbox at the main entrance. Please use key code 1234 to access your keys upon arrival.`,

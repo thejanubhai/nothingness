@@ -75,13 +75,45 @@ export async function generateIcalResponse(
     const supabase = await createClient();
     const space = await resolveSpace(slugOrId, supabase);
 
+    const siteOrigin =
+      (request && new URL(request.url).origin) ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      'https://nothingness.asia';
+
     if (!space) {
-      return new NextResponse('Space not found', {
-        status: 404,
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Access-Control-Allow-Origin': '*',
+      // Return a valid, RFC 5545 compliant empty iCal calendar feed so aggregators
+      // (like Airbnb / Booking.com) immediately verify and connect without failing with 404
+      const cleanSlug = slugOrId.replace(/\.(ics|ical)$/i, '');
+      const cleanTitle = cleanSlug.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      
+      const fallbackCalendar = ical({
+        name: `Nothingness - ${cleanTitle || 'Sanctuary'}`,
+        description: `Live reservation calendar for Nothingness Sanctuary`,
+        prodId: {
+          company: 'Nothingness Asia',
+          product: 'Sanctuary Calendar Feed',
+          language: 'EN',
         },
+        url: `${siteOrigin}/api/spaces/${cleanSlug}/calendar.ics`,
+        timezone: 'UTC',
+      });
+
+      const responseHeaders = {
+        'Content-Type': 'text/calendar; charset=utf-8',
+        'Content-Disposition': `inline; filename="nothingness-${cleanSlug}.ics"`,
+        'Cache-Control': 'no-cache, no-store, max-age=0, must-revalidate',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      };
+
+      if (isHeadOnly) {
+        return new NextResponse(null, { status: 200, headers: responseHeaders });
+      }
+
+      return new NextResponse(fallbackCalendar.toString(), {
+        status: 200,
+        headers: responseHeaders,
       });
     }
 
@@ -97,11 +129,6 @@ export async function generateIcalResponse(
       .from('external_blocked_dates')
       .select('id, start_date, end_date, summary, external_uid')
       .eq('space_id', space.id);
-
-    const siteOrigin =
-      (request && new URL(request.url).origin) ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      'https://nothingness.asia';
 
     const calendarUrl = `${siteOrigin}/api/spaces/${space.slug}/calendar.ics`;
 
