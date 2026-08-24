@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ShieldAlert, X, Camera } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ShieldAlert, ShieldCheck, X, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface IDUploadModalProps {
