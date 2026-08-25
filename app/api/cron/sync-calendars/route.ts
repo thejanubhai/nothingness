@@ -4,11 +4,12 @@ import { syncCalendars } from '@/lib/calendar-sync';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+async function handleSync(request: NextRequest) {
   try {
-    // Optional: check for cron secret if configured
     const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const isVercelCron = request.headers.get('x-vercel-cron') === '1';
+
+    if (process.env.CRON_SECRET && !isVercelCron && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -27,3 +28,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function GET(request: NextRequest) {
+  return handleSync(request);
+}
+
+export async function POST(request: NextRequest) {
+  return handleSync(request);
+}
+

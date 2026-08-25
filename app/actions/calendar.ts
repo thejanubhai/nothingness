@@ -1,7 +1,7 @@
 'use server';
 
-import ical from 'node-ical';
 import { createClient } from '@/lib/supabase/server';
+import { parseIcalRawText } from '@/lib/calendar-sync';
 
 export async function getBlockedIntervals(spaceId: string, iCalUrl?: string | null) {
   const supabase = await createClient();
@@ -16,7 +16,7 @@ export async function getBlockedIntervals(spaceId: string, iCalUrl?: string | nu
 
   if (bookings) {
     bookings.forEach(b => {
-      intervals.push({ start: b.check_in, end: b.check_out });
+      intervals.push({ start: b.check_in.split('T')[0], end: b.check_out.split('T')[0] });
     });
   }
 
@@ -36,19 +36,30 @@ export async function getBlockedIntervals(spaceId: string, iCalUrl?: string | nu
   // This handles the legacy case where airbnb_ical_url is set but no sync source exists yet
   if (iCalUrl && (!externalDates || externalDates.length === 0)) {
     try {
-      const events = await ical.async.fromURL(iCalUrl);
-      for (const event of Object.values(events)) {
-        if (event && event.type === 'VEVENT' && event.start && event.end) {
-          intervals.push({ 
-            start: event.start.toISOString().split('T')[0], 
-            end: event.end.toISOString().split('T')[0] 
-          });
+      const res = await fetch(iCalUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 NothingnessCalendarSync/1.0',
+          'Accept': 'text/calendar,text/plain,*/*',
+        },
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const icsText = await res.text();
+        const events = parseIcalRawText(icsText);
+        for (const event of events) {
+          if (event.startDate && event.endDate) {
+            intervals.push({ 
+              start: event.startDate, 
+              end: event.endDate 
+            });
+          }
         }
       }
     } catch (e) {
-      console.error('Failed to parse iCal:', e);
+      console.error('Failed to parse iCal fallback:', e);
     }
   }
 
   return intervals;
 }
+

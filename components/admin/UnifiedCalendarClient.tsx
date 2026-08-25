@@ -139,18 +139,27 @@ export default function UnifiedCalendarClient({
   }, [currentMonth]);
 
   // Get matching events for a specific day
+  // Uses night-based matching (check_in <= day < check_out) to prevent duplicate boxes on checkout day
   const getEventsForDay = (day: Date) => {
+    const dayStr = format(day, 'yyyy-MM-dd');
+
     const dayBookings = filteredBookings.filter(b => {
       if (b.status === 'cancelled') return false;
-      const bStart = startOfDay(parseISO(b.check_in));
-      const bEnd = endOfDay(parseISO(b.check_out));
-      return isWithinInterval(day, { start: bStart, end: bEnd });
+      const startStr = b.check_in.split('T')[0];
+      const endStr = b.check_out.split('T')[0];
+      if (startStr === endStr) {
+        return dayStr === startStr;
+      }
+      return dayStr >= startStr && dayStr < endStr;
     });
 
     const dayBlocked = filteredBlockedDates.filter(b => {
-      const bStart = startOfDay(parseISO(b.start_date));
-      const bEnd = endOfDay(parseISO(b.end_date));
-      return isWithinInterval(day, { start: bStart, end: bEnd });
+      const startStr = b.start_date.split('T')[0];
+      const endStr = b.end_date.split('T')[0];
+      if (startStr === endStr) {
+        return dayStr === startStr;
+      }
+      return dayStr >= startStr && dayStr < endStr;
     });
 
     return {
@@ -160,9 +169,9 @@ export default function UnifiedCalendarClient({
   };
 
   // Sync All Trigger
-  const handleSyncAll = async () => {
+  const handleSyncAll = async (silent: boolean = false) => {
     setIsSyncing(true);
-    toast.loading('Synchronizing all external iCal channels...');
+    if (!silent) toast.loading('Synchronizing all external iCal channels...');
     try {
       const res = await fetch('/api/spaces/sync-calendar', {
         method: 'POST',
@@ -170,10 +179,10 @@ export default function UnifiedCalendarClient({
         body: JSON.stringify({})
       });
       const data = await res.json();
-      toast.dismiss();
+      if (!silent) toast.dismiss();
 
       if (res.ok && data.success) {
-        toast.success(`Sync complete! ${data.synced || 0} external calendar feeds synced.`);
+        if (!silent) toast.success(`Sync complete! ${data.synced || 0} external calendar feeds synced.`);
         // Refresh blocked dates from API
         const refreshRes = await fetch('/api/admin/blocked-dates');
         const refreshData = await refreshRes.json();
@@ -181,15 +190,26 @@ export default function UnifiedCalendarClient({
           setBlockedDates(refreshData.blockedDates || []);
         }
       } else {
-        toast.error(data.error || 'Sync encountered errors');
+        if (!silent) toast.error(data.error || 'Sync encountered errors');
       }
     } catch {
-      toast.dismiss();
-      toast.error('Failed to execute sync');
+      if (!silent) {
+        toast.dismiss();
+        toast.error('Failed to execute sync');
+      }
     } finally {
       setIsSyncing(false);
     }
   };
+
+  // Auto-sync on mount if stale (> 10 mins)
+  React.useEffect(() => {
+    const tenMinsAgo = Date.now() - 10 * 60 * 1000;
+    const shouldSync = syncSources.some(s => s.is_active && (!s.last_synced_at || new Date(s.last_synced_at).getTime() < tenMinsAgo));
+    if (shouldSync) {
+      handleSyncAll(true);
+    }
+  }, []);
 
   // Submit Block Dates
   const handleCreateBlock = async (e: React.FormEvent) => {
@@ -322,7 +342,7 @@ export default function UnifiedCalendarClient({
           </Link>
 
           <button
-            onClick={handleSyncAll}
+            onClick={() => handleSyncAll(false)}
             disabled={isSyncing}
             className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white transition-all disabled:opacity-50"
             title="Sync all channels now"
@@ -711,12 +731,31 @@ export default function UnifiedCalendarClient({
                   </div>
                 </div>
 
-                <button
-                  onClick={() => handleDeleteBlockedDate(selectedEvent.data.id)}
-                  className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" /> Unblock This Date Range
-                </button>
+                {(() => {
+                  const resCodeMatch = selectedEvent.data.summary?.match(/#([A-Z0-9]+)/i);
+                  const resCode = resCodeMatch ? resCodeMatch[1] : null;
+
+                  return (
+                    <div className="space-y-2 pt-2">
+                      {resCode && (
+                        <a
+                          href={`https://www.airbnb.com/hosting/reservations/details/${resCode}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <ExternalLink className="w-4 h-4" /> Open Airbnb Reservation #{resCode}
+                        </a>
+                      )}
+                      <button
+                        onClick={() => handleDeleteBlockedDate(selectedEvent.data.id)}
+                        className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" /> Unblock / Remove Date Range
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>

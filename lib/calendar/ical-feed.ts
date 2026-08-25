@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { syncCalendars } from '@/lib/calendar-sync';
 
 export interface SpaceRecord {
   id: string;
@@ -63,11 +64,18 @@ export async function resolveSpace(slugOrId: string, supabase: any): Promise<Spa
 }
 
 function formatDateToIcalDate(dateInput: string | Date): string {
+  if (!dateInput) return '';
+  if (typeof dateInput === 'string') {
+    const clean = dateInput.replace(/[^0-9]/g, '');
+    if (clean.length >= 8) {
+      return clean.slice(0, 8);
+    }
+  }
   const d = new Date(dateInput);
   if (isNaN(d.getTime())) return '';
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
   return `${yyyy}${mm}${dd}`;
 }
 
@@ -130,7 +138,8 @@ export function buildRfc5545IcalString(
 }
 
 /**
- * Generates an RFC 5545 compliant iCalendar feed and NextResponse
+ * Generates an RFC 5545 compliant iCalendar feed and NextResponse.
+ * Automatically checks and syncs inbound feeds if they are stale (> 10 mins).
  */
 export async function generateIcalResponse(
   slugOrId: string,
@@ -142,6 +151,30 @@ export async function generateIcalResponse(
     const space = await resolveSpace(slugOrId, supabase);
 
     const spaceTitle = space?.title || slugOrId.replace(/\.(ics|ical)$/i, '').replace(/[-_]+/g, ' ');
+
+    if (space) {
+      // Check if sources for this space need a sync (> 10 mins stale or never synced)
+      try {
+        const { data: sources } = await supabase
+          .from('calendar_sync_sources')
+          .select('id, last_synced_at')
+          .eq('space_id', space.id)
+          .eq('is_active', true);
+
+        const tenMinsAgo = Date.now() - 10 * 60 * 1000;
+        const needsSync = sources && sources.some(s => !s.last_synced_at || new Date(s.last_synced_at).getTime() < tenMinsAgo);
+
+        if (needsSync) {
+          // Perform fresh sync with a safety timeout so response is never hung
+          await Promise.race([
+            syncCalendars(supabase, space.id),
+            new Promise(resolve => setTimeout(resolve, 4000))
+          ]);
+        }
+      } catch (syncErr) {
+        console.warn('Auto-sync check error in iCal feed generation:', syncErr);
+      }
+    }
 
     const eventsList: Array<{
       uid: string;
@@ -211,8 +244,8 @@ export async function generateIcalResponse(
     }
 
     return new NextResponse(calendarString, {
-      status: 200,
-      headers: responseHeaders,
+        status: 200,
+        headers: responseHeaders,
     });
   } catch (error: any) {
     console.error('iCal Generation Error:', error);
@@ -225,3 +258,4 @@ export async function generateIcalResponse(
     });
   }
 }
+

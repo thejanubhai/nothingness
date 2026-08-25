@@ -1,5 +1,12 @@
-import ical from 'node-ical';
 import { SupabaseClient } from '@supabase/supabase-js';
+
+export interface ParsedIcalEvent {
+  uid: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  summary: string;
+  description?: string;
+}
 
 interface SyncSource {
   id: string;
@@ -22,40 +29,122 @@ interface SyncResult {
   }>;
 }
 
-export function formatIcalEventDate(dateObj: any): string {
-  if (!dateObj) return '';
+/**
+ * Extracts a strict YYYY-MM-DD date string from any iCal date value.
+ * Avoids any timezone shift / JavaScript Date local-offset corruption.
+ */
+export function parseIcalDateString(str: string): string {
+  if (!str) return '';
+  const clean = str.trim();
   
-  if (dateObj.dateOnly || dateObj.datetype === 'date') {
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  // Match YYYYMMDD directly from string (e.g. "20260825" or "20260825T140000Z")
+  const match = clean.match(/^(\d{4})(\d{2})(\d{2})/);
+  if (match) {
+    return `${match[1]}-${match[2]}-${match[3]}`;
   }
 
-  if (dateObj instanceof Date && !isNaN(dateObj.getTime())) {
-    if ((dateObj as any).dateOnly) {
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-    return dateObj.toISOString().split('T')[0];
-  }
-
-  if (typeof dateObj === 'string') {
-    const clean = dateObj.replace(/[^0-9]/g, '');
-    if (clean.length >= 8) {
-      return `${clean.slice(0, 4)}-${clean.slice(4, 6)}-${clean.slice(6, 8)}`;
-    }
+  // If formatted as YYYY-MM-DD
+  const isoMatch = clean.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
   }
 
   return '';
 }
 
 /**
+ * Parses raw RFC 5545 iCalendar text into structured events without timezone shifting.
+ */
+export function parseIcalRawText(icsContent: string, platform: string = 'external'): ParsedIcalEvent[] {
+  // Normalize RFC 5545 line folding (lines beginning with space or tab are continuations)
+  const unfolded = icsContent.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
+  const lines = unfolded.split(/\r?\n/);
+
+  const events: ParsedIcalEvent[] = [];
+  let currentEvent: Partial<ParsedIcalEvent> | null = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed === 'BEGIN:VEVENT') {
+      currentEvent = {};
+    } else if (trimmed === 'END:VEVENT') {
+      if (currentEvent && currentEvent.startDate && currentEvent.endDate) {
+        const uid = currentEvent.uid || `event-${currentEvent.startDate}-${currentEvent.endDate}-${Math.random().toString(36).slice(2, 8)}`;
+        
+        let summary = currentEvent.summary || 'Reserved';
+        const description = currentEvent.description || '';
+
+        // Extract Airbnb reservation code and guest phone if present
+        const resCodeMatch = description.match(/reservations\/details\/([A-Z0-9]+)/i);
+        const phoneMatch = description.match(/Phone Number[^\n]*?:\s*(\d+)/i) || description.match(/(\d{4})\s*$/);
+        const resCode = resCodeMatch ? resCodeMatch[1] : null;
+        const phone = phoneMatch ? phoneMatch[1] : null;
+
+        if (platform.toLowerCase().includes('airbnb')) {
+          if (resCode && phone) {
+            summary = `Airbnb: #${resCode} (..${phone})`;
+          } else if (resCode) {
+            summary = `Airbnb: #${resCode}`;
+          } else if (summary.toLowerCase().includes('reserved')) {
+            summary = 'Airbnb: Reserved';
+          }
+        } else if (platform.toLowerCase().includes('booking') || platform.toLowerCase().includes('vrbo')) {
+          summary = `${platform.toUpperCase()}: ${summary}`;
+        } else if (platform.toLowerCase().includes('goibibo') || platform.toLowerCase().includes('mmt')) {
+          summary = `MMT: ${summary}`;
+        }
+
+        events.push({
+          uid,
+          startDate: currentEvent.startDate,
+          endDate: currentEvent.endDate,
+          summary,
+          description,
+        });
+      }
+      currentEvent = null;
+    } else if (currentEvent) {
+      const colonIdx = trimmed.indexOf(':');
+      if (colonIdx !== -1) {
+        const keyPart = trimmed.slice(0, colonIdx).toUpperCase();
+        const value = trimmed.slice(colonIdx + 1);
+
+        if (keyPart.startsWith('DTSTART')) {
+          currentEvent.startDate = parseIcalDateString(value);
+        } else if (keyPart.startsWith('DTEND')) {
+          currentEvent.endDate = parseIcalDateString(value);
+        } else if (keyPart === 'SUMMARY') {
+          currentEvent.summary = value.replace(/\\,/g, ',').replace(/\\n/g, ' ').trim();
+        } else if (keyPart === 'UID') {
+          currentEvent.uid = value.trim();
+        } else if (keyPart === 'DESCRIPTION') {
+          currentEvent.description = value.replace(/\\n/g, '\n').replace(/\\,/g, ',').trim();
+        }
+      }
+    }
+  }
+
+  return events;
+}
+
+export function formatIcalEventDate(dateObj: any): string {
+  if (!dateObj) return '';
+  if (typeof dateObj === 'string') {
+    return parseIcalDateString(dateObj);
+  }
+  if (dateObj instanceof Date && !isNaN(dateObj.getTime())) {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  return '';
+}
+
+/**
  * Sync external iCal feeds for all or a specific space.
  * Fetches each active calendar_sync_source, parses the iCal data,
- * upserts active events, and prunes cancelled/deleted events.
+ * upserts active events, and prunes cancelled/deleted FUTURE events while preserving history.
  */
 export async function syncCalendars(
   supabase: SupabaseClient,
@@ -83,6 +172,8 @@ export async function syncCalendars(
     return result;
   }
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   // 2. Process each source
   for (const source of sources as SyncSource[]) {
     let eventsUpserted = 0;
@@ -107,22 +198,13 @@ export async function syncCalendars(
       }
 
       const icsText = await res.text();
-      const events = ical.sync.parseICS(icsText);
+      const events = parseIcalRawText(icsText, source.platform);
 
-      // Process each VEVENT
-      for (const [, event] of Object.entries(events)) {
-        if (!event || event.type !== 'VEVENT') continue;
+      // Process each parsed event
+      for (const event of events) {
+        if (!event.startDate || !event.endDate) continue;
 
-        const vevent = event as ical.VEvent;
-        if (!vevent.start || !vevent.end) continue;
-
-        const startDate = formatIcalEventDate(vevent.start);
-        const endDate = formatIcalEventDate(vevent.end);
-        if (!startDate || !endDate) continue;
-
-        const externalUid = vevent.uid || `${source.id}-${startDate}-${endDate}`;
-        const summary = vevent.summary || 'Reserved (External)';
-
+        const externalUid = event.uid || `${source.id}-${event.startDate}-${event.endDate}`;
         activeUids.add(externalUid);
 
         // Upsert into external_blocked_dates using source_id + external_uid for deduplication
@@ -132,9 +214,9 @@ export async function syncCalendars(
             {
               space_id: source.space_id,
               source_id: source.id,
-              start_date: startDate,
-              end_date: endDate,
-              summary,
+              start_date: event.startDate,
+              end_date: event.endDate,
+              summary: event.summary,
               external_uid: externalUid,
             },
             {
@@ -153,32 +235,24 @@ export async function syncCalendars(
         eventsUpserted++;
       }
 
-      // Prune stale / cancelled events for this source
-      if (activeUids.size > 0) {
-        // Fetch all existing external_blocked_dates for this source
-        const { data: existingDates } = await supabase
-          .from('external_blocked_dates')
-          .select('id, external_uid')
-          .eq('source_id', source.id);
+      // Prune ONLY future/active stale events (e.g. cancelled bookings)
+      // NEVER delete past events (end_date < today) so historical records are kept
+      const { data: existingDates } = await supabase
+        .from('external_blocked_dates')
+        .select('id, external_uid, end_date')
+        .eq('source_id', source.id);
 
-        if (existingDates) {
-          const staleIds = existingDates
-            .filter(d => !activeUids.has(d.external_uid))
-            .map(d => d.id);
+      if (existingDates && existingDates.length > 0) {
+        const staleFutureIds = existingDates
+          .filter(d => d.end_date >= todayStr && !activeUids.has(d.external_uid))
+          .map(d => d.id);
 
-          if (staleIds.length > 0) {
-            await supabase
-              .from('external_blocked_dates')
-              .delete()
-              .in('id', staleIds);
-          }
+        if (staleFutureIds.length > 0) {
+          await supabase
+            .from('external_blocked_dates')
+            .delete()
+            .in('id', staleFutureIds);
         }
-      } else {
-        // If feed returned 0 events, clean up all previous external blocked dates for this source
-        await supabase
-          .from('external_blocked_dates')
-          .delete()
-          .eq('source_id', source.id);
       }
 
       // Update source status to synced
@@ -232,3 +306,4 @@ export async function syncCalendars(
 
   return result;
 }
+
