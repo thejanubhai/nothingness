@@ -1,7 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShieldCheck, Sparkles, Star, Lock, CheckCircle2, ArrowRight, ArrowLeft, AtSign, X, AlertCircle } from 'lucide-react';
+import {
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Lock,
+  CheckCircle2,
+  ArrowRight,
+  ArrowLeft,
+  AtSign,
+  X,
+  AlertCircle,
+  Building2,
+  UploadCloud,
+  Check
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface KinkOption {
@@ -15,8 +29,10 @@ interface KinksterOnboardingWizardProps {
   isOpen: boolean;
   onClose: () => void;
   isIdVerified: boolean;
+  isStayVerified?: boolean;
   onCompleted: () => void;
   onOpenIdVerification?: () => void;
+  onOpenStayVerification?: () => void;
 }
 
 const DEFAULT_KINKS: KinkOption[] = [
@@ -32,8 +48,10 @@ export default function KinksterOnboardingWizard({
   isOpen,
   onClose,
   isIdVerified,
+  isStayVerified = false,
   onCompleted,
-  onOpenIdVerification
+  onOpenIdVerification,
+  onOpenStayVerification
 }: KinksterOnboardingWizardProps) {
   const [step, setStep] = useState<number>(1);
   const [alias, setAlias] = useState('');
@@ -54,10 +72,37 @@ export default function KinksterOnboardingWizard({
     setKinks(kinks.map(k => k.id === id ? { ...k, intensity: stars } : k));
   };
 
+  const handleNextStepFromStep1 = () => {
+    if (!isIdVerified) {
+      toast.error('ID Verification Required (Aadhaar or Passport).');
+      if (onOpenIdVerification) onOpenIdVerification();
+      return;
+    }
+
+    if (!isStayVerified) {
+      toast.error('Previous Stay Verification Required. Upload your Airbnb/MMT reservation or WhatsApp booking screenshot.');
+      if (onOpenStayVerification) onOpenStayVerification();
+      return;
+    }
+
+    if (!alias.trim() || alias.trim().length < 3) {
+      toast.error('Please enter a valid unique alias (at least 3 characters).');
+      return;
+    }
+
+    setStep(2);
+  };
+
   const handleFinish = async () => {
     if (!isIdVerified) {
       toast.error('ID Verification Required before completing onboarding.');
       if (onOpenIdVerification) onOpenIdVerification();
+      return;
+    }
+
+    if (!isStayVerified) {
+      toast.error('Previous Stay Verification Required before completing onboarding.');
+      if (onOpenStayVerification) onOpenStayVerification();
       return;
     }
 
@@ -112,7 +157,7 @@ export default function KinksterOnboardingWizard({
 
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full z-10"
+          className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full z-10 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -138,23 +183,53 @@ export default function KinksterOnboardingWizard({
           </div>
         </div>
 
-        {/* STEP 1: Alias & Bio */}
+        {/* STEP 1: Prerequisites & Alias */}
         {step === 1 && (
           <div className="space-y-5 animate-fadeIn">
-            {/* ID Vetting Badge */}
-            <div className={`p-4 rounded-xl border flex items-start gap-3 text-xs ${
-              isIdVerified ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' : 'bg-amber-950/30 border-amber-500/30 text-amber-300'
-            }`}>
-              <ShieldCheck className="w-5 h-5 mt-0.5 shrink-0" />
-              <div>
-                <p className="font-semibold text-sm">
-                  {isIdVerified ? 'ID Vetted & Verified Guest' : 'ID Verification Required'}
+            {/* Prerequisite Twin Checkcards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Check 1: Govt ID */}
+              <div className={`p-3.5 rounded-2xl border flex flex-col justify-between text-xs transition-all ${
+                isIdVerified ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' : 'bg-amber-950/20 border-amber-500/30 text-amber-300'
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
+                  <span className="font-bold">Govt ID Vetting</span>
+                </div>
+                <p className="text-[11px] text-zinc-400 mt-1 mb-2">
+                  {isIdVerified ? '✓ Aadhaar / Passport Authenticated' : 'Aadhaar or Passport required for discretion.'}
                 </p>
-                <p className="mt-0.5 opacity-90">
-                  {isIdVerified
-                    ? 'Aadhaar/Passport verified. Legal names remain 100% encrypted & private.'
-                    : 'Aadhaar/Passport verification is required before activating Kinkster Mode.'}
+                {!isIdVerified && (
+                  <button
+                    type="button"
+                    onClick={onOpenIdVerification}
+                    className="w-full py-1.5 px-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 rounded-lg text-[11px] font-bold transition-colors text-center"
+                  >
+                    Upload Govt ID
+                  </button>
+                )}
+              </div>
+
+              {/* Check 2: Mandatory Stay */}
+              <div className={`p-3.5 rounded-2xl border flex flex-col justify-between text-xs transition-all ${
+                isStayVerified ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/20 border-rose-500/30 text-rose-300'
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Building2 className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span className="font-bold">Previous Stay Proof</span>
+                </div>
+                <p className="text-[11px] text-zinc-400 mt-1 mb-2">
+                  {isStayVerified ? '✓ Verified Nothingness Guest' : '1 previous stay required (Airbnb/MMT/Chat).'}
                 </p>
+                {!isStayVerified && (
+                  <button
+                    type="button"
+                    onClick={onOpenStayVerification}
+                    className="w-full py-1.5 px-2 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-200 rounded-lg text-[11px] font-bold transition-colors text-center"
+                  >
+                    Verify Stay (Screenshots)
+                  </button>
+                )}
               </div>
             </div>
 
@@ -331,13 +406,7 @@ export default function KinksterOnboardingWizard({
 
           {step < 4 ? (
             <button
-              onClick={() => {
-                if (step === 1 && (!alias.trim() || alias.trim().length < 3)) {
-                  toast.error('Please enter a valid unique alias (at least 3 characters).');
-                  return;
-                }
-                setStep(step + 1);
-              }}
+              onClick={step === 1 ? handleNextStepFromStep1 : () => setStep(step + 1)}
               className="px-5 py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg transition-all"
             >
               Next Step <ArrowRight className="w-4 h-4" />
@@ -345,7 +414,7 @@ export default function KinksterOnboardingWizard({
           ) : (
             <button
               onClick={handleFinish}
-              disabled={loading || !confidentialityAgreed || !isIdVerified}
+              disabled={loading || !confidentialityAgreed || !isIdVerified || !isStayVerified}
               className="px-6 py-3 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-xl transition-all disabled:opacity-50"
             >
               {loading ? 'Launching...' : <><CheckCircle2 className="w-4 h-4" /> Complete Onboarding &amp; Launch Profile 🔥</>}

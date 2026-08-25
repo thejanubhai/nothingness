@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,30 +28,85 @@ export async function POST(req: NextRequest) {
     }
 
     const formattedAlias = alias.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const adminSupabase = createAdminClient();
 
-    // 1. Check ID verification status
-    const { data: guestProfile } = await supabase
-      .from('guest_profiles')
-      .select('is_verified')
-      .eq('user_id', user.id)
-      .single();
+    // 1. Check ID verification status in guest_profiles
+    let isIdVerified = false;
+    const cleanPhone = user.phone ? user.phone.replace(/[^0-9+]/g, '') : null;
 
-    const isIdVerified = guestProfile?.is_verified ?? false;
+    if (cleanPhone) {
+      const { data: gpByPhone } = await adminSupabase
+        .from('guest_profiles')
+        .select('is_verified')
+        .eq('phone', cleanPhone)
+        .eq('is_verified', true)
+        .maybeSingle();
+      if (gpByPhone?.is_verified) isIdVerified = true;
+    }
+
+    if (!isIdVerified) {
+      const { data: gpByUserId } = await adminSupabase
+        .from('guest_profiles')
+        .select('is_verified')
+        .eq('user_id', user.id)
+        .eq('is_verified', true)
+        .maybeSingle();
+      if (gpByUserId?.is_verified) isIdVerified = true;
+    }
 
     if (!isIdVerified) {
       return NextResponse.json(
-        { error: 'ID Verification Required. Please upload Aadhaar or Passport before onboarding.' },
+        { error: 'ID Verification Required. Please upload Aadhaar or Passport before activating Kinkster Mode.' },
         { status: 403 }
       );
     }
 
-    // 2. Check alias uniqueness
-    const { data: existingAlias } = await supabase
+    // 2. Check Stay Verification Status (Mandatory at least 1 previous stay)
+    let isStayVerified = false;
+    const { data: existingKinksterProf } = await adminSupabase
+      .from('kinkster_profiles')
+      .select('stay_verified')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (existingKinksterProf?.stay_verified) {
+      isStayVerified = true;
+    } else {
+      // Check existing bookings in DB
+      const { data: userBookings } = await adminSupabase
+        .from('bookings')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'confirmed')
+        .limit(1);
+
+      if (userBookings && userBookings.length > 0) {
+        isStayVerified = true;
+      } else if (cleanPhone) {
+        const { data: phoneBookings } = await adminSupabase
+          .from('bookings')
+          .select('id')
+          .eq('guest_phone', cleanPhone)
+          .eq('status', 'confirmed')
+          .limit(1);
+        if (phoneBookings && phoneBookings.length > 0) isStayVerified = true;
+      }
+    }
+
+    if (!isStayVerified) {
+      return NextResponse.json(
+        { error: 'Previous Stay Verification Required. You must have had at least one stay with Nothingness. Please upload your Airbnb/MMT reservation or WhatsApp booking chat screenshot.' },
+        { status: 403 }
+      );
+    }
+
+    // 3. Check alias uniqueness
+    const { data: existingAlias } = await adminSupabase
       .from('kinkster_profiles')
       .select('id')
       .eq('alias', formattedAlias)
       .neq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (existingAlias) {
       return NextResponse.json(
@@ -62,8 +118,8 @@ export async function POST(req: NextRequest) {
     // Extract tags from kinks array for quick display
     const interestTags = (kinks || []).map((k: any) => k.name || k.id);
 
-    // 3. Upsert kinkster_profile
-    const { data: profile, error: upsertError } = await supabase
+    // 4. Upsert kinkster_profile
+    const { data: profile, error: upsertError } = await adminSupabase
       .from('kinkster_profiles')
       .upsert({
         id: user.id,
@@ -71,6 +127,7 @@ export async function POST(req: NextRequest) {
         bio: bio || 'Passionate about luxury stays, aesthetics, and high discretion.',
         avatar_url: avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
         is_activated: true,
+        stay_verified: true,
         confidentiality_agreed: true,
         confidentiality_agreed_at: new Date().toISOString(),
         interests: interestTags,
@@ -84,11 +141,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: upsertError.message }, { status: 500 });
     }
 
-    // 4. Save kink preferences with 1-5 star intensities into kinkster_preferences
+    // 5. Save kink preferences with 1-5 star intensities into kinkster_preferences
     if (kinks && Array.isArray(kinks)) {
       for (const item of kinks) {
         if (item.id && item.intensity) {
-          await supabase
+          await adminSupabase
             .from('kinkster_preferences')
             .upsert({
               kinkster_id: user.id,

@@ -18,6 +18,8 @@
     "cashfree-pg": "^6.0.4",
     "clsx": "^2.1.1",
     "date-fns": "^4.3.0",
+    "firebase": "^11.10.0",
+    "firebase-admin": "^13.10.0",
     "framer-motion": "^12.40.0",
     "ical-generator": "^10.2.0",
     "lenis": "^1.3.23",

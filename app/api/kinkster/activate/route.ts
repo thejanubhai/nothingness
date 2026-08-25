@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,14 +27,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Format alias cleanly (lowercase, alphanumeric + underscores)
     const formattedAlias = alias.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const adminSupabase = createAdminClient();
 
-    // 1. Verify Guest ID status in guest_profiles by phone or user_id
+    // 1. Verify Guest ID status in guest_profiles
     let isIdVerified = false;
-    if (user.phone) {
-      const cleanPhone = user.phone.replace(/[^0-9+]/g, '');
-      const { data: gpByPhone } = await supabase
+    const cleanPhone = user.phone ? user.phone.replace(/[^0-9+]/g, '') : null;
+
+    if (cleanPhone) {
+      const { data: gpByPhone } = await adminSupabase
         .from('guest_profiles')
         .select('is_verified')
         .eq('phone', cleanPhone)
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!isIdVerified) {
-      const { data: gpByUserId } = await supabase
+      const { data: gpByUserId } = await adminSupabase
         .from('guest_profiles')
         .select('is_verified')
         .eq('user_id', user.id)
@@ -59,13 +61,51 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Check if alias is already taken by another user
-    const { data: existingAlias } = await supabase
+    // 2. Verify Stay status
+    let isStayVerified = false;
+    const { data: existingKinksterProf } = await adminSupabase
+      .from('kinkster_profiles')
+      .select('stay_verified')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (existingKinksterProf?.stay_verified) {
+      isStayVerified = true;
+    } else {
+      const { data: userBookings } = await adminSupabase
+        .from('bookings')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'confirmed')
+        .limit(1);
+
+      if (userBookings && userBookings.length > 0) {
+        isStayVerified = true;
+      } else if (cleanPhone) {
+        const { data: phoneBookings } = await adminSupabase
+          .from('bookings')
+          .select('id')
+          .eq('guest_phone', cleanPhone)
+          .eq('status', 'confirmed')
+          .limit(1);
+        if (phoneBookings && phoneBookings.length > 0) isStayVerified = true;
+      }
+    }
+
+    if (!isStayVerified) {
+      return NextResponse.json(
+        { error: 'Previous Stay Verification Required. You must have had at least one previous stay with Nothingness.' },
+        { status: 403 }
+      );
+    }
+
+    // 3. Check alias uniqueness
+    const { data: existingAlias } = await adminSupabase
       .from('kinkster_profiles')
       .select('id')
       .eq('alias', formattedAlias)
       .neq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (existingAlias) {
       return NextResponse.json(
@@ -74,8 +114,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Upsert kinkster_profile record
-    const { data: profile, error: upsertError } = await supabase
+    // 4. Upsert kinkster_profile
+    const { data: profile, error: upsertError } = await adminSupabase
       .from('kinkster_profiles')
       .upsert({
         id: user.id,
@@ -83,6 +123,7 @@ export async function POST(req: NextRequest) {
         bio: bio || 'Passionate about luxury stays & discretion.',
         avatar_url: avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
         is_activated: true,
+        stay_verified: true,
         confidentiality_agreed: true,
         confidentiality_agreed_at: new Date().toISOString(),
         interests: interests || ['Luxury Stays', 'Discretion'],
@@ -92,7 +133,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (upsertError) {
-      console.error('Error activating kinkster profile:', upsertError);
       return NextResponse.json({ error: upsertError.message }, { status: 500 });
     }
 

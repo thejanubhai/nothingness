@@ -1,21 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { sendOtp, verifyOtp, onPasskeyLoginSuccess } from '@/app/actions/auth';
+import { loginWithFirebasePhone, onPasskeyLoginSuccess } from '@/app/actions/auth';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
-import { KeyRound, Smartphone, ShieldCheck, Sparkles, Building2, Flame, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { auth } from '@/lib/firebase/client';
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { normalizeIdentifier } from '@/lib/auth-utils';
+import { KeyRound, Smartphone, ShieldCheck, Sparkles, Building2, Flame, ArrowRight } from 'lucide-react';
+
+declare global {
+  interface Window {
+    recaptchaVerifier?: RecaptchaVerifier | null;
+  }
+}
 
 export default function LoginPage() {
+  const router = useRouter();
   const [identifier, setIdentifier] = useState('');
   const [step, setStep] = useState<'identifier' | 'verify-phone'>('identifier');
   const [otpToken, setOtpToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+
+  useEffect(() => {
+    return () => {
+      // Clean up recaptcha verifier on unmount
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
+  const getRecaptchaVerifier = () => {
+    if (typeof window === 'undefined') return null;
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {
+          // reCAPTCHA solved - will proceed with submit
+        },
+      });
+    }
+    return window.recaptchaVerifier;
+  };
 
   const base64URLStringToBuffer = (base64URLString: string) => {
-    const padding = '='.repeat((4 - base64URLString.length % 4) % 4);
+    const padding = '='.repeat((4 - (base64URLString.length % 4)) % 4);
     const base64 = (base64URLString + padding).replace(/\-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);
@@ -30,35 +69,62 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg('');
 
-    const formData = new FormData();
-    formData.append('identifier', identifier);
+    try {
+      const formattedPhone = normalizeIdentifier(identifier);
+      const appVerifier = getRecaptchaVerifier();
+      if (!appVerifier) {
+        throw new Error('reCAPTCHA verifier initialization failed.');
+      }
 
-    const result = await sendOtp(null, formData);
-
-    if (result?.error) {
-      setErrorMsg(result.error);
-    } else if (result?.success) {
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+      setConfirmationResult(confirmation);
       setStep('verify-phone');
-      toast.success(result.message);
+      toast.success(`OTP sent successfully to ${formattedPhone}`);
+    } catch (err: any) {
+      console.error('Firebase signInWithPhoneNumber error:', err);
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        } catch {
+          // ignore
+        }
+      }
+      setErrorMsg(err.message || 'Failed to send OTP. Please check your phone number.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpToken) return;
+    if (!otpToken || !confirmationResult) return;
     setLoading(true);
     setErrorMsg('');
 
-    const formData = new FormData();
-    formData.append('identifier', identifier);
-    formData.append('token', otpToken);
+    try {
+      // 1. Verify OTP with Firebase
+      const userCredential = await confirmationResult.confirm(otpToken);
+      // 2. Get Firebase ID Token (JWT)
+      const idToken = await userCredential.user.getIdToken();
 
-    const result = await verifyOtp(null, formData);
-    if (result?.error) {
-      setErrorMsg(result.error);
+      // 3. Pass Firebase ID Token to Server Action bridge to establish Supabase session
+      const result = await loginWithFirebasePhone(idToken);
+
+      if (result?.error) {
+        setErrorMsg(result.error);
+        setLoading(false);
+        return;
+      }
+
+      toast.success('Successfully authenticated!');
+      router.push(result.redirectUrl || '/dashboard');
+      router.refresh();
+    } catch (err: any) {
+      console.error('Firebase verifyOtp error:', err);
+      setErrorMsg(err.message || 'Invalid verification code. Please try again.');
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handlePasskeyLogin = async () => {
@@ -67,7 +133,7 @@ export default function LoginPage() {
     try {
       const supabase = createClient();
       const { data, error: startError } = await supabase.auth.passkey.startAuthentication();
-      
+
       if (startError) throw startError;
 
       const options = data?.options as any;
@@ -75,7 +141,7 @@ export default function LoginPage() {
         ...options,
         challenge: base64URLStringToBuffer(options.challenge),
       };
-      
+
       if (publicKey.allowCredentials) {
         publicKey.allowCredentials = publicKey.allowCredentials.map((cred: any) => ({
           ...cred,
@@ -99,7 +165,6 @@ export default function LoginPage() {
       toast.success('Successfully logged in with Passkey!');
       // Route user to correct dashboard via server action
       await onPasskeyLoginSuccess();
-      
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Passkey authentication cancelled or failed.');
@@ -114,7 +179,10 @@ export default function LoginPage() {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-accent-gold/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <motion.div 
+      {/* Invisible reCAPTCHA container for Firebase */}
+      <div id="recaptcha-container" />
+
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md bg-zinc-950/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 md:p-10 text-center shadow-2xl backdrop-blur-2xl relative z-10"
@@ -162,9 +230,9 @@ export default function LoginPage() {
                 Mobile Number (SMS &amp; WhatsApp OTP)
               </label>
               <div className="relative">
-                <input 
-                  type="tel" 
-                  placeholder="+91 98765 43210" 
+                <input
+                  type="tel"
+                  placeholder="+91 98765 43210"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-4 sm:px-5 py-3.5 sm:py-4 text-base md:text-sm text-white focus:outline-none focus:border-accent-gold/60 transition-colors font-mono tracking-wider"
@@ -173,15 +241,15 @@ export default function LoginPage() {
                 <Smartphone className="w-4 h-4 text-zinc-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
-            
-            <button 
+
+            <button
               onClick={handleSendOtp}
               disabled={!identifier || loading}
-              className="w-full bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 disabled:opacity-50 mt-2 shadow-xl flex items-center justify-center gap-2"
+              className="w-full bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 disabled:opacity-50 mt-2 shadow-xl flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? 'Sending Code...' : <><span>Continue with OTP</span> <ArrowRight className="w-4 h-4" /></>}
             </button>
-            
+
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-zinc-800" />
@@ -192,10 +260,10 @@ export default function LoginPage() {
             </div>
 
             {/* 1-Click Passkey Biometric Sign In */}
-            <button 
+            <button
               onClick={handlePasskeyLogin}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-white py-3.5 sm:py-4 rounded-xl text-xs font-bold tracking-[0.1em] uppercase transition-all duration-300 disabled:opacity-50 active:scale-[0.99]"
+              className="w-full flex items-center justify-center gap-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-white py-3.5 sm:py-4 rounded-xl text-xs font-bold tracking-[0.1em] uppercase transition-all duration-300 disabled:opacity-50 active:scale-[0.99] cursor-pointer"
             >
               <KeyRound className="w-4 h-4 text-accent-gold" />
               Sign in with Passkey / FaceID
@@ -208,14 +276,22 @@ export default function LoginPage() {
           <form onSubmit={handleVerifyOtp} className="space-y-4 text-left">
             <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800">
               <span className="text-xs text-zinc-300 font-mono">Sent to {identifier}</span>
-              <button type="button" onClick={() => setStep('identifier')} className="text-xs text-accent-gold hover:underline font-mono">Change</button>
+              <button
+                type="button"
+                onClick={() => setStep('identifier')}
+                className="text-xs text-accent-gold hover:underline font-mono cursor-pointer"
+              >
+                Change
+              </button>
             </div>
 
             <div>
-              <label className="block text-[10px] uppercase tracking-widest text-zinc-400 mb-2 font-mono">Enter 6-Digit Verification Code</label>
-              <input 
-                type="text" 
-                placeholder="123456" 
+              <label className="block text-[10px] uppercase tracking-widest text-zinc-400 mb-2 font-mono">
+                Enter 6-Digit Verification Code
+              </label>
+              <input
+                type="text"
+                placeholder="123456"
                 value={otpToken}
                 onChange={(e) => setOtpToken(e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-4 py-3.5 sm:py-4 text-white focus:outline-none focus:border-accent-gold/60 text-center tracking-[0.5em] text-xl font-mono transition-colors"
@@ -225,10 +301,10 @@ export default function LoginPage() {
               />
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading || otpToken.length < 6}
-              className="w-full bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 mt-4 disabled:opacity-50 shadow-xl"
+              className="w-full bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 mt-4 disabled:opacity-50 shadow-xl cursor-pointer"
             >
               {loading ? 'Verifying...' : 'Verify & Enter Portal'}
             </button>
@@ -237,7 +313,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleSendOtp}
               disabled={loading}
-              className="w-full bg-transparent text-zinc-400 hover:text-white py-2.5 rounded-xl text-[11px] font-mono tracking-wider uppercase transition-colors disabled:opacity-50"
+              className="w-full bg-transparent text-zinc-400 hover:text-white py-2.5 rounded-xl text-[11px] font-mono tracking-wider uppercase transition-colors disabled:opacity-50 cursor-pointer"
             >
               Resend OTP Code
             </button>

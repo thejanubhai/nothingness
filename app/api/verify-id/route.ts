@@ -127,11 +127,12 @@ export async function POST(req: Request) {
     // 2. Upsert into global guest_profiles with 180-day validity
     let profileId = null;
     if (result.document_number) {
+      const cleanDoc = result.document_number.trim().toUpperCase();
       const { data: profile, error: profileError } = await supabase
         .from('guest_profiles')
         .upsert(
           { 
-            document_number: result.document_number, 
+            document_number: cleanDoc, 
             full_name: result.name,
             phone: cleanPhone,
             id_document_type: result.document_type,
@@ -143,6 +144,7 @@ export async function POST(req: Request) {
             verification_timestamp: now.toISOString(),
             verification_expires_at: expiresAt,
             is_verified: true,
+            is_prestored: false, // Claimed and officially verified
           }, 
           { onConflict: 'document_number' }
         )
