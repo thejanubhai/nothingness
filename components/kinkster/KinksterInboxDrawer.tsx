@@ -78,7 +78,7 @@ export default function KinksterInboxDrawer({ isOpen, onClose, targetAlias }: Ki
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 md:max-w-md bg-zinc-950 border-l border-zinc-800 shadow-2xl flex flex-col animate-slideLeft">
+    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 md:max-w-md bg-zinc-950 border-l border-zinc-800 shadow-2xl flex flex-col animate-slideLeft pt-[env(safe-area-inset-top)]">
       {/* Drawer Header */}
       <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
         <div className="flex items-center gap-3">
@@ -160,7 +160,7 @@ export default function KinksterInboxDrawer({ isOpen, onClose, targetAlias }: Ki
           placeholder={`Message @${targetAlias}...`}
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
-          className="flex-1 px-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 text-xs"
+          className="flex-1 px-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 text-base md:text-xs"
         />
         <button
           type="submit"

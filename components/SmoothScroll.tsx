@@ -9,8 +9,15 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
   const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
-    // Disable smooth scroll on admin routes so all dashboard & calendar pages have 100% native mouse scroll
-    if (pathname?.startsWith('/admin')) {
+    // Disable smooth scroll on admin routes or mobile touch devices
+    // Touch devices (iOS / Android) natively excel with hardware-accelerated 120Hz ProMotion touch momentum
+    const isTouchDevice = typeof window !== 'undefined' && (
+      window.matchMedia('(pointer: coarse)').matches || 
+      'ontouchstart' in window || 
+      navigator.maxTouchPoints > 0
+    );
+
+    if (pathname?.startsWith('/admin') || isTouchDevice) {
       if (lenisRef.current) {
         lenisRef.current.destroy();
         lenisRef.current = null;
@@ -24,8 +31,8 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: 2,
+      wheelMultiplier: 0.9,
+      syncTouch: false,
     });
 
     lenisRef.current = lenis;

@@ -205,6 +205,40 @@ textarea,
   touch-action: manipulation;
 }
 
+/* Prevent auto-zoom jump on iOS Safari */
+@media screen and (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Native touch momentum for all scrollable elements */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Native Bottom Sheet Drag Indicator Pill */
+.sheet-drag-pill {
+  width: 40px;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+  margin: 0 auto 1rem auto;
+}
+
+/* Safe Area Insets Helpers */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    8. FOCUS RING STYLES — Elegant gold accessibility rings
    ═══════════════════════════════════════════════════════════════ */

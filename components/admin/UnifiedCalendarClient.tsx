@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   format, addMonths, subMonths, startOfMonth, endOfMonth, 
-  eachDayOfInterval, isToday, parseISO, isWithinInterval, startOfDay, endOfDay 
+  eachDayOfInterval, isToday, parseISO, isWithinInterval, startOfDay, endOfDay,
+  differenceInCalendarDays, formatDistanceToNow
 } from 'date-fns';
 import { 
   Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, 
   RefreshCw, Link2, Copy, Check, Trash2,
   ExternalLink, X, Lock, CheckCircle2, 
-  Clock, Radio
+  Clock, Radio, ShieldCheck, MessageSquare, Share2,
+  AlertTriangle, ArrowRight, UserCheck, Phone, DollarSign, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -29,16 +31,23 @@ interface Booking {
   check_out: string;
   status: string;
   payment_status?: string;
+  payment_method?: string;
   total_price: number;
   guests?: number;
   user_id?: string;
+  guest_name?: string;
+  guest_phone?: string;
+  guest_email?: string;
   spaces?: {
     id: string;
     title: string;
     slug: string;
   };
   booking_guests?: Array<{
+    id?: string;
     name?: string;
+    verification_token?: string;
+    verification_status?: string;
     guest_profiles?: {
       full_name?: string;
       phone_number?: string;
@@ -100,18 +109,26 @@ export default function UnifiedCalendarClient({
 
   // Modals & Drawers
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
-  const [showBlockModal, setShowBlockModal] = useState<boolean>(false);
+  const [showQuickActionModal, setShowQuickActionModal] = useState<boolean>(false);
+  const [quickActionDate, setQuickActionDate] = useState<string>('');
+  const [quickActionTab, setQuickActionTab] = useState<'block' | 'booking'>('block');
+
+  // Quick Action Form State
+  const [quickSpaceId, setQuickSpaceId] = useState<string>(spaces[0]?.id || '');
+  const [quickStartDate, setQuickStartDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [quickEndDate, setQuickEndDate] = useState<string>(format(addMonths(new Date(), 0), 'yyyy-MM-dd'));
+  const [quickSummary, setQuickSummary] = useState<string>('Maintenance & Deep Cleaning');
+  
+  // Fast Reservation State
+  const [quickGuestName, setQuickGuestName] = useState<string>('');
+  const [quickGuestPhone, setQuickGuestPhone] = useState<string>('');
+  const [quickTotalPrice, setQuickTotalPrice] = useState<number>(15000);
+  const [quickPaymentMethod, setQuickPaymentMethod] = useState<string>('UPI');
+  const [quickSubmitting, setQuickSubmitting] = useState<boolean>(false);
+
+  // Channel Modal State
   const [showAddChannelModal, setShowAddChannelModal] = useState<boolean>(false);
   const [selectedSpaceForChannel, setSelectedSpaceForChannel] = useState<string>(spaces[0]?.id || '');
-
-  // Form State for Block Modal
-  const [blockSpaceId, setBlockSpaceId] = useState<string>(spaces[0]?.id || '');
-  const [blockStartDate, setBlockStartDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const [blockEndDate, setBlockEndDate] = useState<string>(format(addMonths(new Date(), 0), 'yyyy-MM-dd'));
-  const [blockSummary, setBlockSummary] = useState<string>('Maintenance & Deep Cleaning');
-  const [blockSubmitting, setBlockSubmitting] = useState<boolean>(false);
-
-  // Form State for Channel Modal
   const [newPlatform, setNewPlatform] = useState<string>('airbnb');
   const [newIcalUrl, setNewIcalUrl] = useState<string>('');
   const [channelSubmitting, setChannelSubmitting] = useState<boolean>(false);
@@ -131,6 +148,71 @@ export default function UnifiedCalendarClient({
     return blockedDates.filter(b => b.space_id === selectedSpaceId);
   }, [blockedDates, selectedSpaceId]);
 
+  // Sync Health Check
+  const brokenSource = useMemo(() => {
+    return syncSources.find(s => s.is_active && s.sync_status === 'error');
+  }, [syncSources]);
+
+  // Latest Sync Relative Time
+  const latestSyncTime = useMemo(() => {
+    const activeDates = syncSources
+      .filter(s => s.is_active && s.last_synced_at)
+      .map(s => new Date(s.last_synced_at!).getTime());
+    if (activeDates.length === 0) return null;
+    const maxTime = Math.max(...activeDates);
+    return formatDistanceToNow(new Date(maxTime), { addSuffix: true });
+  }, [syncSources]);
+
+  // Monthly Financial & Occupancy KPI calculations
+  const monthKpis = useMemo(() => {
+    const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+    const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
+
+    const activeMonthBookings = filteredBookings.filter(b => {
+      if (b.status === 'cancelled') return false;
+      return (b.check_in <= monthEnd && b.check_out >= monthStart);
+    });
+
+    const totalRevenue = activeMonthBookings.reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
+
+    // Calculate booked nights in current month
+    const daysInCurrentMonth = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
+    let totalBookedNights = 0;
+
+    daysInCurrentMonth.forEach(day => {
+      const dayStr = format(day, 'yyyy-MM-dd');
+      const hasBooking = activeMonthBookings.some(b => b.check_in <= dayStr && b.check_out > dayStr);
+      if (hasBooking) totalBookedNights++;
+    });
+
+    const activeSpacesCount = selectedSpaceId === 'all' ? Math.max(spaces.length, 1) : 1;
+    const totalPossibleNights = daysInCurrentMonth.length * activeSpacesCount;
+    const occupancyRate = Math.min(100, Math.round((totalBookedNights / totalPossibleNights) * 100));
+
+    return {
+      revenue: totalRevenue,
+      occupancy: occupancyRate,
+      bookingsCount: activeMonthBookings.length
+    };
+  }, [filteredBookings, currentMonth, selectedSpaceId, spaces]);
+
+  // Today's Movements (Arrivals & Departures)
+  const todayMovements = useMemo(() => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+
+    const arrivals = bookings.filter(b => {
+      if (b.status === 'cancelled') return false;
+      return b.check_in.split('T')[0] === todayStr;
+    });
+
+    const departures = bookings.filter(b => {
+      if (b.status === 'cancelled') return false;
+      return b.check_out.split('T')[0] === todayStr;
+    });
+
+    return { arrivals, departures };
+  }, [bookings]);
+
   // Calendar Day Generation
   const daysInMonth = useMemo(() => {
     const start = startOfMonth(currentMonth);
@@ -138,8 +220,7 @@ export default function UnifiedCalendarClient({
     return eachDayOfInterval({ start, end });
   }, [currentMonth]);
 
-  // Get matching events for a specific day
-  // Uses night-based matching (check_in <= day < check_out) to prevent duplicate boxes on checkout day
+  // Get matching events for a specific day (Night-based matching)
   const getEventsForDay = (day: Date) => {
     const dayStr = format(day, 'yyyy-MM-dd');
 
@@ -183,7 +264,7 @@ export default function UnifiedCalendarClient({
 
       if (res.ok && data.success) {
         if (!silent) toast.success(`Sync complete! ${data.synced || 0} external calendar feeds synced.`);
-        // Refresh blocked dates from API
+        // Refresh blocked dates and sync status
         const refreshRes = await fetch('/api/admin/blocked-dates');
         const refreshData = await refreshRes.json();
         if (refreshData.success) {
@@ -202,8 +283,8 @@ export default function UnifiedCalendarClient({
     }
   };
 
-  // Auto-sync on mount if stale (> 10 mins)
-  React.useEffect(() => {
+  // Auto-sync on mount if stale
+  useEffect(() => {
     const tenMinsAgo = Date.now() - 10 * 60 * 1000;
     const shouldSync = syncSources.some(s => s.is_active && (!s.last_synced_at || new Date(s.last_synced_at).getTime() < tenMinsAgo));
     if (shouldSync) {
@@ -211,37 +292,97 @@ export default function UnifiedCalendarClient({
     }
   }, []);
 
-  // Submit Block Dates
-  const handleCreateBlock = async (e: React.FormEvent) => {
+  // Open Quick Action for clicked Day
+  const handleDayClick = (day: Date) => {
+    const dateStr = format(day, 'yyyy-MM-dd');
+    const nextDayStr = format(addMonths(day, 0), 'yyyy-MM-dd'); // default next day
+    const nextDate = new Date(day.getTime() + 24 * 60 * 60 * 1000);
+    
+    setQuickActionDate(dateStr);
+    setQuickStartDate(dateStr);
+    setQuickEndDate(format(nextDate, 'yyyy-MM-dd'));
+    setQuickSpaceId(selectedSpaceId !== 'all' ? selectedSpaceId : (spaces[0]?.id || ''));
+    setShowQuickActionModal(true);
+  };
+
+  // Submit Quick Block / Fast Reservation
+  const handleQuickSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBlockSubmitting(true);
+    setQuickSubmitting(true);
+
     try {
-      const res = await fetch('/api/admin/blocked-dates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          space_id: blockSpaceId,
-          start_date: blockStartDate,
-          end_date: blockEndDate,
-          summary: blockSummary
-        })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success('Dates blocked successfully!');
-        setBlockedDates(prev => [...prev, data.blockedDate]);
-        setShowBlockModal(false);
+      if (quickActionTab === 'block') {
+        const res = await fetch('/api/admin/blocked-dates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            space_id: quickSpaceId,
+            start_date: quickStartDate,
+            end_date: quickEndDate,
+            summary: quickSummary
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          toast.success('Dates blocked successfully!');
+          setBlockedDates(prev => [...prev, data.blockedDate]);
+          setShowQuickActionModal(false);
+        } else {
+          toast.error(data.error || 'Failed to block dates');
+        }
       } else {
-        toast.error(data.error || 'Failed to block dates');
+        // Fast Reservation
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        
+        const { data: newBooking, error: bErr } = await supabase
+          .from('bookings')
+          .insert({
+            space_id: quickSpaceId,
+            check_in: quickStartDate,
+            check_out: quickEndDate,
+            guest_name: quickGuestName.trim(),
+            guest_phone: quickGuestPhone.trim(),
+            total_price: quickTotalPrice,
+            payment_method: quickPaymentMethod,
+            payment_status: 'paid',
+            status: 'confirmed',
+            guests: 2
+          })
+          .select(`
+            id, space_id, check_in, check_out, status, payment_status, payment_method, total_price, guests,
+            guest_name, guest_phone, guest_email,
+            spaces (id, title, slug)
+          `)
+          .single();
+
+        if (bErr) throw bErr;
+
+        // Add primary guest entry
+        if (newBooking) {
+          await supabase.from('booking_guests').insert({
+            booking_id: newBooking.id,
+            guest_index: 0,
+            name: quickGuestName.trim(),
+            phone: quickGuestPhone.trim(),
+            verification_status: 'pending'
+          });
+        }
+
+        toast.success(`Reservation confirmed for ${quickGuestName}!`);
+        setBookings(prev => [newBooking as any, ...prev]);
+        setShowQuickActionModal(false);
+        setQuickGuestName('');
+        setQuickGuestPhone('');
       }
     } catch (err: any) {
-      toast.error(err.message || 'Error blocking dates');
+      toast.error(err.message || 'Error processing request');
     } finally {
-      setBlockSubmitting(false);
+      setQuickSubmitting(false);
     }
   };
 
-  // Delete Blocked Date
+  // Unblock
   const handleDeleteBlockedDate = async (id: string) => {
     if (!confirm('Are you sure you want to unblock this date range?')) return;
     try {
@@ -259,87 +400,87 @@ export default function UnifiedCalendarClient({
     }
   };
 
-  // Add Channel Source
-  const handleAddChannel = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data: newSource, error: insertError } = await supabase
-        .from('calendar_sync_sources')
-        .insert({
-          space_id: selectedSpaceForChannel,
-          platform: newPlatform,
-          inbound_ical_url: newIcalUrl.trim(),
-          is_active: true,
-          sync_status: 'pending'
-        })
-        .select(`
-          id, space_id, platform, inbound_ical_url, is_active, last_synced_at, sync_status, sync_error,
-          spaces (id, title, slug)
-        `)
-        .single();
-
-      if (insertError) throw insertError;
-
-      setSyncSources(prev => [newSource as any, ...prev]);
-      toast.success('Channel linked! Triggering first sync...');
-      setShowAddChannelModal(false);
-      setNewIcalUrl('');
-      await handleSyncAll();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to add channel');
-    } finally {
-      setChannelSubmitting(false);
-    }
+  // WhatsApp Helpers
+  const openWhatsAppChat = (phone: string, guestName: string, spaceTitle: string) => {
+    const cleanDigits = phone.replace(/[^0-9]/g, '');
+    const cleanPhone = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
+    const text = `Namaste ${guestName}! ✨ Regarding your stay at Nothingness (${spaceTitle || 'The Chamber'})...`;
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  const copyOutboundUrl = (slug: string) => {
+  const shareVerificationLinkWhatsApp = (bookingId: string, guestPhone?: string, guestName?: string, spaceTitle?: string) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia';
-    const url = `${origin}/api/spaces/${slug}/calendar.ics`;
-    navigator.clipboard.writeText(url);
-    setCopiedSlug(slug);
-    toast.success('Outbound iCal .ics URL copied to clipboard!');
-    setTimeout(() => setCopiedSlug(null), 2500);
+    const inviteUrl = `${origin}/verify-guest/invite?booking=${bookingId}`;
+    const message = `Namaste! ✨ You are invited for a stay at Nothingness (${spaceTitle || 'The Chamber'}).\n\nPlease complete your 30-second digital ID check-in here:\n${inviteUrl}`;
+    
+    if (guestPhone) {
+      const cleanDigits = guestPhone.replace(/[^0-9]/g, '');
+      const cleanPhone = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
+      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    }
+    toast.success('Opening WhatsApp with digital check-in link!');
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 max-w-7xl mx-auto pb-16">
       
       {/* Top Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-md bg-accent-gold/10 text-accent-gold border border-accent-gold/20 text-[10px] uppercase font-mono tracking-wider flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              {latestSyncTime ? `Live Sync (${latestSyncTime})` : 'Live 2-Way Sync'}
+            </span>
+          </div>
           <h1 className="font-serif text-3xl md:text-4xl text-white">Master Calendar &amp; Channel Manager</h1>
-          <p className="text-white/50 text-sm tracking-wide mt-1">
-            Real-time unified availability, multi-platform 2-way sync, and date blocking.
+          <p className="text-white/50 text-xs md:text-sm tracking-wide mt-0.5">
+            2-Way OTA sync (Airbnb &amp; MMT), quick reservations, instant date blocking, and guest check-ins.
           </p>
         </div>
 
         {/* Global Action Bar */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          
+          <Link
+            href="/admin/guests/police-register"
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all"
+          >
+            <ShieldCheck className="w-4 h-4 text-green-400" />
+            Police Register
+          </Link>
+
           <button
             onClick={() => setActiveTab(activeTab === 'calendar' ? 'channels' : 'calendar')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all"
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all"
           >
             <Radio className="w-4 h-4 text-accent-gold" />
-            {activeTab === 'calendar' ? 'Channel Integrations' : 'View Calendar'}
+            {activeTab === 'calendar' ? 'iCal Channels' : 'View Calendar'}
           </button>
 
           <button
-            onClick={() => setShowBlockModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all border border-white/10"
+            onClick={() => {
+              setQuickActionTab('block');
+              setShowQuickActionModal(true);
+            }}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all border border-white/10"
           >
             <Lock className="w-4 h-4 text-rose-400" />
             Block Dates
           </button>
 
-          <Link
-            href="/admin/bookings/new"
+          <button
+            onClick={() => {
+              setQuickActionTab('booking');
+              setShowQuickActionModal(true);
+            }}
             className="flex items-center gap-2 px-4 py-2.5 bg-accent-gold hover:bg-white text-black font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg"
           >
             <Plus className="w-4 h-4" />
-            New Reservation
-          </Link>
+            Quick Book
+          </button>
 
           <button
             onClick={() => handleSyncAll(false)}
@@ -351,6 +492,116 @@ export default function UnifiedCalendarClient({
           </button>
         </div>
       </div>
+
+      {/* FEED HEALTH ALERT BANNER (Item 4) */}
+      {brokenSource && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-red-400 text-xs animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <div>
+              <span className="font-bold uppercase tracking-wider text-red-300">Channel Feed Warning:</span>{' '}
+              <span>{brokenSource.platform.toUpperCase()} feed for {brokenSource.spaces?.title} returned an error. ({brokenSource.sync_error || 'Connection failed'})</span>
+            </div>
+          </div>
+          <button
+            onClick={() => handleSyncAll(false)}
+            className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-white font-bold rounded-lg transition-colors uppercase font-mono text-[11px] whitespace-nowrap"
+          >
+            Retry Sync Now
+          </button>
+        </div>
+      )}
+
+      {/* MONTHLY FINANCIAL & OCCUPANCY KPI METRICS (Item 12) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
+          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-mono">
+            {format(currentMonth, 'MMMM yyyy')} Gross Tariff
+          </p>
+          <p className="text-2xl font-serif text-accent-gold flex items-center justify-between">
+            ₹{monthKpis.revenue.toLocaleString('en-IN')}
+            <DollarSign className="w-5 h-5 text-accent-gold/40" />
+          </p>
+        </div>
+
+        <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
+          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-mono">
+            {format(currentMonth, 'MMMM yyyy')} Occupancy
+          </p>
+          <p className="text-2xl font-serif text-white flex items-center justify-between">
+            {monthKpis.occupancy}%
+            <CalendarIcon className="w-5 h-5 text-white/40" />
+          </p>
+        </div>
+
+        <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
+          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-mono">
+            Active Month Stays
+          </p>
+          <p className="text-2xl font-serif text-green-400 flex items-center justify-between">
+            {monthKpis.bookingsCount} Reservations
+            <Sparkles className="w-5 h-5 text-green-400/50" />
+          </p>
+        </div>
+      </div>
+
+      {/* TODAY'S MOVEMENTS WIDGET (Item 10) */}
+      {(todayMovements.arrivals.length > 0 || todayMovements.departures.length > 0) && (
+        <div className="bg-gradient-to-r from-accent-gold/10 via-white/[0.02] to-transparent border border-accent-gold/20 rounded-2xl p-4 md:p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-white flex items-center gap-2">
+              <Clock className="w-4 h-4 text-accent-gold" />
+              Today's Sanctuary Movements ({format(new Date(), 'dd MMMM yyyy')})
+            </h3>
+            <span className="text-[10px] text-accent-gold font-mono">Instant Dispatch</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Arrivals */}
+            {todayMovements.arrivals.map(b => (
+              <div key={b.id} className="bg-black/50 border border-green-500/30 rounded-xl p-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-400" />
+                    <span className="text-xs font-bold text-white">{b.guest_name || 'Guest'}</span>
+                    <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-mono">Arriving Today</span>
+                  </div>
+                  <p className="text-[11px] text-white/50 font-mono mt-0.5">{b.spaces?.title} • {b.guest_phone || 'No phone'}</p>
+                </div>
+                {b.guest_phone && (
+                  <button
+                    onClick={() => openWhatsAppChat(b.guest_phone!, b.guest_name || 'Guest', b.spaces?.title || '')}
+                    className="p-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors"
+                    title="Send WhatsApp message"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {/* Departures */}
+            {todayMovements.departures.map(b => (
+              <div key={b.id} className="bg-black/50 border border-rose-500/30 rounded-xl p-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-rose-400" />
+                    <span className="text-xs font-bold text-white">{b.guest_name || 'Guest'}</span>
+                    <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 font-mono">Departing Today</span>
+                  </div>
+                  <p className="text-[11px] text-white/50 font-mono mt-0.5">{b.spaces?.title} • Turnover needed</p>
+                </div>
+                <Link
+                  href="/admin/housekeeping"
+                  className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-[10px] uppercase font-mono"
+                >
+                  Turnover
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Main View Toggle */}
       {activeTab === 'calendar' ? (
@@ -424,7 +675,7 @@ export default function UnifiedCalendarClient({
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Airbnb Sync
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Booking.com / VRBO
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Booking.com / MMT
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-zinc-600" /> Maintenance / Blocked
@@ -446,54 +697,48 @@ export default function UnifiedCalendarClient({
 
             {/* Days Grid */}
             <div className="grid grid-cols-7 divide-x divide-y divide-white/5">
-              {/* Empty leading padding */}
               {Array.from({ length: startOfMonth(currentMonth).getDay() }).map((_, i) => (
-                <div key={`empty-${i}`} className="min-h-[110px] p-2 bg-black/40 opacity-20" />
+                <div key={`empty-${i}`} className="min-h-[110px] sm:min-h-[130px] bg-white/[0.005] opacity-20 p-2" />
               ))}
 
               {daysInMonth.map((day) => {
+                const dayStr = format(day, 'yyyy-MM-dd');
+                const isCurrentDay = isToday(day);
                 const { bookings: dayBookings, blocked: dayBlocked } = getEventsForDay(day);
                 const hasEvents = dayBookings.length > 0 || dayBlocked.length > 0;
-                const isCurrent = isToday(day);
 
                 return (
                   <div
-                    key={day.toISOString()}
+                    key={dayStr}
                     onClick={() => {
-                      if (!hasEvents) {
-                        setBlockStartDate(format(day, 'yyyy-MM-dd'));
-                        setBlockEndDate(format(day, 'yyyy-MM-dd'));
-                        setShowBlockModal(true);
-                      }
+                      if (!hasEvents) handleDayClick(day);
                     }}
-                    className={`min-h-[110px] p-2 transition-colors relative group cursor-pointer ${
-                      isCurrent ? 'bg-accent-gold/[0.03]' : 'hover:bg-white/[0.02]'
+                    className={`min-h-[110px] sm:min-h-[130px] p-2 transition-all flex flex-col justify-between group relative cursor-pointer ${
+                      isCurrentDay ? 'bg-accent-gold/[0.03] ring-1 ring-accent-gold/40' : 'hover:bg-white/[0.02]'
                     }`}
                   >
-                    {/* Day Number */}
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className={`text-xs font-mono font-bold ${
-                        isCurrent 
-                          ? 'w-6 h-6 rounded-full bg-accent-gold text-black flex items-center justify-center' 
-                          : 'text-white/70 group-hover:text-white'
+                    {/* Day Number Header */}
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-mono font-medium rounded-full w-6 h-6 flex items-center justify-center ${
+                        isCurrentDay ? 'bg-accent-gold text-black font-bold' : 'text-white/70'
                       }`}>
                         {format(day, 'd')}
                       </span>
 
                       {!hasEvents && (
-                        <span className="text-[10px] text-white/20 opacity-0 group-hover:opacity-100 transition-opacity">
-                          + Block
+                        <span className="opacity-0 group-hover:opacity-100 text-[10px] text-accent-gold font-mono transition-opacity">
+                          + Action
                         </span>
                       )}
                     </div>
 
-                    {/* Events List */}
-                    <div className="space-y-1 overflow-hidden">
-                      {/* Direct Bookings */}
+                    {/* Events Container */}
+                    <div className="space-y-1.5 my-1">
+                      {/* Direct / Platform Bookings */}
                       {dayBookings.map((b) => {
-                        const guestName = b.booking_guests?.[0]?.guest_profiles?.full_name 
-                          || b.booking_guests?.[0]?.name 
-                          || 'Direct Guest';
+                        const guestName = b.guest_name || b.booking_guests?.[0]?.name || 'Booked';
+                        const isStart = b.check_in.split('T')[0] === dayStr;
+
                         return (
                           <div
                             key={b.id}
@@ -501,24 +746,20 @@ export default function UnifiedCalendarClient({
                               e.stopPropagation();
                               setSelectedEvent({ type: 'booking', data: b });
                             }}
-                            className="p-1.5 bg-gradient-to-r from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-lg text-amber-200 text-[10px] font-mono leading-tight hover:border-amber-400 transition-all truncate flex items-center justify-between"
+                            className="p-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-mono hover:bg-amber-500/25 transition-colors cursor-pointer truncate shadow-xs"
                           >
-                            <span className="truncate font-semibold">{b.spaces?.title}: {guestName}</span>
-                            <span className="text-[9px] text-amber-400 font-bold ml-1">₹{b.total_price?.toLocaleString()}</span>
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="truncate font-semibold">{guestName}</span>
+                              {isStart && <span className="text-[8px] bg-amber-400 text-black px-1 rounded font-bold">IN</span>}
+                            </div>
                           </div>
                         );
                       })}
 
-                      {/* Blocked Dates / External iCal Syncs */}
+                      {/* External Blocked Dates */}
                       {dayBlocked.map((b) => {
-                        const isAirbnb = b.summary?.toLowerCase().includes('airbnb') || b.summary?.toLowerCase().includes('reserved');
-                        const isBookingCom = b.summary?.toLowerCase().includes('booking.com') || b.summary?.toLowerCase().includes('vrbo');
-
-                        const badgeColor = isAirbnb
-                          ? 'bg-rose-500/20 border-rose-500/30 text-rose-300'
-                          : isBookingCom
-                          ? 'bg-blue-500/20 border-blue-500/30 text-blue-300'
-                          : 'bg-zinc-800/80 border-zinc-700 text-zinc-300';
+                        const isAirbnb = b.summary.toLowerCase().includes('airbnb') || b.summary.toLowerCase().includes('res:');
+                        const isStart = b.start_date.split('T')[0] === dayStr;
 
                         return (
                           <div
@@ -527,13 +768,23 @@ export default function UnifiedCalendarClient({
                               e.stopPropagation();
                               setSelectedEvent({ type: 'blocked', data: b });
                             }}
-                            className={`p-1.5 border rounded-lg text-[10px] font-mono leading-tight hover:brightness-125 transition-all truncate flex items-center justify-between ${badgeColor}`}
+                            className={`p-1.5 rounded-lg text-[11px] font-mono transition-colors cursor-pointer truncate shadow-xs border ${
+                              isAirbnb
+                                ? 'bg-rose-500/15 border-rose-500/30 text-rose-300 hover:bg-rose-500/25'
+                                : 'bg-zinc-800/80 border-zinc-700 text-zinc-300 hover:bg-zinc-700/80'
+                            }`}
                           >
-                            <span className="truncate">{b.spaces?.title}: {b.summary}</span>
-                            <Lock className="w-2.5 h-2.5 opacity-60 flex-shrink-0 ml-1" />
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="truncate font-medium">{b.summary}</span>
+                              {isStart && <span className="text-[8px] bg-white/20 text-white px-1 rounded">IN</span>}
+                            </div>
                           </div>
                         );
                       })}
+                    </div>
+
+                    <div className="text-[9px] text-white/20 font-mono text-right">
+                      {spaces[0]?.nightly_price ? `₹${spaces[0].nightly_price / 1000}k` : ''}
                     </div>
                   </div>
                 );
@@ -542,249 +793,87 @@ export default function UnifiedCalendarClient({
           </div>
         </div>
       ) : (
-        /* CHANNELS & ICAL SYNC INTEGRATION VIEW */
-        <div className="space-y-8 animate-in fade-in">
-          {/* Quick Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
-              <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Active Sync Sources</p>
-              <p className="text-2xl font-serif text-white">{syncSources.filter(s => s.is_active).length} / {syncSources.length}</p>
-            </div>
-
-            <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
-              <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Healthy Feeds</p>
-              <p className="text-2xl font-serif text-green-400 flex items-center gap-2">
-                {syncSources.filter(s => s.sync_status === 'success').length}
-                <CheckCircle2 className="w-4 h-4 text-green-400/60" />
-              </p>
-            </div>
-
-            <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
-              <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Blocked External Dates</p>
-              <p className="text-2xl font-serif text-accent-gold">{blockedDates.length} Dates</p>
-            </div>
-
-            <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
-              <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Auto-Sync Frequency</p>
-              <p className="text-2xl font-serif text-white flex items-center gap-2">
-                Every 15m
-                <Clock className="w-4 h-4 text-white/40" />
+        /* Channels Tab */
+        <div className="space-y-6">
+          <div className="flex justify-between items-center bg-white/[0.02] border border-white/5 p-6 rounded-2xl">
+            <div>
+              <h2 className="font-serif text-xl text-white">Outbound iCal Feeds (For Airbnb &amp; MakeMyTrip)</h2>
+              <p className="text-xs text-white/50 mt-0.5">
+                Paste these exact links into Airbnb &amp; MakeMyTrip to automatically block reserved dates.
               </p>
             </div>
           </div>
 
-          {/* Space-by-Space Channel Cards */}
-          <div className="space-y-6">
-            {spaces.map((space) => {
-              const spaceSources = syncSources.filter(s => s.space_id === space.id);
-
-              return (
-                <div key={space.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-6">
-                  
-                  {/* Space Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-                    <div>
-                      <h3 className="font-serif text-2xl text-white">{space.title}</h3>
-                      <p className="text-xs text-white/40 mt-0.5">Two-way iCal integration for Airbnb, Booking.com &amp; VRBO.</p>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setSelectedSpaceForChannel(space.id);
-                        setShowAddChannelModal(true);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition-colors border border-white/10"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Connect Platform Feed
-                    </button>
-                  </div>
-
-                  {/* Outbound Feed Link */}
-                  <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
-                    <p className="text-[10px] uppercase tracking-widest text-accent-gold font-bold">
-                      Outbound iCal Export (Copy to Airbnb / Booking.com / MMT)
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input
-                        type="text"
-                        readOnly
-                        value={`${typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia'}/api/spaces/${space.slug}/calendar.ics`}
-                        className="flex-1 bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-white/70 font-mono focus:outline-none"
-                      />
-                      <button
-                        onClick={() => copyOutboundUrl(space.slug)}
-                        className="flex items-center justify-center gap-1.5 px-4 py-2 bg-accent-gold/10 hover:bg-accent-gold text-accent-gold hover:text-black rounded-lg text-xs font-bold transition-all border border-accent-gold/30 whitespace-nowrap"
-                      >
-                        {copiedSlug === space.slug ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        {copiedSlug === space.slug ? 'Copied' : 'Copy .ics Link'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Inbound Feeds List */}
-                  <div className="space-y-3">
-                    <p className="text-[10px] uppercase tracking-widest text-white/40">Connected Inbound Feeds</p>
-                    
-                    {spaceSources.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {spaceSources.map((source) => (
-                          <div key={source.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="capitalize text-xs font-bold text-white">{source.platform}</span>
-                                <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-mono ${
-                                  source.sync_status === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                                  source.sync_status === 'error' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                                  'bg-accent-gold/20 text-accent-gold border border-accent-gold/30'
-                                }`}>
-                                  {source.sync_status || 'Pending'}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-white/40 font-mono truncate max-w-xs">{source.inbound_ical_url}</p>
-                            </div>
-                            
-                            <a
-                              href={source.inbound_ical_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="p-2 text-white/30 hover:text-white transition-colors"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-white/30 italic py-2">No external channels connected yet for this space.</p>
-                    )}
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {spaces.map(s => (
+              <div key={s.id} className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl space-y-3">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-serif text-lg text-white">{s.title}</h3>
+                  <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded font-mono border border-green-500/20">Live Sync</span>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* EVENT DETAILS MODAL */}
-      {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-          <div className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl animate-in zoom-in-95">
-            <button
-              onClick={() => setSelectedEvent(null)}
-              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            {selectedEvent.type === 'booking' ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-xs font-mono text-accent-gold uppercase tracking-wider">
-                  <CalendarIcon className="w-4 h-4" /> Direct Reservation Details
-                </div>
-                <h2 className="font-serif text-2xl text-white">{selectedEvent.data.spaces?.title}</h2>
-
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Check-In:</span>
-                    <span className="text-white font-mono">{format(parseISO(selectedEvent.data.check_in), 'EEE, MMM dd, yyyy')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Check-Out:</span>
-                    <span className="text-white font-mono">{format(parseISO(selectedEvent.data.check_out), 'EEE, MMM dd, yyyy')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Total Tariff:</span>
-                    <span className="text-accent-gold font-bold font-mono">₹{selectedEvent.data.total_price?.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Status:</span>
-                    <span className="text-green-400 uppercase font-mono font-bold">{selectedEvent.data.status}</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <Link
-                    href={`/admin/bookings`}
-                    className="flex-1 py-3 bg-accent-gold hover:bg-white text-black font-bold rounded-xl text-xs text-center transition-colors"
+                <div className="flex items-center gap-2 bg-black/60 border border-white/10 p-2.5 rounded-xl">
+                  <input
+                    readOnly
+                    value={`https://nothingness.asia/api/spaces/${s.slug}/calendar.ics`}
+                    className="w-full bg-transparent text-xs text-white/70 font-mono focus:outline-none"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://nothingness.asia/api/spaces/${s.slug}/calendar.ics`);
+                      toast.success('Outbound iCal URL copied!');
+                    }}
+                    className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
                   >
-                    View in Bookings Tab
-                  </Link>
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-xs font-mono text-rose-400 uppercase tracking-wider">
-                  <Lock className="w-4 h-4" /> Blocked Date / External Channel
-                </div>
-                <h2 className="font-serif text-2xl text-white">{selectedEvent.data.spaces?.title}</h2>
-
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Period:</span>
-                    <span className="text-white font-mono">
-                      {format(parseISO(selectedEvent.data.start_date), 'MMM dd')} - {format(parseISO(selectedEvent.data.end_date), 'MMM dd, yyyy')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Summary:</span>
-                    <span className="text-white font-medium">{selectedEvent.data.summary}</span>
-                  </div>
-                </div>
-
-                {(() => {
-                  const resCodeMatch = selectedEvent.data.summary?.match(/#([A-Z0-9]+)/i);
-                  const resCode = resCodeMatch ? resCodeMatch[1] : null;
-
-                  return (
-                    <div className="space-y-2 pt-2">
-                      {resCode && (
-                        <a
-                          href={`https://www.airbnb.com/hosting/reservations/details/${resCode}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-colors"
-                        >
-                          <ExternalLink className="w-4 h-4" /> Open Airbnb Reservation #{resCode}
-                        </a>
-                      )}
-                      <button
-                        onClick={() => handleDeleteBlockedDate(selectedEvent.data.id)}
-                        className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" /> Unblock / Remove Date Range
-                      </button>
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
+            ))}
           </div>
         </div>
       )}
 
-      {/* BLOCK DATES MODAL */}
-      {showBlockModal && (
+      {/* QUICK ACTION MODAL (BLOCK DATES / FAST RESERVATION) */}
+      {showQuickActionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-          <div className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl animate-in zoom-in-95">
+          <div className="w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative">
             <button
-              onClick={() => setShowBlockModal(false)}
-              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full"
+              onClick={() => setShowQuickActionModal(false)}
+              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
 
-            <div className="flex items-center gap-2 text-xs font-mono text-rose-400 uppercase tracking-wider">
-              <Lock className="w-4 h-4" /> Quick Date Blocker
+            {/* Modal Tabs */}
+            <div className="grid grid-cols-2 gap-2 bg-white/5 p-1 rounded-xl border border-white/5">
+              <button
+                type="button"
+                onClick={() => setQuickActionTab('block')}
+                className={`py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
+                  quickActionTab === 'block' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                🔒 Block Dates
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickActionTab('booking')}
+                className={`py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
+                  quickActionTab === 'booking' ? 'bg-accent-gold text-black font-bold shadow-md' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                ✨ Fast Reservation
+              </button>
             </div>
-            <h2 className="font-serif text-2xl text-white">Block Dates for Maintenance</h2>
 
-            <form onSubmit={handleCreateBlock} className="space-y-4">
-              <div>
-                <label className="text-[10px] uppercase tracking-widest text-white/40 block mb-1">Select Sanctuary</label>
+            <form onSubmit={handleQuickSubmit} className="space-y-4">
+              {/* Space Picker */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-mono tracking-wider text-white/50">Sanctuary</label>
                 <select
-                  value={blockSpaceId}
-                  onChange={(e) => setBlockSpaceId(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
+                  value={quickSpaceId}
+                  onChange={(e) => setQuickSpaceId(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent-gold"
                 >
                   {spaces.map(s => (
                     <option key={s.id} value={s.id} className="bg-black text-white">{s.title}</option>
@@ -792,104 +881,236 @@ export default function UnifiedCalendarClient({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] uppercase tracking-widest text-white/40 block mb-1">Start Date</label>
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] uppercase font-mono tracking-wider text-white/50">Check-in Date</label>
                   <input
                     type="date"
                     required
-                    value={blockStartDate}
-                    onChange={(e) => setBlockStartDate(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none [color-scheme:dark]"
+                    value={quickStartDate}
+                    onChange={(e) => setQuickStartDate(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent-gold [color-scheme:dark]"
                   />
                 </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-widest text-white/40 block mb-1">End Date</label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] uppercase font-mono tracking-wider text-white/50">Check-out Date</label>
                   <input
                     type="date"
                     required
-                    value={blockEndDate}
-                    onChange={(e) => setBlockEndDate(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none [color-scheme:dark]"
+                    value={quickEndDate}
+                    onChange={(e) => setQuickEndDate(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent-gold [color-scheme:dark]"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="text-[10px] uppercase tracking-widest text-white/40 block mb-1">Reason / Note</label>
-                <input
-                  type="text"
-                  required
-                  value={blockSummary}
-                  onChange={(e) => setBlockSummary(e.target.value)}
-                  placeholder="e.g., Deep clean, plumbing check, private VIP hold"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none"
-                />
-              </div>
+              {quickActionTab === 'block' ? (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] uppercase font-mono tracking-wider text-white/50">Reason for Block</label>
+                  <input
+                    type="text"
+                    required
+                    value={quickSummary}
+                    onChange={(e) => setQuickSummary(e.target.value)}
+                    placeholder="e.g. Maintenance, VIP Hold, Private"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent-gold"
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase font-mono tracking-wider text-white/50">Primary Guest Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={quickGuestName}
+                      onChange={(e) => setQuickGuestName(e.target.value)}
+                      placeholder="e.g. John Doe"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent-gold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-mono tracking-wider text-white/50">Phone Number</label>
+                      <input
+                        type="tel"
+                        required
+                        value={quickGuestPhone}
+                        onChange={(e) => setQuickGuestPhone(e.target.value)}
+                        placeholder="+91 98765 43210"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent-gold font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-mono tracking-wider text-white/50">Total Tariff (₹)</label>
+                      <input
+                        type="number"
+                        required
+                        value={quickTotalPrice}
+                        onChange={(e) => setQuickTotalPrice(Number(e.target.value))}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent-gold font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Payment Method Selector (Item 11) */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase font-mono tracking-wider text-white/50">Payment Method Mode</label>
+                    <select
+                      value={quickPaymentMethod}
+                      onChange={(e) => setQuickPaymentMethod(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent-gold"
+                    >
+                      <option value="UPI" className="bg-black text-white">UPI (GPay / PhonePe / Paytm)</option>
+                      <option value="Cash" className="bg-black text-white">Direct Cash</option>
+                      <option value="Cashfree" className="bg-black text-white">Cashfree Online Gateway</option>
+                      <option value="Airbnb Payout" className="bg-black text-white">Airbnb Payout</option>
+                      <option value="MakeMyTrip Payout" className="bg-black text-white">MakeMyTrip Payout</option>
+                      <option value="Bank Transfer" className="bg-black text-white">Direct Bank NEFT/IMPS</option>
+                    </select>
+                  </div>
+                </>
+              )}
 
               <button
                 type="submit"
-                disabled={blockSubmitting}
-                className="w-full py-3 bg-gradient-to-r from-rose-600 to-amber-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all disabled:opacity-50 mt-4"
+                disabled={quickSubmitting}
+                className="w-full py-3.5 bg-accent-gold hover:bg-white text-black font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-xl disabled:opacity-50 mt-4"
               >
-                {blockSubmitting ? 'Blocking Dates...' : 'Confirm Block'}
+                {quickSubmitting ? 'Saving...' : (quickActionTab === 'block' ? 'Lock Dates' : 'Confirm & Save Reservation')}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* CONNECT CHANNEL MODAL */}
-      {showAddChannelModal && (
+      {/* EVENT DETAIL DRAWER / SLIDE-OVER (Item 3) */}
+      {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-          <div className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl animate-in zoom-in-95">
+          <div className="w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative animate-in fade-in zoom-in-95">
             <button
-              onClick={() => setShowAddChannelModal(false)}
-              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full"
+              onClick={() => setSelectedEvent(null)}
+              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
 
-            <div className="flex items-center gap-2 text-xs font-mono text-accent-gold uppercase tracking-wider">
-              <Link2 className="w-4 h-4" /> Connect External OTA Feed
-            </div>
-            <h2 className="font-serif text-2xl text-white">Import Calendar from Platform</h2>
+            {selectedEvent.type === 'booking' ? (
+              <div className="space-y-6">
+                <div>
+                  <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[10px] uppercase font-mono font-bold">
+                    Reservation Details
+                  </span>
+                  <h2 className="font-serif text-2xl text-white mt-2">
+                    {selectedEvent.data.guest_name || 'Guest Stay'}
+                  </h2>
+                  <p className="text-xs text-white/50 font-mono mt-0.5">
+                    {selectedEvent.data.spaces?.title} • ID: {selectedEvent.data.id.slice(0, 8)}
+                  </p>
+                </div>
 
-            <form onSubmit={handleAddChannel} className="space-y-4">
-              <div>
-                <label className="text-[10px] uppercase tracking-widest text-white/40 block mb-1">Booking Platform</label>
-                <select
-                  value={newPlatform}
-                  onChange={(e) => setNewPlatform(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none"
-                >
-                  <option value="airbnb" className="bg-black text-white">Airbnb (iCal link)</option>
-                  <option value="booking.com" className="bg-black text-white">Booking.com</option>
-                  <option value="vrbo" className="bg-black text-white">VRBO / HomeAway</option>
-                  <option value="custom" className="bg-black text-white">Custom iCal (.ics URL)</option>
-                </select>
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2.5 text-xs text-white/80 font-mono">
+                  <div className="flex justify-between">
+                    <span className="text-white/40">Check-in:</span>
+                    <span className="text-white font-bold">{selectedEvent.data.check_in.split('T')[0]}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/40">Check-out:</span>
+                    <span className="text-white font-bold">{selectedEvent.data.check_out.split('T')[0]}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/40">Total Tariff:</span>
+                    <span className="text-accent-gold font-bold">₹{Number(selectedEvent.data.total_price || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/40">Payment Mode:</span>
+                    <span className="text-green-400 font-bold">{selectedEvent.data.payment_method || 'UPI'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/40">Phone:</span>
+                    <span>{selectedEvent.data.guest_phone || 'None'}</span>
+                  </div>
+                </div>
+
+                {/* WhatsApp Instant Action Buttons (Item 3 & 6) */}
+                <div className="space-y-2.5 pt-2">
+                  {selectedEvent.data.guest_phone && (
+                    <button
+                      onClick={() => openWhatsAppChat(
+                        selectedEvent.data.guest_phone,
+                        selectedEvent.data.guest_name || 'Guest',
+                        selectedEvent.data.spaces?.title || ''
+                      )}
+                      className="w-full py-3 bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-400 rounded-xl text-xs font-bold font-mono uppercase tracking-wider flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" /> Message Guest on WhatsApp
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => shareVerificationLinkWhatsApp(
+                      selectedEvent.data.id,
+                      selectedEvent.data.guest_phone,
+                      selectedEvent.data.guest_name,
+                      selectedEvent.data.spaces?.title
+                    )}
+                    className="w-full py-3 bg-accent-gold/15 hover:bg-accent-gold/25 border border-accent-gold/30 text-accent-gold rounded-xl text-xs font-bold font-mono uppercase tracking-wider flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Share2 className="w-4 h-4" /> Share Verification Link on WhatsApp
+                  </button>
+
+                  <Link
+                    href="/admin/bookings"
+                    className="block w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white rounded-xl text-xs font-semibold text-center uppercase tracking-wider transition-colors"
+                  >
+                    View All Bookings
+                  </Link>
+                </div>
               </div>
+            ) : (
+              /* Blocked Date Detail */
+              <div className="space-y-6">
+                <div>
+                  <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-300 border border-rose-500/20 text-[10px] uppercase font-mono font-bold">
+                    Blocked Date Record
+                  </span>
+                  <h2 className="font-serif text-2xl text-white mt-2">
+                    {selectedEvent.data.summary}
+                  </h2>
+                  <p className="text-xs text-white/50 font-mono mt-0.5">
+                    {selectedEvent.data.spaces?.title}
+                  </p>
+                </div>
 
-              <div>
-                <label className="text-[10px] uppercase tracking-widest text-white/40 block mb-1">Inbound iCal Feed URL</label>
-                <input
-                  type="url"
-                  required
-                  value={newIcalUrl}
-                  onChange={(e) => setNewIcalUrl(e.target.value)}
-                  placeholder="https://www.airbnb.com/calendar/ical/12345.ics?s=..."
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none"
-                />
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2.5 text-xs text-white/80 font-mono">
+                  <div className="flex justify-between">
+                    <span className="text-white/40">From:</span>
+                    <span>{selectedEvent.data.start_date.split('T')[0]}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/40">To:</span>
+                    <span>{selectedEvent.data.end_date.split('T')[0]}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => handleDeleteBlockedDate(selectedEvent.data.id)}
+                    className="flex-1 py-3 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" /> Unblock Dates
+                  </button>
+                  <button
+                    onClick={() => setSelectedEvent(null)}
+                    className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-semibold uppercase"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
-
-              <button
-                type="submit"
-                disabled={channelSubmitting || !newIcalUrl.trim()}
-                className="w-full py-3 bg-accent-gold hover:bg-white text-black font-bold rounded-xl text-xs uppercase tracking-wider transition-all disabled:opacity-50 mt-4"
-              >
-                {channelSubmitting ? 'Connecting...' : 'Connect & Sync Channel'}
-              </button>
-            </form>
+            )}
           </div>
         </div>
       )}

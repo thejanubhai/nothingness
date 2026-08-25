@@ -16,10 +16,14 @@ export default async function AdminCalendarPage() {
   const { data: bookings } = await supabase
     .from('bookings')
     .select(`
-      id, space_id, check_in, check_out, status, payment_status, total_price, guests, user_id,
+      id, space_id, check_in, check_out, status, payment_status, payment_method, total_price, guests, user_id,
+      guest_name, guest_phone, guest_email,
       spaces (id, title, slug),
       booking_guests (
+        id,
         name,
+        verification_token,
+        verification_status,
         guest_profiles (full_name, phone_number, document_number)
       )
     `)

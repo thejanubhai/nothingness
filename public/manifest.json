@@ -1,12 +1,16 @@
 {
+  "id": "/",
   "name": "Nothingness | Luxury Private Sanctuaries",
   "short_name": "Nothingness",
   "description": "India's Premier Luxury Private Sanctuaries & Cinematic Stays.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
   "background_color": "#000000",
   "theme_color": "#000000",
-  "orientation": "portrait",
+  "orientation": "any",
+  "categories": ["travel", "lifestyle", "hospitality"],
   "icons": [
     {
       "src": "/images/logo.png",
@@ -19,6 +23,29 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Sanctuaries",
+      "short_name": "Spaces",
+      "description": "Explore Luxury Private Sanctuaries",
+      "url": "/spaces",
+      "icons": [{ "src": "/images/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Lifestyle Circle",
+      "short_name": "Lifestyle",
+      "description": "Vetted Discreet Alternate Lifestyle Feed",
+      "url": "/kinksters",
+      "icons": [{ "src": "/images/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Guest Portal",
+      "short_name": "Portal",
+      "description": "Access your reservations & ID vetting",
+      "url": "/dashboard",
+      "icons": [{ "src": "/images/logo.png", "sizes": "192x192" }]
     }
   ]
 }

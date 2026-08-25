@@ -264,7 +264,7 @@ export default function SingleSpaceClient({ space }: { space: any }) {
                       placeholder="Full Name (as per ID)"
                       value={additionalGuests[idx]?.name || ''}
                       onChange={(e) => handleAdditionalGuestUpdate(idx, 'name', e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-gold/50"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-base md:text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-gold/50"
                     />
                     <input
                       required
@@ -272,7 +272,7 @@ export default function SingleSpaceClient({ space }: { space: any }) {
                       placeholder="WhatsApp Number (10 digits)"
                       value={additionalGuests[idx]?.phone || ''}
                       onChange={(e) => handleAdditionalGuestUpdate(idx, 'phone', e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-gold/50 font-mono"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-base md:text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-gold/50 font-mono"
                     />
                   </div>
                 </div>
@@ -445,9 +445,10 @@ export default function SingleSpaceClient({ space }: { space: any }) {
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="w-full bg-zinc-950 border-t border-zinc-800 rounded-t-3xl p-6 pb-[calc(2rem+env(safe-area-inset-bottom))] max-h-[85vh] overflow-y-auto"
+              transition={{ type: "spring", damping: 28, stiffness: 220 }}
+              className="w-full bg-zinc-950 border-t border-zinc-800 rounded-t-3xl p-6 pb-[calc(2rem+env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto"
             >
+              <div className="sheet-drag-pill" />
               <div className="flex justify-between items-center mb-4">
                 <span className="text-xs uppercase font-mono tracking-widest text-accent-gold">Reserve Sanctuary</span>
                 <button

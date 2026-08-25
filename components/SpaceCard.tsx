@@ -13,7 +13,7 @@ interface PropertyCardProps {
 
 export default function PropertyCard({ title, location, image, price, slug }: PropertyCardProps) {
   return (
-    <Link href={`/spaces/${slug}`} className="block group">
+    <Link href={`/spaces/${slug}`} className="block group active:scale-[0.98] transition-transform duration-200">
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}

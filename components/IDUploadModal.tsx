@@ -2,8 +2,9 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ShieldAlert, ShieldCheck, X, Camera } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ShieldCheck, X, Camera, Sparkles, RefreshCw, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import IDScanningAnimation from '@/components/IDScanningAnimation';
 
 interface IDUploadModalProps {
   isOpen: boolean;
@@ -16,8 +17,10 @@ interface IDUploadModalProps {
 }
 
 export default function IDUploadModal({ isOpen, onClose, guestId, token, phone, bookingId, onSuccess }: IDUploadModalProps) {
-  const frontInputRef = useRef<HTMLInputElement>(null);
-  const backInputRef = useRef<HTMLInputElement>(null);
+  const frontCameraRef = useRef<HTMLInputElement>(null);
+  const frontGalleryRef = useRef<HTMLInputElement>(null);
+  const backCameraRef = useRef<HTMLInputElement>(null);
+  const backGalleryRef = useRef<HTMLInputElement>(null);
   
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [frontPreview, setFrontPreview] = useState<string | null>(null);
@@ -83,10 +86,10 @@ export default function IDUploadModal({ isOpen, onClose, guestId, token, phone, 
       if (!res.ok) throw new Error(data.error || data.reason || 'Verification failed');
 
       if (data.verified) {
-        toast.success('Identity Verified', { description: `Welcome, ${data.name || 'Guest'}.` });
+        toast.success('Identity Authenticated for 180 Days!', { description: `Welcome, ${data.name || 'Guest'}.` });
         onSuccess(data.name);
       } else {
-        throw new Error(data.reason || 'ID verification failed.');
+        throw new Error(data.reason || 'ID verification could not be validated.');
       }
     } catch (err: any) {
       setError(err.message);
@@ -105,7 +108,7 @@ export default function IDUploadModal({ isOpen, onClose, guestId, token, phone, 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md"
         >
           <motion.div 
             initial={{ scale: 0.95, y: 20 }}
@@ -118,33 +121,64 @@ export default function IDUploadModal({ isOpen, onClose, guestId, token, phone, 
             </button>
 
             <div className="p-5 sm:p-8">
+              <div className="sheet-drag-pill sm:hidden" />
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-2.5 py-0.5 rounded-md bg-accent-gold/10 text-accent-gold border border-accent-gold/20 text-[10px] uppercase font-mono tracking-wider flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" /> Digital Security Scan
+                </span>
+                <span className="px-2.5 py-0.5 rounded-md bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] uppercase font-mono tracking-wider">
+                  Delhi Police Compliant
+                </span>
+              </div>
+
               <h2 className="font-serif text-xl sm:text-2xl mb-1.5 text-white">Digital Guest ID Verification</h2>
               <p className="text-xs sm:text-sm text-zinc-400 mb-4 leading-relaxed">
-                Per Delhi Police compliance, upload clear front &amp; back photos of your <span className="text-white font-medium">Aadhaar Card</span> or <span className="text-white font-medium">Passport</span>.
+                Upload clear front &amp; back photos of your <span className="text-white font-medium">Aadhaar Card</span> or <span className="text-white font-medium">Passport</span>.
                 <br />
-                <span className="text-[10px] sm:text-[11px] text-amber-400/90 mt-1 inline-block font-mono">⚠️ Driving License &amp; Voter ID are not accepted.</span>
+                <span className="text-[10px] sm:text-[11px] text-amber-400/90 mt-1 inline-block font-mono">⚠️ Driving License &amp; Voter ID are not accepted per hospitality regulations.</span>
               </p>
 
-              <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] uppercase tracking-wider text-accent-gold bg-accent-gold/10 py-1.5 px-3 rounded-lg w-max mb-5 border border-accent-gold/20 font-mono">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>180-Day Reusable Vetting Protocol</span>
-              </div>
+              {/* Hidden file inputs for direct camera and gallery */}
+              <input type="file" ref={frontCameraRef} onChange={(e) => handleFileChange(e, 'front')} accept="image/*" capture="environment" className="hidden" />
+              <input type="file" ref={frontGalleryRef} onChange={(e) => handleFileChange(e, 'front')} accept="image/*" className="hidden" />
+              <input type="file" ref={backCameraRef} onChange={(e) => handleFileChange(e, 'back')} accept="image/*" capture="environment" className="hidden" />
+              <input type="file" ref={backGalleryRef} onChange={(e) => handleFileChange(e, 'back')} accept="image/*" className="hidden" />
 
               <div className="space-y-4">
                 {/* Front ID */}
                 <div>
-                  <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-400 mb-1.5 font-mono">Front of ID Document</p>
-                  <input type="file" ref={frontInputRef} onChange={(e) => handleFileChange(e, 'front')} accept="image/*" className="hidden" />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-400 font-mono">Front of ID Document</p>
+                    {frontPreview && <span className="text-[10px] text-green-400 font-mono font-bold">✓ Front Captured</span>}
+                  </div>
+
                   {!frontPreview ? (
-                    <div onClick={() => frontInputRef.current?.click()} className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-xl p-5 sm:p-6 cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 bg-white/[0.02]">
-                      <Camera className="w-5 h-5 text-accent-gold/70" />
-                      <p className="text-xs text-zinc-400 font-medium">Tap to Take Photo / Upload Front</p>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => frontCameraRef.current?.click()}
+                        className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-xl p-4 transition-all flex flex-col items-center justify-center gap-1.5 bg-white/[0.02] hover:bg-accent-gold/[0.03] group"
+                      >
+                        <Camera className="w-5 h-5 text-accent-gold group-hover:scale-110 transition-transform" />
+                        <span className="text-xs text-white/80 font-medium">Take Photo</span>
+                        <span className="text-[9px] text-white/40 font-mono">Direct Camera</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => frontGalleryRef.current?.click()}
+                        className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-xl p-4 transition-all flex flex-col items-center justify-center gap-1.5 bg-white/[0.02] hover:bg-accent-gold/[0.03] group"
+                      >
+                        <ImageIcon className="w-5 h-5 text-white/50 group-hover:text-accent-gold group-hover:scale-110 transition-transform" />
+                        <span className="text-xs text-white/80 font-medium">Upload File</span>
+                        <span className="text-[9px] text-white/40 font-mono">From Gallery</span>
+                      </button>
                     </div>
                   ) : (
-                    <div className="relative w-full h-28 sm:h-32 rounded-xl overflow-hidden border border-zinc-700 group cursor-pointer" onClick={() => frontInputRef.current?.click()}>
-                      <img src={frontPreview} alt="Front ID Preview" className="w-full h-full object-contain bg-black/60" />
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-xs uppercase tracking-widest text-white font-mono">Retake Photo</span>
+                    <div className="relative group">
+                      <IDScanningAnimation imagePreview={frontPreview} isScanning={loading} />
+                      <div className="absolute top-2 right-2 flex gap-1 z-10">
+                        <button type="button" onClick={() => frontCameraRef.current?.click()} className="px-2.5 py-1 bg-black/80 hover:bg-accent-gold hover:text-black border border-white/20 text-white rounded-lg text-[10px] font-mono transition-colors">Retake</button>
                       </div>
                     </div>
                   )}
@@ -152,32 +186,58 @@ export default function IDUploadModal({ isOpen, onClose, guestId, token, phone, 
 
                 {/* Back ID */}
                 <div>
-                  <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-400 mb-1.5 font-mono">Back of ID Document</p>
-                  <input type="file" ref={backInputRef} onChange={(e) => handleFileChange(e, 'back')} accept="image/*" className="hidden" />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-400 font-mono">Back of ID Document (Address)</p>
+                    {backPreview && <span className="text-[10px] text-green-400 font-mono font-bold">✓ Back Captured</span>}
+                  </div>
+
                   {!backPreview ? (
-                    <div onClick={() => backInputRef.current?.click()} className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-xl p-5 sm:p-6 cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 bg-white/[0.02]">
-                      <Camera className="w-5 h-5 text-accent-gold/70" />
-                      <p className="text-xs text-zinc-400 font-medium">Tap to Take Photo / Upload Back</p>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => backCameraRef.current?.click()}
+                        className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-xl p-4 transition-all flex flex-col items-center justify-center gap-1.5 bg-white/[0.02] hover:bg-accent-gold/[0.03] group"
+                      >
+                        <Camera className="w-5 h-5 text-accent-gold group-hover:scale-110 transition-transform" />
+                        <span className="text-xs text-white/80 font-medium">Take Photo</span>
+                        <span className="text-[9px] text-white/40 font-mono">Direct Camera</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => backGalleryRef.current?.click()}
+                        className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-xl p-4 transition-all flex flex-col items-center justify-center gap-1.5 bg-white/[0.02] hover:bg-accent-gold/[0.03] group"
+                      >
+                        <ImageIcon className="w-5 h-5 text-white/50 group-hover:text-accent-gold group-hover:scale-110 transition-transform" />
+                        <span className="text-xs text-white/80 font-medium">Upload File</span>
+                        <span className="text-[9px] text-white/40 font-mono">From Gallery</span>
+                      </button>
                     </div>
                   ) : (
-                    <div className="relative w-full h-28 sm:h-32 rounded-xl overflow-hidden border border-zinc-700 group cursor-pointer" onClick={() => backInputRef.current?.click()}>
-                      <img src={backPreview} alt="Back ID Preview" className="w-full h-full object-contain bg-black/60" />
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-xs uppercase tracking-widest text-white font-mono">Retake Photo</span>
+                    <div className="relative group">
+                      <IDScanningAnimation imagePreview={backPreview} isScanning={loading} />
+                      <div className="absolute top-2 right-2 flex gap-1 z-10">
+                        <button type="button" onClick={() => backCameraRef.current?.click()} className="px-2.5 py-1 bg-black/80 hover:bg-accent-gold hover:text-black border border-white/20 text-white rounded-lg text-[10px] font-mono transition-colors">Retake</button>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              {error && <p className="text-red-400 text-xs mt-3 text-center">{error}</p>}
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs flex items-center gap-2 mt-4">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
 
               <button 
                 onClick={submitVerification}
                 disabled={loading || !frontPreview || !backPreview}
-                className="w-full mt-6 bg-accent-gold hover:bg-white text-black py-3.5 sm:py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xl"
+                className="w-full mt-6 bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xl"
               >
-                {loading ? 'Validating via AI...' : <><CheckCircle2 className="w-4 h-4" /> Verify Document</>}
+                {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                {loading ? 'Authenticating Security Hologram...' : 'Submit & Verify ID'}
               </button>
             </div>
           </motion.div>

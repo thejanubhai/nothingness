@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { 
   Filter, Plus, Search, CheckCircle, Clock, ShieldAlert, ShieldCheck,
   Calendar, User, ArrowDownToLine, Phone, Mail, CheckCircle2,
-  AlertTriangle, RefreshCw
+  AlertTriangle, RefreshCw, MessageSquare, Share2
 } from 'lucide-react';
 import Link from 'next/link';
 import CancelBookingButton from '@/components/CancelBookingButton';
@@ -38,6 +38,7 @@ interface Booking {
   total_price: number;
   status: string;
   payment_status?: string;
+  payment_method?: string;
   guest_name?: string;
   guest_email?: string;
   guest_phone?: string;
@@ -96,64 +97,42 @@ export default function AdminBookingsClient({ initialBookings }: { initialBookin
     }
   };
 
-  const handleExportCSV = () => {
-    const headers = ['Booking ID', 'Sanctuary', 'Guest Name', 'Check In', 'Check Out', 'Total (INR)', 'Status', 'Payment', 'Created'];
-    const rows = filteredBookings.map(b => [
-      b.id,
-      b.spaces?.title || 'Unknown',
-      b.guest_name || b.booking_guests?.[0]?.guest_profiles?.full_name || b.booking_guests?.[0]?.name || 'N/A',
-      new Date(b.check_in).toISOString().split('T')[0],
-      new Date(b.check_out).toISOString().split('T')[0],
-      b.total_price,
-      b.status,
-      b.payment_status || 'paid',
-      new Date(b.created_at).toISOString().split('T')[0]
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `nothingness_reservations_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const shareVerificationWhatsApp = (b: Booking) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia';
+    const inviteUrl = `${origin}/verify-guest/invite?booking=${b.id}`;
+    const message = `Namaste ${b.guest_name || 'Guest'}! ✨ Regarding your reservation at Nothingness (${b.spaces?.title || 'Sanctuary'}).\n\nPlease complete your quick 30-second digital ID check-in here:\n${inviteUrl}`;
+    
+    if (b.guest_phone) {
+      const cleanDigits = b.guest_phone.replace(/[^0-9]/g, '');
+      const cleanPhone = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
+      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    }
+    toast.success('Opened WhatsApp with digital check-in invite link!');
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-7xl mx-auto pb-16">
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="font-serif text-3xl md:text-4xl text-white">Bookings &amp; Reservations</h1>
-          <p className="text-white/50 text-sm tracking-wide mt-1">
-            Real-time reservation stream, Delhi Police guest protocols, and key access dispatch.
+          <h1 className="font-serif text-3xl md:text-4xl text-white">Reservations &amp; Multi-Guest Registry</h1>
+          <p className="text-white/50 text-xs md:text-sm tracking-wide mt-1">
+            Manage confirmed stays, track payment modes (UPI / Cash / OTA), and dispatch WhatsApp digital verification links.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors"
-          >
-            <ArrowDownToLine className="w-4 h-4" /> Export CSV
-          </button>
-
-          <Link
-            href="/admin/bookings/new"
-            className="flex items-center gap-2 bg-accent-gold text-black px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-white transition-all shadow-lg"
-          >
-            <Plus className="w-4 h-4" /> Add Reservation
-          </Link>
-        </div>
+        <Link
+          href="/admin/bookings/new"
+          className="flex items-center gap-2 bg-accent-gold hover:bg-white text-black px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-xl"
+        >
+          <Plus className="w-4 h-4" /> Add Reservation
+        </Link>
       </div>
 
-      {/* Filter & Search Bar */}
+      {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/[0.02] border border-white/5 p-4 rounded-2xl">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -161,217 +140,101 @@ export default function AdminBookingsClient({ initialBookings }: { initialBookin
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search reference, guest, sanctuary..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-accent-gold/50"
+            placeholder="Search by ID, guest name, sanctuary..."
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-accent-gold font-mono"
           />
         </div>
 
-        {/* Status Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0">
-          {[
-            { id: 'all', label: 'All' },
-            { id: 'confirmed', label: 'Confirmed' },
-            { id: 'checked_in', label: 'Checked In' },
-            { id: 'completed', label: 'Completed' },
-            { id: 'pending', label: 'Pending' },
-            { id: 'cancelled', label: 'Cancelled' },
-          ].map(tab => (
+          {['all', 'confirmed', 'checked_in', 'completed', 'cancelled'].map((st) => (
             <button
-              key={tab.id}
-              onClick={() => setStatusFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all whitespace-nowrap ${
-                statusFilter === tab.id
-                  ? 'bg-accent-gold text-black font-bold shadow-md'
-                  : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+              key={st}
+              onClick={() => setStatusFilter(st)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono capitalize transition-all ${
+                statusFilter === st ? 'bg-accent-gold text-black font-bold' : 'bg-white/5 text-white/60 hover:text-white'
               }`}
             >
-              {tab.label}
+              {st === 'all' ? `All (${bookings.length})` : st.replace('_', ' ')}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Bookings Stream List */}
-      <div className="space-y-6">
-        {filteredBookings.map((booking) => {
-          const mainGuest = booking.booking_guests?.[0]?.guest_profiles?.full_name 
-            || booking.booking_guests?.[0]?.name 
-            || booking.guest_name 
-            || 'Guest';
-          const guestPhone = booking.booking_guests?.[0]?.guest_profiles?.phone_number || booking.guest_phone;
-          const isVerified = booking.booking_guests?.some(g => g.verification_status === 'verified');
+      {/* Bookings Table */}
+      <div className="bg-white/[0.02] border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-white/[0.01] border-b border-white/10 text-[10px] uppercase tracking-widest text-white/40">
+              <tr>
+                <th className="px-6 py-4 font-medium">Sanctuary &amp; ID</th>
+                <th className="px-6 py-4 font-medium">Guest &amp; Contact</th>
+                <th className="px-6 py-4 font-medium">Stay Dates</th>
+                <th className="px-6 py-4 font-medium">Tariff &amp; Payment Mode</th>
+                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium">WhatsApp Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filteredBookings.map((b) => {
+                const guestName = b.guest_name || b.booking_guests?.[0]?.name || 'Guest';
+                const guestPhone = b.guest_phone || b.booking_guests?.[0]?.phone;
 
-          return (
-            <div key={booking.id} className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex flex-col lg:flex-row gap-8 hover:border-white/10 transition-colors">
-              
-              {/* Left Column: Booking Info & Actions */}
-              <div className="w-full lg:w-1/3 space-y-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-[10px] text-accent-gold uppercase font-mono tracking-widest block mb-1">
-                      REF: {booking.id.split('-')[0].toUpperCase()}
-                    </span>
-                    <h3 className="text-xl font-serif text-white">{booking.spaces?.title || 'Sanctuary'}</h3>
-                  </div>
-                  <span className={`px-2.5 py-1 text-[9px] uppercase tracking-widest rounded-full font-mono border ${
-                    booking.status === 'confirmed' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                    booking.status === 'checked_in' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                    booking.status === 'completed' ? 'bg-zinc-800 text-zinc-300 border-zinc-700' :
-                    booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                    'bg-accent-gold/10 text-accent-gold border-accent-gold/20'
-                  }`}>
-                    {booking.status}
-                  </span>
-                </div>
+                return (
+                  <tr key={b.id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="px-6 py-4">
+                      <p className="text-white font-semibold text-sm">{b.spaces?.title || 'Sanctuary'}</p>
+                      <p className="text-white/40 font-mono text-[10px] mt-0.5">{b.id.slice(0, 8)}</p>
+                    </td>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-white/[0.01] border border-white/5 p-3 rounded-xl">
-                  <div>
-                    <p className="text-white/30 uppercase font-mono text-[9px] mb-0.5">Stay Dates</p>
-                    <p className="text-white font-medium">
-                      {format(new Date(booking.check_in), 'MMM dd')} - {format(new Date(booking.check_out), 'MMM dd')}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-white/30 uppercase font-mono text-[9px] mb-0.5">Total Tariff</p>
-                    <p className="text-accent-gold font-bold font-mono">₹{Number(booking.total_price).toLocaleString('en-IN')}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/30 uppercase font-mono text-[9px] mb-0.5">Guests &amp; Split</p>
-                    <p className="text-white font-medium font-mono text-[11px]">
-                      {booking.guests || 2} Guests {booking.additional_guest_payment_mode === 'split_self_pay' ? '(Split Pay)' : '(All Paid)'}
-                    </p>
-                  </div>
-                </div>
+                    <td className="px-6 py-4">
+                      <p className="text-white font-medium">{guestName}</p>
+                      {guestPhone && <p className="text-white/40 font-mono text-[11px] mt-0.5">{guestPhone}</p>}
+                    </td>
 
-                {/* Direct Action Buttons */}
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {booking.status === 'confirmed' && (
-                    <button
-                      onClick={() => handleUpdateStatus(booking.id, 'checked_in')}
-                      disabled={updatingId === booking.id}
-                      className="flex-1 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold rounded-lg text-xs transition-colors"
-                    >
-                      Check-In Guest
-                    </button>
-                  )}
+                    <td className="px-6 py-4 font-mono text-white/80">
+                      {format(new Date(b.check_in), 'MMM dd')} → {format(new Date(b.check_out), 'MMM dd, yyyy')}
+                    </td>
 
-                  {booking.status === 'checked_in' && (
-                    <button
-                      onClick={() => handleUpdateStatus(booking.id, 'completed')}
-                      disabled={updatingId === booking.id}
-                      className="flex-1 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400 font-bold rounded-lg text-xs transition-colors"
-                    >
-                      Mark Check-Out
-                    </button>
-                  )}
+                    <td className="px-6 py-4">
+                      <p className="text-white font-bold font-mono text-sm">₹{Number(b.total_price || 0).toLocaleString('en-IN')}</p>
+                      <span className="inline-block mt-0.5 px-2 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20 font-mono text-[10px] uppercase font-bold">
+                        {b.payment_method || 'UPI'}
+                      </span>
+                    </td>
 
-                  {booking.status !== 'cancelled' && (
-                    <CancelBookingButton variant="admin" bookingId={booking.id} />
-                  )}
-                </div>
-              </div>
+                    <td className="px-6 py-4">
+                      <span className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full font-mono border ${
+                        b.status === 'confirmed' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
+                        b.status === 'checked_in' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
+                        b.status === 'cancelled' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
+                        'text-accent-gold bg-accent-gold/10 border-accent-gold/20'
+                      }`}>
+                        {b.status}
+                      </span>
+                    </td>
 
-              {/* Right Column: Guest Protocol & ID Verification */}
-              <div className="w-full lg:w-2/3 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-8 space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Delhi Police Guest Compliance &amp; Tariff</p>
-                  {isVerified ? (
-                    <span className="flex items-center gap-1 text-[10px] text-green-400 font-mono">
-                      <ShieldCheck className="w-3.5 h-3.5" /> 180-Day Vetted Guest
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-[10px] text-amber-400 font-mono">
-                      <Clock className="w-3.5 h-3.5" /> ID Verification Pending
-                    </span>
-                  )}
-                </div>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => shareVerificationWhatsApp(b)}
+                        className="px-3 py-1.5 bg-accent-gold/15 hover:bg-accent-gold/25 text-accent-gold border border-accent-gold/30 rounded-lg font-mono text-[11px] flex items-center gap-1.5 transition-colors"
+                      >
+                        <Share2 className="w-3.5 h-3.5" /> WhatsApp ID Link
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {booking.booking_guests && booking.booking_guests.length > 0 ? (
-                    booking.booking_guests.map((guest, idx) => {
-                      const isPendingPayment = guest.payment_status === 'pending';
-                      const isPaidPayment = guest.payment_status === 'paid';
-
-                      return (
-                        <div key={guest.id || idx} className="bg-white/[0.02] border border-white/10 rounded-xl p-4 flex justify-between items-start gap-2">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[9px] uppercase tracking-widest text-white/40 mb-0.5">
-                              {guest.guest_index === 0 ? 'Primary Guest' : `Additional Guest ${guest.guest_index + 1}`}
-                            </p>
-                            <p className="text-white text-sm font-medium truncate">
-                              {guest.guest_profiles?.full_name || guest.name || 'Awaiting Upload'}
-                            </p>
-                            {guest.phone && (
-                              <p className="text-white/40 text-[10px] font-mono mt-0.5">📞 {guest.phone}</p>
-                            )}
-                            {guest.guest_profiles?.document_number && (
-                              <p className="text-white/40 text-[10px] font-mono mt-0.5">ID: {guest.guest_profiles.document_number}</p>
-                            )}
-                          </div>
-
-                          <div className="flex flex-col items-end gap-1.5 shrink-0">
-                            {/* ID Verification Badge */}
-                            {guest.verification_status === 'verified' ? (
-                              <span className="flex items-center gap-1 text-green-400 text-[10px] font-bold uppercase tracking-wider bg-green-500/10 px-2 py-0.5 rounded-md border border-green-500/20">
-                                <CheckCircle2 className="w-3 h-3" /> Verified
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-accent-gold text-[10px] font-bold uppercase tracking-wider bg-accent-gold/10 px-2 py-0.5 rounded-md border border-accent-gold/20">
-                                <Clock className="w-3 h-3" /> ID PEND
-                              </span>
-                            )}
-
-                            {/* Payment Status Badge */}
-                            {isPendingPayment && (
-                              <span className="text-[9px] font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                                ₹{guest.payment_amount} Due
-                              </span>
-                            )}
-                            {isPaidPayment && (
-                              <span className="text-[9px] font-mono text-green-400 bg-green-500/10 px-2 py-0.5 rounded-md border border-green-500/20">
-                                Paid (Self)
-                              </span>
-                            )}
-                            {guest.payment_status === 'not_required' && (
-                              <span className="text-[9px] font-mono text-white/40">
-                                Paid
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="col-span-2 bg-white/[0.01] border border-dashed border-white/10 rounded-xl p-4 flex items-center justify-between">
-                      <div>
-                        <p className="text-white font-medium text-sm">{mainGuest}</p>
-                        {guestPhone && <p className="text-white/40 text-xs font-mono">{guestPhone}</p>}
-                      </div>
-                      <span className="text-xs text-white/30">Direct Guest Record</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex justify-end pt-1">
-                  <Link
-                    href="/admin/guests/police-register"
-                    className="text-[11px] text-accent-gold hover:text-white transition-colors"
-                  >
-                    View Official Delhi Police Register ↗
-                  </Link>
-                </div>
-              </div>
-
-            </div>
-          );
-        })}
-
-        {filteredBookings.length === 0 && (
-          <div className="text-center py-20 bg-white/[0.01] border border-white/5 rounded-3xl p-8 space-y-3">
-            <Calendar className="w-10 h-10 text-white/20 mx-auto" />
-            <p className="text-white/50 text-sm">No reservations matching your filter criteria.</p>
-          </div>
-        )}
+              {filteredBookings.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-white/30 font-mono">
+                    No reservations found matching your criteria.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

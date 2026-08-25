@@ -104,7 +104,7 @@ export async function POST(req: Request) {
       result = JSON.parse(jsonStr);
     } catch {
       console.error("Failed to parse Gemini response:", responseText);
-      return NextResponse.json({ error: 'AI Verification parser error' }, { status: 500 });
+      return NextResponse.json({ error: 'Optical verification parser error' }, { status: 500 });
     }
 
     if (!result.valid) {

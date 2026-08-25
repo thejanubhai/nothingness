@@ -10,6 +10,8 @@ import CookieBanner from "@/components/CookieBanner";
 import { Toaster } from "sonner";
 import Script from "next/script";
 
+import MobileBottomNav from "@/components/MobileBottomNav";
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -28,6 +30,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   viewportFit: 'cover',
   themeColor: '#000000',
+  interactiveWidget: 'resizes-content',
 };
 
 export const metadata: Metadata = {
@@ -60,6 +63,15 @@ export const metadata: Metadata = {
     description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand.",
     images: ['/images/IMG_9955.jpg'],
   },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Nothingness',
+  },
+  formatDetection: {
+    telephone: false,
+  },
   robots: {
     index: true,
     follow: true,
@@ -83,7 +95,7 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${playfair.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-grain selection:bg-accent-gold/20 selection:text-accent-muted">
+      <body className="min-h-full flex flex-col bg-grain selection:bg-accent-gold/20 selection:text-accent-muted pb-16 md:pb-0">
         <NextTopLoader
           color="#D4AF37"
           initialPosition={0.08}
@@ -112,6 +124,7 @@ export default function RootLayout({
             {children}
           </PageWrapper>
           <Footer />
+          <MobileBottomNav />
         </SmoothScroll>
         <CookieBanner />
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />

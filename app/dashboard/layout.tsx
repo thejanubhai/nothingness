@@ -22,8 +22,31 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen pt-28 sm:pt-32 pb-24 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 lg:gap-10">
       
-      {/* Sidebar Navigation */}
-      <aside className="w-full lg:w-64 shrink-0">
+      {/* Mobile/Tablet Horizontal Segmented Tabs */}
+      <div className="lg:hidden w-full overflow-x-auto no-scrollbar pb-2">
+        <div className="flex items-center gap-2 p-1.5 bg-zinc-950/90 border border-zinc-800/80 rounded-2xl backdrop-blur-xl">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all active:scale-95 ${
+                  isActive
+                    ? 'bg-accent-gold/15 text-accent-gold border border-accent-gold/30 font-bold shadow-md'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/50'
+                }`}
+              >
+                <item.icon className={`w-3.5 h-3.5 ${isActive ? 'text-accent-gold' : 'text-zinc-500'}`} />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Desktop Sidebar Navigation */}
+      <aside className="hidden lg:block w-64 shrink-0">
         <div className="sticky top-28 sm:top-32 space-y-6">
           <div className="bg-zinc-950 border border-zinc-800/80 rounded-3xl p-5 shadow-xl">
             <div className="flex items-center gap-2 mb-4 pb-3 border-b border-zinc-800">

@@ -91,12 +91,22 @@ export default function PropertySwipeDeck() {
     : (currentSpace.featured_image ? [currentSpace.featured_image] : []);
   const spaceImages = rawImages.filter(Boolean);
 
+  const triggerHaptic = () => {
+    try {
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(8);
+      }
+    } catch {}
+  };
+
   const handleNextSpace = () => {
+    triggerHaptic();
     setCurrentIndex((prev) => (prev + 1) % spaces.length);
     setActiveImageIndex(0);
   };
 
   const handlePrevSpace = () => {
+    triggerHaptic();
     setCurrentIndex((prev) => (prev - 1 + spaces.length) % spaces.length);
     setActiveImageIndex(0);
   };

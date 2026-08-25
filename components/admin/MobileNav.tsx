@@ -44,7 +44,7 @@ export default function MobileNav() {
   return (
     <div className="md:hidden">
       {/* Top Mobile Bar */}
-      <header className="sticky top-0 inset-x-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-b border-white/10 px-5 py-3.5 flex items-center justify-between">
+      <header className="sticky top-0 inset-x-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-b border-white/10 px-5 py-3.5 pt-[calc(0.875rem+env(safe-area-inset-top))] flex items-center justify-between">
         <Link href="/admin" className="flex items-center gap-2.5">
           <span className="font-serif text-xl font-bold tracking-wide text-accent-gold">Nothingness</span>
           <span className="text-[9px] font-mono uppercase tracking-widest text-white/40 px-2 py-0.5 bg-white/5 border border-white/10 rounded-full">
@@ -55,7 +55,7 @@ export default function MobileNav() {
         <button 
           onClick={() => setIsOpen(!isOpen)} 
           aria-label="Toggle Navigation"
-          className="p-2 rounded-xl bg-white/5 border border-white/10 text-white/80 hover:text-white transition-colors"
+          className="p-2 rounded-xl bg-white/5 border border-white/10 text-white/80 hover:text-white transition-colors active:scale-95"
         >
           {isOpen ? <X className="w-5 h-5 text-accent-gold" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -63,7 +63,7 @@ export default function MobileNav() {
 
       {/* Fullscreen Mobile Drawer */}
       {isOpen && (
-        <div className="fixed inset-0 top-[57px] z-50 bg-black/95 backdrop-blur-2xl flex flex-col justify-between p-6 overflow-y-auto pb-12">
+        <div className="fixed inset-0 top-[57px] z-50 bg-black/95 backdrop-blur-2xl flex flex-col justify-between p-6 overflow-y-auto pb-[calc(3rem+env(safe-area-inset-bottom))]">
           <div className="space-y-6">
             <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-white/40">Navigation Menu</p>
             <nav>
@@ -75,7 +75,7 @@ export default function MobileNav() {
                       <Link
                         href={item.href}
                         onClick={() => setIsOpen(false)}
-                        className={`flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm transition-all ${
+                        className={`flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98] ${
                           isActive 
                             ? 'bg-accent-gold/15 text-accent-gold border border-accent-gold/30 font-bold' 
                             : 'text-white/70 hover:text-white bg-white/[0.02] border border-white/5'
@@ -98,7 +98,7 @@ export default function MobileNav() {
             <form action={signOut}>
               <button 
                 type="submit" 
-                className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold text-xs uppercase tracking-wider transition-colors"
+                className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold text-xs uppercase tracking-wider transition-colors active:scale-95"
               >
                 <LogOut className="w-4 h-4" />
                 Sign Out of Admin

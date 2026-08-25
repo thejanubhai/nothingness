@@ -3,14 +3,27 @@ import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const fromDate = searchParams.get('from');
+    const toDate = searchParams.get('to');
+
     const supabase = await createClient();
 
-    const { data: guests, error } = await supabase
+    let query = supabase
       .from('guest_profiles')
       .select('*')
       .order('verification_timestamp', { ascending: false });
+
+    if (fromDate) {
+      query = query.gte('verification_timestamp', `${fromDate}T00:00:00.000Z`);
+    }
+    if (toDate) {
+      query = query.lte('verification_timestamp', `${toDate}T23:59:59.999Z`);
+    }
+
+    const { data: guests, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
