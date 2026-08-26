@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck,
@@ -24,10 +24,24 @@ import {
   Shield,
   HelpCircle,
   Zap,
-  Volume2
+  Volume2,
+  MapPin
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+
+interface SpaceItem {
+  id: string;
+  title: string;
+  slug: string;
+  city?: string;
+  area?: string;
+  description?: string;
+  nightly_price?: number;
+  featured_image?: string;
+  images?: string[];
+  active?: boolean;
+}
 
 interface KinksterLandingPageProps {
   isActivated: boolean | null;
@@ -46,12 +60,30 @@ export default function KinksterLandingPage({
   onOpenIdVerification,
   onOpenStayVerification
 }: KinksterLandingPageProps) {
+  // Real-time Spaces State from Database
+  const [spaces, setSpaces] = useState<SpaceItem[]>([]);
+  const [loadingSpaces, setLoadingSpaces] = useState(true);
+
   // Interactive Simulator State
   const [shibariVal, setShibariVal] = useState(4);
   const [dynamicsVal, setDynamicsVal] = useState(5);
   const [sensoryVal, setSensoryVal] = useState(3);
   const [aftercareVal, setAftercareVal] = useState(5);
   const [jacuzziVal, setJacuzziVal] = useState(4);
+
+  // Fetch real-time active spaces from DB
+  useEffect(() => {
+    fetch('/api/spaces')
+      .then(res => res.json())
+      .then(data => {
+        if (data.spaces && Array.isArray(data.spaces)) {
+          const activeSpaces = data.spaces.filter((s: SpaceItem) => s.active !== false);
+          setSpaces(activeSpaces);
+        }
+      })
+      .catch(err => console.error('Error fetching real-time spaces for Kinkster landing:', err))
+      .finally(() => setLoadingSpaces(false));
+  }, []);
 
   // Calculate dynamic simulated match score
   const calculatedMatch = Math.min(
@@ -107,7 +139,7 @@ export default function KinksterLandingPage({
             transition={{ duration: 0.7, delay: 0.2 }}
             className="text-sm sm:text-base md:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed"
           >
-            An invite-only, ID-vetted private social ecosystem reserved exclusively for verified guests of Nothingness. Connect under impenetrable <span className="text-rose-400 font-mono">@aliases</span>, match on deep aesthetic matrices, and unlock secret sanctuary gatherings.
+            An invite-only, ID-vetted private social ecosystem reserved exclusively for verified guests of Nothingness. Connect under impenetrable <span className="text-rose-400 font-mono">@aliases</span>, match on deep aesthetic matrices, and unlock secret sanctuary co-stays.
           </motion.p>
 
           {/* Security & Exclusivity Guarantee Micro-Pills */}
@@ -604,93 +636,112 @@ export default function KinksterLandingPage({
       </section>
 
       {/* ------------------------------------------------------------- */}
-      {/* 5. SANCTUARY PLAYGROUNDS: The Venues */}
+      {/* 5. SANCTUARY PLAYGROUNDS: Real-Time Active Spaces From DB    */}
       {/* ------------------------------------------------------------- */}
       <section className="py-24 px-4 sm:px-6 max-w-6xl mx-auto border-t border-zinc-900">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <span className="text-xs uppercase tracking-widest text-rose-400 font-mono">
-            Designed for Sensory Transgression
+          <span className="text-xs uppercase tracking-widest text-rose-400 font-mono flex items-center justify-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-rose-400" /> Real-Time Sanctuary Catalog
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
             The Sanctuaries Where Connections Happen
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400">
-            From sensory deprivation undergrounds to double-height brutalist chambers in South Delhi.
+            Discreet, fully private suites and sanctuaries active in the Nothingness app right now.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* Space 1: The Void */}
-          <div className="group rounded-3xl bg-zinc-950 border border-zinc-900 overflow-hidden shadow-2xl hover:border-zinc-800 transition-all">
-            <div className="relative aspect-[4/3] bg-zinc-900 overflow-hidden">
-              <img
-                src="/images/media__1779912812341.png"
-                alt="The Void"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                onError={(e: any) => {
-                  e.target.src = 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=600';
-                }}
-              />
-              <div className="absolute top-3 left-3 px-3 py-1 bg-black/80 backdrop-blur-md border border-white/10 rounded-full text-[10px] font-mono uppercase tracking-wider text-white">
-                Underground Suite
+        {/* Loading Skeleton */}
+        {loadingSpaces && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-3xl bg-zinc-950 border border-zinc-900 overflow-hidden p-4 space-y-4 animate-pulse">
+                <div className="aspect-[4/3] bg-zinc-900 rounded-2xl" />
+                <div className="h-5 bg-zinc-900 rounded w-2/3" />
+                <div className="h-4 bg-zinc-900 rounded w-full" />
               </div>
-            </div>
-            <div className="p-6 space-y-2">
-              <h3 className="text-lg font-bold text-white">The Void</h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Pitch black, silent sensory deprivation suite designed for heightened touch, suspension, and deep psychological escape.
-              </p>
-            </div>
+            ))}
           </div>
+        )}
 
-          {/* Space 2: The Mirage */}
-          <div className="group rounded-3xl bg-zinc-950 border border-zinc-900 overflow-hidden shadow-2xl hover:border-zinc-800 transition-all">
-            <div className="relative aspect-[4/3] bg-zinc-900 overflow-hidden">
-              <img
-                src="/images/media__1779907746365.png"
-                alt="The Mirage"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                onError={(e: any) => {
-                  e.target.src = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600';
-                }}
-              />
-              <div className="absolute top-3 left-3 px-3 py-1 bg-black/80 backdrop-blur-md border border-white/10 rounded-full text-[10px] font-mono uppercase tracking-wider text-white">
-                Reflections &amp; Mirrors
-              </div>
-            </div>
-            <div className="p-6 space-y-2">
-              <h3 className="text-lg font-bold text-white">The Mirage</h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                An illusionary aesthetic playground featuring two-way mirrors and endless reflections for aesthetic exhibitionism.
-              </p>
-            </div>
+        {/* Dynamic Real-Time Spaces Grid */}
+        {!loadingSpaces && spaces.length > 0 && (
+          <div className={`grid gap-6 ${
+            spaces.length === 1
+              ? 'max-w-md mx-auto grid-cols-1'
+              : spaces.length === 2
+              ? 'max-w-3xl mx-auto grid-cols-1 md:grid-cols-2'
+              : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+          }`}>
+            {spaces.map((space) => {
+              const displayImage =
+                space.featured_image ||
+                (space.images && space.images.length > 0 ? space.images[0] : 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=600');
+              const locationStr = [space.area, space.city].filter(Boolean).join(', ') || 'New Delhi';
+
+              return (
+                <Link
+                  key={space.id}
+                  href={`/spaces/${space.slug}`}
+                  className="group rounded-3xl bg-zinc-950 border border-zinc-900 overflow-hidden shadow-2xl hover:border-rose-500/40 transition-all duration-300 flex flex-col justify-between"
+                >
+                  <div>
+                    {/* Visual Aspect Image */}
+                    <div className="relative aspect-[4/3] bg-zinc-900 overflow-hidden">
+                      <img
+                        src={displayImage}
+                        alt={space.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        onError={(e: any) => {
+                          e.target.src = 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=600';
+                        }}
+                      />
+                      
+                      {/* Location & Price Pill */}
+                      <div className="absolute top-3 left-3 px-3 py-1 bg-black/80 backdrop-blur-md border border-white/10 rounded-full text-[10px] font-mono uppercase tracking-wider text-white flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-rose-400" />
+                        {locationStr}
+                      </div>
+
+                      {space.nightly_price && (
+                        <div className="absolute bottom-3 right-3 px-3 py-1 bg-black/80 backdrop-blur-md border border-white/15 rounded-xl text-xs font-mono font-bold text-amber-300">
+                          ₹{Number(space.nightly_price).toLocaleString('en-IN')}<span className="text-[10px] text-zinc-400 font-normal">/night</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Details Content */}
+                    <div className="p-6 space-y-2">
+                      <h3 className="text-lg font-bold text-white group-hover:text-rose-400 transition-colors leading-tight">
+                        {space.title}
+                      </h3>
+                      <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">
+                        {space.description || 'Private intimate sanctuary in Delhi featuring discreet luxury amenities, dedicated kink-friendly architecture, and total privacy.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Footer Action */}
+                  <div className="px-6 pb-6 pt-2 flex items-center justify-between border-t border-zinc-900/60 text-xs font-mono">
+                    <span className="text-zinc-500">Sanctuary Suite</span>
+                    <span className="text-rose-400 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                      Explore Suite →
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
+        )}
 
-          {/* Space 3: Bangri */}
-          <div className="group rounded-3xl bg-zinc-950 border border-zinc-900 overflow-hidden shadow-2xl hover:border-zinc-800 transition-all">
-            <div className="relative aspect-[4/3] bg-zinc-900 overflow-hidden">
-              <img
-                src="/images/media__1779776164813.png"
-                alt="Bangri"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                onError={(e: any) => {
-                  e.target.src = 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=600';
-                }}
-              />
-              <div className="absolute top-3 left-3 px-3 py-1 bg-black/80 backdrop-blur-md border border-white/10 rounded-full text-[10px] font-mono uppercase tracking-wider text-white">
-                Brutalist Concrete
-              </div>
-            </div>
-            <div className="p-6 space-y-2">
-              <h3 className="text-lg font-bold text-white">Bangri</h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Raw, industrial concrete monolithic space featuring heavy-duty ceiling anchor points and deep hydrotherapy pools.
-              </p>
-            </div>
+        {/* Fallback if no spaces in DB */}
+        {!loadingSpaces && spaces.length === 0 && (
+          <div className="text-center py-12 bg-zinc-950 border border-zinc-900 rounded-3xl p-8 max-w-md mx-auto">
+            <Building2 className="w-10 h-10 text-rose-400 mx-auto mb-3 opacity-60" />
+            <h3 className="text-base font-bold text-white">Sanctuaries Loading</h3>
+            <p className="text-xs text-zinc-500 mt-1">Check back as our active suites catalog refreshes in real-time.</p>
           </div>
-
-        </div>
+        )}
       </section>
 
       {/* ------------------------------------------------------------- */}
@@ -720,7 +771,7 @@ export default function KinksterLandingPage({
 
           <div className="p-6 rounded-3xl bg-zinc-950 border border-zinc-900 flex flex-col justify-between space-y-4">
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-serif italic">
-              "The 2-gate stay requirement is pure genius. You know everyone inside has actually stayed at Nothingness and respects the culture. The Secret Soirée in South Delhi was unforgettable."
+              "The 2-gate stay requirement is pure genius. You know everyone inside has actually stayed at Nothingness and respects the culture. The Secret Soirée was unforgettable."
             </p>
             <div className="flex items-center gap-2 pt-2 border-t border-zinc-900 text-xs font-mono text-zinc-400">
               <span className="text-purple-400 font-bold">@midnight_onyx</span>
@@ -730,7 +781,7 @@ export default function KinksterLandingPage({
 
           <div className="p-6 rounded-3xl bg-zinc-950 border border-zinc-900 flex flex-col justify-between space-y-4">
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-serif italic">
-              "The mutual Spice Up rule means zero unwanted DMs. And the AI blood test badges made health conversations effortless before our co-stay at The Void."
+              "The mutual Spice Up rule means zero unwanted DMs. And the AI blood test badges made health conversations effortless before our co-stay."
             </p>
             <div className="flex items-center gap-2 pt-2 border-t border-zinc-900 text-xs font-mono text-zinc-400">
               <span className="text-amber-400 font-bold">@velvet_scarlet</span>
