@@ -201,10 +201,11 @@ export default async function AdminDashboard() {
       )}
 
       {/* Quick Launch Control Hub */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
         {[
           { label: "Master Calendar", href: "/admin/calendar", icon: CalendarDays, desc: "2-Way OTA Hub" },
           { label: "Sanctuaries", href: "/admin/spaces", icon: Building2, desc: "Property CRUD" },
+          { label: "Editorial Journal", href: "/admin/journal", icon: Sparkles, desc: "30 Articles & AI" },
           { label: "Bookings CRM", href: "/admin/bookings", icon: CalendarDays, desc: "Reservations" },
           { label: "Police Log", href: "/admin/guests/police-register", icon: ShieldCheck, desc: "Delhi Form C" },
           { label: "Housekeeping", href: "/admin/housekeeping", icon: Sparkles, desc: "Turnover Dispatch" },

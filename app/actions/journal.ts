@@ -85,15 +85,16 @@ export async function createArticle(payload: Partial<Article>) {
         excerpt: payload.excerpt,
         content: payload.content,
         cover_image: payload.cover_image || '/images/The Void (1).png',
-        category: payload.category || 'AI & Search Strategy',
-        tags: payload.tags || ['AI SEO', 'Hospitality'],
+        category: payload.category || 'Dynamics & Kink Culture',
+        format: payload.format || 'essay',
+        tags: payload.tags || ['Power Dynamics', 'Intimacy'],
         author_name: payload.author_name || 'Nothingness Editorial',
-        author_role: payload.author_role || 'Hospitality & Culture Curator',
+        author_role: payload.author_role || 'Resident Curator of Lifestyle Dynamics',
         author_avatar: payload.author_avatar || '/images/logo.png',
         published_at: payload.published_at || new Date().toISOString(),
         status: payload.status || 'published',
         featured: payload.featured ?? false,
-        reading_time_minutes: payload.reading_time_minutes || 5,
+        reading_time_minutes: payload.reading_time_minutes || 6,
         meta_title: payload.meta_title || payload.title,
         meta_description: payload.meta_description || payload.excerpt,
         meta_keywords: payload.meta_keywords || [],
@@ -120,27 +121,30 @@ export async function updateArticle(id: string, payload: Partial<Article>) {
   try {
     const supabase = await createClient();
 
+    const updateData: any = {
+      title: payload.title,
+      subtitle: payload.subtitle,
+      excerpt: payload.excerpt,
+      content: payload.content,
+      cover_image: payload.cover_image,
+      category: payload.category,
+      format: payload.format || 'essay',
+      tags: payload.tags,
+      author_name: payload.author_name,
+      author_role: payload.author_role,
+      published_at: payload.published_at,
+      status: payload.status,
+      featured: payload.featured,
+      reading_time_minutes: payload.reading_time_minutes,
+      meta_title: payload.meta_title,
+      meta_description: payload.meta_description,
+      meta_keywords: payload.meta_keywords,
+      updated_at: new Date().toISOString(),
+    };
+
     const { data, error } = await supabase
       .from('articles')
-      .update({
-        title: payload.title,
-        subtitle: payload.subtitle,
-        excerpt: payload.excerpt,
-        content: payload.content,
-        cover_image: payload.cover_image,
-        category: payload.category,
-        tags: payload.tags,
-        author_name: payload.author_name,
-        author_role: payload.author_role,
-        published_at: payload.published_at,
-        status: payload.status,
-        featured: payload.featured,
-        reading_time_minutes: payload.reading_time_minutes,
-        meta_title: payload.meta_title,
-        meta_description: payload.meta_description,
-        meta_keywords: payload.meta_keywords,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -212,7 +216,7 @@ export async function generateArticleWithAI(params: {
   intent?: string;
   customPrompt?: string;
 }) {
-  const { topic, category = 'AI & Search Strategy', targetKeywords = [], intent = '', customPrompt = '' } = params;
+  const { topic, category = 'Dynamics & Kink Culture', targetKeywords = [], intent = '', customPrompt = '' } = params;
 
   try {
     let rawResult: any = null;
@@ -223,13 +227,15 @@ export async function generateArticleWithAI(params: {
         const { GoogleGenAI } = await import('@google/genai');
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         
-        const systemPrompt = `You are a world-class architectural curator, senior hospitality growth strategist, and SEO/GEO expert writing for "Nothingness" (nothingness.asia) - India's Premier Alternate Lifestyle & Luxury Sanctuary Brand.
+        const systemPrompt = `You are a world-class intimacy researcher, somatic educator, and curator writing for "Nothingness" (nothingness.asia) - India's Premier Alternate Lifestyle & Luxury Sanctuary Brand.
         
-CRITICAL RULES YOU MUST NEVER BREAK:
-1. ZERO EM DASHES (— or – or --). Absolutely NO em dashes or en dashes anywhere. Use colons (:), commas (,), semicolons (;), parentheses (()), or separate short sentences instead.
-2. HUMAN CADENCE & NATURAL VOICE: Absolutely NO generic AI buzzwords or cliché transitions (do NOT use "In conclusion", "Delve into", "Tapestry", "Beacon", "Testament", "It is crucial to note", "Furthermore", "In summary"). Write with clear, authoritative, human precision.
-3. INDIA-TARGETED CONTEXT: Naturally reference Indian luxury metros (South Delhi, DLF Phase 5 Gurgaon, Indiranagar Bangalore, Assagao North Goa, South Mumbai), local regulatory realities (Delhi Police Form C digital vetting), and exact architectural/operational metrics (e.g. STC 55 acoustic ratings, 70/30 revenue share).
-4. MARKDOWN STRUCTURE: Output substantial body content with ## Section Headings, ### Subsections, bullet points, and > blockquotes.
+CRITICAL BRAND RULES:
+1. FOCUS ON LIFESTYLE & DYNAMICS: Write deeply about alternate lifestyles, relationship dynamics (D/s, power exchange, roleplay, ethical non-monogamy, praise kink), BDSM safety, consent frameworks, aftercare, sensory exploration, and navigating privacy in urban India.
+2. ZERO THIRD-PARTY ADVERTISING: Never mention or advertise external properties, hotels, or commercial competitors. Focus purely on psychological insight, relationship dynamics, and sensory sanctuary living.
+3. ZERO EM DASHES (— or – or --). Absolutely NO em dashes or en dashes anywhere. Use colons (:), commas (,), semicolons (;), parentheses (()), or separate short sentences instead.
+4. HUMAN CADENCE & NATURAL VOICE: Absolutely NO generic AI buzzwords or robotic clichés (do NOT use "In conclusion", "Delve into", "Tapestry", "Beacon", "Testament", "It is crucial to note", "Furthermore", "In summary"). Write with raw, sophisticated, human authority.
+5. INDIA-SPECIFIC REALITY: Naturally ground insights in Indian social dynamics (joint families, residential surveillance, navigating conservative taboos, urban metro realities across Delhi NCR, Mumbai, and Bangalore).
+6. MARKDOWN STRUCTURE: Output substantial body content with ## Section Headings, ### Subsections, bullet points, and > blockquotes.
 
 Respond with ONLY valid raw JSON with this exact structure:
 {
@@ -240,7 +246,7 @@ Respond with ONLY valid raw JSON with this exact structure:
   "content": "Full markdown body with ## headings, * bullets, and > quotes without any em-dashes",
   "category": "${category}",
   "tags": ["Tag1", "Tag2", "Tag3"],
-  "reading_time_minutes": 6,
+  "reading_time_minutes": 7,
   "meta_title": "SEO Title (under 60 chars)",
   "meta_description": "Meta description (under 155 chars)",
   "meta_keywords": ["keyword 1", "keyword 2"]
@@ -248,8 +254,8 @@ Respond with ONLY valid raw JSON with this exact structure:
 
         const promptText = `Topic: ${topic}
 Category: ${category}
-Target Audience / Search Intent: ${intent || 'High-ticket Indian luxury staycation and search optimization'}
-Custom Direction: ${customPrompt || 'In-depth, practical, research-backed perspective'}`;
+Target Audience / Intent: ${intent || 'Modern Indian couples and lifestyle practitioners exploring intimacy and dynamics'}
+Custom Direction: ${customPrompt || 'In-depth, psychological, practical, and grounded in Indian context'}`;
 
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
@@ -277,41 +283,39 @@ Custom Direction: ${customPrompt || 'In-depth, practical, research-backed perspe
 
       const defaultTags = targetKeywords.length > 0 
         ? targetKeywords 
-        : ['AI SEO', 'Generative Engine Optimization', 'Delhi NCR Stays', 'Hospitality Tech'];
+        : ['Alternate Lifestyle', 'Intimacy Dynamics', 'Consent Culture', 'Relationships'];
 
       rawResult = {
         title: topic,
         slug: cleanSlug,
-        subtitle: `Strategic analysis and operational frameworks for modern hospitality in Indian metros`,
-        excerpt: `A comprehensive analysis of ${topic.toLowerCase()}, detailing structural optimization, search discovery dynamics, and high-ticket customer acquisition across India.`,
-        content: `## The Modern Landscape of ${topic}
+        subtitle: `An honest exploration of boundaries, somatic presence, and personal freedom in modern India`,
+        excerpt: `A grounded perspective on ${topic.toLowerCase()}, navigating intimacy dynamics, consent protocols, and emotional safety within the urban Indian landscape.`,
+        content: `## The Modern Context of ${topic}
 
-In the evolving landscape of Indian luxury hospitality and experiential real estate, ${topic.toLowerCase()} has transitioned from an experimental concept into a foundational operational requirement. As search platforms move from simple keyword queries toward Generative Engine Optimization (GEO) and conversational retrieval, consumer discovery patterns across Delhi NCR, Bangalore, and Mumbai are fundamentally changing.
+In contemporary urban India, conversations surrounding relationship dynamics, personal boundaries, and alternative lifestyle exploration are shifting rapidly. For decades, societal conditioning demanded that intimacy remain rigid, unspoken, and strictly conformist. Today, open-minded couples and individuals across metros like Delhi, Mumbai, and Bangalore are actively deconstructing inherited taboos to build relationships grounded in radical honesty and emotional safety.
 
-Traditional search optimization focused on index volume. Today, autonomous algorithms evaluate semantic entity strength, verified customer sentiment, and specific technical parameters before presenting a destination as a verified answer in AI snapshots.
+When exploring non-traditional dynamics, whether involving power exchange, sensory deprivation, or intentional roleplay, the first hurdle is always psychological: separating authentic desire from external societal shame.
 
-## Key Strategic Pillars
+## Core Pillars of Conscious Exploration
 
-To achieve commanding visibility and sustainable direct reservations, properties must anchor their positioning around three critical pillars:
+To engage with ${topic.toLowerCase()} safely and sustainably, partners must anchor their practice in three non-negotiable principles:
 
-* **Entity Clarity and Structured Schema**: Clear semantic definitions across HotelRoom, Organization, and Place schemas ensure search models understand physical amenities, location boundaries, and guest policies without ambiguity.
-* **Acoustic and Spatial Integrity**: Modern travelers in dense urban hubs like South Delhi and Gurgaon actively seek sanctuaries engineered with decoupled wall assemblies and heavy sound isolation ratings.
-* **Autonomous Guest Journeys**: Implementing encrypted digital lockboxes and government ID pre-screening satisfies state regulatory mandates while preserving total guest privacy.
+* **Explicit Verbal Negotiation**: Assumptions destroy trust. Using structured frameworks like the Yes/No/Maybe list ensures that every activity is preceded by informed, enthusiastic consent.
+* **The Safety Architecture**: Establishing clear safe words (such as the universal Red, Yellow, Green system) provides an impenetrable container of control, allowing the submissive or exploring partner to surrender defenses completely.
+* **Somatic Presence and Aftercare**: The conclusion of an intense scene or emotional exploration requires grounding. Providing physical warmth, hydration, verbal reassurance, and quiet holding stabilizes the nervous system.
 
-> Discretion and architectural uniqueness represent the ultimate luxury currency in modern Indian metros. Systems that protect guest anonymity while delivering seamless access consistently command higher occupancy and pricing power.
+> True intimacy is not the absence of boundaries; it is the freedom to explore fearlessly inside a container built entirely of mutual trust and respect.
 
-## Practical Implementation Blueprint
+## Practical Steps for Modern Indian Couples
 
-1. **Audit Technical Entities**: Ensure all metadata, canonical links, and OpenGraph tags accurately reflect your property's unique physical characteristics.
-2. **Target Conversational Intent**: Structure editorial content around natural questions that discerning travelers input into generative search engines.
-3. **Streamline Direct Operations**: Eliminate friction at the point of booking and arrival to build authentic brand loyalty and organic citations.
-
-By aligning physical space design with generative search discovery, boutique hospitality brands build an enduring competitive moat that outperforms traditional OTA-dependent distribution channels.`,
+1. **Have the Conversation in Daylight**: Discuss new desires and boundaries over coffee or dinner, never five minutes before entering an intimate space.
+2. **Seek Unmonitored Sanctuary**: Escape the surveillance of domestic life, shared apartments, or nosy environments by carving out private spaces designed for complete acoustic and mental discretion.
+3. **Honor the Emotional Arc**: Allow yourself to experience vulnerability without self-judgment. Curiosity is a natural expression of human depth.`,
         category: category,
         tags: defaultTags,
-        reading_time_minutes: 6,
+        reading_time_minutes: 7,
         meta_title: `${topic} | Nothingness Journal`,
-        meta_description: `In-depth analysis of ${topic.toLowerCase()} for luxury hospitality and search optimization in India.`,
+        meta_description: `An in-depth guide to ${topic.toLowerCase()} exploring relationship dynamics and intimacy in modern India.`,
         meta_keywords: defaultTags
       };
     }

@@ -57,28 +57,28 @@ export default function AdminJournalClient({ initialArticles }: AdminJournalClie
 
   const aiTopics = [
     {
-      title: "Generative Engine Optimization (GEO) for Indian Luxury Hospitality",
-      category: "AI & Search Strategy",
-      intent: "High-ticket direct bookings via Perplexity & Google AI Overviews",
-      tags: ["AI SEO", "Generative Search", "Delhi NCR Stays"]
+      title: "Navigating Power Dynamics in Modern Indian Relationships: Beyond the Taboo",
+      category: "Dynamics & Kink Culture",
+      intent: "Educational deep-dive into D/s dynamics, safe words, and unlearning patriarchal myths",
+      tags: ["Power Dynamics", "BDSM India", "Consent Culture"]
     },
     {
-      title: "The Architecture of Acoustic Isolation: Decoupled Walls & 55dB STC Ratings",
-      category: "Architecture & Atmosphere",
-      intent: "Architectural and luxury branding authority",
-      tags: ["Acoustics", "Brutalism", "Sensory Privacy"]
+      title: "The Art of Aftercare: Why Indian Couples Often Skip It and Why It Matters",
+      category: "Intimacy & Modern Relationships",
+      intent: "Psychological and neurochemical recovery after intense sensory intimacy",
+      tags: ["Aftercare", "Emotional Hygiene", "Intimacy"]
     },
     {
-      title: "Autonomous Keyless Hospitality & Delhi Police Digital Compliance",
-      category: "Discreet Hospitality",
-      intent: "Trust, safety, legal compliance and guest discretion",
-      tags: ["Autonomous Check-in", "Police Compliance", "ID Verification"]
+      title: "Sensory Deprivation and Overload: Designing Rooms for Altered States of Intimacy",
+      category: "Sensory Exploration & Space",
+      intent: "Thermal contrast, blindfolds, acoustic calibration, and somatic release",
+      tags: ["Sensory Play", "Dark Aesthetics", "Atmosphere"]
     },
     {
-      title: "The Unit Economics of Niche Sanctuaries: 3x Outperformance vs Long-Term Rent",
-      category: "Real Estate & Growth",
-      intent: "Franchise and host partner acquisition",
-      tags: ["Real Estate Yield", "Franchise ROI", "South Delhi"]
+      title: "Privacy in the Metropolis: The Psychological Toll of Living Under Constant Surveillance",
+      category: "Discretion & Safe Havens",
+      intent: "Navigating joint families, society guards, and the biological need for private sanctuaries",
+      tags: ["Privacy Rights", "Urban Living", "Safe Spaces"]
     }
   ];
 
@@ -94,7 +94,7 @@ export default function AdminJournalClient({ initialArticles }: AdminJournalClie
             </span>
           </div>
           <p className="text-xs sm:text-sm text-white/50 mt-1">
-            Manage India-targeted essays, AI SEO publications, Generative Engine Optimization topics, and metadata.
+            Manage India-targeted essays on alternate lifestyle, relationship dynamics, kink safety, sensory exploration, and private sanctuaries.
           </p>
         </div>
 
@@ -126,15 +126,15 @@ export default function AdminJournalClient({ initialArticles }: AdminJournalClie
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-purple-400" />
-              <h3 className="font-serif text-lg text-white font-semibold">AI SEO Topic Engine (India High-Intent)</h3>
+              <h3 className="font-serif text-lg text-white font-semibold">Lifestyle &amp; Intimacy Topic Engine (India Targeted)</h3>
             </div>
             <span className="text-[10px] font-mono uppercase tracking-widest text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
-              Live Search Trends
+              High-Intent Topics
             </span>
           </div>
 
           <p className="text-xs text-white/60 leading-relaxed max-w-2xl">
-            Recommended high-opportunity topics curated for Perplexity, Google SGE / AI Overviews, and high-ticket Indian staycation searches. Click any topic to initialize a draft with optimized tags and structure.
+            Curated relationship dynamics, kink safety frameworks, sensory design, and privacy guides for urban Indian couples and lifestyle practitioners. Click any topic to initialize a draft.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
@@ -187,7 +187,7 @@ export default function AdminJournalClient({ initialArticles }: AdminJournalClie
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          {['all', 'AI & Search Strategy', 'Architecture & Atmosphere', 'Discreet Hospitality', 'Real Estate & Growth'].map((cat) => (
+          {['all', 'Dynamics & Kink Culture', 'Intimacy & Modern Relationships', 'Sensory Exploration & Space', 'Discretion & Safe Havens'].map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}

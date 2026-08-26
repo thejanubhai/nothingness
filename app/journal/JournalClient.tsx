@@ -9,10 +9,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const CATEGORIES = [
   'All',
-  'AI & Search Strategy',
-  'Architecture & Atmosphere',
-  'Discreet Hospitality',
-  'Real Estate & Growth',
+  'Dynamics & Kink Culture',
+  'Intimacy & Modern Relationships',
+  'Sensory Exploration & Space',
+  'Discretion & Safe Havens',
+];
+
+const FORMAT_FILTERS = [
+  { id: 'all', label: 'All Formats' },
+  { id: 'story', label: '🕯️ Stories' },
+  { id: 'guide', label: '📖 Guides' },
+  { id: 'deep-dive', label: '🔬 Deep Dives' },
+  { id: 'blog', label: '✍️ Blogs' },
+  { id: 'essay', label: '✦ Essays' },
 ];
 
 interface JournalClientProps {
@@ -21,12 +30,16 @@ interface JournalClientProps {
 
 export default function JournalClient({ initialArticles }: JournalClientProps) {
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedFormat, setSelectedFormat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredArticles = useMemo(() => {
     return initialArticles.filter((article) => {
       const matchesCategory =
         selectedCategory === 'All' || article.category === selectedCategory;
+      const artFormat = (article as any).format || 'essay';
+      const matchesFormat =
+        selectedFormat === 'all' || artFormat === selectedFormat;
       const matchesSearch =
         searchQuery.trim() === '' ||
         article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -35,9 +48,9 @@ export default function JournalClient({ initialArticles }: JournalClientProps) {
           tag.toLowerCase().includes(searchQuery.toLowerCase())
         );
 
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchesFormat && matchesSearch;
     });
-  }, [initialArticles, selectedCategory, searchQuery]);
+  }, [initialArticles, selectedCategory, selectedFormat, searchQuery]);
 
   const featuredArticle = useMemo(() => {
     return initialArticles.find((a) => a.featured) || initialArticles[0];
@@ -53,45 +66,70 @@ export default function JournalClient({ initialArticles }: JournalClientProps) {
   return (
     <div className="space-y-16">
       {/* Search & Category Filter Bar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white/[0.02] border border-white/10 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
-        {/* Category Pills */}
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          {CATEGORIES.map((cat) => {
-            const isActive = selectedCategory === cat;
+      <div className="space-y-4 bg-white/[0.02] border border-white/10 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          {/* Category Pills */}
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            {CATEGORIES.map((cat) => {
+              const isActive = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-2 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 ${
+                    isActive
+                      ? 'bg-accent-gold text-black font-bold shadow-lg shadow-accent-gold/20'
+                      : 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/5'
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative w-full md:w-72">
+            <Search className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search intimacy, dynamics, shibari..."
+              className="w-full bg-white/[0.04] border border-white/10 rounded-full pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-accent-gold/50 transition-colors font-mono"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-white/40 hover:text-white font-mono"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Content Format Filter Row */}
+        <div className="flex items-center gap-2 pt-3 border-t border-white/5 overflow-x-auto pb-1">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-white/40 shrink-0 mr-1">
+            Format:
+          </span>
+          {FORMAT_FILTERS.map((fmt) => {
+            const isActive = selectedFormat === fmt.id;
             return (
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 ${
+                key={fmt.id}
+                onClick={() => setSelectedFormat(fmt.id)}
+                className={`px-3 py-1 rounded-lg text-[11px] font-mono whitespace-nowrap transition-all ${
                   isActive
-                    ? 'bg-accent-gold text-black font-bold shadow-lg shadow-accent-gold/20'
-                    : 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/5'
+                    ? 'bg-white/20 text-white font-semibold border border-white/30'
+                    : 'bg-white/[0.02] text-white/50 hover:text-white border border-white/5'
                 }`}
               >
-                {cat}
+                {fmt.label}
               </button>
             );
           })}
-        </div>
-
-        {/* Search Bar */}
-        <div className="relative w-full md:w-72">
-          <Search className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search AI SEO, architecture..."
-            className="w-full bg-white/[0.04] border border-white/10 rounded-full pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-accent-gold/50 transition-colors font-mono"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-white/40 hover:text-white font-mono"
-            >
-              Clear
-            </button>
-          )}
         </div>
       </div>
 
@@ -234,10 +272,15 @@ export default function JournalClient({ initialArticles }: JournalClientProps) {
                         className="object-cover transition-transform duration-700 group-hover:scale-105 opacity-85 group-hover:opacity-100"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
-                      <div className="absolute top-3 left-3">
+                      <div className="absolute top-3 left-3 flex items-center gap-1.5">
                         <span className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[9px] font-mono uppercase tracking-widest text-accent-gold font-bold">
                           {article.category}
                         </span>
+                        {((article as any).format || 'essay') !== 'essay' && (
+                          <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[8px] font-mono uppercase tracking-wider text-white">
+                            {(article as any).format === 'guide' ? 'Guide' : (article as any).format === 'story' ? 'Story' : (article as any).format === 'blog' ? 'Blog' : 'Deep Dive'}
+                          </span>
+                        )}
                       </div>
                     </div>
 

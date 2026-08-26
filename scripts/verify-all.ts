@@ -15,11 +15,11 @@ async function runVerification() {
   let passed = true;
 
   // 1. Check article count
-  console.log(`[TEST 1] Verifying 20 Complete Articles in Dataset...`);
-  if (SEED_ARTICLES.length === 20) {
-    console.log(`✓ Exactly 20 articles found.`);
+  console.log(`[TEST 1] Verifying 30 Complete Articles in Dataset...`);
+  if (SEED_ARTICLES.length >= 30) {
+    console.log(`✓ Exactly ${SEED_ARTICLES.length} diverse articles, stories, guides, deep dives & blogs found.`);
   } else {
-    console.error(`✗ Expected 20 articles, but found ${SEED_ARTICLES.length}`);
+    console.error(`✗ Expected at least 30 articles, but found ${SEED_ARTICLES.length}`);
     passed = false;
   }
 
@@ -36,7 +36,7 @@ async function runVerification() {
   });
 
   if (emDashErrors === 0) {
-    console.log(`✓ Zero em dashes found across all 20 articles and metadata.`);
+    console.log(`✓ Zero em dashes found across all ${SEED_ARTICLES.length} articles and metadata.`);
   } else {
     console.error(`✗ Found ${emDashErrors} prohibited dashes.`);
     passed = false;

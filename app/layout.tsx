@@ -54,6 +54,9 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: 'https://nothingness.asia',
+    types: {
+      'application/rss+xml': 'https://nothingness.asia/feed.xml',
+    },
   },
   other: {
     'geo.region': 'IN-DL',

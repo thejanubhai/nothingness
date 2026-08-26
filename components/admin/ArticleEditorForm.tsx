@@ -19,21 +19,21 @@ interface ArticleEditorFormProps {
 }
 
 const CATEGORIES = [
-  'AI & Search Strategy',
-  'Architecture & Atmosphere',
-  'Discreet Hospitality',
-  'Real Estate & Growth',
+  'Dynamics & Kink Culture',
+  'Intimacy & Modern Relationships',
+  'Sensory Exploration & Space',
+  'Discretion & Safe Havens',
 ];
 
 const PRESET_TOPICS = [
-  "Generative Engine Optimization (GEO) for Indian Luxury Hospitality",
-  "The Architecture of Acoustic Isolation: Decoupled Walls & 55dB STC Ratings",
-  "Autonomous Keyless Hospitality & Delhi Police Digital Compliance",
-  "The Unit Economics of Niche Sanctuaries: 3x Outperformance vs Long-Term Rent",
-  "Entity SEO Mastery: How AI Knowledge Graphs Classify Boutique Accommodations",
-  "Psychology of Monolithic Brutalism in Modern Indian Suites",
-  "Local Search Dominance for Delhi NCR & Gurgaon Staycations",
-  "Discreet Luxury Travel: Managing Privacy and Frictionless Access"
+  "Navigating Power Dynamics in Modern Indian Relationships: Beyond the Taboo",
+  "The Art of Aftercare: Why Indian Couples Often Skip It and Why It Matters",
+  "Beginner Shibari in India: Consent, Safety, and the Language of Ropes",
+  "Sensory Deprivation and Overload: Designing Rooms for Altered States of Intimacy",
+  "Privacy in the Metropolis: The Psychological Toll of Living Under Constant Surveillance",
+  "The Roleplay Playbook: Breaking Monotony in Long-Term Indian Marriages",
+  "The Architecture of Seduction: Why Minimalist Brutalism Enhances Physical Connection",
+  "The Psychology of Praise Kink: Why Verbal Affirmation Hits So Deeply"
 ];
 
 export default function ArticleEditorForm({ initialData = {}, isNew = false }: ArticleEditorFormProps) {
@@ -51,10 +51,11 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
   const [excerpt, setExcerpt] = useState(initialData.excerpt || '');
   const [content, setContent] = useState(initialData.content || '');
   const [coverImage, setCoverImage] = useState(initialData.cover_image || '/images/The Void (1).png');
-  const [category, setCategory] = useState(initialData.category || 'AI & Search Strategy');
-  const [tagsInput, setTagsInput] = useState(initialData.tags?.join(', ') || 'AI SEO, Hospitality');
+  const [category, setCategory] = useState(initialData.category || 'Dynamics & Kink Culture');
+  const [format, setFormat] = useState<'story' | 'guide' | 'deep-dive' | 'essay' | 'blog'>((initialData as any).format || 'essay');
+  const [tagsInput, setTagsInput] = useState(initialData.tags?.join(', ') || 'Power Dynamics, Intimacy');
   const [authorName, setAuthorName] = useState(initialData.author_name || 'Kabir Varma');
-  const [authorRole, setAuthorRole] = useState(initialData.author_role || 'Chief Strategy Architect');
+  const [authorRole, setAuthorRole] = useState(initialData.author_role || 'Resident Curator of Lifestyle Dynamics');
   const [status, setStatus] = useState(initialData.status || 'published');
   const [featured, setFeatured] = useState(initialData.featured ?? false);
   const [readingTime, setReadingTime] = useState(initialData.reading_time_minutes || 7);
@@ -104,6 +105,7 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
       content,
       cover_image: coverImage,
       category: category as any,
+      format: format as any,
       tags,
       author_name: authorName,
       author_role: authorRole,
@@ -421,7 +423,7 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
           </div>
 
           {/* Metadata & Media Settings Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-zinc-950 border border-zinc-900 p-6 rounded-3xl">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 bg-zinc-950 border border-zinc-900 p-6 rounded-3xl">
             {/* Category */}
             <div className="space-y-2">
               <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
@@ -437,6 +439,24 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
                     {cat}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            {/* Content Format */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                Format Type *
+              </label>
+              <select
+                value={format}
+                onChange={(e) => setFormat(e.target.value as any)}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-accent-gold/50 cursor-pointer font-mono"
+              >
+                <option value="story" className="bg-black text-white">🕯️ Personal Story / Narrative</option>
+                <option value="guide" className="bg-black text-white">📖 Step-by-Step How-To Guide</option>
+                <option value="deep-dive" className="bg-black text-white">🔬 Psychological Deep Dive</option>
+                <option value="blog" className="bg-black text-white">✍️ Field Blog &amp; Reflection</option>
+                <option value="essay" className="bg-black text-white">✦ Philosophical Essay</option>
               </select>
             </div>
 

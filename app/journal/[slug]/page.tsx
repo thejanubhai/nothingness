@@ -6,6 +6,7 @@ import { getArticleBySlug, getPublishedArticles, incrementArticleViews } from '@
 import { SEED_ARTICLES } from '@/lib/articles-data';
 import JsonLd, { generateArticleSchema, generateBreadcrumbSchema } from '@/components/JsonLd';
 import { ArrowLeft, Clock, Calendar, Tag, Share2, Sparkles, BookOpen } from 'lucide-react';
+import ArticleShareBar from '@/components/journal/ArticleShareBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -118,6 +119,32 @@ function renderMarkdownContent(content: string) {
       continue;
     }
 
+    // Markdown Image: ![alt](url)
+    const imgMatch = line.match(/^!\[(.*?)\]\((.*?)\)$/);
+    if (imgMatch) {
+      const altText = imgMatch[1];
+      const srcUrl = imgMatch[2];
+      elements.push(
+        <div key={i} className="my-10 space-y-2">
+          <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border border-white/10 shadow-xl">
+            <Image
+              src={srcUrl}
+              alt={altText || 'Sanctuary Intimacy Architecture'}
+              fill
+              className="object-cover"
+              sizes="(max-width: 896px) 100vw, 896px"
+            />
+          </div>
+          {altText && (
+            <p className="text-center text-xs font-mono text-white/40 italic">
+              {altText}
+            </p>
+          )}
+        </div>
+      );
+      continue;
+    }
+
     if (line.startsWith('### ')) {
       elements.push(
         <h3 key={i} className="font-serif text-xl sm:text-2xl text-white mt-8 mb-4">
@@ -206,6 +233,11 @@ export default async function ArticlePage({
           <span className="px-3 py-1 rounded-full bg-accent-gold/10 border border-accent-gold/30 text-accent-gold text-[10px] font-mono uppercase tracking-widest font-bold">
             {article.category}
           </span>
+          {((article as any).format || 'Article') && (
+            <span className="px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] font-mono uppercase tracking-widest">
+              {(article as any).format === 'guide' ? '📖 How-To Guide' : (article as any).format === 'story' ? '🕯️ Personal Narrative' : (article as any).format === 'blog' ? '✍️ Field Blog' : (article as any).format === 'deep-dive' ? '🔬 Deep Dive' : '✦ Editorial Essay'}
+            </span>
+          )}
           <span className="flex items-center gap-1.5 text-white/40 text-xs font-mono">
             <Calendar className="w-3.5 h-3.5" />
             {new Date(article.published_at).toLocaleDateString('en-US', {
@@ -275,8 +307,11 @@ export default async function ArticlePage({
         {renderMarkdownContent(article.content)}
       </div>
 
+      {/* Social Share & Copy Bar */}
+      <ArticleShareBar title={article.title} slug={article.slug} />
+
       {/* Tags Section */}
-      <div className="mt-14 pt-8 border-t border-white/10 flex flex-wrap items-center gap-2">
+      <div className="mt-10 pt-8 border-t border-white/10 flex flex-wrap items-center gap-2">
         <Tag className="w-4 h-4 text-accent-gold mr-1" />
         {article.tags.map((tag, i) => (
           <span
@@ -297,7 +332,7 @@ export default async function ArticlePage({
           <p className="text-[10px] uppercase font-mono tracking-widest text-accent-gold">About the Author</p>
           <h4 className="font-serif text-xl text-white font-semibold">{article.author_name}</h4>
           <p className="text-xs text-white/60 leading-relaxed font-sans">
-            Curator of strategic growth, search intelligence, and spatial acoustics at Nothingness. Specializes in generative AI retrieval architectures, brutalist interior psychology, and private hospitality frameworks.
+            Curator of intimacy research, somatic practices, and spatial psychology at Nothingness. Specializes in relationship dynamics, consent frameworks, sensory architecture, and private sanctuary design across India.
           </p>
         </div>
       </div>
@@ -308,7 +343,7 @@ export default async function ArticlePage({
           <div className="flex items-center justify-between">
             <h3 className="font-serif text-2xl sm:text-3xl text-white flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-accent-gold" />
-              Related Editorial Research
+              Related Works &amp; Stories
             </h3>
             <Link
               href="/journal"

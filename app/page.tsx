@@ -91,6 +91,109 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Featured From Editorial Journal Section */}
+      <section className="py-20 px-4 sm:px-6 max-w-6xl mx-auto space-y-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 text-accent-gold text-[10px] font-mono uppercase tracking-widest">
+              <Sparkles className="w-3 h-3" />
+              <span>The Editorial Journal</span>
+            </div>
+            <h2 className="font-serif text-3xl sm:text-4xl text-white">
+              Intimacy, Dynamics &amp; Sanctuary Culture
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-400 max-w-xl font-sans">
+              Curated essays, step-by-step guides, and real anonymous stories on power dynamics, Shibari, aftercare, and discretion in India.
+            </p>
+          </div>
+
+          <Link
+            href="/journal"
+            className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-accent-gold hover:text-white transition-colors self-start md:self-auto group"
+          >
+            <span>Explore All 30 Works</span>
+            <span className="group-hover:translate-x-1 transition-transform">→</span>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card 1: Power Dynamics */}
+          <Link
+            href="/journal/power-dynamics-modern-indian-relationships"
+            className="group p-6 rounded-3xl bg-zinc-950 border border-zinc-900 hover:border-accent-gold/40 transition-all flex flex-col justify-between space-y-4"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-full bg-accent-gold/10 border border-accent-gold/30 text-accent-gold text-[9px] font-mono uppercase tracking-widest font-bold">
+                  Dynamics &amp; Kink
+                </span>
+                <span className="text-[10px] font-mono text-zinc-500">7 min read</span>
+              </div>
+              <h3 className="font-serif text-lg text-white group-hover:text-accent-gold transition-colors leading-snug">
+                Navigating Power Dynamics in Modern Indian Relationships: Beyond the Taboo
+              </h3>
+              <p className="text-xs text-zinc-400 line-clamp-3 leading-relaxed">
+                Why conscious consensual submission and dominance have nothing to do with patriarchy, and how modern couples find freedom through power exchange.
+              </p>
+            </div>
+            <div className="text-[11px] font-mono uppercase tracking-wider text-accent-gold group-hover:translate-x-1 transition-transform flex items-center gap-1 pt-2 border-t border-white/5">
+              <span>Read Deep Dive</span>
+              <span>→</span>
+            </div>
+          </Link>
+
+          {/* Card 2: Shibari Guide */}
+          <Link
+            href="/journal/how-to-tie-single-column-shibari-guide"
+            className="group p-6 rounded-3xl bg-zinc-950 border border-zinc-900 hover:border-accent-gold/40 transition-all flex flex-col justify-between space-y-4"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-full bg-white/10 border border-white/20 text-white text-[9px] font-mono uppercase tracking-widest font-bold">
+                  📖 How-To Guide
+                </span>
+                <span className="text-[10px] font-mono text-zinc-500">8 min read</span>
+              </div>
+              <h3 className="font-serif text-lg text-white group-hover:text-accent-gold transition-colors leading-snug">
+                How to Tie a Single Column Tie: Step-by-Step Shibari Anatomy &amp; Rope Guide
+              </h3>
+              <p className="text-xs text-zinc-400 line-clamp-3 leading-relaxed">
+                A beginner-friendly technical guide to tying your first single column tie safely, understanding wrist nerve pathways, and establishing consent.
+              </p>
+            </div>
+            <div className="text-[11px] font-mono uppercase tracking-wider text-accent-gold group-hover:translate-x-1 transition-transform flex items-center gap-1 pt-2 border-t border-white/5">
+              <span>Read Guide</span>
+              <span>→</span>
+            </div>
+          </Link>
+
+          {/* Card 3: Unmarried Rights Handbook */}
+          <Link
+            href="/journal/the-unmarried-couples-legal-and-safety-handbook-india"
+            className="group p-6 rounded-3xl bg-zinc-950 border border-zinc-900 hover:border-accent-gold/40 transition-all flex flex-col justify-between space-y-4"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[9px] font-mono uppercase tracking-widest font-bold">
+                  ⚖️ Legal Handbook
+                </span>
+                <span className="text-[10px] font-mono text-zinc-500">8 min read</span>
+              </div>
+              <h3 className="font-serif text-lg text-white group-hover:text-accent-gold transition-colors leading-snug">
+                The Unmarried Couples Legal &amp; Safety Handbook: Rights &amp; Police Protocols
+              </h3>
+              <p className="text-xs text-zinc-400 line-clamp-3 leading-relaxed">
+                Everything you need to know about Article 21 privacy rights, Supreme Court precedents, and asserting your rights calmly against moral policing.
+              </p>
+            </div>
+            <div className="text-[11px] font-mono uppercase tracking-wider text-accent-gold group-hover:translate-x-1 transition-transform flex items-center gap-1 pt-2 border-t border-white/5">
+              <span>Read Handbook</span>
+              <span>→</span>
+            </div>
+          </Link>
+        </div>
+      </section>
+
       {/* PWA Home Screen Installation Banner */}
       <PWAInstallPrompt />
     </div>

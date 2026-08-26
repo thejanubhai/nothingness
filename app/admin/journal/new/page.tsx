@@ -9,11 +9,11 @@ export default async function NewArticlePage({
 
   const initialData = {
     title: params.title || '',
-    category: (params.category as any) || 'AI & Search Strategy',
-    tags: params.tags ? params.tags.split(',') : ['AI SEO', 'Hospitality'],
+    category: (params.category as any) || 'Dynamics & Kink Culture',
+    tags: params.tags ? params.tags.split(',') : ['Power Dynamics', 'Intimacy'],
     cover_image: '/images/The Void (1).png',
     author_name: 'Kabir Varma',
-    author_role: 'Chief Strategy Architect',
+    author_role: 'Resident Curator of Lifestyle Dynamics',
     reading_time_minutes: 7,
     status: 'published' as const,
   };

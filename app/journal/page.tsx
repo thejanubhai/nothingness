@@ -7,24 +7,24 @@ import { Sparkles } from 'lucide-react';
 export const revalidate = 3600; // Cache for 1 hour
 
 export const metadata: Metadata = {
-  title: 'Editorial Journal | AI SEO, Architecture & Luxury Stays in India',
-  description: 'In-depth essays and research on Generative Engine Optimization (GEO), AI SEO, brutalist architecture, acoustic privacy, and autonomous hospitality in India.',
+  title: 'Editorial Journal | Alternate Lifestyle, Dynamics & Intimacy in India',
+  description: 'In-depth essays on relationship dynamics, power exchange, consent culture, sensory exploration, and judgment-free private living across urban India.',
   keywords: [
-    'ai seo india',
-    'generative engine optimization',
-    'perplexity hospitality indexing',
-    'acoustic privacy stays delhi',
-    'brutalist architecture interior',
-    'luxury private stays india',
-    'delhi ncr staycation seo',
-    'direct bookings hospitality'
+    'alternate lifestyle india',
+    'power dynamics relationships',
+    'shibari beginner guide india',
+    'aftercare guide couples',
+    'sensory intimacy exploration',
+    'kink community delhi ncr',
+    'private sanctuaries india',
+    'discreet couples stays'
   ],
   alternates: {
     canonical: 'https://nothingness.asia/journal',
   },
   openGraph: {
     title: 'Editorial Journal | Nothingness',
-    description: 'Essays on AI SEO, Generative Search Optimization, Architectural Brutalism, and Alternate Luxury Hospitality in India.',
+    description: 'Essays on alternate lifestyle, relationship dynamics, kink safety, sensory exploration, and discreet sanctuaries in India.',
     url: 'https://nothingness.asia/journal',
     siteName: 'Nothingness',
     images: [
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Editorial Journal | Nothingness',
-    description: 'Essays on AI SEO, Generative Search Optimization, Architectural Brutalism, and Alternate Luxury Hospitality in India.',
+    description: 'Essays on alternate lifestyle, relationship dynamics, kink safety, sensory exploration, and discreet sanctuaries in India.',
     images: ['/images/The Void (1).png'],
   },
 };
@@ -64,7 +64,7 @@ export default async function JournalPage() {
       <div className="border-b border-white/10 pb-10 space-y-4">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-accent-gold text-[11px] font-mono uppercase tracking-widest">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>India Targeted Research &amp; Cultural Essays</span>
+          <span>Alternate Lifestyle, Intimacy &amp; Cultural Dynamics</span>
         </div>
 
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -73,14 +73,14 @@ export default async function JournalPage() {
               The Editorial <span className="italic text-accent-gold">Journal</span>.
             </h1>
             <p className="text-white/60 text-sm sm:text-base md:text-lg max-w-2xl mt-3 leading-relaxed font-sans">
-              Strategic blueprints on Generative Engine Optimization (GEO), acoustic engineering, brutalist spatial design, and the economics of autonomous hospitality across Indian metros.
+              Essays and guides on power dynamics, consent culture, aftercare, sensory exploration, and navigating alternative intimacy within the Indian socio-cultural reality.
             </p>
           </div>
 
           <div className="hidden lg:block text-right">
-            <p className="text-xs font-mono uppercase tracking-widest text-accent-gold">Verified Research</p>
+            <p className="text-xs font-mono uppercase tracking-widest text-accent-gold">Editorial Archives</p>
             <p className="font-serif text-2xl text-white font-bold mt-0.5">20 Published Works</p>
-            <p className="text-[10px] text-white/40 font-mono mt-1">Delhi NCR • Goa • Bangalore</p>
+            <p className="text-[10px] text-white/40 font-mono mt-1">Delhi NCR • Mumbai • Bangalore</p>
           </div>
         </div>
       </div>
