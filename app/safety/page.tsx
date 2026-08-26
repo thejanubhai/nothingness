@@ -1,13 +1,35 @@
 import { Metadata } from 'next';
+import JsonLd, { generateBreadcrumbSchema } from '@/components/JsonLd';
 
 export const metadata: Metadata = {
-  title: 'Safety & Sanitation | Nothingness',
-  description: 'Our uncompromising protocols for safety, hygiene, and equipment sanitation.',
+  title: 'Safety & Sanitation Protocols | Nothingness',
+  description: 'Our uncompromising medical-grade protocols for structural safety, hygiene, equipment sanitation, and complete guest privacy.',
+  keywords: [
+    'hotel sanitation protocols india',
+    'hospitality safety standards',
+    'discreet stay security delhi',
+    'uvc sterilization hotel rooms'
+  ],
+  alternates: {
+    canonical: 'https://nothingness.asia/safety',
+  },
+  openGraph: {
+    title: 'Safety & Sanitation Protocols | Nothingness',
+    description: 'Medical-grade sanitation and structural safety protocols for luxury private sanctuaries.',
+    url: 'https://nothingness.asia/safety',
+    images: ['/images/IMG_9955.jpg'],
+  },
 };
 
 export default function SafetyPage() {
+  const breadcrumbs = [
+    { name: 'Home', url: '/' },
+    { name: 'Safety Protocols', url: '/safety' }
+  ];
+
   return (
     <main className="min-h-screen pt-40 pb-24 px-5 md:px-8 max-w-4xl mx-auto">
+      <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="safety-breadcrumb-schema" />
       <div className="prose prose-invert prose-lg max-w-none">
         <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4">Protocols</p>
         <h1 className="font-serif text-4xl md:text-5xl mb-8">Safety & Sanitation</h1>

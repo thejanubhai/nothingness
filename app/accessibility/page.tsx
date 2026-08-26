@@ -1,13 +1,29 @@
 import { Metadata } from 'next';
+import JsonLd, { generateBreadcrumbSchema } from '@/components/JsonLd';
 
 export const metadata: Metadata = {
-  title: 'Accessibility | Nothingness',
-  description: 'Accessibility information for Nothingness properties and website.',
+  title: 'Accessibility Statement & Digital Compliance | Nothingness',
+  description: 'Digital accessibility commitments, WCAG 2.1 Level AA compliance, and physical property accessibility specifications for Nothingness.',
+  alternates: {
+    canonical: 'https://nothingness.asia/accessibility',
+  },
+  openGraph: {
+    title: 'Accessibility Statement | Nothingness',
+    description: 'Digital and physical accessibility standards across Nothingness properties and digital platforms.',
+    url: 'https://nothingness.asia/accessibility',
+    images: ['/images/IMG_9955.jpg'],
+  },
 };
 
 export default function AccessibilityPage() {
+  const breadcrumbs = [
+    { name: 'Home', url: '/' },
+    { name: 'Accessibility', url: '/accessibility' }
+  ];
+
   return (
     <main className="min-h-screen pt-40 pb-24 px-5 md:px-8 max-w-4xl mx-auto">
+      <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="accessibility-breadcrumb-schema" />
       <div className="prose prose-invert prose-lg max-w-none">
         <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4">Information</p>
         <h1 className="font-serif text-4xl md:text-5xl mb-8">Accessibility</h1>

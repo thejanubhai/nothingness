@@ -1,13 +1,29 @@
 import { Metadata } from 'next';
+import JsonLd, { generateBreadcrumbSchema } from '@/components/JsonLd';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | Nothingness',
-  description: 'Terms of Service and Guest Agreement for Nothingness properties.',
+  title: 'Terms of Service & Guest Agreement | Nothingness',
+  description: 'Terms of Service, guest code of conduct, and legal compliance regulations for Nothingness private sanctuaries in New Delhi and across India.',
+  alternates: {
+    canonical: 'https://nothingness.asia/legal/terms',
+  },
+  openGraph: {
+    title: 'Terms of Service | Nothingness',
+    description: 'Terms of Service and Guest Agreement for Nothingness properties.',
+    url: 'https://nothingness.asia/legal/terms',
+    images: ['/images/IMG_9955.jpg'],
+  },
 };
 
 export default function TermsPage() {
+  const breadcrumbs = [
+    { name: 'Home', url: '/' },
+    { name: 'Terms of Service', url: '/legal/terms' }
+  ];
+
   return (
     <main className="min-h-screen pt-40 pb-24 px-5 md:px-8 max-w-4xl mx-auto">
+      <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="terms-breadcrumb-schema" />
       <div className="prose prose-invert prose-lg max-w-none">
         <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4">Legal</p>
         <h1 className="font-serif text-4xl md:text-5xl mb-8">Terms of Service</h1>

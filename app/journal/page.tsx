@@ -1,48 +1,92 @@
-import Link from "next/link";
-import Image from "next/image";
+import { Metadata } from 'next';
+import { getPublishedArticles } from '@/app/actions/journal';
+import JournalClient from './JournalClient';
+import JsonLd, { generateBreadcrumbSchema, generateWebSiteSchema } from '@/components/JsonLd';
+import { Sparkles } from 'lucide-react';
 
-const posts = [
-  {
-    title: "The Architecture of Sensual Isolation",
-    date: "October 12, 2026",
-    excerpt: "Exploring the brutalist concepts that inspired our dark sanctuary rooms, and why heavy, unforgiving materials create the deepest sense of intimacy.",
-    image: "/images/IMG_2828.jpeg",
+export const revalidate = 3600; // Cache for 1 hour
+
+export const metadata: Metadata = {
+  title: 'Editorial Journal | AI SEO, Architecture & Luxury Stays in India',
+  description: 'In-depth essays and research on Generative Engine Optimization (GEO), AI SEO, brutalist architecture, acoustic privacy, and autonomous hospitality in India.',
+  keywords: [
+    'ai seo india',
+    'generative engine optimization',
+    'perplexity hospitality indexing',
+    'acoustic privacy stays delhi',
+    'brutalist architecture interior',
+    'luxury private stays india',
+    'delhi ncr staycation seo',
+    'direct bookings hospitality'
+  ],
+  alternates: {
+    canonical: 'https://nothingness.asia/journal',
   },
-  {
-    title: "Curating The Void: Cinema & Atmosphere",
-    date: "September 04, 2026",
-    excerpt: "A look inside the tactile Italian textures, private cinema setup, and ambient backlit fixtures that give The Void its unforgettable glow.",
-    image: "/images/The Void (1).png",
-  }
-];
+  openGraph: {
+    title: 'Editorial Journal | Nothingness',
+    description: 'Essays on AI SEO, Generative Search Optimization, Architectural Brutalism, and Alternate Luxury Hospitality in India.',
+    url: 'https://nothingness.asia/journal',
+    siteName: 'Nothingness',
+    images: [
+      {
+        url: '/images/The Void (1).png',
+        width: 1200,
+        height: 630,
+        alt: 'Nothingness Editorial Journal',
+      },
+    ],
+    locale: 'en_IN',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Editorial Journal | Nothingness',
+    description: 'Essays on AI SEO, Generative Search Optimization, Architectural Brutalism, and Alternate Luxury Hospitality in India.',
+    images: ['/images/The Void (1).png'],
+  },
+};
 
-export default function JournalPage() {
+export default async function JournalPage() {
+  const articles = await getPublishedArticles();
+
+  const breadcrumbs = [
+    { name: 'Home', url: '/' },
+    { name: 'Journal', url: '/journal' },
+  ];
+
   return (
-    <main className="min-h-screen pt-32 pb-24 px-4 md:px-12 max-w-7xl mx-auto">
-      <div className="mb-16 border-b border-border-subtle pb-10">
-        <h1 className="font-serif text-5xl md:text-7xl mb-6">Journal</h1>
-        <p className="text-foreground/70 text-lg md:text-xl font-sans tracking-wide max-w-2xl">
-          Thoughts on design, alternative culture, and the emotional impact of physical space.
-        </p>
+    <main className="min-h-screen pt-32 sm:pt-36 pb-24 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto space-y-12">
+      {/* Schema Structured Data */}
+      <JsonLd data={generateWebSiteSchema()} id="journal-website-schema" />
+      <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="journal-breadcrumb-schema" />
+
+      {/* Page Header Banner */}
+      <div className="border-b border-white/10 pb-10 space-y-4">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-accent-gold text-[11px] font-mono uppercase tracking-widest">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>India Targeted Research &amp; Cultural Essays</span>
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl text-white tracking-tight leading-[1.08]">
+              The Editorial <span className="italic text-accent-gold">Journal</span>.
+            </h1>
+            <p className="text-white/60 text-sm sm:text-base md:text-lg max-w-2xl mt-3 leading-relaxed font-sans">
+              Strategic blueprints on Generative Engine Optimization (GEO), acoustic engineering, brutalist spatial design, and the economics of autonomous hospitality across Indian metros.
+            </p>
+          </div>
+
+          <div className="hidden lg:block text-right">
+            <p className="text-xs font-mono uppercase tracking-widest text-accent-gold">Verified Research</p>
+            <p className="font-serif text-2xl text-white font-bold mt-0.5">20 Published Works</p>
+            <p className="text-[10px] text-white/40 font-mono mt-1">Delhi NCR • Goa • Bangalore</p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        {posts.map((post, i) => (
-          <article key={i} className="group cursor-pointer">
-            <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-border-subtle mb-6">
-              <Image 
-                src={post.image} 
-                alt={post.title} 
-                fill 
-                className="object-cover transition-transform duration-1000 group-hover:scale-105 opacity-80 group-hover:opacity-100"
-              />
-            </div>
-            <p className="text-xs uppercase tracking-widest text-accent-muted mb-3">{post.date}</p>
-            <h2 className="font-serif text-3xl mb-3 group-hover:text-accent-gold transition-colors">{post.title}</h2>
-            <p className="text-foreground/70 font-light leading-relaxed">{post.excerpt}</p>
-          </article>
-        ))}
-      </div>
+      {/* Interactive Journal Client */}
+      <JournalClient initialArticles={articles} />
     </main>
   );
 }

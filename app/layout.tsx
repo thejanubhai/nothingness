@@ -34,16 +34,36 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia'),
   title: {
     template: '%s | Nothingness',
-    default: 'Nothingness | A State of Mind',
+    default: 'Nothingness | India\'s Premier Alternate Lifestyle & Luxury Sanctuary Brand',
   },
-  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. An emotionally immersive, culturally underground, Gen-Z-forward accommodation brand focused on privacy, aesthetics, intimacy, and cinematic stays.",
-  keywords: ["luxury hospitality", "alternate lifestyle hotel india", "private sanctuary airbnb", "cinematic stays", "underground culture", "delhi secret stay", "luxury boutique stay"],
+  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Ultra-discreet, design-forward private sanctuaries with keyless digital check-in, acoustic privacy, and cinematic stays across Delhi NCR and India.",
+  keywords: [
+    "luxury hospitality india",
+    "alternate lifestyle hotel india",
+    "private sanctuary airbnb",
+    "cinematic stays delhi",
+    "underground culture stay",
+    "south delhi secret stay",
+    "luxury boutique staycation delhi ncr",
+    "keyless private apartment stay",
+    "jacuzzi private suite delhi",
+    "autonomous hospitality india"
+  ],
+  alternates: {
+    canonical: 'https://nothingness.asia',
+  },
+  other: {
+    'geo.region': 'IN-DL',
+    'geo.placename': 'New Delhi',
+    'geo.position': '28.6139;77.2090',
+    'ICBM': '28.6139, 77.2090',
+  },
   openGraph: {
-    title: 'Nothingness | A State of Mind',
-    description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand.",
+    title: 'Nothingness | India\'s Premier Alternate Lifestyle & Luxury Sanctuary Brand',
+    description: "Ultra-discreet, design-forward private sanctuaries with keyless check-in and acoustic privacy across Delhi NCR.",
     url: 'https://nothingness.asia',
     siteName: 'Nothingness',
     images: [
@@ -59,8 +79,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Nothingness | A State of Mind',
-    description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand.",
+    title: 'Nothingness | India\'s Premier Alternate Lifestyle & Luxury Sanctuary Brand',
+    description: "Ultra-discreet, design-forward private sanctuaries with keyless check-in and acoustic privacy across Delhi NCR.",
     images: ['/images/IMG_9955.jpg'],
   },
   manifest: '/manifest.json',
@@ -128,6 +148,28 @@ export default function RootLayout({
         </SmoothScroll>
         <CookieBanner />
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+        <script
+          id="global-org-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              '@id': 'https://nothingness.asia/#organization',
+              name: 'Nothingness',
+              legalName: 'Nothingness Inc.',
+              url: 'https://nothingness.asia',
+              logo: 'https://nothingness.asia/images/logo.png',
+              description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Autonomous private stays with keyless entry across Delhi NCR.",
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: 'New Delhi',
+                addressRegion: 'Delhi NCR',
+                addressCountry: 'IN'
+              }
+            })
+          }}
+        />
       </body>
     </html>
   );

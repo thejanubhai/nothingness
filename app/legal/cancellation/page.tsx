@@ -1,13 +1,29 @@
 import { Metadata } from 'next';
+import JsonLd, { generateBreadcrumbSchema } from '@/components/JsonLd';
 
 export const metadata: Metadata = {
-  title: 'Cancellation Policy | Nothingness',
-  description: 'Our policies regarding cancellations and refunds.',
+  title: 'Cancellation & Refund Policy | Nothingness',
+  description: 'Official cancellation guidelines, refund processing timeframes, and reservation modification rules for Nothingness private sanctuaries.',
+  alternates: {
+    canonical: 'https://nothingness.asia/legal/cancellation',
+  },
+  openGraph: {
+    title: 'Cancellation Policy | Nothingness',
+    description: 'Official reservation cancellation and refund policies.',
+    url: 'https://nothingness.asia/legal/cancellation',
+    images: ['/images/IMG_9955.jpg'],
+  },
 };
 
 export default function CancellationPage() {
+  const breadcrumbs = [
+    { name: 'Home', url: '/' },
+    { name: 'Cancellation Policy', url: '/legal/cancellation' }
+  ];
+
   return (
     <main className="min-h-screen pt-40 pb-24 px-5 md:px-8 max-w-4xl mx-auto">
+      <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="cancellation-breadcrumb-schema" />
       <div className="prose prose-invert prose-lg max-w-none">
         <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4">Legal</p>
         <h1 className="font-serif text-4xl md:text-5xl mb-8">Cancellation & Refunds</h1>

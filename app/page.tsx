@@ -3,12 +3,29 @@ import PropertySwipeDeck from '@/components/PropertySwipeDeck';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import Link from 'next/link';
 import { ShieldCheck, Key, Sparkles, Building2, Smartphone, Calendar, Award } from 'lucide-react';
+import { Metadata } from 'next';
+import JsonLd, { generateWebSiteSchema } from '@/components/JsonLd';
 
 export const revalidate = 3600; // Cache for 1 hour
+
+export const metadata: Metadata = {
+  title: "Cinematic Private Stays & Luxury Sanctuaries in Delhi NCR | Nothingness",
+  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Autonomous keyless check-in, Jacuzzi bath soaks, brutalist interiors, and 100% ID-vetted discretion in Delhi NCR.",
+  alternates: {
+    canonical: 'https://nothingness.asia',
+  },
+  openGraph: {
+    title: 'Cinematic Private Stays & Luxury Sanctuaries | Nothingness',
+    description: "Ultra-discreet, design-forward private sanctuaries with keyless digital check-in and Jacuzzi tubs across Delhi NCR.",
+    url: 'https://nothingness.asia',
+    images: ['/images/IMG_9955.jpg'],
+  },
+};
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-black text-white selection:bg-rose-500/30">
+      <JsonLd data={generateWebSiteSchema()} id="home-website-schema" />
       
       {/* Hero Section */}
       <section className="relative pt-28 pb-16 px-4 sm:px-6 max-w-6xl mx-auto text-center overflow-hidden">

@@ -1,8 +1,31 @@
 import Link from "next/link";
 import SpaceCard from "@/components/SpaceCard";
 import { createClient } from "@/lib/supabase/server";
+import { Metadata } from 'next';
+import JsonLd, { generateBreadcrumbSchema } from '@/components/JsonLd';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: "Sanctuaries & Private Stays in Delhi NCR | Nothingness",
+  description: "Browse private brutalist sanctuaries, Jacuzzi suites, and aesthetic spaces for total isolation, intimacy, and keyless stays across Delhi NCR.",
+  keywords: [
+    "private sanctuary delhi",
+    "jacuzzi suite delhi ncr",
+    "south delhi private stay",
+    "aesthetic airbnb delhi",
+    "keyless boutique accommodation"
+  ],
+  alternates: {
+    canonical: 'https://nothingness.asia/spaces',
+  },
+  openGraph: {
+    title: "Sanctuaries & Private Stays | Nothingness",
+    description: "Browse private brutalist sanctuaries, Jacuzzi suites, and aesthetic spaces across Delhi NCR.",
+    url: "https://nothingness.asia/spaces",
+    images: ['/images/The Void (1).png'],
+  },
+};
 
 export default async function SpacesPage() {
   let spaces: any[] = [];

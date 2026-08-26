@@ -1,9 +1,27 @@
 import Image from "next/image";
 import Magnetic from "@/components/Magnetic";
+import { Metadata } from "next";
+import JsonLd, { generateBreadcrumbSchema } from "@/components/JsonLd";
 
-export const metadata = {
-  title: "Media & Press | Nothingness",
-  description: "Press coverage and media features for Nothingness - India's Premier Alternate Lifestyle Hospitality Brand.",
+export const metadata: Metadata = {
+  title: "Media, Press & Editorial Features | Nothingness",
+  description: "Press coverage and editorial features for Nothingness across Homegrown, ScoopWhoop, and LBB Delhi.",
+  keywords: [
+    "nothingness media",
+    "homegrown nothingness",
+    "scoopwhoop alternate lifestyle hotel",
+    "lbb delhi secret airbnb",
+    "boutique hospitality press india"
+  ],
+  alternates: {
+    canonical: 'https://nothingness.asia/media',
+  },
+  openGraph: {
+    title: "Media & Press | Nothingness",
+    description: "Press features and media coverage for India's Premier Alternate Lifestyle & Luxury Sanctuary Brand.",
+    url: "https://nothingness.asia/media",
+    images: ['/images/IMG_9955.jpg'],
+  },
 };
 
 const mediaFeatures = [
@@ -42,8 +60,14 @@ const mediaFeatures = [
 ];
 
 export default function MediaPage() {
+  const breadcrumbs = [
+    { name: 'Home', url: '/' },
+    { name: 'Press & Media', url: '/media' }
+  ];
+
   return (
     <main className="min-h-screen bg-background pt-32 pb-24 px-4 md:px-12 max-w-7xl mx-auto">
+      <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="media-breadcrumb-schema" />
       <div className="mb-16">
         <h1 className="font-serif text-5xl md:text-7xl tracking-tight mb-4 text-foreground">Press & Media</h1>
         <p className="text-xl text-accent-gold font-serif italic mb-6">India's Premier Alternate Lifestyle Hospitality Brand</p>

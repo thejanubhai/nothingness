@@ -19,15 +19,38 @@ import PartnerCalculator from '@/components/franchise/PartnerCalculator';
 import ExpansionRoadmap from '@/components/franchise/ExpansionRoadmap';
 import PartnerApplicationForm from '@/components/franchise/PartnerApplicationForm';
 import PartnerFaq from '@/components/franchise/PartnerFaq';
+import JsonLd, { generateBreadcrumbSchema } from '@/components/JsonLd';
 
 export const metadata: Metadata = {
-  title: 'Partner with Us | nothingness.',
-  description: 'Join the nothingness. Partner Network. High-yield, turnkey private sanctuaries with budget & luxury options, integrated vetted events, and Pan-India expansion.',
+  title: 'Partner with Us | High-Yield Private Sanctuary Real Estate Network India',
+  description: 'Join the Nothingness Partner Network. High-yield, turnkey private sanctuaries with 70/30 revenue share, budget & luxury fit-outs, and pan-India expansion.',
+  keywords: [
+    'hotel franchise india',
+    'boutique sanctuary partner',
+    'airbnb management delhi ncr',
+    'high yield hospitality real estate',
+    'private stay franchise model'
+  ],
+  alternates: {
+    canonical: 'https://nothingness.asia/franchise',
+  },
+  openGraph: {
+    title: 'Partner with Us | Nothingness Real Estate Network',
+    description: 'Transform residential real estate into high-yield private sanctuaries with 2.5x to 3x higher returns.',
+    url: 'https://nothingness.asia/franchise',
+    images: ['/images/IMG_9955.jpg'],
+  },
 };
 
 export default function FranchisePage() {
+  const breadcrumbs = [
+    { name: 'Home', url: '/' },
+    { name: 'Partner', url: '/franchise' }
+  ];
+
   return (
     <main className="min-h-screen pt-28 sm:pt-36 pb-24 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto space-y-24 sm:space-y-32">
+      <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="franchise-breadcrumb-schema" />
       
       {/* ─────────────────────────────────────────────────────────────
           1. HERO SECTION

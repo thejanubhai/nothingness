@@ -34,6 +34,7 @@ export default async function AdminLayout({
   const navItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Sanctuaries', href: '/admin/spaces', icon: Building2 },
+    { name: 'Editorial Journal', href: '/admin/journal', icon: Sparkles },
     { name: 'Calendar & Channels', href: '/admin/calendar', icon: CalendarDays },
     { name: 'Bookings', href: '/admin/bookings', icon: CalendarDays },
     { name: 'Guest CRM & Police', href: '/admin/guests', icon: Users },

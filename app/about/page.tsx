@@ -2,15 +2,38 @@ import { Metadata } from "next";
 import Image from "next/image";
 import Magnetic from "@/components/Magnetic";
 import Link from "next/link";
+import JsonLd, { generateBreadcrumbSchema } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "About Us | Nothingness",
-  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Discover the philosophy behind Nothingness.",
+  title: "The Philosophy & Vision | Nothingness Luxury Sanctuaries",
+  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Discover the architectural philosophy, sensory design, and privacy standards behind Nothingness.",
+  keywords: [
+    "nothingness philosophy",
+    "alternate lifestyle hospitality india",
+    "brutalist architecture philosophy",
+    "sensory isolation stays",
+    "luxury intimacy spaces india"
+  ],
+  alternates: {
+    canonical: 'https://nothingness.asia/about',
+  },
+  openGraph: {
+    title: "The Philosophy & Vision | Nothingness",
+    description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. A sanctuary for the unspoken.",
+    url: "https://nothingness.asia/about",
+    images: ['/images/IMG_4446.jpeg'],
+  },
 };
 
 export default function AboutPage() {
+  const breadcrumbs = [
+    { name: 'Home', url: '/' },
+    { name: 'Philosophy', url: '/about' }
+  ];
+
   return (
     <main className="min-h-screen pt-32 sm:pt-40 pb-24 px-5 sm:px-6 md:px-8 max-w-5xl mx-auto">
+      <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="about-breadcrumb-schema" />
       {/* Hero Section */}
       <div className="text-center mb-16 sm:mb-24">
         <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-3 sm:mb-4 font-mono">The Philosophy</p>

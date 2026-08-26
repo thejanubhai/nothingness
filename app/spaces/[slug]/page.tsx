@@ -11,17 +11,35 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const supabase = await createClient();
   const { data: space } = await supabase
     .from('spaces')
-    .select('title, description, featured_image')
+    .select('title, description, featured_image, area, city')
     .eq('slug', slug)
     .single();
 
-  if (!space) return { title: 'Not Found' };
+  if (!space) return { title: 'Sanctuary Not Found | Nothingness' };
+
+  const title = `${space.title} | Luxury Private Sanctuary in ${space.city || 'Delhi NCR'}`;
+  const description = space.description;
+  const canonicalUrl = `https://nothingness.asia/spaces/${slug}`;
 
   return {
-    title: space.title,
-    description: space.description,
+    title,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
-      images: [space.featured_image || '/og-default.png']
+      title,
+      description,
+      url: canonicalUrl,
+      images: [space.featured_image || '/images/IMG_9955.jpg'],
+      type: 'website',
+      locale: 'en_IN',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [space.featured_image || '/images/IMG_9955.jpg'],
     }
   };
 }
