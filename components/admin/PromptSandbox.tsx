@@ -75,7 +75,7 @@ export default function PromptSandbox({
           },
           ...prev,
         ]);
-        toast.success('Gemini simulation complete');
+        toast.success('Simulation complete');
       } else {
         toast.error(res.error || 'Failed to simulate prompt');
       }
@@ -93,7 +93,7 @@ export default function PromptSandbox({
         <div>
           <h3 className="text-sm font-semibold text-white uppercase tracking-widest flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-accent-gold" />
-            Gemini 2.5 Prompt Sandbox &amp; Preset Tuning
+            Neural Engine Prompt Sandbox &amp; Preset Tuning
           </h3>
           <p className="text-xs text-white/50 mt-0.5">
             Test prompt performance live against simulated guest inquiries before saving.
@@ -166,7 +166,7 @@ export default function PromptSandbox({
         {/* Simulation Output Log */}
         <div className="bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col min-h-[260px] max-h-[360px] overflow-y-auto space-y-4">
           <p className="text-[10px] uppercase tracking-widest text-white/40 sticky top-0 bg-black/80 backdrop-blur-md py-1 border-b border-white/5">
-            Gemini Response Output Log
+            Output Simulation Log
           </p>
 
           {testHistory.length === 0 ? (

@@ -389,7 +389,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
               <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
                 <div className="flex items-center gap-2 mb-4">
                   <Bot className="w-4 h-4 text-white/50" />
-                  <h3 className="text-white font-medium">Gemini AI</h3>
+                  <h3 className="text-white font-medium">Optical &amp; Intelligence Engine</h3>
                 </div>
                 <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">API Key</label>
                 <input 

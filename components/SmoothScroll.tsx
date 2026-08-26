@@ -26,16 +26,18 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     }
 
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: 1.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 0.9,
+      wheelMultiplier: 1.0,
       syncTouch: false,
+      autoResize: true,
     });
 
     lenisRef.current = lenis;
+    (window as any).__lenis = lenis;
 
     let rafId: number;
     function raf(time: number) {
@@ -45,10 +47,32 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
 
     rafId = requestAnimationFrame(raf);
 
+    // Dynamic ResizeObserver so Lenis adapts whenever async components (like spaces catalog) render
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && document.body) {
+      resizeObserver = new ResizeObserver(() => {
+        lenis.resize();
+      });
+      resizeObserver.observe(document.body);
+    }
+
+    const onWindowResize = () => {
+      lenis.resize();
+    };
+
+    window.addEventListener('resize', onWindowResize, { passive: true });
+    window.addEventListener('orientationchange', onWindowResize, { passive: true });
+
     return () => {
       cancelAnimationFrame(rafId);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      window.removeEventListener('resize', onWindowResize);
+      window.removeEventListener('orientationchange', onWindowResize);
       lenis.destroy();
       lenisRef.current = null;
+      delete (window as any).__lenis;
     };
   }, [pathname]);
 

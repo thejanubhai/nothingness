@@ -215,7 +215,7 @@ export default function UserDashboardClient({
                 </span>
               </div>
               <p className="text-xs text-zinc-400 leading-relaxed mb-6">
-                Monetize your premium apartment, villa, or penthouse. Nothingness handles autonomous check-in, strict ID vetting, AI cleanliness reviews, and channel manager sync.
+                Monetize your premium apartment, villa, or penthouse. Nothingness handles autonomous check-in, strict ID vetting, automated turnover reviews, and channel manager sync.
               </p>
 
               <div className="space-y-2 text-xs text-zinc-300 font-mono mb-8">

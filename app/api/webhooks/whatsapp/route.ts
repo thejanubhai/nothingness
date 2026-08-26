@@ -147,7 +147,7 @@ export async function POST(request: Request) {
             })
             .eq('id', existingTask.id);
 
-          const xmlReply = `<Response><Message>Thank you ${profileName}! Gemini AI Vision verified turnover inspection (Score: ${aiScore}/100). Sanctuary turnover marked COMPLETED.</Message></Response>`;
+          const xmlReply = `<Response><Message>Thank you ${profileName}! Optical inspection verified turnover standards (Score: ${aiScore}/100). Sanctuary turnover marked COMPLETED.</Message></Response>`;
           return new NextResponse(xmlReply, { status: 200, headers: { 'Content-Type': 'text/xml' } });
         }
       }

@@ -92,12 +92,12 @@ export default function KinksterLandingPage({
   );
 
   return (
-    <div className="text-white selection:bg-rose-500 selection:text-white overflow-hidden">
+    <div className="text-white selection:bg-rose-500 selection:text-white overflow-x-clip">
       
       {/* ------------------------------------------------------------- */}
       {/* 1. HERO SECTION: The Obsidian Circle */}
       {/* ------------------------------------------------------------- */}
-      <section className="relative min-h-[90vh] flex flex-col justify-center items-center text-center px-4 sm:px-6 pt-12 pb-24 overflow-hidden">
+      <section className="relative min-h-[90vh] flex flex-col justify-center items-center text-center px-4 sm:px-6 pt-12 pb-24 overflow-x-clip">
         {/* Hypnotic Glow Backgrounds */}
         <div className="absolute top-1/4 -left-32 w-96 h-96 bg-rose-600/15 rounded-full blur-[120px] pointer-events-none animate-pulse duration-1000" />
         <div className="absolute top-1/3 -right-32 w-96 h-96 bg-purple-600/15 rounded-full blur-[140px] pointer-events-none" />
@@ -281,7 +281,7 @@ export default function KinksterLandingPage({
             The Six Pillars of Kinkster Mode
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400">
-            A revolutionary marriage of institutional-grade privacy, cutting-edge AI verification, and sensual sanctuary luxury.
+            A revolutionary marriage of institutional-grade privacy, cutting-edge optical vetting &amp; cryptographic verification, and sensual sanctuary luxury.
           </p>
         </div>
 
@@ -355,16 +355,16 @@ export default function KinksterLandingPage({
             </div>
           </div>
 
-          {/* Pillar 5: AI Health Badges */}
+          {/* Pillar 5: Health Badges */}
           <div className="p-7 rounded-3xl bg-zinc-950 border border-zinc-900 hover:border-emerald-500/40 transition-all group relative overflow-hidden flex flex-col justify-between shadow-2xl">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-colors" />
             <div>
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-5">
                 <FileCheck className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">05. AI Sexual Health Badges</h3>
+              <h3 className="text-lg font-bold text-white mb-2">05. Laboratory Discretion Badges</h3>
               <p className="text-xs text-zinc-400 leading-relaxed mb-4">
-                Upload confidential blood panels parsed instantly by Gemini Vision AI. Displays non-stigmatizing, dignified badges (<span className="text-emerald-300">🛡️ Clear</span>, <span className="text-rose-300">🎗️ U=U</span>, <span className="text-purple-300">✨ STI Free</span>) for radical safety and honesty.
+                Upload confidential blood panels authenticated through encrypted optical analysis. Displays non-stigmatizing, dignified badges (<span className="text-emerald-300">🛡️ Clear</span>, <span className="text-rose-300">🎗️ U=U</span>, <span className="text-purple-300">✨ STI Free</span>) for radical safety and honesty.
               </p>
             </div>
             <div className="pt-4 border-t border-zinc-900 text-[11px] font-mono text-emerald-400/90 flex items-center gap-1">
@@ -372,14 +372,14 @@ export default function KinksterLandingPage({
             </div>
           </div>
 
-          {/* Pillar 6: Previous Stay AI Proof */}
+          {/* Pillar 6: Previous Stay Proof */}
           <div className="p-7 rounded-3xl bg-zinc-950 border border-zinc-900 hover:border-blue-500/40 transition-all group relative overflow-hidden flex flex-col justify-between shadow-2xl">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-colors" />
             <div>
               <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-5">
                 <Building2 className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">06. Multi-Screenshot AI Stay Proof</h3>
+              <h3 className="text-lg font-bold text-white mb-2">06. Multi-Screenshot Optical Stay Verification</h3>
               <p className="text-xs text-zinc-400 leading-relaxed mb-4">
                 Instant verification via previous Airbnb, MMT, Booking.com reservation receipts or WhatsApp concierge chats. Co-guests are identified and shadow-pre-stored with zero external leaks.
               </p>
@@ -583,7 +583,7 @@ export default function KinksterLandingPage({
 
             <h3 className="text-xl font-bold text-white">Government ID Optical KYC</h3>
             <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-              Every member must submit clear front &amp; back photos of their <span className="text-white font-medium">Aadhaar Card</span> or <span className="text-white font-medium">Passport</span>. Our Gemini 2.5 AI verifies 18+ age and legitimacy. Driving Licenses and Voter IDs are strictly rejected per hospitality regulations.
+              Every member must submit clear front &amp; back photos of their <span className="text-white font-medium">Aadhaar Card</span> or <span className="text-white font-medium">Passport</span>. Our automated optical verification engine confirms 18+ age and document authenticity. Driving Licenses and Voter IDs are strictly rejected per hospitality regulations.
             </p>
 
             <div className="pt-3">
@@ -613,7 +613,7 @@ export default function KinksterLandingPage({
 
             <h3 className="text-xl font-bold text-white">Certified Previous Stay Proof</h3>
             <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-              To guarantee that members share our culture of luxury and respect, at least <span className="text-white font-medium">1 verified stay</span> at Nothingness is required. Auto-detected from our database, or verified via multi-screenshot AI for Airbnb, MMT, Booking.com, or WhatsApp chats.
+              To guarantee that members share our culture of luxury and respect, at least <span className="text-white font-medium">1 verified stay</span> at Nothingness is required. Auto-detected from our database, or verified via automated optical parsing of reservation receipts from Airbnb, MMT, Booking.com, or concierge chats.
             </p>
 
             <div className="pt-3">
@@ -781,7 +781,7 @@ export default function KinksterLandingPage({
 
           <div className="p-6 rounded-3xl bg-zinc-950 border border-zinc-900 flex flex-col justify-between space-y-4">
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-serif italic">
-              "The mutual Spice Up rule means zero unwanted DMs. And the AI blood test badges made health conversations effortless before our co-stay."
+              "The mutual Spice Up rule means zero unwanted DMs. And the verified health badges made health conversations effortless before our co-stay."
             </p>
             <div className="flex items-center gap-2 pt-2 border-t border-zinc-900 text-xs font-mono text-zinc-400">
               <span className="text-amber-400 font-bold">@velvet_scarlet</span>

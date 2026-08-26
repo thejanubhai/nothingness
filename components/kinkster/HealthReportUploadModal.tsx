@@ -1,57 +1,58 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { X, UploadCloud, FileText, Sparkles, ShieldCheck } from 'lucide-react';
+import { UploadCloud, FileText, CheckCircle2, X, Sparkles, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface HealthReportUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onVerified: () => void;
+  onSuccess?: () => void;
+  onVerified?: () => void | Promise<void>;
 }
 
-export default function HealthReportUploadModal({ isOpen, onClose, onVerified }: HealthReportUploadModalProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export default function HealthReportUploadModal({ isOpen, onClose, onSuccess, onVerified }: HealthReportUploadModalProps) {
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selected = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (file) {
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        setFilePreview(ev.target?.result as string);
-      };
-      reader.readAsDataURL(selected);
+      reader.onload = () => setFilePreview(reader.result as string);
+      reader.readAsDataURL(file);
     }
   };
 
   const handleUpload = async () => {
     if (!filePreview) {
-      toast.error('Please upload a blood test report photo.');
+      toast.error('Please select a lab report file or photo.');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch('/api/kinkster/verify-health', {
+      const res = await fetch('/api/kinkster/health-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          report_image_url: filePreview
-        })
+        body: JSON.stringify({ file_data: filePreview })
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to verify health report');
+      if (!res.ok) throw new Error(data.error || 'Failed to process lab report');
 
-      toast.success('Lab Report Verified!', { description: 'Transparent health badges added to your profile.' });
-      onVerified();
+      toast.success('Health Badges Updated Successfully!', {
+        description: `Verified badges: ${data.health_badges.map((b: any) => b.title).join(', ')}`
+      });
+
+      if (onSuccess) onSuccess();
+      if (onVerified) onVerified();
       onClose();
     } catch (err: any) {
-      toast.error(err.message || 'Verification error occurred.');
+      toast.error('Processing Failed', { description: err.message });
     } finally {
       setLoading(false);
     }
@@ -72,15 +73,15 @@ export default function HealthReportUploadModal({ isOpen, onClose, onVerified }:
             <FileText className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Blood Test &amp; Sexual Health Upload</h3>
-            <p className="text-xs text-zinc-400">Gemini AI Vision parses lab reports for transparent badges</p>
+            <h3 className="text-lg font-bold text-white">Blood Test &amp; Diagnostic Upload</h3>
+            <p className="text-xs text-zinc-400">Encrypted optical engine authenticates lab reports for dignified badges</p>
           </div>
         </div>
 
         <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-zinc-300 mb-6 flex items-start gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
           <span>
-            Lab reports are analyzed by AI Vision to extract parameters (HIV 1/2, STI panel, Test Date) and generate non-discriminatory, respectful badges on your profile.
+            Lab reports are securely analyzed to extract diagnostic parameters (HIV 1/2, STI panel, Test Date) and generate non-discriminatory, respectful badges on your profile.
           </span>
         </div>
 
@@ -98,7 +99,7 @@ export default function HealthReportUploadModal({ isOpen, onClose, onVerified }:
             className="border-2 border-dashed border-zinc-800 hover:border-purple-500/50 rounded-2xl p-8 cursor-pointer transition-all flex flex-col items-center justify-center gap-3 bg-zinc-900/40 mb-6"
           >
             <UploadCloud className="w-8 h-8 text-zinc-500" />
-            <p className="text-xs text-zinc-400">Upload Blood Test / STI Panel Report Photo</p>
+            <p className="text-xs text-zinc-400">Upload Blood Test / Diagnostic Panel Report Photo</p>
           </div>
         ) : (
           <div
@@ -118,7 +119,7 @@ export default function HealthReportUploadModal({ isOpen, onClose, onVerified }:
           className="w-full py-3 bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
         >
           <Sparkles className="w-4 h-4" />
-          {loading ? 'AI Inspecting Lab Report...' : 'Analyze & Add Health Badges'}
+          {loading ? 'Authenticating Diagnostic Report...' : 'Verify & Add Discretion Badges'}
         </button>
       </div>
     </div>

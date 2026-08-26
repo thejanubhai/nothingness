@@ -3,75 +3,87 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X,
+  ShieldCheck,
   UploadCloud,
+  FileImage,
+  Sparkles,
   CheckCircle2,
   AlertCircle,
+  X,
+  Trash2,
   Building2,
   Calendar,
-  Sparkles,
-  RefreshCw,
-  Plus,
-  Trash2,
-  ShieldCheck,
+  CreditCard,
   Users,
-  MessageSquare,
-  Ticket,
-  FileCheck,
-  HelpCircle
+  RefreshCw,
+  Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface StayProofUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (extractedData: any) => void;
+  onSuccess: (bookingData: any) => void;
 }
 
-interface ExtractedData {
-  platform: string;
-  space_name: string;
-  check_in: string;
-  check_out: string;
-  reservation_code?: string;
-  primary_guest_name?: string;
-  co_guests?: Array<{ name: string; status: string }>;
-}
-
-export default function StayProofUploadModal({ isOpen, onClose, onSuccess }: StayProofUploadModalProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export default function StayProofUploadModal({
+  isOpen,
+  onClose,
+  onSuccess
+}: StayProofUploadModalProps) {
   const [screenshots, setScreenshots] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [scanStep, setScanStep] = useState<number>(0);
+  const [extractedResult, setExtractedResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [extractedResult, setExtractedResult] = useState<ExtractedData | null>(null);
-  const [identityStats, setIdentityStats] = useState<{ total_co_guests: number; matched_existing: number; prestored_new: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files);
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          if (ev.target?.result) {
-            setScreenshots(prev => [...prev, ev.target!.result as string]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-      setError(null);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (screenshots.length + files.length > 10) {
+      toast.error('You can upload up to 10 screenshots total.');
+      return;
     }
+
+    const readers: Promise<string>[] = [];
+
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not a valid image.`);
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name} exceeds 10MB limit.`);
+        return;
+      }
+
+      const reader = new Promise<string>((resolve) => {
+        const fileReader = new FileReader();
+        fileReader.onload = () => resolve(fileReader.result as string);
+        fileReader.readAsDataURL(file);
+      });
+
+      readers.push(reader);
+    });
+
+    Promise.all(readers).then((newBase64Images) => {
+      setScreenshots((prev) => [...prev, ...newBase64Images]);
+      setError(null);
+    });
   };
 
   const handleRemoveScreenshot = (index: number) => {
-    setScreenshots(prev => prev.filter((_, i) => i !== index));
+    setScreenshots((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleVerifyStay = async () => {
     if (screenshots.length === 0) {
-      setError('Please upload at least one screenshot of your reservation or booking chat.');
+      toast.error('Please upload at least 1 screenshot of your booking or chat.');
       return;
     }
 
@@ -79,10 +91,10 @@ export default function StayProofUploadModal({ isOpen, onClose, onSuccess }: Sta
     setError(null);
     setScanStep(1);
 
-    // Simulate animated scanning steps for engaging UX
-    const stepInterval = setInterval(() => {
-      setScanStep(prev => (prev < 4 ? prev + 1 : prev));
-    }, 900);
+    // Simulate multi-phase optical analysis steps
+    const stepTimer1 = setTimeout(() => setScanStep(2), 1200);
+    const stepTimer2 = setTimeout(() => setScanStep(3), 2400);
+    const stepTimer3 = setTimeout(() => setScanStep(4), 3600);
 
     try {
       const res = await fetch('/api/kinkster/verify-stay', {
@@ -91,33 +103,31 @@ export default function StayProofUploadModal({ isOpen, onClose, onSuccess }: Sta
         body: JSON.stringify({ screenshots })
       });
 
-      clearInterval(stepInterval);
+      clearTimeout(stepTimer1);
+      clearTimeout(stepTimer2);
+      clearTimeout(stepTimer3);
+
       const data = await res.json();
 
-      if (!res.ok || !data.verified) {
-        throw new Error(data.error || 'Verification failed. Please check the screenshots and try again.');
+      if (!res.ok) {
+        throw new Error(data.error || 'Optical stay verification failed.');
       }
 
-      setScanStep(4);
-      setExtractedResult(data.extracted);
-      setIdentityStats(data.identity_resolution);
-      toast.success('Previous Stay Verified with Nothingness! 🔥', {
-        description: `Confirmed reservation at ${data.extracted.space_name || 'Nothingness Space'} recorded.`
+      setExtractedResult(data.extracted_data);
+      toast.success('Previous Stay Verified!', {
+        description: `Recognized reservation for ${data.extracted_data.space_name} (${data.extracted_data.check_in_date})`
       });
 
+      setTimeout(() => {
+        onSuccess(data);
+      }, 2500);
     } catch (err: any) {
-      clearInterval(stepInterval);
-      setError(err.message || 'Error parsing reservation screenshots.');
-      toast.error('Stay Verification Failed', { description: err.message });
+      console.error('Stay verification error:', err);
+      setError(err.message || 'Verification failed. Please ensure screenshots clearly show booking dates or chat details.');
+      toast.error('Verification Failed', { description: err.message });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleConfirmAndProceed = () => {
-    if (extractedResult) {
-      onSuccess(extractedResult);
-      onClose();
+      setScanStep(0);
     }
   };
 
@@ -153,7 +163,7 @@ export default function StayProofUploadModal({ isOpen, onClose, onSuccess }: Sta
               </span>
               <span className="px-2.5 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 text-[10px] uppercase font-mono tracking-wider flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-purple-400" />
-                Gemini 2.5 Flash Vision AI
+                Autonomous Optical Verification
               </span>
             </div>
 
@@ -164,73 +174,60 @@ export default function StayProofUploadModal({ isOpen, onClose, onSuccess }: Sta
               Kinkster accounts require at least one previous stay with Nothingness. Upload screenshot(s) of your <span className="text-rose-300 font-medium">Airbnb / MMT / Booking.com</span> reservation or your <span className="text-rose-300 font-medium">WhatsApp booking chat</span>.
             </p>
 
-            {/* Hidden File Input */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="image/*"
-              multiple
-              className="hidden"
-            />
-
-            {/* Accepted Platforms Presets Bar */}
-            <div className="flex flex-wrap items-center gap-1.5 mb-5 p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-xl text-[11px] text-zinc-400">
-              <span className="font-semibold text-zinc-300 mr-1">Accepted Proofs:</span>
-              <span className="px-2 py-0.5 bg-zinc-800 rounded-md text-zinc-200">Airbnb</span>
-              <span className="px-2 py-0.5 bg-zinc-800 rounded-md text-zinc-200">MakeMyTrip (MMT)</span>
-              <span className="px-2 py-0.5 bg-zinc-800 rounded-md text-zinc-200">Booking.com</span>
-              <span className="px-2 py-0.5 bg-zinc-800 rounded-md text-zinc-200">WhatsApp Chat</span>
-              <span className="px-2 py-0.5 bg-zinc-800 rounded-md text-zinc-200">Instagram DM</span>
-            </div>
-
+            {/* Main Form State */}
             {!extractedResult ? (
               <div className="space-y-4">
-                {/* Upload Drag & Drop Area */}
-                {screenshots.length === 0 ? (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-zinc-800 hover:border-rose-500/50 rounded-2xl p-8 transition-all flex flex-col items-center justify-center gap-3 bg-zinc-900/30 hover:bg-rose-500/[0.02] cursor-pointer group text-center"
-                  >
-                    <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 group-hover:scale-110 transition-transform">
-                      <UploadCloud className="w-7 h-7" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white mb-0.5">
-                        Click to Upload Reservation or Chat Screenshots
-                      </p>
-                      <p className="text-xs text-zinc-400">
-                        Supports multiple images (JPEG, PNG, WebP)
-                      </p>
-                    </div>
+                {/* Upload Drag/Click Zone */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-zinc-800 hover:border-rose-500/50 bg-zinc-900/40 hover:bg-zinc-900/60 rounded-2xl p-6 sm:p-8 text-center cursor-pointer transition-all group"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  <div className="w-12 h-12 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                    <UploadCloud className="w-6 h-6" />
                   </div>
-                ) : (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-semibold text-zinc-300">
-                        Uploaded Screenshots ({screenshots.length})
-                      </p>
+                  <h4 className="text-sm font-semibold text-white mb-1">
+                    Upload Booking Screenshot(s) or WhatsApp Chat
+                  </h4>
+                  <p className="text-[11px] text-zinc-500 max-w-sm mx-auto">
+                    Select 1 to 10 screenshots (Airbnb, MakeMyTrip, Booking.com, Instagram/WhatsApp chat receipt).
+                  </p>
+                  <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-rose-400/80 font-mono">
+                    <Sparkles className="w-3 h-3" />
+                    Autonomous Optical Document Parsing
+                  </div>
+                </div>
+
+                {/* Thumbnails Grid */}
+                {screenshots.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-zinc-400 font-mono">
+                      <span>Selected Screenshots ({screenshots.length}/10)</span>
                       <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="text-xs text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1"
+                        onClick={() => setScreenshots([])}
+                        className="text-rose-400 hover:text-rose-300 transition-colors"
                       >
-                        <Plus className="w-3.5 h-3.5" /> Add More Screenshots
+                        Clear all
                       </button>
                     </div>
 
-                    {/* Screenshot Thumbnails Grid */}
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-48 overflow-y-auto p-1 bg-zinc-900/40 rounded-xl border border-zinc-800/80">
                       {screenshots.map((src, index) => (
                         <div key={index} className="relative aspect-video sm:aspect-square bg-zinc-900 rounded-lg overflow-hidden group border border-zinc-800">
                           <img src={src} alt={`Screenshot ${index + 1}`} className="w-full h-full object-cover" />
                           <button
-                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleRemoveScreenshot(index);
                             }}
-                            className="absolute top-1 right-1 p-1 bg-black/80 hover:bg-rose-600 text-white rounded-md transition-colors"
+                            className="absolute top-1 right-1 p-1 bg-red-600/90 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -240,25 +237,25 @@ export default function StayProofUploadModal({ isOpen, onClose, onSuccess }: Sta
                   </div>
                 )}
 
-                {/* Live AI Scanning Step Indicators */}
+                {/* Live Scanning Step Indicators */}
                 {loading && (
                   <div className="p-4 bg-zinc-900/90 border border-zinc-800 rounded-2xl space-y-2.5 animate-fadeIn">
                     <div className="flex items-center gap-2 text-rose-400 font-bold text-xs">
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      Gemini Vision Optical Reservation Analysis in Progress...
+                      Optical Ledger Verification in Progress...
                     </div>
                     <div className="space-y-1.5 text-[11px] text-zinc-400">
                       <div className={`flex items-center gap-2 ${scanStep >= 1 ? 'text-emerald-400' : 'text-zinc-600'}`}>
-                        {scanStep >= 1 ? '✓' : '•'} 1. Reading optical image metadata & platform markers
+                        {scanStep >= 1 ? '✓' : '•'} 1. Reading optical image metadata &amp; platform markers
                       </div>
                       <div className={`flex items-center gap-2 ${scanStep >= 2 ? 'text-emerald-400' : 'text-zinc-600'}`}>
-                        {scanStep >= 2 ? '✓' : '•'} 2. Correlating Nothingness sanctuary timestamps & dates
+                        {scanStep >= 2 ? '✓' : '•'} 2. Correlating Nothingness sanctuary timestamps &amp; dates
                       </div>
                       <div className={`flex items-center gap-2 ${scanStep >= 3 ? 'text-emerald-400' : 'text-zinc-600'}`}>
-                        {scanStep >= 3 ? '✓' : '•'} 3. Resolving co-guest identities & Govt ID matching
+                        {scanStep >= 3 ? '✓' : '•'} 3. Resolving co-guest identities &amp; Govt ID matching
                       </div>
                       <div className={`flex items-center gap-2 ${scanStep >= 4 ? 'text-emerald-400' : 'text-zinc-600'}`}>
-                        {scanStep >= 4 ? '✓' : '•'} 4. Recording confirmed ledger & updating Kinkster privileges
+                        {scanStep >= 4 ? '✓' : '•'} 4. Recording confirmed ledger &amp; updating Kinkster privileges
                       </div>
                     </div>
                   </div>
@@ -280,12 +277,12 @@ export default function StayProofUploadModal({ isOpen, onClose, onSuccess }: Sta
                   {loading ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      Analyzing Proof with Gemini AI...
+                      Authenticating Reservation Proof...
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      Verify Previous Stay via AI
+                      Authenticate Previous Stay
                     </>
                   )}
                 </button>
@@ -306,56 +303,47 @@ export default function StayProofUploadModal({ isOpen, onClose, onSuccess }: Sta
                     </div>
 
                     <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800">
-                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-mono">Platform Source</span>
-                      <span className="font-bold text-rose-300 capitalize">{extractedResult.platform}</span>
+                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-mono">Platform</span>
+                      <span className="font-bold text-rose-300 uppercase font-mono">{extractedResult.platform}</span>
                     </div>
 
                     <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800">
                       <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-mono">Check-In Date</span>
-                      <span className="font-mono text-zinc-200">{extractedResult.check_in}</span>
+                      <span className="font-mono text-zinc-200">{extractedResult.check_in_date || 'Verified'}</span>
                     </div>
 
                     <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800">
                       <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-mono">Check-Out Date</span>
-                      <span className="font-mono text-zinc-200">{extractedResult.check_out}</span>
+                      <span className="font-mono text-zinc-200">{extractedResult.check_out_date || 'Verified'}</span>
                     </div>
                   </div>
 
-                  {/* Co-Guests Identification & Pre-storing Status */}
+                  {extractedResult.reservation_code && (
+                    <div className="p-2.5 bg-zinc-900/60 rounded-lg text-xs font-mono text-zinc-400 flex items-center justify-between">
+                      <span>Confirmation Ref:</span>
+                      <span className="text-emerald-400 font-bold">{extractedResult.reservation_code}</span>
+                    </div>
+                  )}
+
                   {extractedResult.co_guests && extractedResult.co_guests.length > 0 && (
-                    <div className="mt-3 p-3 bg-zinc-900/90 rounded-xl border border-zinc-800">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[11px] font-bold text-zinc-300 flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-purple-400" />
-                          Co-Guests Identified ({extractedResult.co_guests.length})
-                        </span>
-                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded">
-                          Discreet Linking Enabled
-                        </span>
-                      </div>
-                      <div className="space-y-1">
-                        {extractedResult.co_guests.map((cg, idx) => (
-                          <div key={idx} className="text-[11px] text-zinc-300 flex items-center justify-between">
-                            <span>• {cg.name}</span>
-                            <span className="text-[10px] text-zinc-500 font-mono">{cg.status}</span>
-                          </div>
+                    <div className="pt-2 text-xs text-zinc-400">
+                      <span className="text-zinc-500 font-mono block mb-1">
+                        🔒 Confidential Co-Guest Identities Shadow-Linked:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {extractedResult.co_guests.map((cg: any, i: number) => (
+                          <span key={i} className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-[11px] font-mono text-zinc-300">
+                            {cg.full_name || 'Guest'} {cg.document_number ? `(ID: ${cg.document_number.slice(-4)})` : ''}
+                          </span>
                         ))}
                       </div>
                     </div>
                   )}
-
-                  <p className="text-[11px] text-zinc-400 leading-relaxed font-mono">
-                    🔒 <span className="text-zinc-300">Confidentiality Guarantee:</span> All reservation details and co-guest records are strictly isolated. No alerts or notifications are sent to any co-guests.
-                  </p>
                 </div>
 
-                <button
-                  onClick={handleConfirmAndProceed}
-                  className="w-full bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-xl flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Continue Kinkster Profile Setup
-                </button>
+                <div className="text-center text-xs font-mono text-zinc-500 animate-pulse">
+                  Updating your Kinkster Status...
+                </div>
               </div>
             )}
           </div>

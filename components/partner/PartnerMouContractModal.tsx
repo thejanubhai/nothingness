@@ -100,7 +100,7 @@ export default function PartnerMouContractModal({
               1.1 <strong>Partner Revenue Share:</strong> The Partner shall receive strictly <strong>70% (Seventy Percent)</strong> of the gross booking revenue generated from their onboarded property.
             </p>
             <p>
-              1.2 <strong>Network Platform Share:</strong> nothingness. shall retain <strong>30% (Thirty Percent)</strong> of gross booking revenue to cover centralized marketing, autonomous WhatsApp keyless access technology, 24/7 AI &amp; human concierge routing, and dynamic RevPAR yield optimization.
+              1.2 <strong>Network Platform Share:</strong> nothingness. shall retain <strong>30% (Thirty Percent)</strong> of gross booking revenue to cover centralized marketing, autonomous WhatsApp keyless access technology, 24/7 dedicated concierge routing &amp; automated dispatch technology, and dynamic RevPAR yield optimization.
             </p>
             <p>
               1.3 <strong>Payout Schedules:</strong> Payouts shall be disbursed directly into the Partner&apos;s registered bank account according to their selected frequency preference (Monthly on the 1st, Quarterly, or Annual lump-sum).

@@ -67,7 +67,7 @@ export default function EditFlowPage({ params }: { params: Promise<{ id: string 
 
   const handleAiGenerate = async () => {
     setIsAiGenerating(true);
-    toast.loading('Refining response template with Gemini AI...');
+    toast.loading('Refining response template...');
     try {
       const res = await generateChatflowTemplate(formData.name, formData.trigger_event, formData.response_template);
       toast.dismiss();

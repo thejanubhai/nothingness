@@ -122,9 +122,9 @@ export default function AdminHousekeepingClient({
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="font-serif text-3xl md:text-4xl text-white">Housekeeping &amp; Cleanliness AI</h1>
+          <h1 className="font-serif text-3xl md:text-4xl text-white">Housekeeping &amp; Cleanliness Automation</h1>
           <p className="text-white/50 text-sm tracking-wide mt-1">
-            Automated cleaner WhatsApp dispatches and Gemini AI Vision cleanliness validation.
+            Automated cleaner WhatsApp dispatches and optical cleanliness validation.
           </p>
         </div>
 
@@ -258,7 +258,7 @@ export default function AdminHousekeepingClient({
                   </div>
 
                   <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-widest text-white/40">Gemini AI Vision Inspection</p>
+                    <p className="text-[10px] uppercase tracking-widest text-white/40">Optical Turnover Inspection</p>
                     {aiResult?.summary ? (
                       <p className="text-white/80 leading-relaxed">{aiResult.summary}</p>
                     ) : (

@@ -33,7 +33,7 @@ export default function CreateFlowPage() {
 
   const handleAiGenerate = async (presetInstruction?: string) => {
     setIsAiGenerating(true);
-    toast.loading('Generating template & keywords with Gemini AI...');
+    toast.loading('Generating template & keywords...');
     try {
       const res = await generateChatflowTemplate(formData.name, formData.trigger_event, presetInstruction || formData.response_template);
       toast.dismiss();
