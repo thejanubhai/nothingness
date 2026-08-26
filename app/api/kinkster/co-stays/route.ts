@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       .from('kinkster_co_stay_invites')
       .select(`
         *,
-        kinkster_profiles (
+        kinkster_profiles!host_kinkster_id (
           alias,
           avatar_url,
           bio

@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { ShieldCheck, Flame, UserPlus, UserCheck, Lock, Grid, Film, Sparkles, MessageSquare } from 'lucide-react';
+import { ShieldCheck, Flame, UserPlus, UserCheck, Lock, Grid, Film, Sparkles, MessageSquare, Star, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import AudioVibePlayer from '@/components/kinkster/AudioVibePlayer';
 import HealthBadgeModal, { HealthBadge } from '@/components/kinkster/HealthBadgeModal';
 import KinksterInboxDrawer from '@/components/kinkster/KinksterInboxDrawer';
 import DiscretionRatingModal from '@/components/kinkster/DiscretionRatingModal';
+import JointBookingModal from '@/components/kinkster/JointBookingModal';
 
 interface ProfileData {
   id: string;
@@ -36,6 +37,8 @@ export default function KinksterProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [discretionRating, setDiscretionRating] = useState({ avg_discretion: 5.0, total_ratings: 0 });
   const [spiceStatus, setSpiceStatus] = useState<'none' | 'pending' | 'mutual'>('none');
   const [loading, setLoading] = useState(true);
 
@@ -43,6 +46,7 @@ export default function KinksterProfilePage() {
   const [selectedHealthBadge, setSelectedHealthBadge] = useState<HealthBadge | null>(null);
   const [showChatDrawer, setShowChatDrawer] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showJointBookingModal, setShowJointBookingModal] = useState(false);
 
   const fetchProfileDetails = async () => {
     if (!alias) return;
@@ -62,8 +66,26 @@ export default function KinksterProfilePage() {
       if (postsRes.ok) {
         setPosts(postsData.posts || []);
       }
+
+      // 3. Fetch Follow State & Followers count
+      const followRes = await fetch(`/api/kinkster/follow?alias=${encodeURIComponent(alias)}`);
+      const followData = await followRes.json();
+      if (followRes.ok) {
+        setIsFollowing(followData.is_following ?? false);
+        setFollowersCount(followData.followers_count ?? 0);
+      }
+
+      // 4. Fetch Discretion Ratings
+      const ratingsRes = await fetch(`/api/kinkster/ratings?alias=${encodeURIComponent(alias)}`);
+      const ratingsData = await ratingsRes.json();
+      if (ratingsRes.ok) {
+        setDiscretionRating({
+          avg_discretion: ratingsData.avg_discretion ?? 5.0,
+          total_ratings: ratingsData.total_ratings ?? 0
+        });
+      }
     } catch (err) {
-      console.error('Error fetching kinkster profile:', err);
+      console.error('Error fetching kinkster profile details:', err);
     } finally {
       setLoading(false);
     }
@@ -109,6 +131,7 @@ export default function KinksterProfilePage() {
       if (!res.ok) throw new Error(data.error || 'Follow action failed');
 
       setIsFollowing(data.is_following);
+      setFollowersCount(prev => (data.is_following ? prev + 1 : Math.max(0, prev - 1)));
       toast.success(data.is_following ? `Following @${alias}` : `Unfollowed @${alias}`);
     } catch (err: any) {
       toast.error(err.message || 'Follow action failed.');
@@ -127,7 +150,7 @@ export default function KinksterProfilePage() {
     return (
       <div className="min-h-screen bg-black text-white pt-32 text-center">
         <h2 className="text-xl font-bold">Profile Not Found</h2>
-        <p className="text-xs text-zinc-500 mt-1">This `@${alias}` profile is either inactive or private.</p>
+        <p className="text-xs text-zinc-500 mt-1">This `@{alias}` profile is either inactive or private.</p>
       </div>
     );
   }
@@ -157,7 +180,13 @@ export default function KinksterProfilePage() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-zinc-400 mt-1">ID Vetted • 4.9 ★ Discretion Score</p>
+              <p className="text-xs text-zinc-400 mt-1 font-mono flex items-center gap-2">
+                <span>ID Vetted</span>
+                <span>•</span>
+                <span className="text-amber-400 font-bold">{discretionRating.avg_discretion} ★ Discretion</span>
+                <span>•</span>
+                <span>{followersCount} Followers</span>
+              </p>
 
               {/* Audio Vibe Clip */}
               {profile.audio_vibe_url && (
@@ -198,14 +227,22 @@ export default function KinksterProfilePage() {
             </div>
           </div>
 
-          {/* Action Buttons: Spice Up 🔥, Follow, & Rate Discretion */}
-          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          {/* Action Buttons: Spice Up 🔥, Follow, Rate Discretion, & Joint Stay */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+            <button
+              onClick={() => setShowJointBookingModal(true)}
+              className="px-3.5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-rose-300 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5"
+            >
+              <Building2 className="w-4 h-4 text-rose-400" />
+              Joint Stay
+            </button>
+
             <button
               onClick={() => setShowRatingModal(true)}
               className="px-3.5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-400 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5"
             >
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              Rate Discretion
+              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+              Rate
             </button>
 
             <button
@@ -283,6 +320,13 @@ export default function KinksterProfilePage() {
         onClose={() => setShowRatingModal(false)}
         targetAlias={alias}
         onRatingSubmitted={fetchProfileDetails}
+      />
+
+      {/* Joint Booking Modal */}
+      <JointBookingModal
+        isOpen={showJointBookingModal}
+        onClose={() => setShowJointBookingModal(false)}
+        targetAlias={alias}
       />
 
       {/* Chat Drawer */}

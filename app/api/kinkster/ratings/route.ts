@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { searchParams } = new URL(req.url);
     const targetAlias = searchParams.get('alias');
 
@@ -23,11 +25,17 @@ export async function GET(req: NextRequest) {
 
     const { data: ratings, error } = await supabase
       .from('kinkster_ratings')
-      .select('discretion_score, respect_score, communication_score')
+      .select('rater_id, discretion_score, respect_score, communication_score, feedback_text')
       .eq('target_id', profile.id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    let userRating: any = null;
+    if (user && ratings) {
+      const found = ratings.find(r => r.rater_id === user.id);
+      if (found) userRating = found;
     }
 
     if (!ratings || ratings.length === 0) {
@@ -35,7 +43,8 @@ export async function GET(req: NextRequest) {
         total_ratings: 0,
         avg_discretion: 5.0,
         avg_respect: 5.0,
-        avg_overall: 5.0
+        avg_overall: 5.0,
+        user_rating: userRating
       });
     }
 
@@ -51,7 +60,8 @@ export async function GET(req: NextRequest) {
       total_ratings: total,
       avg_discretion: parseFloat(avgDiscretion),
       avg_respect: parseFloat(avgRespect),
-      avg_overall: parseFloat(avgOverall)
+      avg_overall: parseFloat(avgOverall),
+      user_rating: userRating
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
@@ -81,6 +91,10 @@ export async function POST(req: NextRequest) {
 
     if (!targetProfile) {
       return NextResponse.json({ error: 'Target alias not found.' }, { status: 404 });
+    }
+
+    if (targetProfile.id === user.id) {
+      return NextResponse.json({ error: 'You cannot rate your own profile.' }, { status: 400 });
     }
 
     const { data: rating, error: insertError } = await supabase

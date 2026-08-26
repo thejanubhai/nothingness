@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const userKinkMap = new Map<string, number>();
     (userPrefs || []).forEach(p => userKinkMap.set(p.kink_id, p.intensity));
 
-    // 2. Fetch all other active vetted Kinksters
+    // 2. Fetch all other active vetted Kinksters including health_badges and trusted host status
     const { data: profiles, error: profileError } = await supabase
       .from('kinkster_profiles')
       .select(`
@@ -28,6 +28,9 @@ export async function GET(req: NextRequest) {
         bio,
         avatar_url,
         interests,
+        health_badges,
+        audio_vibe_url,
+        is_trusted_host,
         created_at,
         kinkster_preferences (
           kink_id,
@@ -67,6 +70,8 @@ export async function GET(req: NextRequest) {
       if (userKinkMap.size > 0 && otherPrefs.length > 0) {
         const rawScore = Math.round((totalOverlapPoints / maxPossiblePoints) * 35);
         matchScore = Math.min(99, 65 + rawScore);
+      } else if (otherPrefs.length > 0) {
+        matchScore = 78; // General baseline when user has default preferences
       }
 
       return {
@@ -76,7 +81,10 @@ export async function GET(req: NextRequest) {
         avatar_url: prof.avatar_url,
         interests: prof.interests || [],
         kink_tags: kinkTags,
-        match_score: matchScore
+        match_score: matchScore,
+        health_badges: prof.health_badges || [],
+        audio_vibe_url: prof.audio_vibe_url || null,
+        is_trusted_host: prof.is_trusted_host || false
       };
     });
 
