@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { syncCalendars } from '@/lib/calendar-sync';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const { space_id } = body;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const result = await syncCalendars(supabase, space_id);
 
     return NextResponse.json({
