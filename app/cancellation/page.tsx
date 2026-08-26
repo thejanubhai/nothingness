@@ -1,3 +1,13 @@
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Cancellation Policy | Nothingness',
+  description: 'Our reservation cancellation and refund policies.',
+  alternates: {
+    canonical: 'https://nothingness.asia/legal/cancellation',
+  },
+};
+
 export default function CancellationPolicyPage() {
   return (
     <main className="min-h-screen pt-32 pb-24 px-4 md:px-12 max-w-4xl mx-auto">

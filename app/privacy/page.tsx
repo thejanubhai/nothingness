@@ -1,3 +1,13 @@
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy | Nothingness',
+  description: 'Our privacy commitments and data protection policies.',
+  alternates: {
+    canonical: 'https://nothingness.asia/legal/privacy',
+  },
+};
+
 export default function PrivacyPolicyPage() {
   return (
     <main className="min-h-screen pt-32 pb-24 px-4 md:px-12 max-w-4xl mx-auto">

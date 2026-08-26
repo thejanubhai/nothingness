@@ -1,13 +1,29 @@
 import { Metadata } from 'next';
+import JsonLd, { generateBreadcrumbSchema } from '@/components/JsonLd';
 
 export const metadata: Metadata = {
-  title: 'Guest Rules & Liability | Nothingness',
-  description: 'Important rules and liability waiver for guests of Nothingness.',
+  title: 'Guest Rules & Liability Agreement | Nothingness',
+  description: 'Guest code of conduct, safety policies, equipment liability waivers, and property usage guidelines for Nothingness sanctuaries.',
+  alternates: {
+    canonical: 'https://nothingness.asia/legal/liability',
+  },
+  openGraph: {
+    title: 'Guest Rules & Liability | Nothingness',
+    description: 'Important rules and liability waiver for guests of Nothingness.',
+    url: 'https://nothingness.asia/legal/liability',
+    images: ['/images/IMG_9955.jpg'],
+  },
 };
 
 export default function LiabilityPage() {
+  const breadcrumbs = [
+    { name: 'Home', url: '/' },
+    { name: 'Guest Rules & Liability', url: '/legal/liability' }
+  ];
+
   return (
     <main className="min-h-screen pt-40 pb-24 px-5 md:px-8 max-w-4xl mx-auto">
+      <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="liability-breadcrumb-schema" />
       <div className="prose prose-invert prose-lg max-w-none">
         <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4">Legal</p>
         <h1 className="font-serif text-4xl md:text-5xl mb-8">Guest Rules & Liability</h1>

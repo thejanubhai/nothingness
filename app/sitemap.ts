@@ -1,9 +1,12 @@
 import { MetadataRoute } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { SEED_ARTICLES } from '@/lib/articles-data';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://amlxlguebzkszkwkzroe.supabase.co';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_j1sYCinQQ5qSdfXOA1coHA__YduyI9j';
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   // 1. Static Public Pages
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -114,7 +117,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 2. Dynamic Sanctuary Spaces
   let spaceRoutes: MetadataRoute.Sitemap = [];
   try {
-    const supabase = await createClient();
     const { data: spaces } = await supabase
       .from('spaces')
       .select('slug, updated_at')
@@ -135,7 +137,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 3. Dynamic Journal & Blog Articles
   let articleRoutes: MetadataRoute.Sitemap = [];
   try {
-    const supabase = await createClient();
     const { data: articles } = await supabase
       .from('articles')
       .select('slug, published_at, updated_at')
@@ -143,7 +144,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const sourceArticles = (articles && articles.length > 0) ? articles : SEED_ARTICLES;
 
-    articleRoutes = sourceArticles.map((article) => ({
+    articleRoutes = sourceArticles.map((article: any) => ({
       url: `${baseUrl}/journal/${article.slug}`,
       lastModified: article.updated_at ? new Date(article.updated_at) : new Date(article.published_at),
       changeFrequency: 'weekly' as const,

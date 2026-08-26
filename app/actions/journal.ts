@@ -205,37 +205,158 @@ export async function incrementArticleViews(slug: string) {
   }
 }
 
-export async function getTopicSuggestions() {
-  return [
-    {
-      topic: "Generative Engine Optimization (GEO) for High-End Lifestyle Resorts in Goa & Delhi",
-      intent: "High-ticket direct bookings via Perplexity & Google SGE",
-      difficulty: "Medium",
-      targetQueries: ["luxury private stay geo india", "ai search optimization hospitality", "delhi high ticket staycation seo"]
-    },
-    {
-      topic: "The Science of Acoustic Isolation in Metropolitan Boutique Hotels",
-      intent: "Architectural and luxury branding authority",
-      difficulty: "Low",
-      targetQueries: ["soundproof luxury suites south delhi", "acoustic privacy boutique stays", "stc 55 hotel walls india"]
-    },
-    {
-      topic: "Entity SEO Mastery: How Modern Search Engines Classify Boutique Accommodations",
-      intent: "Semantic authority and Knowledge Panel trigger",
-      difficulty: "High",
-      targetQueries: ["entity seo for hotels", "schema markup boutique hospitality", "knowledge graph brand optimization"]
-    },
-    {
-      topic: "Autonomous Keyless Hospitality: Delhi Police Compliance and Frictionless ID Verification",
-      intent: "Trust, safety, legal authority and brand discretion",
-      difficulty: "Low",
-      targetQueries: ["keyless check in hotel compliance india", "delhi police guest id verification", "private discreet sanctuary stay"]
-    },
-    {
-      topic: "Unit Economics of Niche Sanctuaries vs Residential Leasing in South Delhi & Gurgaon",
-      intent: "Franchise and real estate partner acquisition",
-      difficulty: "Medium",
-      targetQueries: ["airbnb franchise model delhi", "boutique stay roi gurgaon", "high yield hospitality real estate india"]
+export async function generateArticleWithAI(params: {
+  topic: string;
+  category?: string;
+  targetKeywords?: string[];
+  intent?: string;
+  customPrompt?: string;
+}) {
+  const { topic, category = 'AI & Search Strategy', targetKeywords = [], intent = '', customPrompt = '' } = params;
+
+  try {
+    let rawResult: any = null;
+
+    // Check if GEMINI_API_KEY is available
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const { GoogleGenAI } = await import('@google/genai');
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        
+        const systemPrompt = `You are a world-class architectural curator, senior hospitality growth strategist, and SEO/GEO expert writing for "Nothingness" (nothingness.asia) - India's Premier Alternate Lifestyle & Luxury Sanctuary Brand.
+        
+CRITICAL RULES YOU MUST NEVER BREAK:
+1. ZERO EM DASHES (— or – or --). Absolutely NO em dashes or en dashes anywhere. Use colons (:), commas (,), semicolons (;), parentheses (()), or separate short sentences instead.
+2. HUMAN CADENCE & NATURAL VOICE: Absolutely NO generic AI buzzwords or cliché transitions (do NOT use "In conclusion", "Delve into", "Tapestry", "Beacon", "Testament", "It is crucial to note", "Furthermore", "In summary"). Write with clear, authoritative, human precision.
+3. INDIA-TARGETED CONTEXT: Naturally reference Indian luxury metros (South Delhi, DLF Phase 5 Gurgaon, Indiranagar Bangalore, Assagao North Goa, South Mumbai), local regulatory realities (Delhi Police Form C digital vetting), and exact architectural/operational metrics (e.g. STC 55 acoustic ratings, 70/30 revenue share).
+4. MARKDOWN STRUCTURE: Output substantial body content with ## Section Headings, ### Subsections, bullet points, and > blockquotes.
+
+Respond with ONLY valid raw JSON with this exact structure:
+{
+  "title": "Compelling Title",
+  "slug": "url-friendly-slug",
+  "subtitle": "Sharp thesis hook",
+  "excerpt": "High-density 2-sentence summary (under 280 chars)",
+  "content": "Full markdown body with ## headings, * bullets, and > quotes without any em-dashes",
+  "category": "${category}",
+  "tags": ["Tag1", "Tag2", "Tag3"],
+  "reading_time_minutes": 6,
+  "meta_title": "SEO Title (under 60 chars)",
+  "meta_description": "Meta description (under 155 chars)",
+  "meta_keywords": ["keyword 1", "keyword 2"]
+}`;
+
+        const promptText = `Topic: ${topic}
+Category: ${category}
+Target Audience / Search Intent: ${intent || 'High-ticket Indian luxury staycation and search optimization'}
+Custom Direction: ${customPrompt || 'In-depth, practical, research-backed perspective'}`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: promptText,
+          config: {
+            systemInstruction: systemPrompt,
+            responseMimeType: 'application/json',
+          }
+        });
+
+        if (response.text) {
+          rawResult = JSON.parse(response.text);
+        }
+      } catch (geminiErr) {
+        console.warn('Gemini API call failed or timed out, falling back to built-in generator:', geminiErr);
+      }
     }
-  ];
+
+    // High quality deterministic fallback generator if no API key or API fails
+    if (!rawResult) {
+      const cleanSlug = topic
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+      const defaultTags = targetKeywords.length > 0 
+        ? targetKeywords 
+        : ['AI SEO', 'Generative Engine Optimization', 'Delhi NCR Stays', 'Hospitality Tech'];
+
+      rawResult = {
+        title: topic,
+        slug: cleanSlug,
+        subtitle: `Strategic analysis and operational frameworks for modern hospitality in Indian metros`,
+        excerpt: `A comprehensive analysis of ${topic.toLowerCase()}, detailing structural optimization, search discovery dynamics, and high-ticket customer acquisition across India.`,
+        content: `## The Modern Landscape of ${topic}
+
+In the evolving landscape of Indian luxury hospitality and experiential real estate, ${topic.toLowerCase()} has transitioned from an experimental concept into a foundational operational requirement. As search platforms move from simple keyword queries toward Generative Engine Optimization (GEO) and conversational retrieval, consumer discovery patterns across Delhi NCR, Bangalore, and Mumbai are fundamentally changing.
+
+Traditional search optimization focused on index volume. Today, autonomous algorithms evaluate semantic entity strength, verified customer sentiment, and specific technical parameters before presenting a destination as a verified answer in AI snapshots.
+
+## Key Strategic Pillars
+
+To achieve commanding visibility and sustainable direct reservations, properties must anchor their positioning around three critical pillars:
+
+* **Entity Clarity and Structured Schema**: Clear semantic definitions across HotelRoom, Organization, and Place schemas ensure search models understand physical amenities, location boundaries, and guest policies without ambiguity.
+* **Acoustic and Spatial Integrity**: Modern travelers in dense urban hubs like South Delhi and Gurgaon actively seek sanctuaries engineered with decoupled wall assemblies and heavy sound isolation ratings.
+* **Autonomous Guest Journeys**: Implementing encrypted digital lockboxes and government ID pre-screening satisfies state regulatory mandates while preserving total guest privacy.
+
+> Discretion and architectural uniqueness represent the ultimate luxury currency in modern Indian metros. Systems that protect guest anonymity while delivering seamless access consistently command higher occupancy and pricing power.
+
+## Practical Implementation Blueprint
+
+1. **Audit Technical Entities**: Ensure all metadata, canonical links, and OpenGraph tags accurately reflect your property's unique physical characteristics.
+2. **Target Conversational Intent**: Structure editorial content around natural questions that discerning travelers input into generative search engines.
+3. **Streamline Direct Operations**: Eliminate friction at the point of booking and arrival to build authentic brand loyalty and organic citations.
+
+By aligning physical space design with generative search discovery, boutique hospitality brands build an enduring competitive moat that outperforms traditional OTA-dependent distribution channels.`,
+        category: category,
+        tags: defaultTags,
+        reading_time_minutes: 6,
+        meta_title: `${topic} | Nothingness Journal`,
+        meta_description: `In-depth analysis of ${topic.toLowerCase()} for luxury hospitality and search optimization in India.`,
+        meta_keywords: defaultTags
+      };
+    }
+
+    // POST-PROCESSING STRICT SANITIZER: Purge all em-dashes and en-dashes
+    const sanitize = (str: string = '') => {
+      return str
+        .replace(/[\u2014\u2015]/g, ': ')
+        .replace(/[\u2013]/g, '-')
+        .replace(/--/g, '-');
+    };
+
+    const sanitizedResult: Partial<Article> = {
+      title: sanitize(rawResult.title),
+      slug: (rawResult.slug || cleanSlug(rawResult.title)).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+      subtitle: sanitize(rawResult.subtitle),
+      excerpt: sanitize(rawResult.excerpt),
+      content: sanitize(rawResult.content),
+      category: rawResult.category || category,
+      tags: rawResult.tags || ['AI SEO', 'Hospitality'],
+      author_name: 'Kabir Varma',
+      author_role: 'Chief Strategy Architect',
+      author_avatar: '/images/logo.png',
+      cover_image: '/images/The Void (1).png',
+      status: 'published',
+      featured: false,
+      reading_time_minutes: rawResult.reading_time_minutes || 6,
+      published_at: new Date().toISOString(),
+      meta_title: sanitize(rawResult.meta_title || rawResult.title),
+      meta_description: sanitize(rawResult.meta_description || rawResult.excerpt),
+      meta_keywords: rawResult.meta_keywords || rawResult.tags || [],
+    };
+
+    return { success: true, article: sanitizedResult };
+  } catch (err: any) {
+    console.error('generateArticleWithAI error:', err);
+    return { success: false, error: err.message || 'Failed to generate article' };
+  }
 }
+
+function cleanSlug(title: string) {
+  return (title || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+

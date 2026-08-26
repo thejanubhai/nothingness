@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Article } from '@/lib/articles-data';
-import { createArticle, updateArticle } from '@/app/actions/journal';
+import { createArticle, updateArticle, generateArticleWithAI } from '@/app/actions/journal';
 import { 
   ArrowLeft, Save, Sparkles, Image as ImageIcon, Tag, 
-  Clock, Eye, FileText, CheckCircle2, AlertCircle 
+  Clock, Eye, FileText, CheckCircle2, AlertCircle, Loader2,
+  Wand2, ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,9 +25,23 @@ const CATEGORIES = [
   'Real Estate & Growth',
 ];
 
+const PRESET_TOPICS = [
+  "Generative Engine Optimization (GEO) for Indian Luxury Hospitality",
+  "The Architecture of Acoustic Isolation: Decoupled Walls & 55dB STC Ratings",
+  "Autonomous Keyless Hospitality & Delhi Police Digital Compliance",
+  "The Unit Economics of Niche Sanctuaries: 3x Outperformance vs Long-Term Rent",
+  "Entity SEO Mastery: How AI Knowledge Graphs Classify Boutique Accommodations",
+  "Psychology of Monolithic Brutalism in Modern Indian Suites",
+  "Local Search Dominance for Delhi NCR & Gurgaon Staycations",
+  "Discreet Luxury Travel: Managing Privacy and Frictionless Access"
+];
+
 export default function ArticleEditorForm({ initialData = {}, isNew = false }: ArticleEditorFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [aiTopicInput, setAiTopicInput] = useState(initialData.title || '');
+  const [customInstructions, setCustomInstructions] = useState('');
   const [activeTab, setActiveTab] = useState<'content' | 'seo' | 'preview'>('content');
 
   // Form State
@@ -128,6 +143,48 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
     }
   };
 
+  const handleAIGenerate = async (topicToUse?: string) => {
+    const topic = topicToUse || aiTopicInput || title;
+    if (!topic) {
+      toast.error('Please enter or select a topic to generate');
+      return;
+    }
+
+    setGenerating(true);
+    const toastId = toast.loading('Generating Human-Toned Article (Zero Em Dashes, GEO Optimized)...');
+
+    try {
+      const res = await generateArticleWithAI({
+        topic,
+        category,
+        customPrompt: customInstructions,
+      });
+
+      if (res.success && res.article) {
+        const art = res.article;
+        setTitle(art.title || topic);
+        setSlug(art.slug || '');
+        setSubtitle(art.subtitle || '');
+        setExcerpt(art.excerpt || '');
+        setContent(art.content || '');
+        if (art.category) setCategory(art.category as any);
+        if (art.tags) setTagsInput(art.tags.join(', '));
+        if (art.reading_time_minutes) setReadingTime(art.reading_time_minutes);
+        if (art.meta_title) setMetaTitle(art.meta_title);
+        if (art.meta_description) setMetaDescription(art.meta_description);
+        if (art.meta_keywords) setMetaKeywordsInput(art.meta_keywords.join(', '));
+
+        toast.success('Article Generated Successfully! All fields auto-populated.', { id: toastId });
+      } else {
+        toast.error(res.error || 'Failed to generate article', { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Unexpected error during generation', { id: toastId });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-20">
       {/* Top Action Header */}
@@ -160,12 +217,89 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || generating}
             className="px-6 py-2.5 rounded-xl bg-accent-gold hover:bg-white text-black font-bold font-mono text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{loading ? 'Saving...' : isNew ? 'Publish Article' : 'Save Changes'}</span>
           </button>
+        </div>
+      </div>
+
+      {/* ⚡ AI AUTO-GENERATOR BAR */}
+      <div className="p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-zinc-900/60 to-black border border-accent-gold/30 shadow-2xl relative overflow-hidden space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-accent-gold/20 border border-accent-gold/40 flex items-center justify-center text-accent-gold">
+              <Wand2 className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-serif text-base text-white font-semibold flex items-center gap-2">
+                <span>AI Article Auto-Generator Engine</span>
+                <span className="text-[10px] font-mono uppercase tracking-wider bg-accent-gold/20 text-accent-gold px-2 py-0.5 rounded-full border border-accent-gold/30">
+                  Strict Rule Guardrails Active
+                </span>
+              </h3>
+              <p className="text-[11px] text-white/50 font-sans">
+                Generates complete human-toned articles with zero em dashes, authentic Indian metro context, H2/H3 sections, excerpt, and full SEO metadata.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Input & Generator Actions */}
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <input
+              type="text"
+              value={aiTopicInput}
+              onChange={(e) => setAiTopicInput(e.target.value)}
+              placeholder="Enter any topic (e.g. Acoustic Isolation in South Delhi Boutique Sanctuaries)"
+              className="w-full bg-zinc-900/90 border border-zinc-700 rounded-xl px-4 py-3 text-xs text-white placeholder:text-zinc-500 font-serif focus:outline-none focus:border-accent-gold"
+            />
+
+            <button
+              type="button"
+              onClick={() => handleAIGenerate()}
+              disabled={generating}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-accent-gold hover:bg-white text-black font-bold font-mono text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shrink-0 shadow-xl disabled:opacity-50"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Generating Draft...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Auto-Generate Full Draft</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Quick preset suggestions */}
+          <div className="space-y-1.5 pt-1">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-white/40">
+              Or pick a trending high-intent India topic:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {PRESET_TOPICS.slice(0, 4).map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setAiTopicInput(preset);
+                    handleAIGenerate(preset);
+                  }}
+                  className="px-3 py-1 rounded-lg bg-white/5 hover:bg-accent-gold/20 border border-white/10 hover:border-accent-gold/40 text-[11px] text-white/70 hover:text-white transition-all text-left truncate max-w-xs"
+                  title={preset}
+                >
+                  ⚡ {preset}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -295,7 +429,7 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
               </label>
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => setCategory(e.target.value as any)}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-accent-gold/50 cursor-pointer font-mono"
               >
                 {CATEGORIES.map((cat) => (
@@ -313,7 +447,7 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
               </label>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={(e) => setStatus(e.target.value as any)}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-accent-gold/50 cursor-pointer font-mono"
               >
                 <option value="published" className="bg-black text-white">Published</option>

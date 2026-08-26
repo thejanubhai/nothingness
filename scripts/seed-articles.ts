@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { SEED_ARTICLES } from './lib/articles-data';
+import { SEED_ARTICLES } from '../lib/articles-data';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://amlxlguebzkszkwkzroe.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_j1sYCinQQ5qSdfXOA1coHA__YduyI9j';

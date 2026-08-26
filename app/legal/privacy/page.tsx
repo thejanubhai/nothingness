@@ -1,13 +1,29 @@
 import { Metadata } from 'next';
+import JsonLd, { generateBreadcrumbSchema } from '@/components/JsonLd';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | Nothingness',
-  description: 'How we handle and protect your personal information at Nothingness.',
+  title: 'Privacy Policy & Data Protection | Nothingness',
+  description: 'How Nothingness handles, encrypts, and protects guest data and identification records under Indian DPDP Act standards.',
+  alternates: {
+    canonical: 'https://nothingness.asia/legal/privacy',
+  },
+  openGraph: {
+    title: 'Privacy Policy | Nothingness',
+    description: 'Our uncompromising commitment to personal data security and discretion.',
+    url: 'https://nothingness.asia/legal/privacy',
+    images: ['/images/IMG_9955.jpg'],
+  },
 };
 
 export default function PrivacyPage() {
+  const breadcrumbs = [
+    { name: 'Home', url: '/' },
+    { name: 'Privacy Policy', url: '/legal/privacy' }
+  ];
+
   return (
     <main className="min-h-screen pt-40 pb-24 px-5 md:px-8 max-w-4xl mx-auto">
+      <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="privacy-breadcrumb-schema" />
       <div className="prose prose-invert prose-lg max-w-none">
         <p className="text-[11px] uppercase tracking-[0.3em] text-accent-gold/70 mb-4">Legal</p>
         <h1 className="font-serif text-4xl md:text-5xl mb-8">Privacy Policy</h1>

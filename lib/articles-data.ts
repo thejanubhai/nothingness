@@ -12,6 +12,7 @@ export interface Article {
   author_role: string;
   author_avatar: string;
   published_at: string;
+  updated_at?: string;
   status: 'published' | 'draft' | 'archived';
   featured: boolean;
   reading_time_minutes: number;
