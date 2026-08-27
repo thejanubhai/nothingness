@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { loginWithFirebasePhone, onPasskeyLoginSuccess } from '@/app/actions/auth';
+import { motion } from 'framer-motion';
+import { loginWithFirebasePhone, loginWithServerOtp, sendServerOtp, onPasskeyLoginSuccess } from '@/app/actions/auth';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { auth } from '@/lib/firebase/client';
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import { normalizeIdentifier } from '@/lib/auth-utils';
-import { KeyRound, Smartphone, ShieldCheck, Sparkles, Building2, Flame, ArrowRight } from 'lucide-react';
+import { KeyRound, Smartphone, ShieldCheck, Sparkles, Building2, Flame, ArrowRight, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -24,6 +24,8 @@ export default function LoginPage() {
   const [otpToken, setOtpToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [infoMsg, setInfoMsg] = useState('');
+  const [authMode, setAuthMode] = useState<'firebase' | 'server'>('firebase');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   useEffect(() => {
@@ -46,42 +48,36 @@ export default function LoginPage() {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         size: 'invisible',
         callback: () => {
-          // reCAPTCHA solved - will proceed with submit
+          // reCAPTCHA solved
         },
       });
     }
     return window.recaptchaVerifier;
   };
 
-  const base64URLStringToBuffer = (base64URLString: string) => {
-    const padding = '='.repeat((4 - (base64URLString.length % 4)) % 4);
-    const base64 = (base64URLString + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  };
-
   const handleSendOtp = async () => {
     if (!identifier) return;
     setLoading(true);
     setErrorMsg('');
+    setInfoMsg('');
 
+    const formattedPhone = normalizeIdentifier(identifier);
+
+    // 1. First attempt: Firebase Phone Auth client
+    let firebaseSucceeded = false;
     try {
-      const formattedPhone = normalizeIdentifier(identifier);
       const appVerifier = getRecaptchaVerifier();
-      if (!appVerifier) {
-        throw new Error('reCAPTCHA verifier initialization failed.');
+      if (appVerifier) {
+        const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+        setConfirmationResult(confirmation);
+        setAuthMode('firebase');
+        firebaseSucceeded = true;
+        setStep('verify-phone');
+        toast.success(`OTP sent to ${formattedPhone}`);
       }
-
-      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
-      setConfirmationResult(confirmation);
-      setStep('verify-phone');
-      toast.success(`OTP sent successfully to ${formattedPhone}`);
     } catch (err: any) {
-      console.error('Firebase signInWithPhoneNumber error:', err);
+      console.warn('[Auth] Firebase client OTP failed or blocked by domain check:', err?.message || err);
+      // Clean up recaptcha verifier
       if (window.recaptchaVerifier) {
         try {
           window.recaptchaVerifier.clear();
@@ -90,39 +86,71 @@ export default function LoginPage() {
           // ignore
         }
       }
-      setErrorMsg(err.message || 'Failed to send OTP. Please check your phone number.');
-    } finally {
-      setLoading(false);
     }
+
+    // 2. Fallback: Direct Server-Side OTP Bridge
+    if (!firebaseSucceeded) {
+      try {
+        const result = await sendServerOtp(formattedPhone);
+        if (result.success) {
+          setAuthMode('server');
+          setConfirmationResult(null);
+          setStep('verify-phone');
+          setInfoMsg('Code dispatched via secure server bridge (WhatsApp / SMS).');
+          toast.success(`Verification code sent to ${formattedPhone}`);
+        } else {
+          setErrorMsg(result.error || 'Failed to send OTP code. Please check your phone number.');
+        }
+      } catch (fallbackErr: any) {
+        console.error('[Auth] Server OTP fallback error:', fallbackErr);
+        setErrorMsg(fallbackErr.message || 'Unable to connect to verification server. Please try again.');
+      }
+    }
+
+    setLoading(false);
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpToken || !confirmationResult) return;
+    if (!otpToken || otpToken.length < 6) return;
     setLoading(true);
     setErrorMsg('');
 
+    const formattedPhone = normalizeIdentifier(identifier);
+
     try {
-      // 1. Verify OTP with Firebase
-      const userCredential = await confirmationResult.confirm(otpToken);
-      // 2. Get Firebase ID Token (JWT)
-      const idToken = await userCredential.user.getIdToken();
+      // If Firebase confirmation is active, try Firebase ID token bridge first
+      if (authMode === 'firebase' && confirmationResult) {
+        try {
+          const userCredential = await confirmationResult.confirm(otpToken);
+          const idToken = await userCredential.user.getIdToken();
+          const result = await loginWithFirebasePhone(idToken);
 
-      // 3. Pass Firebase ID Token to Server Action bridge to establish Supabase session
-      const result = await loginWithFirebasePhone(idToken);
-
-      if (result?.error) {
-        setErrorMsg(result.error);
-        setLoading(false);
-        return;
+          if (result.success) {
+            toast.success('Successfully authenticated!');
+            router.push(result.redirectUrl || '/dashboard');
+            router.refresh();
+            return;
+          }
+        } catch (firebaseVerifyErr: any) {
+          console.warn('[Auth] Firebase verification rejected token, trying server OTP fallback:', firebaseVerifyErr?.message);
+        }
       }
 
-      toast.success('Successfully authenticated!');
-      router.push(result.redirectUrl || '/dashboard');
-      router.refresh();
+      // Verify with Server OTP Bridge
+      const serverResult = await loginWithServerOtp(formattedPhone, otpToken);
+
+      if (serverResult.success) {
+        toast.success('Successfully authenticated!');
+        router.push(serverResult.redirectUrl || '/dashboard');
+        router.refresh();
+      } else {
+        setErrorMsg(serverResult.error || 'Invalid or expired verification code. Please try again.');
+        setLoading(false);
+      }
     } catch (err: any) {
-      console.error('Firebase verifyOtp error:', err);
-      setErrorMsg(err.message || 'Invalid verification code. Please try again.');
+      console.error('[Auth] Verification exception:', err);
+      setErrorMsg(err.message || 'Verification failed. Please try again.');
       setLoading(false);
     }
   };
@@ -130,44 +158,63 @@ export default function LoginPage() {
   const handlePasskeyLogin = async () => {
     setLoading(true);
     setErrorMsg('');
+    setInfoMsg('');
+
     try {
-      const supabase = createClient();
-      const { data, error: startError } = await supabase.auth.passkey.startAuthentication();
-
-      if (startError) throw startError;
-
-      const options = data?.options as any;
-      const publicKey = {
-        ...options,
-        challenge: base64URLStringToBuffer(options.challenge),
-      };
-
-      if (publicKey.allowCredentials) {
-        publicKey.allowCredentials = publicKey.allowCredentials.map((cred: any) => ({
-          ...cred,
-          id: base64URLStringToBuffer(cred.id),
-        }));
+      if (
+        typeof window === 'undefined' ||
+        !window.PublicKeyCredential ||
+        !navigator.credentials
+      ) {
+        setErrorMsg('Biometric Passkeys are not supported on this browser. Please sign in with Mobile OTP.');
+        setLoading(false);
+        return;
       }
 
-      const credential = await navigator.credentials.get({
-        publicKey: publicKey as any,
-      });
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPasskey();
 
-      if (!credential) throw new Error('Passkey selection cancelled');
+      if (error) {
+        const msg = error.message || '';
+        if (
+          msg.includes('not allowed') ||
+          msg.includes('denied permission') ||
+          msg.includes('NotAllowedError') ||
+          msg.includes('no credentials')
+        ) {
+          setErrorMsg(
+            'No Passkey found on this device. Please sign in with Mobile OTP first, then set up your FaceID / Passkey in Account Settings.'
+          );
+        } else if (msg.includes('AbortError') || msg.includes('cancel')) {
+          setInfoMsg('Biometric prompt was dismissed.');
+        } else {
+          setErrorMsg(msg || 'Passkey authentication was not completed. Please sign in with Mobile OTP.');
+        }
+        setLoading(false);
+        return;
+      }
 
-      const { error: verifyError } = await supabase.auth.passkey.verifyAuthentication({
-        challengeId: data?.challenge_id as string,
-        credential: credential as any,
-      });
-
-      if (verifyError) throw verifyError;
-
-      toast.success('Successfully logged in with Passkey!');
-      // Route user to correct dashboard via server action
-      await onPasskeyLoginSuccess();
+      if (data?.user) {
+        toast.success('Successfully authenticated with Passkey!');
+        await onPasskeyLoginSuccess();
+      } else {
+        router.push('/dashboard');
+        router.refresh();
+      }
     } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Passkey authentication cancelled or failed.');
+      console.error('[Auth] Passkey error:', err);
+      const msg = err.message || '';
+      if (
+        msg.includes('not allowed') ||
+        msg.includes('denied permission') ||
+        msg.includes('NotAllowedError')
+      ) {
+        setErrorMsg(
+          'No Passkey found on this device. Please sign in with Mobile OTP first, then set up your FaceID / Passkey in Account Settings.'
+        );
+      } else {
+        setErrorMsg('Passkey authentication could not be completed. Please use Mobile OTP.');
+      }
     } finally {
       setLoading(false);
     }
@@ -217,8 +264,14 @@ export default function LoginPage() {
         </div>
 
         {errorMsg && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3.5 rounded-xl mb-5 text-left">
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3.5 rounded-xl mb-5 text-left leading-relaxed">
             {errorMsg}
+          </div>
+        )}
+
+        {infoMsg && (
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs p-3.5 rounded-xl mb-5 text-left leading-relaxed">
+            {infoMsg}
           </div>
         )}
 
@@ -235,6 +288,12 @@ export default function LoginPage() {
                   placeholder="+91 98765 43210"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && identifier && !loading) {
+                      e.preventDefault();
+                      handleSendOtp();
+                    }
+                  }}
                   className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-4 sm:px-5 py-3.5 sm:py-4 text-base md:text-sm text-white focus:outline-none focus:border-accent-gold/60 transition-colors font-mono tracking-wider"
                   required
                 />
@@ -247,7 +306,16 @@ export default function LoginPage() {
               disabled={!identifier || loading}
               className="w-full bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 disabled:opacity-50 mt-2 shadow-xl flex items-center justify-center gap-2 cursor-pointer"
             >
-              {loading ? 'Sending Code...' : <><span>Continue with OTP</span> <ArrowRight className="w-4 h-4" /></>}
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Connecting...</span>
+                </>
+              ) : (
+                <>
+                  <span>Continue with OTP</span> <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
 
             <div className="relative my-6">
@@ -278,7 +346,11 @@ export default function LoginPage() {
               <span className="text-xs text-zinc-300 font-mono">Sent to {identifier}</span>
               <button
                 type="button"
-                onClick={() => setStep('identifier')}
+                onClick={() => {
+                  setStep('identifier');
+                  setErrorMsg('');
+                  setInfoMsg('');
+                }}
                 className="text-xs text-accent-gold hover:underline font-mono cursor-pointer"
               >
                 Change
@@ -293,7 +365,7 @@ export default function LoginPage() {
                 type="text"
                 placeholder="123456"
                 value={otpToken}
-                onChange={(e) => setOtpToken(e.target.value)}
+                onChange={(e) => setOtpToken(e.target.value.replace(/[^0-9]/g, ''))}
                 className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-4 py-3.5 sm:py-4 text-white focus:outline-none focus:border-accent-gold/60 text-center tracking-[0.5em] text-xl font-mono transition-colors"
                 required
                 maxLength={6}
@@ -304,9 +376,19 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || otpToken.length < 6}
-              className="w-full bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 mt-4 disabled:opacity-50 shadow-xl cursor-pointer"
+              className="w-full bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 mt-4 disabled:opacity-50 shadow-xl flex items-center justify-center gap-2 cursor-pointer"
             >
-              {loading ? 'Verifying...' : 'Verify & Enter Portal'}
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Verify & Enter Portal</span>
+                </>
+              )}
             </button>
 
             <button

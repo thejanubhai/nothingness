@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Tooltip from "./Tooltip";
+import { MapPin, Mail, Phone, ShieldCheck } from "lucide-react";
 
 export default function Footer() {
   const pathname = usePathname();
@@ -15,11 +16,11 @@ export default function Footer() {
   }
 
   return (
-    <footer className="w-full bg-black/80 backdrop-blur-2xl border-t border-white/5 mt-auto">
+    <footer className="w-full bg-black/90 backdrop-blur-2xl border-t border-white/5 mt-auto">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 md:px-8">
         {/* Main Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10 md:gap-12 py-12 md:py-16">
-          {/* Brand */}
+          {/* Brand Column */}
           <div className="col-span-2 sm:col-span-2 md:col-span-1 space-y-4">
             <Link href="/" className="inline-block transition-transform hover:scale-105 duration-300">
               <Image 
@@ -72,9 +73,9 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Legal */}
+          {/* Legal & Policies (Payment Gateway Required Links) */}
           <div>
-            <h4 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.25em] text-white/40 mb-4 sm:mb-6 font-mono">Legal &amp; Safety</h4>
+            <h4 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.25em] text-white/40 mb-4 sm:mb-6 font-mono">Legal &amp; Policies</h4>
             <ul className="flex flex-col gap-1.5 sm:gap-2">
               <li>
                 <Link href="/legal/terms" className={linkClass}>
@@ -89,45 +90,39 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/cancel" className={linkClass}>
-                  Cancellation Policy
+                <Link href="/legal/cancellation" className={linkClass}>
+                  Cancellation &amp; Refund Policy
+                  <span className={underlineClass} />
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/shipping" className={linkClass}>
+                  Shipping &amp; Delivery Policy
                   <span className={underlineClass} />
                 </Link>
               </li>
               <li>
                 <Link href="/safety" className={linkClass}>
-                  Safety &amp; Protocols
-                  <span className={underlineClass} />
-                </Link>
-              </li>
-              <li>
-                <Link href="/accessibility" className={linkClass}>
-                  Accessibility
+                  Guest Rules &amp; Safety
                   <span className={underlineClass} />
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Partnership */}
+          {/* Contact & Support */}
           <div>
-            <h4 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.25em] text-white/40 mb-4 sm:mb-6 font-mono">Partnership</h4>
+            <h4 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.25em] text-white/40 mb-4 sm:mb-6 font-mono">Contact &amp; Support</h4>
             <ul className="flex flex-col gap-1.5 sm:gap-2">
-              <li>
-                <Link href="/franchise" className={linkClass}>
-                  nothingness. Partner
-                  <span className={underlineClass} />
-                </Link>
-              </li>
-              <li>
-                <Link href="/media" className={linkClass}>
-                  Press &amp; Media Kit
-                  <span className={underlineClass} />
-                </Link>
-              </li>
               <li>
                 <Link href="/contact" className={linkClass}>
                   Contact Concierge
+                  <span className={underlineClass} />
+                </Link>
+              </li>
+              <li>
+                <Link href="/franchise" className={linkClass}>
+                  Host Partnership
                   <span className={underlineClass} />
                 </Link>
               </li>
@@ -137,14 +132,36 @@ export default function Footer() {
                   <span className={underlineClass} />
                 </Link>
               </li>
+              <li className="pt-2 text-[11px] text-white/40 font-mono space-y-1">
+                <p className="flex items-center gap-1.5 text-zinc-300">
+                  <Mail className="w-3 h-3 text-accent-gold" />
+                  <a href="mailto:concierge@nothingness.asia" className="hover:text-accent-gold transition-colors">concierge@nothingness.asia</a>
+                </p>
+                <p className="flex items-center gap-1.5 text-zinc-300">
+                  <Phone className="w-3 h-3 text-accent-gold" />
+                  <a href="tel:+918527976791" className="hover:text-accent-gold transition-colors">+91 85279 76791</a>
+                </p>
+              </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Bar with Safe Area Support */}
-        <div className="border-t border-white/5 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-col sm:flex-row justify-between items-center gap-3">
+        {/* Operating Address Banner */}
+        <div className="border-t border-white/5 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-[11px] text-white/40 font-mono">
+          <p className="flex items-center gap-1.5 text-zinc-400">
+            <MapPin className="w-3.5 h-3.5 text-accent-gold shrink-0" />
+            <span><strong>Operating Address:</strong> B-80, Ground Floor, Street 8, Ghaffar Manzil, Jamia Nagar, Okhla, New Delhi - 110025, Delhi, India</span>
+          </p>
+          <div className="flex items-center gap-2 text-green-400/90 text-[10px]">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>256-Bit SSL Secured • RBI Payment Compliant</span>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-white/5 pt-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="text-white/30 text-[11px] tracking-wide text-center sm:text-left">
-            © {new Date().getFullYear()} Nothingness Inc. All rights reserved.
+            © {new Date().getFullYear()} Nothingness. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Tooltip content="Strictly for adults above 18">
@@ -152,7 +169,7 @@ export default function Footer() {
             </Tooltip>
             <span className="w-1 h-1 rounded-full bg-white/15" />
             <Tooltip content="Identity verification required before check-in">
-              <span className="text-white/30 text-[10px] sm:text-[11px] tracking-[0.15em] uppercase font-mono">Govt ID &amp; Police Compliant</span>
+              <span className="text-white/30 text-[10px] sm:text-[11px] tracking-[0.15em] uppercase font-mono">Delhi Police Compliant</span>
             </Tooltip>
           </div>
         </div>

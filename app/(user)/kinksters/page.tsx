@@ -325,6 +325,7 @@ export default function KinkstersPage() {
         onSuccess={() => {
           setShowIdModal(false);
           setIsIdVerified(true);
+          fetchProfileAndPosts();
           setShowActivationModal(true);
         }}
       />
