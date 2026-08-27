@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getPlatformActionFees, createPayUPaymentRequest } from '@/lib/payu';
 
 export async function POST(req: NextRequest) {
   try {
@@ -115,10 +116,67 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 4. Dynamic Action Pricing Check for Kinkster Activation
+    const { fee_kinkster_activation } = await getPlatformActionFees();
+
+    if (fee_kinkster_activation > 0) {
+      // Check if user has already paid
+      const { data: existingFeePaid } = await adminSupabase
+        .from('action_fee_orders')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('action_type', 'kinkster_activation')
+        .eq('payment_status', 'paid')
+        .maybeSingle();
+
+      if (!existingFeePaid) {
+        const uniqueSuffix = Math.random().toString(36).substring(2, 7);
+        const orderId = `kinkster_${user.id.slice(0, 6)}_${Date.now()}_${uniqueSuffix}`;
+
+        // Save pending order
+        await adminSupabase.from('action_fee_orders').insert({
+          user_id: user.id,
+          action_type: 'kinkster_activation',
+          amount: fee_kinkster_activation,
+          payment_order_id: orderId,
+          payment_status: 'pending',
+          metadata: {
+            alias: formattedAlias,
+            bio: bio || '',
+            avatar_url: avatar_url || '',
+            kinks: kinks || [],
+            onboarding_answers: onboarding_answers || {},
+          },
+        });
+
+        const { paymentUrl, params } = createPayUPaymentRequest({
+          txnid: orderId,
+          amount: fee_kinkster_activation,
+          productinfo: 'Kinkster Mode Lifetime Membership Fee',
+          firstname: user.user_metadata?.full_name || `@${formattedAlias}`,
+          email: user.email || 'concierge@nothingness.asia',
+          phone: user.phone || '9999999999',
+          udf1: user.id,
+          udf2: 'kinkster_activation_fee',
+          udf3: orderId,
+          udf4: formattedAlias,
+        });
+
+        return NextResponse.json({
+          success: true,
+          requiresPayment: true,
+          paymentUrl,
+          params,
+          orderId,
+          fee: fee_kinkster_activation,
+        });
+      }
+    }
+
     // Extract tags from kinks array for quick display
     const interestTags = (kinks || []).map((k: any) => k.name || k.id);
 
-    // 4. Upsert kinkster_profile
+    // 5. Upsert kinkster_profile
     const { data: profile, error: upsertError } = await adminSupabase
       .from('kinkster_profiles')
       .upsert({
@@ -141,7 +199,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: upsertError.message }, { status: 500 });
     }
 
-    // 5. Save kink preferences with 1-5 star intensities into kinkster_preferences
+    // 6. Save kink preferences with 1-5 star intensities into kinkster_preferences
     if (kinks && Array.isArray(kinks)) {
       for (const item of kinks) {
         if (item.id && item.intensity) {
@@ -156,7 +214,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, profile });
+    return NextResponse.json({ success: true, requiresPayment: false, profile });
   } catch (err: any) {
     console.error('Onboarding exception:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });

@@ -1,23 +1,6 @@
 import { NextResponse } from 'next/server';
-import { Cashfree, CFEnvironment } from 'cashfree-pg';
 import { createClient } from '@/lib/supabase/server';
-
-const env = process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' 
-  ? CFEnvironment.PRODUCTION 
-  : CFEnvironment.SANDBOX;
-
-const appId = process.env.NEXT_PUBLIC_CASHFREE_APP_ID;
-const secretKey = process.env.CASHFREE_SECRET_KEY;
-
-if (!appId || !secretKey) {
-  console.warn("Cashfree API keys are missing. Payments will fail.");
-}
-
-const cashfree = new Cashfree(
-  env, 
-  appId || '', 
-  secretKey || ''
-);
+import { createPayUPaymentRequest } from '@/lib/payu';
 
 export async function POST(req: Request) {
   try {
@@ -125,6 +108,8 @@ export async function POST(req: Request) {
         guest_phone: customerPhone,
         guest_email: user.email || null,
         status: 'pending',
+        payment_status: 'pending',
+        payment_method: 'PayU',
         payment_order_id: orderId
       })
       .select()
@@ -135,23 +120,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to create booking record' }, { status: 500 });
     }
 
-    // Now create Cashfree Order for primary guest
-    const request = {
-      order_amount: primaryPayableAmount,
-      order_currency: "INR",
-      order_id: orderId,
-      customer_details: {
-        customer_id: user.id,
-        customer_phone: customerPhone,
-        customer_email: user.email || undefined,
-        customer_name: primaryName
-      },
-      order_meta: {
-        return_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia'}/booking/${booking.id}/verify`
-      }
-    };
-    const response = await cashfree.PGCreateOrder(request);
-    const paymentSessionId = response.data.payment_session_id;
+    // Generate PayU payment parameters & cryptographic hash
+    const { paymentUrl, params } = createPayUPaymentRequest({
+      txnid: orderId,
+      amount: primaryPayableAmount,
+      productinfo: `Sanctuary Stay - ${space.title}`,
+      firstname: primaryName,
+      email: user.email || 'concierge@nothingness.asia',
+      phone: customerPhone,
+      udf1: booking.id,
+      udf2: 'primary_stay',
+      udf3: user.id,
+      udf4: space.title,
+    });
 
     // Create booking_guests entries (Guest 0 = Primary, Guest 1..N = Additional)
     const guestEntries = [];
@@ -194,8 +175,10 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ 
+      success: true,
       orderId: orderId, 
-      paymentSessionId: paymentSessionId, 
+      paymentUrl: paymentUrl,
+      params: params,
       bookingId: booking.id 
     }, { status: 200 });
 

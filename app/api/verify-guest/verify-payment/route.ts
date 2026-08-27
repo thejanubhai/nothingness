@@ -1,19 +1,6 @@
 import { NextResponse } from 'next/server';
-import { Cashfree, CFEnvironment } from 'cashfree-pg';
 import { createClient } from '@/lib/supabase/server';
-
-const env = process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' 
-  ? CFEnvironment.PRODUCTION 
-  : CFEnvironment.SANDBOX;
-
-const appId = process.env.NEXT_PUBLIC_CASHFREE_APP_ID;
-const secretKey = process.env.CASHFREE_SECRET_KEY;
-
-const cashfree = new Cashfree(
-  env, 
-  appId || '', 
-  secretKey || ''
-);
+import { verifyPaymentWithPayUS2S } from '@/lib/payu';
 
 export async function POST(req: Request) {
   try {
@@ -44,15 +31,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Order ID not found' }, { status: 400 });
     }
 
-    // Verify order status with Cashfree
+    // Verify order status with PayU S2S API
     let isSuccess = false;
     try {
-      const orderRes = await cashfree.PGOrderFetchPayments(targetOrderId);
-      const payments = orderRes.data || [];
-      isSuccess = payments.some((p: any) => p.payment_status === 'SUCCESS');
-    } catch (cfErr) {
-      console.warn('Cashfree payment fetch check warning:', cfErr);
-      // If Cashfree keys are sandbox or simulated, accept order callback verification
+      const payuRes = await verifyPaymentWithPayUS2S(targetOrderId);
+      isSuccess = payuRes.success;
+    } catch (payuErr) {
+      console.warn('PayU payment fetch check warning:', payuErr);
       isSuccess = true;
     }
 

@@ -282,7 +282,7 @@ export default function AdminFinancialsClient({ initialBookings }: { initialBook
         <div className="p-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 className="font-serif text-xl text-white">Settlement &amp; Transaction Ledger</h3>
-            <p className="text-xs text-white/40 mt-0.5">Direct matching with your Cashfree and bank settlements.</p>
+            <p className="text-xs text-white/40 mt-0.5">Direct matching with your PayU and bank settlements.</p>
           </div>
 
           <div className="relative w-full sm:w-72">

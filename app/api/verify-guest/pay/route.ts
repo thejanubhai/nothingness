@@ -1,19 +1,6 @@
 import { NextResponse } from 'next/server';
-import { Cashfree, CFEnvironment } from 'cashfree-pg';
 import { createClient } from '@/lib/supabase/server';
-
-const env = process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' 
-  ? CFEnvironment.PRODUCTION 
-  : CFEnvironment.SANDBOX;
-
-const appId = process.env.NEXT_PUBLIC_CASHFREE_APP_ID;
-const secretKey = process.env.CASHFREE_SECRET_KEY;
-
-const cashfree = new Cashfree(
-  env, 
-  appId || '', 
-  secretKey || ''
-);
+import { createPayUPaymentRequest } from '@/lib/payu';
 
 export async function POST(req: Request) {
   try {
@@ -49,22 +36,18 @@ export async function POST(req: Request) {
     const cleanPhone = guest.phone ? guest.phone.replace(/[^0-9]/g, '') : "9999999999";
     const customerPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : "9999999999";
 
-    const request = {
-      order_amount: paymentAmount,
-      order_currency: "INR",
-      order_id: orderId,
-      customer_details: {
-        customer_id: guest.id,
-        customer_phone: customerPhone,
-        customer_name: guest.name || "Additional Guest"
-      },
-      order_meta: {
-        return_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia'}/verify-guest/${token}?order_id=${orderId}`
-      }
-    };
-
-    const response = await cashfree.PGCreateOrder(request);
-    const paymentSessionId = response.data.payment_session_id;
+    // Generate PayU payment parameters
+    const { paymentUrl, params } = createPayUPaymentRequest({
+      txnid: orderId,
+      amount: paymentAmount,
+      productinfo: 'Sanctuary Stay Fee - Additional Guest',
+      firstname: guest.name || 'Additional Guest',
+      email: 'concierge@nothingness.asia',
+      phone: customerPhone,
+      udf1: guest.id,
+      udf2: 'guest_self_pay',
+      udf3: token,
+    });
 
     // Save order id to booking_guest record
     await supabase
@@ -77,7 +60,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       orderId,
-      paymentSessionId,
+      paymentUrl,
+      params,
       amount: paymentAmount,
     });
 

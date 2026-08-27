@@ -104,7 +104,7 @@ export default function PrivacyPage() {
               <ShieldCheck className="w-4 h-4" /> 100% PCI-DSS Compliant Payment Processing
             </div>
             <p className="text-xs sm:text-sm text-zinc-300">
-              All online financial transactions on Nothingness are routed through authorized, certified payment aggregators (<strong className="text-white">PayU Payments / Cashfree Payments</strong>) using 256-bit SSL encryption.
+              All online financial transactions on Nothingness are routed through authorized, certified payment aggregators (<strong className="text-white">PayU Payments</strong>) using 256-bit SSL encryption.
             </p>
             <p className="text-xs text-zinc-400">
               <strong className="text-white">Important:</strong> Nothingness does NOT capture, collect, or store any sensitive cardholder data, including Credit/Debit card numbers, expiry dates, or CVV/PIN codes on our databases or servers. All payment authentication is processed directly on the payment aggregator's secure banking gateway.

@@ -127,7 +127,7 @@ export default function TermsPage() {
             All booking tariffs and event fees are displayed and processed in <strong className="text-white">Indian Rupees (INR - ₹)</strong> and are inclusive of applicable statutory taxes and luxury sanitization fees unless explicitly specified otherwise.
           </p>
           <p>
-            All bookings must be paid in full at the time of reservation. Payments are securely processed through RBI-authorized, PCI-DSS compliant payment aggregators (PayU / Cashfree Payments). We accept UPI, Net Banking, Credit Cards, and Debit Cards. Nothingness does not store or process raw credit/debit card numbers or CVV on our servers.
+            All bookings must be paid in full at the time of reservation. Payments are securely processed through RBI-authorized, PCI-DSS compliant payment aggregators (<strong className="text-white">PayU Payments</strong>). We accept UPI, Net Banking, Credit Cards, and Debit Cards. Nothingness does not store or process raw credit/debit card numbers or CVV on our servers.
           </p>
         </section>
 

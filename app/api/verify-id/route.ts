@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendVerificationApprovedNotification } from '@/lib/notifications/verification';
+import { getPlatformActionFees, createPayUPaymentRequest } from '@/lib/payu';
 import { addDays } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
@@ -199,6 +200,73 @@ export async function POST(req: Request) {
     const guestName = result.name && result.name !== 'Nothingness Guest' ? result.name : (user?.user_metadata?.full_name || 'Guest');
     const docNumber = result.document_number ? result.document_number.trim().toUpperCase() : null;
 
+    // 4. Dynamic Action Pricing Check for ID Verification
+    const { fee_id_verification } = await getPlatformActionFees();
+
+    if (fee_id_verification > 0) {
+      // Check if user has already paid
+      let hasPaid = false;
+      if (sessionUserId) {
+        const { data: paidOrder } = await adminSupabase
+          .from('action_fee_orders')
+          .select('id')
+          .eq('user_id', sessionUserId)
+          .eq('action_type', 'id_verification')
+          .eq('payment_status', 'paid')
+          .maybeSingle();
+        if (paidOrder) hasPaid = true;
+      }
+
+      if (!hasPaid) {
+        const uniqueSuffix = Math.random().toString(36).substring(2, 7);
+        const orderId = `idverify_${sessionUserId ? sessionUserId.slice(0, 6) : 'guest'}_${Date.now()}_${uniqueSuffix}`;
+
+        // Save pending order with extracted ID metadata
+        await adminSupabase.from('action_fee_orders').insert({
+          user_id: sessionUserId || null,
+          action_type: 'id_verification',
+          amount: fee_id_verification,
+          payment_order_id: orderId,
+          payment_status: 'pending',
+          metadata: {
+            guestName,
+            phone: effectivePhone,
+            docNumber,
+            docType: result.document_type || 'Aadhaar',
+            dob: result.dob,
+            permanentAddress: result.permanent_address,
+            isForeign,
+            bookingId,
+            guestId,
+            token,
+          },
+        });
+
+        const { paymentUrl, params } = createPayUPaymentRequest({
+          txnid: orderId,
+          amount: fee_id_verification,
+          productinfo: 'Delhi Police Statutory ID Verification Fee',
+          firstname: guestName,
+          email: sessionEmail || 'concierge@nothingness.asia',
+          phone: effectivePhone || '9999999999',
+          udf1: sessionUserId || orderId,
+          udf2: 'id_verification_fee',
+          udf3: orderId,
+          udf4: token || bookingId || '',
+        });
+
+        return NextResponse.json({
+          verified: false,
+          requiresPayment: true,
+          paymentUrl,
+          params,
+          orderId,
+          fee: fee_id_verification,
+          name: guestName,
+        });
+      }
+    }
+
     let profileId: string | null = null;
 
     // Upsert into guest_profiles
@@ -251,7 +319,7 @@ export async function POST(req: Request) {
       if (newProf) profileId = newProf.id;
     }
 
-    // 4. Update booking_guests if attached to booking
+    // 5. Update booking_guests if attached to booking
     if (token) {
       await adminSupabase
         .from('booking_guests')
@@ -273,7 +341,7 @@ export async function POST(req: Request) {
         .eq('booking_id', bookingId);
     }
 
-    // 5. If user is logged in, link and activate kinkster profile
+    // 6. If user is logged in, link and activate kinkster profile
     if (sessionUserId) {
       try {
         await adminSupabase
@@ -289,7 +357,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 6. Dispatch Verification Approval Notification
+    // 7. Dispatch Verification Approval Notification
     try {
       let recipientEmail = sessionEmail;
       let spaceTitle: string | undefined;

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { 
   Sparkles, 
   CheckCircle2, 
@@ -19,11 +20,16 @@ import { toast } from 'sonner';
 import PartnerMouContractModal from '@/components/partner/PartnerMouContractModal';
 import PropertyNocAffidavitModal from '@/components/partner/PropertyNocAffidavitModal';
 
-export default function PartnerOnboardingPage() {
+function PartnerOnboardingContent() {
+  const searchParams = useSearchParams();
+
   const [partnerName, setPartnerName] = useState('Partner Principal');
   const [partnerEmail, setPartnerEmail] = useState('partner@nothingness.asia');
   const [city, setCity] = useState('New Delhi');
   const [propertyAddress, setPropertyAddress] = useState('A-42 Hauz Khas Enclave');
+
+  // Dynamic Fee from Admin
+  const [setupFee, setSetupFee] = useState<number>(300000);
 
   // Step States
   const [setupFeePaid, setSetupFeePaid] = useState(false);
@@ -35,21 +41,85 @@ export default function PartnerOnboardingPage() {
   const [mouModalOpen, setMouModalOpen] = useState(false);
   const [affidavitModalOpen, setAffidavitModalOpen] = useState(false);
 
-  const handleSimulatePayment = async () => {
+  useEffect(() => {
+    // Check if returning from PayU with payment=success
+    const paymentStatus = searchParams?.get('payment');
+    if (paymentStatus === 'success') {
+      setSetupFeePaid(true);
+      toast.success('Partner Setup Fee Paid via PayU!', {
+        description: 'Your payment has been cryptographically confirmed. Please proceed to sign the MoU.',
+      });
+    } else if (paymentStatus === 'failed') {
+      const errorMsg = searchParams?.get('error') || 'Payment could not be completed.';
+      toast.error('PayU Payment Failed', { description: decodeURIComponent(errorMsg) });
+    }
+
+    // Fetch active fee and status
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/partner/onboarding');
+        const data = await res.json();
+        if (data.fee !== undefined) {
+          setSetupFee(data.fee);
+        }
+        if (data.setupFeePaid) {
+          setSetupFeePaid(true);
+        }
+      } catch (err) {
+        console.warn('Failed to load partner onboarding status:', err);
+      }
+    }
+    loadStatus();
+  }, [searchParams]);
+
+  const handlePaySetupFee = async () => {
     setPaying(true);
     try {
       const res = await fetch('/api/partner/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'pay_setup_fee' })
+        body: JSON.stringify({
+          action: 'initiate_setup_payment',
+          partnerName,
+          partnerEmail,
+          city,
+          propertyAddress
+        })
       });
+
       const data = await res.json();
-      setSetupFeePaid(true);
-      toast.success('₹3,00,000 Setup Fee Recorded', {
-        description: 'PAN India operational onboarding fee received. Proceed to sign the MoU.'
+      if (!res.ok) throw new Error(data.error || 'Failed to initiate onboarding fee');
+
+      if (!data.requiresPayment) {
+        setSetupFeePaid(true);
+        toast.success('Zero-fee Onboarding Verified', {
+          description: 'Proceed to sign the MoU agreement.'
+        });
+        return;
+      }
+
+      // Real PayU Dynamic Form Submission
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.paymentUrl;
+
+      Object.entries(data.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = String(value);
+          form.appendChild(input);
+        }
       });
-    } catch (err) {
-      toast.error('Payment simulation failed.');
+
+      document.body.appendChild(form);
+      toast.info('Connecting to PayU Secure Payment Gateway...');
+      form.submit();
+
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Payment initiation failed.');
     } finally {
       setPaying(false);
     }
@@ -107,7 +177,9 @@ export default function PartnerOnboardingPage() {
               )}
             </div>
 
-            <h3 className="font-serif text-xl text-white">₹3 Lakhs Setup Fee</h3>
+            <h3 className="font-serif text-xl text-white">
+              {setupFee > 0 ? `₹${setupFee.toLocaleString('en-IN')} Setup Fee` : 'Zero-Fee Onboarding'}
+            </h3>
             <p className="text-xs text-white/60 leading-relaxed">
               PAN India operational setup covering smart keyless hardware, local vendor integrations, valet/parking setup, and statutory ID registry.
             </p>
@@ -116,17 +188,19 @@ export default function PartnerOnboardingPage() {
           <div className="pt-6 border-t border-white/5 mt-6">
             {setupFeePaid ? (
               <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-center text-xs font-mono font-bold">
-                ✓ Payment Logged
+                ✓ Payment Confirmed
               </div>
             ) : (
               <button
                 type="button"
                 disabled={paying}
-                onClick={handleSimulatePayment}
+                onClick={handlePaySetupFee}
                 className="w-full bg-accent-gold hover:bg-white text-black py-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
               >
                 <CreditCard className="w-4 h-4" />
-                <span>{paying ? 'Processing...' : 'Pay ₹3,00,000 Setup'}</span>
+                <span>
+                  {paying ? 'Connecting...' : setupFee > 0 ? `Pay ₹${setupFee.toLocaleString('en-IN')} via PayU` : 'Confirm Free Setup'}
+                </span>
               </button>
             )}
           </div>
@@ -247,7 +321,7 @@ export default function PartnerOnboardingPage() {
               All Onboarding Stages Completed!
             </h3>
             <p className="text-xs text-white/70 leading-relaxed">
-              Your ₹3L setup fee, signed MoU, and property NOC affidavit are logged. Your hyper-personalised Partner Dashboard is now accessible.
+              Your setup fee, signed MoU, and property NOC affidavit are logged in Supabase. Your hyper-personalised Partner Dashboard is now accessible.
             </p>
             <Link
               href="/partner"
@@ -288,5 +362,13 @@ export default function PartnerOnboardingPage() {
       />
 
     </main>
+  );
+}
+
+export default function PartnerOnboardingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen pt-28 text-center text-white/40 font-mono text-xs">Loading Partner Onboarding...</div>}>
+      <PartnerOnboardingContent />
+    </Suspense>
   );
 }

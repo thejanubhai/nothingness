@@ -81,17 +81,24 @@ export default function GuestPrivateVerification({ params }: { params: Promise<{
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to initialize payment');
 
-      const { load } = await import('@cashfreepayments/cashfree-js');
-      const cashfree = await load({
-        mode: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' ? 'production' : 'sandbox'
+      // Dynamically create and submit PayU form
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.paymentUrl;
+
+      Object.entries(data.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = String(value);
+          form.appendChild(input);
+        }
       });
 
-      const checkoutOptions = {
-        paymentSessionId: data.paymentSessionId,
-        redirectTarget: "_self"
-      };
-
-      cashfree.checkout(checkoutOptions);
+      document.body.appendChild(form);
+      toast.info('Connecting to PayU Secure Payment Gateway...');
+      form.submit();
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Payment initiation failed');

@@ -137,7 +137,28 @@ export default function KinksterOnboardingWizard({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Onboarding submission failed');
 
-      toast.success(`Welcome to Nothingness Kinksters! Profile @${data.profile.alias} is live.`);
+      if (data.requiresPayment) {
+        toast.info(`Connecting to PayU for ₹${data.fee?.toLocaleString('en-IN')} Membership Fee...`);
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = data.paymentUrl;
+
+        Object.entries(data.params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = String(value);
+            form.appendChild(input);
+          }
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      }
+
+      toast.success(`Welcome to Nothingness Kinksters! Profile @${data.profile?.alias || alias} is live.`);
       onCompleted();
       onClose();
     } catch (err: any) {

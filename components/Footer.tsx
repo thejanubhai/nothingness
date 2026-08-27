@@ -4,7 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Tooltip from "./Tooltip";
-import { MapPin, Mail, Phone, ShieldCheck } from "lucide-react";
+import FooterBrandStrips from "./FooterBrandStrips";
+import { Mail, Phone, ShieldCheck } from "lucide-react";
 
 export default function Footer() {
   const pathname = usePathname();
@@ -18,6 +19,9 @@ export default function Footer() {
   return (
     <footer className="w-full bg-black/90 backdrop-blur-2xl border-t border-white/5 mt-auto">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 md:px-8">
+        {/* Featured On & Listed On Logo Sections */}
+        <FooterBrandStrips />
+
         {/* Main Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10 md:gap-12 py-12 md:py-16">
           {/* Brand Column */}
@@ -32,7 +36,7 @@ export default function Footer() {
               />
             </Link>
             <p className="text-white/40 text-xs sm:text-[13px] leading-relaxed max-w-xs">
-              India's Premier Alternate Lifestyle &amp; Luxury Sanctuary Brand. A culturally relevant, high-design hospitality ecosystem.
+              India&apos;s Premier Alternate Lifestyle &amp; Luxury Sanctuary Brand. A culturally relevant, high-design hospitality ecosystem.
             </p>
           </div>
 
@@ -146,24 +150,17 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Operating Address Banner */}
-        <div className="border-t border-white/5 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-[11px] text-white/40 font-mono">
-          <p className="flex items-center gap-1.5 text-zinc-400">
-            <MapPin className="w-3.5 h-3.5 text-accent-gold shrink-0" />
-            <span><strong>Operating Address:</strong> B-80, Ground Floor, Street 8, Ghaffar Manzil, Jamia Nagar, Okhla, New Delhi - 110025, Delhi, India</span>
-          </p>
-          <div className="flex items-center gap-2 text-green-400/90 text-[10px]">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>256-Bit SSL Secured • RBI Payment Compliant</span>
-          </div>
-        </div>
-
         {/* Bottom Bar */}
         <div className="border-t border-white/5 pt-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="text-white/30 text-[11px] tracking-wide text-center sm:text-left">
             © {new Date().getFullYear()} Nothingness. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 text-green-400/90 text-[10px] font-mono">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>256-Bit SSL Secured • RBI Payment Compliant</span>
+            </div>
+            <span className="w-1 h-1 rounded-full bg-white/15" />
             <Tooltip content="Strictly for adults above 18">
               <span className="text-white/30 text-[10px] sm:text-[11px] tracking-[0.15em] uppercase font-mono">18+ Only</span>
             </Tooltip>

@@ -134,7 +134,7 @@ export default function CancellationPage() {
               ⏱️ Turnaround Time: 5 to 7 Business Days
             </p>
             <p className="text-xs sm:text-sm text-zinc-300">
-              Upon approval of a cancellation request, refunds are automatically initiated via our payment aggregator (<strong className="text-white">PayU Payments / Cashfree Payments</strong>). The refunded amount is credited directly back to the <strong className="text-white">original source payment method</strong> (UPI account, Bank Account via Net Banking, or Credit/Debit Card).
+              Upon approval of a cancellation request, refunds are automatically initiated via our payment aggregator (<strong className="text-white">PayU Payments</strong>). The refunded amount is credited directly back to the <strong className="text-white">original source payment method</strong> (UPI account, Bank Account via Net Banking, or Credit/Debit Card).
             </p>
             <p className="text-xs text-zinc-400">
               Depending on your issuing bank, the funds typically reflect in your account within <strong className="text-zinc-200">5 to 7 working days</strong> from the date of cancellation confirmation.

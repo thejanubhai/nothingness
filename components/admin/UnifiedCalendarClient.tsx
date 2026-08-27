@@ -965,7 +965,7 @@ export default function UnifiedCalendarClient({
                     >
                       <option value="UPI" className="bg-black text-white">UPI (GPay / PhonePe / Paytm)</option>
                       <option value="Cash" className="bg-black text-white">Direct Cash</option>
-                      <option value="Cashfree" className="bg-black text-white">Cashfree Online Gateway</option>
+                      <option value="PayU" className="bg-black text-white">PayU Online Gateway</option>
                       <option value="Airbnb Payout" className="bg-black text-white">Airbnb Payout</option>
                       <option value="MakeMyTrip Payout" className="bg-black text-white">MakeMyTrip Payout</option>
                       <option value="Bank Transfer" className="bg-black text-white">Direct Bank NEFT/IMPS</option>

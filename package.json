@@ -10,12 +10,10 @@
     "test": "tsc --noEmit"
   },
   "dependencies": {
-    "@cashfreepayments/cashfree-js": "^1.0.7",
     "@google/genai": "^2.7.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "@whiskeysockets/baileys": "7.0.0-rc14",
-    "cashfree-pg": "^6.0.4",
     "clsx": "^2.1.1",
     "date-fns": "^4.3.0",
     "firebase": "^11.10.0",

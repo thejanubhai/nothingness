@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   ShieldCheck,
   Lock,
@@ -39,7 +40,8 @@ interface Post {
   };
 }
 
-export default function KinkstersPage() {
+function KinkstersContent() {
+  const searchParams = useSearchParams();
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
   const [isIdVerified, setIsIdVerified] = useState<boolean>(false);
   const [isStayVerified, setIsStayVerified] = useState<boolean>(false);
@@ -81,8 +83,17 @@ export default function KinkstersPage() {
   };
 
   useEffect(() => {
+    const activation = searchParams?.get('activation');
+    if (activation === 'success') {
+      toast.success('Kinkster Mode Activated via PayU!', {
+        description: 'Your lifetime membership payment has been confirmed.',
+      });
+    } else if (activation === 'failed') {
+      const errorMsg = searchParams?.get('error') || 'Payment failed.';
+      toast.error('Activation Payment Failed', { description: decodeURIComponent(errorMsg) });
+    }
     fetchProfileAndPosts();
-  }, []);
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-20">
@@ -340,5 +351,13 @@ export default function KinkstersPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function KinkstersPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black text-white pt-32 text-center text-xs font-mono text-white/40">Loading Kinkster Network...</div>}>
+      <KinkstersContent />
+    </Suspense>
   );
 }

@@ -24,8 +24,14 @@ type SettingsType = {
   frontend_banner_text: string | null;
   frontend_banner_active: boolean;
   whatsapp_api_key: string | null;
-  cashfree_app_id: string | null;
-  cashfree_secret_key: string | null;
+  payu_key?: string | null;
+  payu_salt?: string | null;
+  payu_client_id?: string | null;
+  payu_client_secret?: string | null;
+  payu_env?: string | null;
+  fee_id_verification?: number;
+  fee_kinkster_activation?: number;
+  fee_partner_onboarding?: number;
   resend_api_key: string | null;
   gemini_api_key: string | null;
 };
@@ -47,12 +53,18 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
     cancellation_policy_text: '',
     base_tax_rate_percent: 18.0,
     default_security_deposit: 0,
+    fee_id_verification: 0,
+    fee_kinkster_activation: 0,
+    fee_partner_onboarding: 300000,
     ai_system_prompt: '',
     frontend_banner_text: '',
     frontend_banner_active: false,
     whatsapp_api_key: '',
-    cashfree_app_id: '',
-    cashfree_secret_key: '',
+    payu_key: '',
+    payu_salt: '',
+    payu_client_id: '',
+    payu_client_secret: '',
+    payu_env: 'PRODUCTION',
     resend_api_key: '',
     gemini_api_key: '',
   });
@@ -289,6 +301,50 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                 </div>
               </div>
             </div>
+
+            {/* Action Pricing & User Action Fees */}
+            <div className="pt-6 border-t border-white/10">
+              <h2 className="font-serif text-xl text-white mb-2">User Action Pricing &amp; Gateway Fees</h2>
+              <p className="text-xs text-white/40 mb-6">Configure real-time fees charged for user-initiated platform workflows. Setting a fee to ₹0 allows instant free completion.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-accent-gold font-bold block">ID Verification Fee (₹)</label>
+                  <input 
+                    type="number" 
+                    min={0}
+                    value={formData.fee_id_verification ?? 0}
+                    onChange={(e) => setFormData({...formData, fee_id_verification: parseFloat(e.target.value) || 0})}
+                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
+                  />
+                  <p className="text-[11px] text-white/40 leading-tight">One-time fee for 180-day Delhi Police ID pass verification. Set ₹0 for Free.</p>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-accent-gold font-bold block">Kinkster Lifetime Fee (₹)</label>
+                  <input 
+                    type="number" 
+                    min={0}
+                    value={formData.fee_kinkster_activation ?? 0}
+                    onChange={(e) => setFormData({...formData, fee_kinkster_activation: parseFloat(e.target.value) || 0})}
+                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
+                  />
+                  <p className="text-[11px] text-white/40 leading-tight">One-time membership onboarding fee to enter Kinkster network. Set ₹0 for Free.</p>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-accent-gold font-bold block">Partner Onboarding Fee (₹)</label>
+                  <input 
+                    type="number" 
+                    min={0}
+                    value={formData.fee_partner_onboarding ?? 300000}
+                    onChange={(e) => setFormData({...formData, fee_partner_onboarding: parseFloat(e.target.value) || 0})}
+                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
+                  />
+                  <p className="text-[11px] text-white/40 leading-tight">One-time setup fee for property partners (hardware, smart locks, valet). Default ₹3,00,000.</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -347,24 +403,46 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
               <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
                 <div className="flex items-center gap-2 mb-4">
                   <CreditCard className="w-4 h-4 text-white/50" />
-                  <h3 className="text-white font-medium">Cashfree Payments</h3>
+                  <h3 className="text-white font-medium">PayU Payment Gateway</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">App ID</label>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">Merchant Key (PayU_Key)</label>
                     <input 
                       type="text" 
-                      value={formData.cashfree_app_id || ''}
-                      onChange={(e) => setFormData({...formData, cashfree_app_id: e.target.value})}
+                      value={formData.payu_key || ''}
+                      onChange={(e) => setFormData({...formData, payu_key: e.target.value})}
+                      placeholder="e.g. gtKFFx"
                       className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">Secret Key</label>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">Merchant Salt (PayU_Salt)</label>
                     <input 
                       type="password" 
-                      value={formData.cashfree_secret_key || ''}
-                      onChange={(e) => setFormData({...formData, cashfree_secret_key: e.target.value})}
+                      value={formData.payu_salt || ''}
+                      onChange={(e) => setFormData({...formData, payu_salt: e.target.value})}
+                      placeholder="e.g. eCwWELxi"
+                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">OAuth Client ID (PayU_ClientID)</label>
+                    <input 
+                      type="text" 
+                      value={formData.payu_client_id || ''}
+                      onChange={(e) => setFormData({...formData, payu_client_id: e.target.value})}
+                      placeholder="e.g. 5d9f8c..."
+                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">OAuth Client Secret (PayU_Client_Secret)</label>
+                    <input 
+                      type="password" 
+                      value={formData.payu_client_secret || ''}
+                      onChange={(e) => setFormData({...formData, payu_client_secret: e.target.value})}
+                      placeholder="e.g. 8a7b6c..."
                       className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
                     />
                   </div>

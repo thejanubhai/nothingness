@@ -126,6 +126,27 @@ export default function IDUploadModal({
 
       if (!res.ok) throw new Error(data.error || data.reason || 'Verification failed');
 
+      if (data.requiresPayment) {
+        toast.info(`Connecting to PayU for ₹${data.fee?.toLocaleString('en-IN')} Statutory Verification Fee...`);
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = data.paymentUrl;
+
+        Object.entries(data.params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = String(value);
+            form.appendChild(input);
+          }
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      }
+
       if (data.verified) {
         toast.success('Identity Authenticated for 180 Days!', {
           description: `Welcome, ${data.name || 'Guest'}.`,
