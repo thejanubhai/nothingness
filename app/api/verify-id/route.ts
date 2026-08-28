@@ -95,8 +95,7 @@ export async function POST(req: Request) {
     const cleanBack = backImage.includes('base64,') ? backImage.split('base64,')[1] : backImage;
     const imageMimeType = mimeType || 'image/jpeg';
 
-    // 2. Optical Document Recognition via Gemini AI Vision
-    const apiKey = process.env.GEMINI_API_KEY;
+    // 2. Optical Document Recognition via Primary NVIDIA NIM Vision AI (with Gemini Fallback)
     let result: {
       valid: boolean;
       name: string;
@@ -118,55 +117,78 @@ export async function POST(req: Request) {
       is_foreign_national: false,
     };
 
-    if (apiKey) {
-      try {
-        const { GoogleGenAI } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey });
+    let visionSucceeded = false;
 
-        const prompt = `Analyze these two images representing the FRONT and BACK of a guest identity document for "Nothingness" luxury retreats.
-        
-        STRICT VERIFICATION RULES:
-        1. Document MUST be an official AADHAAR CARD or PASSPORT. 
-        2. Driving License (DL), Voter ID, PAN Card, or any other document MUST BE STRICTLY REJECTED with reason: "Driving License and Voter ID are not accepted. Please upload a clear Aadhaar Card or Passport."
-        3. Primary booker MUST be 18 years of age or older based on Date of Birth.
-        4. Extract full name, document type ("Aadhaar" or "Passport"), document number, DOB, and permanent address.
-        
-        Return ONLY a valid JSON object matching this exact schema:
-        {
-          "valid": true,
-          "name": "Full Legal Name",
-          "dob": "DD/MM/YYYY",
-          "above18": true,
-          "document_type": "Aadhaar" or "Passport",
-          "document_number": "XXXX",
-          "permanent_address": "Extracted address from card",
-          "is_foreign_national": false,
-          "nationality": "Indian",
-          "reason": "Reason if rejected"
-        }`;
+    // A. Primary: NVIDIA Multimodal Vision AI (Free, high-speed)
+    try {
+      const { extractDocumentWithNvidiaVision } = await import('@/lib/ai/nvidia');
+      const nvidiaResult = await extractDocumentWithNvidiaVision({
+        frontBase64: cleanFront,
+        backBase64: cleanBack,
+        mimeType: imageMimeType,
+      });
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { text: prompt },
-                { inlineData: { data: cleanFront, mimeType: imageMimeType } },
-                { inlineData: { data: cleanBack, mimeType: imageMimeType } },
-              ],
-            },
-          ],
-        });
+      if (nvidiaResult.success && nvidiaResult.extracted) {
+        result = { ...result, ...nvidiaResult.extracted };
+        visionSucceeded = true;
+      }
+    } catch (nvidiaErr: any) {
+      console.warn('[Verify ID] NVIDIA Vision warning, falling back to Gemini:', nvidiaErr?.message);
+    }
 
-        const responseText = response.text || '{}';
-        const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(cleanJson);
-        if (parsed && typeof parsed === 'object') {
-          result = { ...result, ...parsed };
+    // B. Secondary Fallback: Google Gemini 2.5 Flash
+    if (!visionSucceeded) {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (apiKey) {
+        try {
+          const { GoogleGenAI } = await import('@google/genai');
+          const ai = new GoogleGenAI({ apiKey });
+
+          const prompt = `Analyze these two images representing the FRONT and BACK of a guest identity document for "Nothingness" luxury retreats.
+          
+          STRICT VERIFICATION RULES:
+          1. Document MUST be an official AADHAAR CARD or PASSPORT. 
+          2. Driving License (DL), Voter ID, PAN Card, or any other document MUST BE STRICTLY REJECTED with reason: "Driving License and Voter ID are not accepted. Please upload a clear Aadhaar Card or Passport."
+          3. Primary booker MUST be 18 years of age or older based on Date of Birth.
+          4. Extract full name, document type ("Aadhaar" or "Passport"), document number, DOB, and permanent address.
+          
+          Return ONLY a valid JSON object matching this exact schema:
+          {
+            "valid": true,
+            "name": "Full Legal Name",
+            "dob": "DD/MM/YYYY",
+            "above18": true,
+            "document_type": "Aadhaar" or "Passport",
+            "document_number": "XXXX",
+            "permanent_address": "Extracted address from card",
+            "is_foreign_national": false,
+            "nationality": "Indian",
+            "reason": "Reason if rejected"
+          }`;
+
+          const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { text: prompt },
+                  { inlineData: { data: cleanFront, mimeType: imageMimeType } },
+                  { inlineData: { data: cleanBack, mimeType: imageMimeType } },
+                ],
+              },
+            ],
+          });
+
+          const responseText = response.text || '{}';
+          const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleanJson);
+          if (parsed && typeof parsed === 'object') {
+            result = { ...result, ...parsed };
+          }
+        } catch (aiErr: any) {
+          console.warn('[Verify ID] Gemini OCR processing warning:', aiErr?.message);
         }
-      } catch (aiErr: any) {
-        console.warn('[Verify ID] Gemini OCR processing warning:', aiErr?.message);
       }
     }
 

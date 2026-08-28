@@ -37,6 +37,9 @@ const envSchema = z.object({
   PAYU_ENV: z.enum(['TEST', 'SANDBOX', 'PRODUCTION']).default('PRODUCTION'),
   NEXT_PUBLIC_PAYU_KEY: z.string().optional(),
 
+  NVIDIA_API_KEY: z.string().optional(),
+  NVIDIA_AI_API_KEY: z.string().optional(),
+  nVidia_AI_API_Key: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
   KNOCK_SECRET_API_KEY: z.string().optional(),
@@ -80,6 +83,9 @@ export const env = envSchema.parse({
   PAYU_ENV: process.env.PAYU_ENV || process.env.PayU_Env,
   NEXT_PUBLIC_PAYU_KEY: process.env.NEXT_PUBLIC_PAYU_KEY || process.env.PAYU_KEY || process.env.PayU_Key,
 
+  NVIDIA_API_KEY: process.env.NVIDIA_API_KEY || process.env.nVidia_AI_API_Key || process.env.NVIDIA_AI_API_KEY,
+  NVIDIA_AI_API_KEY: process.env.NVIDIA_AI_API_KEY || process.env.nVidia_AI_API_Key || process.env.NVIDIA_API_KEY,
+  nVidia_AI_API_Key: process.env.nVidia_AI_API_Key || process.env.NVIDIA_API_KEY || process.env.NVIDIA_AI_API_KEY,
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   KNOCK_SECRET_API_KEY: process.env.KNOCK_SECRET_API_KEY,

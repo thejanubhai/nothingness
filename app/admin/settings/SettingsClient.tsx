@@ -34,6 +34,7 @@ type SettingsType = {
   fee_partner_onboarding?: number;
   resend_api_key: string | null;
   gemini_api_key: string | null;
+  nvidia_api_key?: string | null;
 };
 
 export default function SettingsClient({ initialSettings }: { initialSettings: SettingsType | null }) {
@@ -469,14 +470,34 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                   <Bot className="w-4 h-4 text-white/50" />
                   <h3 className="text-white font-medium">Optical &amp; Intelligence Engine</h3>
                 </div>
-                <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">API Key</label>
-                <input 
-                  type="password" 
-                  value={formData.gemini_api_key || ''}
-                  onChange={(e) => setFormData({...formData, gemini_api_key: e.target.value})}
-                  placeholder="AIza..."
-                  className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
-                />
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 block">Primary: NVIDIA NIM AI API Key (nVidia_AI_API_Key)</label>
+                      <span className="text-[10px] font-mono text-emerald-400">Free High-Speed OCR &amp; Llama 3.3</span>
+                    </div>
+                    <input 
+                      type="password" 
+                      value={formData.nvidia_api_key || ''}
+                      onChange={(e) => setFormData({...formData, nvidia_api_key: e.target.value})}
+                      placeholder="nvapi-..."
+                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 block">Secondary Fallback: Google Gemini API Key</label>
+                      <span className="text-[10px] font-mono text-white/30">Backup Engine</span>
+                    </div>
+                    <input 
+                      type="password" 
+                      value={formData.gemini_api_key || ''}
+                      onChange={(e) => setFormData({...formData, gemini_api_key: e.target.value})}
+                      placeholder="AIza..."
+                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
+                    />
+                  </div>
+                </div>
               </div>
 
             </div>

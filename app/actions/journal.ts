@@ -1,12 +1,13 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { SEED_ARTICLES, Article } from '@/lib/articles-data';
 
 export async function getPublishedArticles(): Promise<Article[]> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data, error } = await supabase
       .from('articles')
       .select('*')
@@ -19,7 +20,6 @@ export async function getPublishedArticles(): Promise<Article[]> {
 
     return data as Article[];
   } catch (err) {
-    console.error('Failed to fetch articles from Supabase, using fallback:', err);
     return SEED_ARTICLES.filter((a) => a.status === 'published');
   }
 }
@@ -45,7 +45,7 @@ export async function getAllAdminArticles(): Promise<Article[]> {
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data, error } = await supabase
       .from('articles')
       .select('*')
@@ -59,7 +59,6 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
 
     return data as Article;
   } catch (err) {
-    console.error('Failed to fetch article by slug from Supabase, using fallback:', err);
     const fallback = SEED_ARTICLES.find((a) => a.slug === slug);
     return fallback || null;
   }
@@ -221,8 +220,19 @@ export async function generateArticleWithAI(params: {
   try {
     let rawResult: any = null;
 
-    // Check if GEMINI_API_KEY is available
-    if (process.env.GEMINI_API_KEY) {
+    // 1. Primary AI Engine: NVIDIA Llama 3.3 70B (Free, high-speed, anti-cliché)
+    try {
+      const { generateArticleWithNvidia } = await import('@/lib/ai/nvidia');
+      const nvidiaRes = await generateArticleWithNvidia(params);
+      if (nvidiaRes.success && nvidiaRes.article) {
+        rawResult = nvidiaRes.article;
+      }
+    } catch (nvidiaErr) {
+      console.warn('NVIDIA AI article generation warning, falling back to Gemini:', nvidiaErr);
+    }
+
+    // 2. Secondary Fallback: Google Gemini 2.5 Flash
+    if (!rawResult && process.env.GEMINI_API_KEY) {
       try {
         const { GoogleGenAI } = await import('@google/genai');
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });

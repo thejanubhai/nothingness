@@ -1,10 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: false,
+  poweredByHeader: false,
+  compress: true,
   serverExternalPackages: [
-    '@whiskeysockets/baileys',
     'qrcode',
     'node-ical',
-    'cashfree-pg',
     '@google/genai'
   ],
   experimental: {
@@ -13,10 +14,15 @@ const nextConfig = {
       'framer-motion',
       'date-fns',
       'clsx',
-      'tailwind-merge'
+      'tailwind-merge',
+      'sonner',
+      'yet-another-react-lightbox',
+      'resend',
+      'zod'
     ]
   },
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',

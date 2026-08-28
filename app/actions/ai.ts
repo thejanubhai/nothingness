@@ -241,9 +241,29 @@ export async function generateReply(message: string, conversationId: string) {
 
 export async function testGeminiPrompt(systemPrompt: string, testMessage: string, temperature: number = 0.7) {
   try {
+    // 1. Try NVIDIA AI first
+    try {
+      const { callNvidiaChat, NVIDIA_MODELS } = await import('@/lib/ai/nvidia');
+      const nvidiaRes = await callNvidiaChat({
+        model: NVIDIA_MODELS.CONCIERGE_POWER,
+        messages: [
+          { role: 'system', content: `SYSTEM DIRECTIVE:\n${systemPrompt}` },
+          { role: 'user', content: testMessage }
+        ],
+        temperature,
+      });
+
+      if (nvidiaRes.success && nvidiaRes.content) {
+        return { success: true, reply: nvidiaRes.content };
+      }
+    } catch (nvidiaErr) {
+      console.warn('NVIDIA test prompt warning, falling back to Gemini:', nvidiaErr);
+    }
+
+    // 2. Fallback to Gemini
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return { success: false, error: 'GEMINI_API_KEY environment variable is not configured in environment.' };
+      return { success: false, error: 'No AI API Key (NVIDIA or Gemini) is configured in environment.' };
     }
 
     const { GoogleGenAI } = await import('@google/genai');
@@ -267,21 +287,13 @@ export async function testGeminiPrompt(systemPrompt: string, testMessage: string
     const reply = response.text || 'No response generated.';
     return { success: true, reply };
   } catch (error: any) {
-    console.error('Error testing Gemini prompt:', error);
-    return { success: false, error: error.message || 'Gemini execution error' };
+    console.error('Error testing AI prompt:', error);
+    return { success: false, error: error.message || 'AI execution error' };
   }
 }
 
 export async function generateChatflowTemplate(flowName: string, triggerEvent: string, customInstruction?: string) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return { success: false, error: 'GEMINI_API_KEY is not configured in environment.' };
-    }
-
-    const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey });
-
     const promptText = `
 You are an expert hospitality copywriter for "Nothingness", an ultra-exclusive luxury sanctuary brand.
 Generate an automated message response template and trigger keyword for a chatflow.
@@ -300,6 +312,40 @@ Return ONLY a valid JSON object with format:
   "response_template": "template_text_here"
 }
 `;
+
+    // 1. Try NVIDIA AI first
+    try {
+      const { callNvidiaChat, NVIDIA_MODELS } = await import('@/lib/ai/nvidia');
+      const nvidiaRes = await callNvidiaChat({
+        model: NVIDIA_MODELS.CONCIERGE_FAST,
+        messages: [
+          { role: 'user', content: promptText }
+        ],
+        temperature: 0.5,
+        jsonMode: true,
+      });
+
+      if (nvidiaRes.success && nvidiaRes.content) {
+        const cleanJson = nvidiaRes.content.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
+        return {
+          success: true,
+          suggested_keyword: parsed.suggested_keyword || '',
+          response_template: parsed.response_template || '',
+        };
+      }
+    } catch (nvidiaErr) {
+      console.warn('NVIDIA chatflow generator warning, falling back to Gemini:', nvidiaErr);
+    }
+
+    // 2. Fallback to Gemini
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: 'No AI API Key (NVIDIA or Gemini) is configured.' };
+    }
+
+    const { GoogleGenAI } = await import('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',

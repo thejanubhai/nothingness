@@ -1,8 +1,5 @@
-import { GoogleGenAI, Type } from '@google/genai';
 import { ConversationState, FlowName } from './flows';
 import { createClient } from '@/lib/supabase/server';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'dummy-key' });
 
 export async function handleAiFallback(
   conversationId: string,
@@ -59,81 +56,57 @@ ${historyContext}
 
 Your goal is to answer the guest's inquiry helpfully while enforcing listing limits and guest policies.
 Keep your responses concise, elegant, and natural (under 3 sentences).
-  `;
+`;
 
+  // 4. Primary: NVIDIA NIM (Llama 3.3 70B - Free, high-speed)
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
-      contents: incomingText,
-      config: {
-        systemInstruction: systemPrompt,
-        tools: [{
-          functionDeclarations: [
-            {
-              name: 'start_flow',
-              description: 'Starts a specific conversational flow for the user.',
-              parameters: {
-                type: Type.OBJECT,
-                properties: {
-                  flow_name: {
-                    type: Type.STRING,
-                    description: 'The name of the flow to start (date_check, booking, id_verification)',
-                  },
-                },
-                required: ['flow_name'],
-              },
-            },
-          ],
-        }],
-      }
+    const { callNvidiaChat, NVIDIA_MODELS } = await import('@/lib/ai/nvidia');
+    const nvidiaRes = await callNvidiaChat({
+      model: NVIDIA_MODELS.CONCIERGE_POWER,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: incomingText },
+      ],
+      temperature: 0.6,
+      maxTokens: 500,
     });
 
-    if (response.functionCalls && response.functionCalls.length > 0) {
-      const call = response.functionCalls[0];
-      if (call.name === 'start_flow') {
-        const args = call.args as any;
-        const flowName = args.flow_name as FlowName;
-        
-        let responseText = '';
-        let flowStep = '';
-
-        if (flowName === 'date_check') {
-          responseText = "I've started the date check process. What are your planned check-in and check-out dates?";
-          flowStep = 'ask_dates';
-        } else if (flowName === 'booking') {
-          responseText = "Let's get your booking started! Which property are you interested in?";
-          flowStep = 'ask_space';
-        } else if (flowName === 'id_verification') {
-          responseText = "Please upload a clear photo of your Aadhaar Card or Passport to proceed.";
-          flowStep = 'ask_id';
-        } else {
-          return {
-            responseText: "I'm sorry, I couldn't start that process. How else can I help?",
-            updatedState: currentState,
-          };
-        }
-
-        return {
-          responseText,
-          updatedState: {
-            active_flow: flowName,
-            flow_step: flowStep,
-            flow_context: currentState.flow_context,
-          }
-        };
-      }
+    if (nvidiaRes.success && nvidiaRes.content) {
+      return {
+        responseText: nvidiaRes.content,
+        updatedState: currentState,
+      };
     }
-
-    return {
-      responseText: response.text || "I'm not quite sure how to answer that, but I will have a human agent follow up.",
-      updatedState: currentState,
-    };
-
-  } catch (error) {
-    console.error('AI Fallback Error:', error);
-    return {
-      responseText: "I'm having a little trouble connecting right now. Can I help you with something else?",
-      updatedState: currentState,
-    };
+  } catch (nvidiaErr) {
+    console.warn('[AI Concierge] NVIDIA warning, falling back to Gemini:', nvidiaErr);
   }
+
+  // 5. Secondary Fallback: Google Gemini
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+      const { GoogleGenAI, Type } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey });
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: incomingText,
+        config: {
+          systemInstruction: systemPrompt,
+        },
+      });
+
+      return {
+        responseText: response.text || "I'm not quite sure how to answer that, but I will have our concierge team follow up.",
+        updatedState: currentState,
+      };
+    }
+  } catch (geminiErr) {
+    console.error('[AI Concierge] Gemini Fallback Error:', geminiErr);
+  }
+
+  return {
+    responseText: "I'm having a little trouble connecting right now. Can I help you with something else?",
+    updatedState: currentState,
+  };
 }
