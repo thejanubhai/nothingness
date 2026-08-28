@@ -14,7 +14,6 @@ const publicPages = [
   { path: 'app/contact/page.tsx', name: 'Contact Concierge' },
   { path: 'app/safety/page.tsx', name: 'Safety Protocols' },
   { path: 'app/accessibility/page.tsx', name: 'Accessibility' },
-  { path: 'app/media/page.tsx', name: 'Press & Media' },
   { path: 'app/privacy/page.tsx', name: 'Privacy Alias' },
   { path: 'app/cancellation/page.tsx', name: 'Cancellation Alias' },
   { path: 'app/cancel/layout.tsx', name: 'Cancel / Modification Ticket' },

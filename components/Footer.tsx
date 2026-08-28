@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Tooltip from "./Tooltip";
 import FooterBrandStrips from "./FooterBrandStrips";
-import { Mail, Phone, ShieldCheck } from "lucide-react";
+import { Mail, ShieldCheck } from "lucide-react";
 
 export default function Footer() {
   const pathname = usePathname();
@@ -140,10 +140,6 @@ export default function Footer() {
                 <p className="flex items-center gap-1.5 text-zinc-300">
                   <Mail className="w-3 h-3 text-accent-gold" />
                   <a href="mailto:concierge@nothingness.asia" className="hover:text-accent-gold transition-colors">concierge@nothingness.asia</a>
-                </p>
-                <p className="flex items-center gap-1.5 text-zinc-300">
-                  <Phone className="w-3 h-3 text-accent-gold" />
-                  <a href="tel:+918527976791" className="hover:text-accent-gold transition-colors">+91 85279 76791</a>
                 </p>
               </li>
             </ul>

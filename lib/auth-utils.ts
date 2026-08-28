@@ -1,15 +1,25 @@
 import { env } from './env';
 
 export function normalizeIdentifier(identifier: string): string {
-  // Clean phone number of spaces/dashes
-  let phone = identifier.replace(/[^0-9+]/g, '');
-  
-  // If no country code, assume +91 (India)
-  if (!phone.startsWith('+')) {
-    phone = `+91${phone}`;
+  if (!identifier) return '';
+  // Clean all characters except digits and leading +
+  let raw = identifier.trim().replace(/[^0-9+]/g, '');
+
+  if (raw.startsWith('+')) {
+    raw = raw.slice(1);
   }
-  
-  return phone;
+
+  // If starts with 0 (e.g. 08527976791), strip leading 0
+  if (raw.startsWith('0') && raw.length === 11) {
+    raw = raw.slice(1);
+  }
+
+  // If 10 digits (standard Indian mobile number), prepend 91
+  if (raw.length === 10) {
+    raw = `91${raw}`;
+  }
+
+  return `+${raw}`;
 }
 
 export function getRedirectPath(user: { email?: string; phone?: string } | null): string {

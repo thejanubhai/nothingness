@@ -10,14 +10,15 @@ interface StoredOtp {
 const globalOtpMap = ((globalThis as any).__nothingness_otp_store ??= new Map<string, StoredOtp>());
 
 const OTP_SECRET =
-  process.env.SUPABASE_JWT_SECRET ||
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SECRET_KEY ||
+  process.env.SUPABASE_JWT_SECRET ||
   'nothingness-otp-secret-key-salt';
 
 export function hashOtp(phone: string, otp: string): string {
   return crypto
     .createHmac('sha256', OTP_SECRET)
-    .update(`${phone}:${otp.trim()}`)
+    .update(`${phone.trim()}:${otp.trim()}`)
     .digest('hex');
 }
 
@@ -30,10 +31,10 @@ export function saveInMemoryOtp(phone: string, otp: string, ttlMs: number = 10 *
   });
 }
 
-export function verifyInMemoryOtp(phone: string, inputOtp: string): { valid: boolean; error?: string } {
+export function verifyInMemoryOtp(phone: string, inputOtp: string): { valid: boolean; error?: string; notFound?: boolean } {
   const record = globalOtpMap.get(phone);
   if (!record) {
-    return { valid: false, error: 'No active OTP request found. Please request a new code.' };
+    return { valid: false, notFound: true, error: 'No active OTP request found. Please request a new code.' };
   }
 
   if (Date.now() > record.expiresAt) {

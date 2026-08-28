@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { Sparkles } from 'lucide-react';
 
 export default function FooterBrandStrips() {
@@ -20,9 +19,8 @@ export default function FooterBrandStrips() {
 
           <div className="w-full flex flex-wrap items-center justify-center md:justify-end gap-4 sm:gap-6 md:gap-8">
             {/* ScoopWhoop */}
-            <Link
-              href="/media"
-              className="group flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white/[0.02] border border-white/5 hover:border-red-500/40 hover:bg-red-500/[0.04] transition-all duration-300 shadow-sm"
+            <div
+              className="group flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white/[0.02] border border-white/5 hover:border-red-500/40 hover:bg-red-500/[0.04] transition-all duration-300 shadow-sm cursor-default"
               title="Featured on ScoopWhoop"
             >
               <svg className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor">
@@ -34,12 +32,11 @@ export default function FooterBrandStrips() {
                 </span>
                 <span className="text-[9px] font-mono text-white/40 tracking-wider">Editorial Feature</span>
               </div>
-            </Link>
+            </div>
 
             {/* The Indian Express */}
-            <Link
-              href="/media"
-              className="group flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white/[0.02] border border-white/5 hover:border-accent-gold/40 hover:bg-accent-gold/[0.04] transition-all duration-300 shadow-sm"
+            <div
+              className="group flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white/[0.02] border border-white/5 hover:border-accent-gold/40 hover:bg-accent-gold/[0.04] transition-all duration-300 shadow-sm cursor-default"
               title="Featured in The Indian Express"
             >
               <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-serif font-black text-accent-gold group-hover:scale-110 transition-transform">
@@ -51,12 +48,11 @@ export default function FooterBrandStrips() {
                 </span>
                 <span className="text-[9px] font-mono text-white/40 tracking-wider">Culture &amp; Lifestyle</span>
               </div>
-            </Link>
+            </div>
 
             {/* Reddit */}
-            <Link
-              href="/media"
-              className="group flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#FF4500]/40 hover:bg-[#FF4500]/[0.04] transition-all duration-300 shadow-sm"
+            <div
+              className="group flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#FF4500]/40 hover:bg-[#FF4500]/[0.04] transition-all duration-300 shadow-sm cursor-default"
               title="Trending on Reddit"
             >
               <svg className="w-5 h-5 text-[#FF4500] group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor">
@@ -69,31 +65,29 @@ export default function FooterBrandStrips() {
                 </span>
                 <span className="text-[9px] font-mono text-white/40 tracking-wider">Community Spotlight</span>
               </div>
-            </Link>
+            </div>
 
             {/* Homegrown */}
-            <Link
-              href="/media"
-              className="group hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/30 hover:bg-white/[0.04] transition-all duration-300"
+            <div
+              className="group hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/30 hover:bg-white/[0.04] transition-all duration-300 cursor-default"
               title="Featured on Homegrown"
             >
               <span className="font-mono font-black text-xs tracking-widest text-white/70 group-hover:text-white transition-colors uppercase">
                 Homegrown
               </span>
               <span className="text-[9px] font-mono text-white/40 tracking-wider hidden lg:inline">Magazine</span>
-            </Link>
+            </div>
 
             {/* LBB */}
-            <Link
-              href="/media"
-              className="group hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5 hover:border-amber-400/40 hover:bg-amber-400/[0.04] transition-all duration-300"
+            <div
+              className="group hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5 hover:border-amber-400/40 hover:bg-amber-400/[0.04] transition-all duration-300 cursor-default"
               title="Featured on LBB"
             >
               <span className="font-bold text-xs tracking-wider text-amber-400/80 group-hover:text-amber-400 transition-colors uppercase">
                 LBB
               </span>
               <span className="text-[9px] font-mono text-white/40 tracking-wider hidden lg:inline">Delhi Secret</span>
-            </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -111,7 +105,7 @@ export default function FooterBrandStrips() {
           {/* Grid / Row of Booking Platforms */}
           <div className="w-full grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 sm:gap-4 items-center">
             {/* Airbnb */}
-            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#FF5A5F]/40 hover:bg-[#FF5A5F]/[0.03] transition-all duration-300" title="Airbnb">
+            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#FF5A5F]/40 hover:bg-[#FF5A5F]/[0.03] transition-all duration-300 cursor-default" title="Airbnb">
               <svg className="w-5 h-5 text-[#FF5A5F] opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all" viewBox="0 0 32 32" fill="currentColor">
                 <path d="M16 1c-2.4 0-4.5 1.5-5.3 3.7C9.9 2.5 7.8 1 5.4 1 2.4 1 0 3.4 0 6.4c0 4.7 6.4 10.4 10.7 14.1.4.3.9.3 1.3 0 4.3-3.7 10.7-9.4 10.7-14.1C22.7 3.4 20.3 1 17.3 1z" />
                 <path d="M16 4.2c1.7 0 3.1 1.2 3.6 2.8.2.7.2 1.4.1 2.1-.5 2.5-2 4.9-3.7 7.2-1.7-2.3-3.2-4.7-3.7-7.2-.1-.7-.1-1.4.1-2.1.5-1.6 1.9-2.8 3.6-2.8z" fill="#000" />
@@ -123,7 +117,7 @@ export default function FooterBrandStrips() {
             </div>
 
             {/* MakeMyTrip */}
-            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#EB2026]/40 hover:bg-[#EB2026]/[0.03] transition-all duration-300" title="MakeMyTrip">
+            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#EB2026]/40 hover:bg-[#EB2026]/[0.03] transition-all duration-300 cursor-default" title="MakeMyTrip">
               <span className="w-5 h-5 rounded-md bg-[#EB2026] text-[9px] font-black text-white flex items-center justify-center group-hover:scale-105 transition-transform">
                 my
               </span>
@@ -133,7 +127,7 @@ export default function FooterBrandStrips() {
             </div>
 
             {/* Goibibo */}
-            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#F26722]/40 hover:bg-[#F26722]/[0.03] transition-all duration-300" title="Goibibo">
+            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#F26722]/40 hover:bg-[#F26722]/[0.03] transition-all duration-300 cursor-default" title="Goibibo">
               <span className="w-5 h-5 rounded-full bg-[#F26722] text-[10px] font-black text-white flex items-center justify-center group-hover:scale-105 transition-transform">
                 go
               </span>
@@ -143,7 +137,7 @@ export default function FooterBrandStrips() {
             </div>
 
             {/* Vrbo */}
-            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#2F5BEA]/40 hover:bg-[#2F5BEA]/[0.05] transition-all duration-300" title="Vrbo">
+            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#2F5BEA]/40 hover:bg-[#2F5BEA]/[0.05] transition-all duration-300 cursor-default" title="Vrbo">
               <svg className="w-4 h-4 text-[#2F5BEA] group-hover:scale-105 transition-transform" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M4 6h3v12H4zm5 0h3v12H9zm5 0h3v12h-3zm5 0h3v12h-3z" />
               </svg>
@@ -153,7 +147,7 @@ export default function FooterBrandStrips() {
             </div>
 
             {/* Booking.com */}
-            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#003580]/80 hover:bg-[#003580]/[0.05] transition-all duration-300" title="Booking.com">
+            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#003580]/80 hover:bg-[#003580]/[0.05] transition-all duration-300 cursor-default" title="Booking.com">
               <span className="w-4 h-4 rounded bg-[#003580] text-white text-[10px] font-black flex items-center justify-center group-hover:scale-105 transition-transform">
                 B.
               </span>
@@ -163,7 +157,7 @@ export default function FooterBrandStrips() {
             </div>
 
             {/* Agoda */}
-            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-purple-400/40 hover:bg-purple-400/[0.03] transition-all duration-300" title="Agoda">
+            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-purple-400/40 hover:bg-purple-400/[0.03] transition-all duration-300 cursor-default" title="Agoda">
               <div className="flex gap-0.5 group-hover:scale-105 transition-transform">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
@@ -176,7 +170,7 @@ export default function FooterBrandStrips() {
             </div>
 
             {/* Planet of Hotels */}
-            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-teal-400/40 hover:bg-teal-400/[0.03] transition-all duration-300" title="Planet of Hotels">
+            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-teal-400/40 hover:bg-teal-400/[0.03] transition-all duration-300 cursor-default" title="Planet of Hotels">
               <svg className="w-4 h-4 text-teal-400/80 group-hover:text-teal-300 group-hover:scale-105 transition-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="8" />
                 <path d="M3 12h18" />
@@ -188,7 +182,7 @@ export default function FooterBrandStrips() {
             </div>
 
             {/* OwnerDirect */}
-            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-amber-500/40 hover:bg-amber-500/[0.03] transition-all duration-300" title="OwnerDirect">
+            <div className="group flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-amber-500/40 hover:bg-amber-500/[0.03] transition-all duration-300 cursor-default" title="OwnerDirect">
               <svg className="w-4 h-4 text-amber-400/80 group-hover:text-amber-300 group-hover:scale-105 transition-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                 <polyline points="9 22 9 12 15 12 15 22" />

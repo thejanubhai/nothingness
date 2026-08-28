@@ -24,9 +24,9 @@ export type SendOtpResult =
  */
 async function establishSupabaseUserSession(phone: string): Promise<AuthActionResult> {
   const jwtSecret =
-    process.env.SUPABASE_JWT_SECRET ||
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_JWT_SECRET ||
     'default-fallback-secret-key';
 
   const deterministicPassword = crypto
@@ -67,7 +67,7 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
     });
 
     if (createError) {
-      if (createError.message?.toLowerCase().includes('already') || createError.status === 422) {
+      if (createError.message?.toLowerCase().includes('already') || (createError as any).status === 422) {
         const { data: retryUsersData } = await supabaseAdmin.auth.admin.listUsers();
         const retryUser = retryUsersData?.users?.find(
           (u) => u.phone && normalizeIdentifier(u.phone) === phone
@@ -153,7 +153,7 @@ export async function loginWithFirebasePhone(idToken: string): Promise<AuthActio
 
 /**
  * Server-Side Direct OTP Generation and Delivery System.
- * Generates a 6-digit OTP, stores hashed token with 10-minute expiry,
+ * Generates a 6-digit OTP, stores hashed token in Supabase database & memory with 10-minute expiry,
  * and attempts dispatch via WhatsApp and email.
  */
 export async function sendServerOtp(rawPhone: string): Promise<SendOtpResult> {
@@ -168,19 +168,32 @@ export async function sendServerOtp(rawPhone: string): Promise<SendOtpResult> {
     // 1. Save in memory store
     saveInMemoryOtp(phone, otpCode, 10 * 60 * 1000);
 
-    // 2. Save in Supabase auth_otps table if it exists
+    // 2. Persist in Supabase auth_otps table for serverless consistency across instances
     try {
       const supabaseAdmin = createAdminClient();
       const otpHash = hashOtp(phone, otpCode);
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      await supabaseAdmin.from('auth_otps').insert({
+
+      // Invalidate any previously unverified active OTPs for this phone
+      await supabaseAdmin
+        .from('auth_otps')
+        .update({ verified: true })
+        .eq('phone', phone)
+        .eq('verified', false);
+
+      const { error: insertErr } = await supabaseAdmin.from('auth_otps').insert({
         phone,
         otp_hash: otpHash,
         expires_at: expiresAt,
+        attempts: 0,
+        verified: false,
       });
+
+      if (insertErr) {
+        console.warn('[Auth Bridge] DB OTP insert warning:', insertErr);
+      }
     } catch (dbErr) {
-      // Non-blocking fallback to in-memory store
-      console.warn('[Auth Bridge] Could not persist OTP to database, using memory cache:', dbErr);
+      console.warn('[Auth Bridge] Could not persist OTP to database:', dbErr);
     }
 
     console.log(`[Nothingness Auth] Server OTP generated for ${phone}: ${otpCode}`);
@@ -226,31 +239,65 @@ export async function loginWithServerOtp(rawPhone: string, otpCode: string): Pro
 
     const phone = normalizeIdentifier(rawPhone);
     const cleanOtp = otpCode.trim();
+    const supabaseAdmin = createAdminClient();
 
-    // 1. Check in-memory store
+    let isValid = false;
+
+    // 1. Check in-memory store first
     const memResult = verifyInMemoryOtp(phone, cleanOtp);
-    let isValid = memResult.valid;
+    if (memResult.valid) {
+      isValid = true;
+      // Mark DB record as verified too
+      try {
+        await supabaseAdmin
+          .from('auth_otps')
+          .update({ verified: true })
+          .eq('phone', phone)
+          .eq('verified', false);
+      } catch (_) {}
+    }
 
-    // 2. Check DB store if memory verification did not match
+    // 2. If memory didn't validate, query the database (essential for Serverless lambdas)
     if (!isValid) {
       try {
-        const supabaseAdmin = createAdminClient();
         const expectedHash = hashOtp(phone, cleanOtp);
-        const { data: dbOtps } = await supabaseAdmin
+        const { data: dbOtps, error: queryErr } = await supabaseAdmin
           .from('auth_otps')
-          .select('*')
+          .select('id, otp_hash, attempts, expires_at, verified')
           .eq('phone', phone)
           .eq('verified', false)
           .gt('expires_at', new Date().toISOString())
           .order('created_at', { ascending: false })
           .limit(1);
 
-        if (dbOtps && dbOtps.length > 0 && dbOtps[0].otp_hash === expectedHash) {
-          isValid = true;
-          await supabaseAdmin
-            .from('auth_otps')
-            .update({ verified: true })
-            .eq('id', dbOtps[0].id);
+        if (!queryErr && dbOtps && dbOtps.length > 0) {
+          const activeOtp = dbOtps[0];
+          const attempts = activeOtp.attempts || 0;
+
+          if (attempts >= 5) {
+            return {
+              success: false,
+              error: 'Too many incorrect attempts. Please request a new verification code.',
+            };
+          }
+
+          if (activeOtp.otp_hash === expectedHash) {
+            isValid = true;
+            await supabaseAdmin
+              .from('auth_otps')
+              .update({ verified: true })
+              .eq('id', activeOtp.id);
+          } else {
+            await supabaseAdmin
+              .from('auth_otps')
+              .update({ attempts: attempts + 1 })
+              .eq('id', activeOtp.id);
+
+            return {
+              success: false,
+              error: `Invalid verification code. (${4 - attempts} attempts remaining)`,
+            };
+          }
         }
       } catch (dbErr) {
         console.warn('[Auth Bridge] DB OTP lookup error:', dbErr);
@@ -265,7 +312,7 @@ export async function loginWithServerOtp(rawPhone: string, otpCode: string): Pro
     if (!isValid) {
       return {
         success: false,
-        error: memResult.error || 'Invalid or expired verification code. Please try again.',
+        error: 'No active OTP request found or code has expired. Please request a new code.',
       };
     }
 
