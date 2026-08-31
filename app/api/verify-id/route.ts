@@ -10,14 +10,19 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { bookingId, guestId, token, phone, frontImage, backImage, mimeType } = body;
+    const { bookingId, guestId, token, phone, frontImage, backImage, images, mimeType } = body;
 
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
     // 0. Resolve active session user if logged in
     const { data: { user } } = await supabase.auth.getUser();
-    const sessionPhone = user?.phone ? user.phone.replace(/[^0-9+]/g, '') : null;
+    const isSyntheticEmail = Boolean(user?.email && user.email.includes('@auth.nothingness'));
+    const sessionPhone = user?.phone 
+      ? user.phone.replace(/[^0-9+]/g, '') 
+      : isSyntheticEmail && user?.email 
+      ? user.email.split('@')[0].replace(/[^0-9+]/g, '') 
+      : null;
     const sessionUserId = user?.id || null;
     const sessionEmail = user?.email || null;
 
@@ -94,16 +99,25 @@ export async function POST(req: Request) {
       }
     }
 
-    if (!frontImage || !backImage) {
+    // Collect uploaded image(s) - supports single or multiple photos
+    const rawImages: string[] = [];
+    if (Array.isArray(images) && images.length > 0) {
+      rawImages.push(...images.filter(Boolean));
+    } else {
+      if (frontImage) rawImages.push(frontImage);
+      if (backImage) rawImages.push(backImage);
+    }
+
+    if (rawImages.length === 0) {
       return NextResponse.json(
-        { error: 'Both Front and Back photos of Aadhaar Card or Passport are required.' },
+        { error: 'Please upload a clear photo of your Aadhaar Card or Passport.' },
         { status: 400 }
       );
     }
 
-    // Clean image data if passed as Data URLs
-    const cleanFront = frontImage.includes('base64,') ? frontImage.split('base64,')[1] : frontImage;
-    const cleanBack = backImage.includes('base64,') ? backImage.split('base64,')[1] : backImage;
+    const cleanImages = rawImages.map((img) =>
+      img.includes('base64,') ? img.split('base64,')[1] : img
+    );
     const imageMimeType = mimeType || 'image/jpeg';
 
     // 2. Optical Document Recognition via Primary NVIDIA NIM Vision AI (with Gemini Fallback)
@@ -129,8 +143,7 @@ export async function POST(req: Request) {
     try {
       const { extractDocumentWithNvidiaVision } = await import('@/lib/ai/nvidia');
       const nvidiaResult = await extractDocumentWithNvidiaVision({
-        frontBase64: cleanFront,
-        backBase64: cleanBack,
+        images: cleanImages,
         mimeType: imageMimeType,
       });
 
@@ -152,7 +165,7 @@ export async function POST(req: Request) {
 
           const prompt = `You are a strict automated Identity Verification and KYC System for luxury hospitality compliance under statutory Delhi Police regulations.
 
-Analyze the uploaded FRONT and BACK images carefully.
+Analyze the uploaded image(s) carefully. The user has provided 1 or 2 photos of their identity document (Aadhaar Card with front/back together in one image, e-Aadhaar, Passport page, or separate front and back photos).
 
 CRITICAL VERIFICATION RULES:
 1. STRICT GENUINE IDENTITY DOCUMENT ENFORCEMENT:
@@ -174,7 +187,7 @@ CRITICAL VERIFICATION RULES:
    - Extract the full legal name (must be a real person's name printed on the card).
    - Extract the document number (Aadhaar number / last 4 digits or Passport number).
    - Extract DOB (DD/MM/YYYY) and permanent address if visible.
-   - If name or document number is unreadable, blurry, or missing, set "valid": false with "reason": "Document details are blurry or unreadable. Please upload a clear photo."
+   - If document is genuine and name & document number are readable, set "valid": true.
 
 Return ONLY a valid raw JSON object matching this exact schema:
 {
@@ -190,16 +203,17 @@ Return ONLY a valid raw JSON object matching this exact schema:
   "reason": "Rejection reason if valid is false"
 }`;
 
+          const parts: any[] = [{ text: prompt }];
+          for (const img of cleanImages) {
+            parts.push({ inlineData: { data: img, mimeType: imageMimeType } });
+          }
+
           const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [
               {
                 role: 'user',
-                parts: [
-                  { text: prompt },
-                  { inlineData: { data: cleanFront, mimeType: imageMimeType } },
-                  { inlineData: { data: cleanBack, mimeType: imageMimeType } },
-                ],
+                parts,
               },
             ],
           });

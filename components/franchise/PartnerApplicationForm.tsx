@@ -1,20 +1,44 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Sparkles, ShieldCheck, CheckCircle2, UserCheck, ArrowRight, Building, KeyRound, HelpCircle } from 'lucide-react';
+import { Sparkles, ShieldCheck, CheckCircle2, UserCheck, ArrowRight, Building, KeyRound, HelpCircle, Check } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
 export default function PartnerApplicationForm() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Form State
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [state, setState] = useState('Delhi (NCT)');
   const [spaceTier, setSpaceTier] = useState('luxury');
   const [units, setUnits] = useState('1');
   const [propertyStatus, setPropertyStatus] = useState('ready_to_furnish');
-  const [budgetTier, setBudgetTier] = useState('3_to_7_lakhs');
+  const [budgetTier, setBudgetTier] = useState('₹4L - ₹7L (1-2 Spaces)');
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUser(user);
+          const userPhone = user.phone || (user.email?.includes('@auth.nothingness') ? `+${user.email.split('@')[0]}` : '');
+          if (userPhone) setPhone(userPhone);
+          if (user.email && !user.email.includes('@auth.nothingness')) setEmail(user.email);
+          if (user.user_metadata?.full_name) setName(user.user_metadata.full_name);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -24,9 +48,9 @@ export default function PartnerApplicationForm() {
     const formData = new FormData(form);
 
     const payload = {
-      name: formData.get('name'),
-      email: formData.get('email'),
-      phone: formData.get('phone'),
+      name: name || formData.get('name'),
+      email: email || formData.get('email'),
+      phone: phone || formData.get('phone'),
       state: state,
       city: formData.get('city'),
       location: `${formData.get('city')}, ${state} (${formData.get('neighborhood') || ''})`,
@@ -34,7 +58,7 @@ export default function PartnerApplicationForm() {
       units: units,
       carpet_area: formData.get('carpet_area'),
       property_status: propertyStatus,
-      budget: formData.get('budget'),
+      budget: budgetTier || formData.get('budget'),
       experience: formData.get('experience'),
       wants_lounge: parseInt(units) >= 3,
     };
@@ -61,6 +85,8 @@ export default function PartnerApplicationForm() {
       setLoading(false);
     }
   };
+
+  const userPhone = currentUser?.phone || (currentUser?.email?.includes('@auth.nothingness') ? `+${currentUser.email.split('@')[0]}` : currentUser?.email);
 
   return (
     <div id="apply-section" className="scroll-mt-24">
@@ -95,7 +121,7 @@ export default function PartnerApplicationForm() {
             {/* Header */}
             <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-accent-gold/10 border border-accent-gold/20 text-accent-gold text-[10px] font-mono uppercase tracking-widest mb-3">
-                <Sparkles className="w-3.5 h-3.5" /> Partner Onboarding Application
+                <Sparkles className="w-3.5 h-3.5" /> Level 2 Ecosystem • Partner Onboarding
               </div>
               <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-white mb-3">
                 Apply to Become a <span className="text-accent-gold italic">nothingness.</span> Partner
@@ -112,16 +138,31 @@ export default function PartnerApplicationForm() {
                   <UserCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-white">Have an active nothingness. account?</p>
-                  <p className="text-[11px] text-white/50">Verified members receive accelerated feasibility review and priority onboarding.</p>
+                  {currentUser ? (
+                    <>
+                      <p className="text-xs font-semibold text-white flex items-center gap-1.5">
+                        <span>Signed in as</span>
+                        <span className="text-accent-gold font-mono">{userPhone}</span>
+                        <span className="px-2 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 text-[9px] rounded-full font-mono uppercase">Verified</span>
+                      </p>
+                      <p className="text-[11px] text-white/50">Your verified contact details have been automatically prefilled below.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs font-semibold text-white">Have an active nothingness. account?</p>
+                      <p className="text-[11px] text-white/50">Verified members receive accelerated feasibility review and priority onboarding.</p>
+                    </>
+                  )}
                 </div>
               </div>
-              <Link
-                href="/auth"
-                className="text-[11px] font-mono uppercase tracking-wider text-accent-gold hover:text-white border border-accent-gold/30 hover:border-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-              >
-                Sign In / Verify
-              </Link>
+              {!currentUser && (
+                <Link
+                  href="/auth"
+                  className="text-[11px] font-mono uppercase tracking-wider text-accent-gold hover:text-white border border-accent-gold/30 hover:border-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+                >
+                  Sign In / Verify
+                </Link>
+              )}
             </div>
 
             {/* Form */}
@@ -294,6 +335,8 @@ export default function PartnerApplicationForm() {
                     name="name"
                     required
                     type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     placeholder="Your Full Name"
                     className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
                   />
@@ -308,6 +351,8 @@ export default function PartnerApplicationForm() {
                     name="email"
                     required
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@domain.com"
                     className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
                   />
@@ -322,6 +367,8 @@ export default function PartnerApplicationForm() {
                     name="phone"
                     required
                     type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 98765 43210"
                     className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
                   />

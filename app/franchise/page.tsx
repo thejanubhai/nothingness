@@ -19,6 +19,7 @@ import PartnerCalculator from '@/components/franchise/PartnerCalculator';
 import ExpansionRoadmap from '@/components/franchise/ExpansionRoadmap';
 import PartnerApplicationForm from '@/components/franchise/PartnerApplicationForm';
 import PartnerFaq from '@/components/franchise/PartnerFaq';
+import PartnerOnboardingBanner from '@/components/franchise/PartnerOnboardingBanner';
 import JsonLd, { generateBreadcrumbSchema } from '@/components/JsonLd';
 
 export const metadata: Metadata = {
@@ -52,6 +53,9 @@ export default function FranchisePage() {
     <main className="min-h-screen pt-28 sm:pt-36 pb-24 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto space-y-24 sm:space-y-32">
       <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="franchise-breadcrumb-schema" />
       
+      {/* Logged-in Member Fast-Track Onboarding Banner */}
+      <PartnerOnboardingBanner />
+
       {/* ─────────────────────────────────────────────────────────────
           1. HERO SECTION
           ───────────────────────────────────────────────────────────── */}

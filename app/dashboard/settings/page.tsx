@@ -15,11 +15,26 @@ export default async function SettingsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
-  const { data: passkeys, error: passkeysError } = await supabase.auth.passkey.list();
-  
   if (!user) {
-    redirect('/auth');
+    redirect('/auth?redirect=/dashboard/settings');
   }
+
+  let passkeys: any[] = [];
+  try {
+    if (supabase.auth && (supabase.auth as any).passkey?.list) {
+      const { data, error } = await (supabase.auth as any).passkey.list();
+      if (!error && Array.isArray(data)) {
+        passkeys = data;
+      }
+    }
+  } catch (e) {
+    console.warn('[Dashboard Settings] Passkey list retrieval warning:', e);
+  }
+
+  // Handle synthetic bridge emails (e.g. 8527976791@auth.nothingness.asia)
+  const isSyntheticEmail = Boolean(user.email && user.email.includes('@auth.nothingness'));
+  const realEmail = isSyntheticEmail ? (user.user_metadata?.email || '') : (user.email || '');
+  const displayPhone = user.phone || user.user_metadata?.phone || (isSyntheticEmail && user.email ? `+${user.email.split('@')[0]}` : 'Phone Not Linked');
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -35,13 +50,13 @@ export default async function SettingsPage() {
         
         {/* Email Form */}
         <div className="relative">
-          <EmailUpdateForm initialEmail={user.email} />
+          <EmailUpdateForm initialEmail={realEmail} />
           <div className="absolute top-6 right-6 md:top-8 md:right-8">
-            {user.email_confirmed_at ? (
+            {user.email_confirmed_at && !isSyntheticEmail ? (
               <span className="flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Verified
               </span>
-            ) : user.email ? (
+            ) : realEmail ? (
               <span className="flex items-center gap-1.5 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-medium">
                 <AlertCircle className="w-3.5 h-3.5" /> Pending
               </span>
@@ -57,7 +72,7 @@ export default async function SettingsPage() {
             </div>
             <div>
               <p className="text-white/40 text-[10px] uppercase tracking-widest mb-1">Primary Login Identity</p>
-              <p className="text-white font-mono text-lg">{user.phone}</p>
+              <p className="text-white font-mono text-lg">{displayPhone}</p>
             </div>
           </div>
           <div className="w-full md:w-auto shrink-0 flex flex-col md:items-end gap-2">

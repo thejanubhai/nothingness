@@ -25,6 +25,10 @@ const faqs = [
     answer: "Check-in is 100% autonomous and keyless. Once your digital ID verification is completed per Delhi Police regulations, you receive a dynamic smart lockbox code directly on WhatsApp prior to arrival."
   },
   {
+    question: "What are the standard Check-in and Check-out times?",
+    answer: "Check-in begins at 1:00 PM onwards (you may arrive anytime after 1:00 PM using your keyless access code). Check-out is strictly at 11:00 AM across all properties to ensure our dedicated turnaround and sanitization team can prepare the sanctuary."
+  },
+  {
     question: "Can I host a party or bring unregistered visitors?",
     answer: "No. We maintain a strict 'No Unregistered Visitors' policy. Only registered guests whose IDs have been verified prior to check-in are permitted on the property. This is to ensure absolute privacy, safety, and discretion."
   }

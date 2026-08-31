@@ -62,8 +62,8 @@ export async function POST(req: Request) {
     
     // Space guest policy calculations
     const defaultGuests = space.default_guests || 2;
-    const additionalGuestFeePerNight = space.additional_guest_fee || 500;
-    const cleaningFee = space.cleaning_fee || 2500;
+    const additionalGuestFeePerNight = Number(space.additional_guest_fee) || 0;
+    const cleaningFee = Number(space.cleaning_fee) || 0;
     
     const extraGuestCount = Math.max(0, guests - defaultGuests);
     const extraGuestTotal = extraGuestCount * additionalGuestFeePerNight * nights;
@@ -71,22 +71,28 @@ export async function POST(req: Request) {
 
     // Per extra guest share
     const perGuestFeeWithTax = extraGuestCount > 0 
-      ? Math.round((additionalGuestFeePerNight * nights) * 1.18) 
+      ? (additionalGuestFeePerNight * nights) 
       : 0;
 
     // Primary payable amount depends on whether primary pays for extra guests or guests pay themselves
     let primaryPayableAmount = 0;
     if (additionalGuestPaymentMode === 'primary_pays') {
-      primaryPayableAmount = Math.round((baseStayTotal + extraGuestTotal) * 1.18);
+      primaryPayableAmount = baseStayTotal + extraGuestTotal;
     } else {
-      // Split self-pay: Primary only pays base stay + cleaning + GST
-      primaryPayableAmount = Math.round(baseStayTotal * 1.18);
+      // Split self-pay: Primary only pays base stay + cleaning fee
+      primaryPayableAmount = baseStayTotal;
     }
 
     const orderId = `order_${Date.now()}`;
-    const cleanPhone = user.phone ? user.phone.replace(/[^0-9]/g, '') : "9999999999";
-    const customerPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : "9999999999";
+    const isSyntheticEmail = Boolean(user.email && user.email.includes('@auth.nothingness'));
+    const rawPhone = user.phone 
+      ? user.phone.replace(/[^0-9]/g, '') 
+      : isSyntheticEmail && user.email 
+      ? user.email.split('@')[0].replace(/[^0-9]/g, '') 
+      : "9999999999";
+    const customerPhone = rawPhone.length >= 10 ? rawPhone.slice(-10) : "9999999999";
     const primaryName = user.user_metadata?.full_name || "Nothingness Guest";
+    const customerEmail = isSyntheticEmail ? (user.user_metadata?.email || 'concierge@nothingness.asia') : (user.email || 'concierge@nothingness.asia');
 
     // Save preliminary booking to Supabase
     const { data: booking, error: bookingError } = await supabase
@@ -106,7 +112,7 @@ export async function POST(req: Request) {
         total_price: primaryPayableAmount,
         guest_name: primaryName,
         guest_phone: customerPhone,
-        guest_email: user.email || null,
+        guest_email: customerEmail,
         status: 'pending',
         payment_status: 'pending',
         payment_method: 'PayU',
@@ -126,7 +132,7 @@ export async function POST(req: Request) {
       amount: primaryPayableAmount,
       productinfo: `Sanctuary Stay - ${space.title}`,
       firstname: primaryName,
-      email: user.email || 'concierge@nothingness.asia',
+      email: customerEmail,
       phone: customerPhone,
       udf1: booking.id,
       udf2: 'primary_stay',

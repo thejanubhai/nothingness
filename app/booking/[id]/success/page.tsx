@@ -104,20 +104,27 @@ export default function SuccessPage({ params }: { params: Promise<{ id: string }
               <p className="text-sm text-white/50 mt-2">Active only during your booked dates.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-white/5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-white/5">
               <div>
                 <div className="flex items-center gap-2 text-white/40 mb-2">
                   <Clock className="w-4 h-4" />
                   <p className="text-[10px] uppercase tracking-[0.2em]">Check-in</p>
                 </div>
-                <p className="text-white text-lg font-light">3:00 PM onwards</p>
+                <p className="text-white text-base font-medium">1:00 PM onwards</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 text-white/40 mb-2">
+                  <Clock className="w-4 h-4 text-accent-gold" />
+                  <p className="text-[10px] uppercase tracking-[0.2em]">Check-out</p>
+                </div>
+                <p className="text-accent-gold text-base font-medium">Strictly 11:00 AM</p>
               </div>
               <div>
                 <div className="flex items-center gap-2 text-white/40 mb-2">
                   <MapPin className="w-4 h-4" />
                   <p className="text-[10px] uppercase tracking-[0.2em]">Location</p>
                 </div>
-                <p className="text-white text-lg font-light">Coordinates sent to email</p>
+                <p className="text-white text-base font-medium">Coordinates on WhatsApp</p>
               </div>
             </div>
           </div>

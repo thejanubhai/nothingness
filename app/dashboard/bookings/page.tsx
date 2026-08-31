@@ -18,7 +18,7 @@ export default async function BookingsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
-    redirect('/auth');
+    redirect('/auth?redirect=/dashboard/bookings');
   }
 
   const { data: bookings } = await supabase
@@ -43,32 +43,34 @@ export default async function BookingsPage() {
 
       {bookings && bookings.length > 0 ? (
         <div className="space-y-6">
-          {bookings.map((booking: any) => (
-            <div key={booking.id} className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-8">
-              <div className="w-full md:w-48 aspect-[4/3] relative rounded-2xl overflow-hidden shrink-0 border border-white/10 bg-zinc-900">
-                <CloudinaryImage 
-                  src={booking.spaces?.featured_image || ''} 
-                  alt={booking.spaces?.title || 'Sanctuary'}
-                  fill
-                  className="object-cover"
-                  transformOptions={{ width: 400, height: 300, crop: 'fill', quality: 'auto' }}
-                />
-              </div>
-              
-              <div className="flex-grow space-y-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-serif text-2xl text-white mb-1">{booking.spaces.title}</h3>
-                    <p className="text-white/40 text-xs uppercase tracking-widest">{booking.spaces.city}</p>
-                  </div>
-                  <div className={`px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase ${
-                    booking.status === 'confirmed' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-                    booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                    'bg-accent-gold/10 text-accent-gold border border-accent-gold/20'
-                  }`}>
-                    {booking.status}
-                  </div>
+          {bookings.map((booking: any) => {
+            const space = Array.isArray(booking.spaces) ? booking.spaces[0] : booking.spaces;
+            return (
+              <div key={booking.id} className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-8">
+                <div className="w-full md:w-48 aspect-[4/3] relative rounded-2xl overflow-hidden shrink-0 border border-white/10 bg-zinc-900">
+                  <CloudinaryImage 
+                    src={space?.featured_image || ''} 
+                    alt={space?.title || 'Sanctuary'}
+                    fill
+                    className="object-cover"
+                    transformOptions={{ width: 400, height: 300, crop: 'fill', quality: 'auto' }}
+                  />
                 </div>
+                
+                <div className="flex-grow space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-serif text-2xl text-white mb-1">{space?.title || 'Sanctuary Stay'}</h3>
+                      <p className="text-white/40 text-xs uppercase tracking-widest">{space?.city || ''}</p>
+                    </div>
+                    <div className={`px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase ${
+                      booking.status === 'confirmed' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                      booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                      'bg-accent-gold/10 text-accent-gold border border-accent-gold/20'
+                    }`}>
+                      {booking.status}
+                    </div>
+                  </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border-y border-white/5 py-4">
                   <div>
@@ -118,7 +120,7 @@ export default async function BookingsPage() {
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       ) : (
         <div className="text-center py-20 border border-white/5 rounded-3xl bg-white/[0.01]">

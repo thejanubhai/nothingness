@@ -51,14 +51,14 @@ export default async function PartnerPage() {
 
     return {
       id: b.id,
-      bookingRef: `NTH-${b.id.slice(0, 6).toUpperCase()}`,
+      bookingRef: `NTH-${(b.id || '').slice(0, 6).toUpperCase()}`,
       propertyTitle: spaceRecord?.title || 'Sanctuary',
       propertyAddress: `${spaceRecord?.area || ''}, ${spaceRecord?.city || 'Delhi NCR'}`.replace(/^, /, ''),
       guestName: profile?.full_name || mainGuest?.name || b.guest_name || 'Verified Guest',
       guestPhone: profile?.phone_number || mainGuest?.phone || b.guest_phone || '+91 99999 99999',
       guestEmail: b.guest_email || 'guest@nothingness.asia',
       docType: (profile?.id_document_type || 'Aadhaar Card') as any,
-      docMaskedNumber: profile?.document_number ? `XXXX-XXXX-${profile.document_number.slice(-4)}` : 'Verified on File',
+      docMaskedNumber: profile?.document_number ? `XXXX-XXXX-${String(profile.document_number).slice(-4)}` : 'Verified on File',
       verificationToken: mainGuest?.verification_token || b.id,
       verifiedAt: profile?.verification_timestamp ? new Date(profile.verification_timestamp).toLocaleString('en-IN') : 'Verified',
       checkIn: b.check_in,

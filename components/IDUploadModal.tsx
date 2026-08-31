@@ -14,6 +14,8 @@ import {
   Smartphone,
   Lock,
   ArrowRight,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import IDScanningAnimation from '@/components/IDScanningAnimation';
@@ -29,6 +31,12 @@ interface IDUploadModalProps {
   onSuccess: (name: string) => void;
 }
 
+interface UploadedImageItem {
+  id: string;
+  preview: string;
+  file?: File;
+}
+
 export default function IDUploadModal({
   isOpen,
   onClose,
@@ -39,17 +47,14 @@ export default function IDUploadModal({
   onSuccess,
 }: IDUploadModalProps) {
   const router = useRouter();
-  const frontCameraRef = useRef<HTMLInputElement>(null);
-  const frontGalleryRef = useRef<HTMLInputElement>(null);
-  const backCameraRef = useRef<HTMLInputElement>(null);
-  const backGalleryRef = useRef<HTMLInputElement>(null);
 
-  const [frontFile, setFrontFile] = useState<File | null>(null);
-  const [frontPreview, setFrontPreview] = useState<string | null>(null);
+  // Hidden inputs for primary camera and gallery
+  const primaryCameraRef = useRef<HTMLInputElement>(null);
+  const primaryGalleryRef = useRef<HTMLInputElement>(null);
+  const addCameraRef = useRef<HTMLInputElement>(null);
+  const addGalleryRef = useRef<HTMLInputElement>(null);
 
-  const [backFile, setBackFile] = useState<File | null>(null);
-  const [backPreview, setBackPreview] = useState<string | null>(null);
-
+  const [uploadedImages, setUploadedImages] = useState<UploadedImageItem[]>([]);
   const [inputPhone, setInputPhone] = useState(initialPhone || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,27 +84,55 @@ export default function IDUploadModal({
     }
   }, [isOpen, initialPhone]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: 'front' | 'back') => {
-    if (e.target.files && e.target.files[0]) {
-      const selected = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        if (side === 'front') {
-          setFrontFile(selected);
-          setFrontPreview(ev.target?.result as string);
-        } else {
-          setBackFile(selected);
-          setBackPreview(ev.target?.result as string);
-        }
-      };
-      reader.readAsDataURL(selected);
+  // Reset images when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setUploadedImages([]);
       setError(null);
     }
+  }, [isOpen]);
+
+  const handleAddFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setError(null);
+
+    const newItems: UploadedImageItem[] = [];
+    const maxAllowed = 2;
+    const currentCount = uploadedImages.length;
+    const availableSlots = maxAllowed - currentCount;
+
+    const filesToProcess = Array.from(files).slice(0, availableSlots);
+
+    filesToProcess.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const preview = ev.target?.result as string;
+        if (preview) {
+          setUploadedImages((prev) => {
+            if (prev.length >= maxAllowed) return prev;
+            return [
+              ...prev,
+              {
+                id: Math.random().toString(36).substring(2, 9),
+                preview,
+                file,
+              },
+            ];
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setUploadedImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    setError(null);
   };
 
   const submitVerification = async () => {
-    if (!frontPreview || !backPreview) {
-      setError('Both Front and Back photos of your ID are required.');
+    if (uploadedImages.length === 0) {
+      setError('Please capture or upload at least one clear photo of your ID.');
       return;
     }
 
@@ -107,13 +140,13 @@ export default function IDUploadModal({
     setError(null);
 
     try {
-      const frontBase64 = frontPreview.split(',')[1];
-      const backBase64 = backPreview.split(',')[1];
+      const base64List = uploadedImages.map((img) => {
+        return img.preview.includes('base64,') ? img.preview.split('base64,')[1] : img.preview;
+      });
 
       const payload: any = {
-        frontImage: frontBase64,
-        backImage: backBase64,
-        mimeType: frontFile?.type || 'image/jpeg',
+        images: base64List,
+        mimeType: uploadedImages[0]?.file?.type || 'image/jpeg',
       };
 
       if (token) payload.token = token;
@@ -165,10 +198,6 @@ export default function IDUploadModal({
     } catch (err: any) {
       setError(err.message);
       toast.error('Verification Failed', { description: err.message });
-      setFrontFile(null);
-      setFrontPreview(null);
-      setBackFile(null);
-      setBackPreview(null);
     } finally {
       setLoading(false);
     }
@@ -236,176 +265,184 @@ export default function IDUploadModal({
 
                   <h2 className="font-serif text-xl sm:text-2xl mb-1.5 text-white">Digital Guest ID Verification</h2>
                   <p className="text-xs sm:text-sm text-zinc-400 mb-4 leading-relaxed">
-                    Upload clear front &amp; back photos of your <span className="text-white font-medium">Aadhaar Card</span> or{' '}
-                    <span className="text-white font-medium">Passport</span>.
+                    Upload your <span className="text-white font-medium">Aadhaar Card</span> or{' '}
+                    <span className="text-white font-medium">Passport</span>. You can upload front &amp; back together in 1 photo or add both sides separately.
                     <br />
                     <span className="text-[10px] sm:text-[11px] text-amber-400/90 mt-1 inline-block font-mono">
                       ⚠️ Driving License &amp; Voter ID are not accepted per hospitality regulations.
                     </span>
                   </p>
 
-              {/* Hidden file inputs for direct camera and gallery */}
-              <input
-                type="file"
-                ref={frontCameraRef}
-                onChange={(e) => handleFileChange(e, 'front')}
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-              />
-              <input
-                type="file"
-                ref={frontGalleryRef}
-                onChange={(e) => handleFileChange(e, 'front')}
-                accept="image/*"
-                className="hidden"
-              />
-              <input
-                type="file"
-                ref={backCameraRef}
-                onChange={(e) => handleFileChange(e, 'back')}
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-              />
-              <input
-                type="file"
-                ref={backGalleryRef}
-                onChange={(e) => handleFileChange(e, 'back')}
-                accept="image/*"
-                className="hidden"
-              />
+                  {/* Hidden file inputs for direct camera and gallery */}
+                  <input
+                    type="file"
+                    ref={primaryCameraRef}
+                    onChange={(e) => handleAddFiles(e.target.files)}
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                  />
+                  <input
+                    type="file"
+                    ref={primaryGalleryRef}
+                    onChange={(e) => handleAddFiles(e.target.files)}
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                  />
+                  <input
+                    type="file"
+                    ref={addCameraRef}
+                    onChange={(e) => handleAddFiles(e.target.files)}
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                  />
+                  <input
+                    type="file"
+                    ref={addGalleryRef}
+                    onChange={(e) => handleAddFiles(e.target.files)}
+                    accept="image/*"
+                    className="hidden"
+                  />
 
-              <div className="space-y-4">
-                {/* Optional Phone Input if not in booking flow or prop */}
-                {!token && !bookingId && (
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest text-zinc-400 mb-1.5 font-mono">
-                      Mobile Number (For 180-Day Vetted Pass)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="tel"
-                        value={inputPhone}
-                        onChange={(e) => setInputPhone(e.target.value)}
-                        placeholder="+91 98765 43210"
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-accent-gold/60 font-mono"
-                      />
-                      <Smartphone className="w-4 h-4 text-zinc-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-                )}
-
-                {/* Front ID */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-400 font-mono">
-                      Front of ID Document
-                    </p>
-                    {frontPreview && <span className="text-[10px] text-green-400 font-mono font-bold">✓ Front Captured</span>}
-                  </div>
-
-                  {!frontPreview ? (
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => frontCameraRef.current?.click()}
-                        className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-xl p-4 transition-all flex flex-col items-center justify-center gap-1.5 bg-white/[0.02] hover:bg-accent-gold/[0.03] group cursor-pointer"
-                      >
-                        <Camera className="w-5 h-5 text-accent-gold group-hover:scale-110 transition-transform" />
-                        <span className="text-xs text-white/80 font-medium">Take Photo</span>
-                        <span className="text-[9px] text-white/40 font-mono">Direct Camera</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => frontGalleryRef.current?.click()}
-                        className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-xl p-4 transition-all flex flex-col items-center justify-center gap-1.5 bg-white/[0.02] hover:bg-accent-gold/[0.03] group cursor-pointer"
-                      >
-                        <ImageIcon className="w-5 h-5 text-white/50 group-hover:text-accent-gold group-hover:scale-110 transition-transform" />
-                        <span className="text-xs text-white/80 font-medium">Upload File</span>
-                        <span className="text-[9px] text-white/40 font-mono">From Gallery</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="relative group">
-                      <IDScanningAnimation imagePreview={frontPreview} isScanning={loading} />
-                      <div className="absolute top-2 right-2 flex gap-1 z-10">
-                        <button
-                          type="button"
-                          onClick={() => frontCameraRef.current?.click()}
-                          className="px-2.5 py-1 bg-black/80 hover:bg-accent-gold hover:text-black border border-white/20 text-white rounded-lg text-[10px] font-mono transition-colors cursor-pointer"
-                        >
-                          Retake
-                        </button>
+                  <div className="space-y-4">
+                    {/* Optional Phone Input if not in booking flow or prop */}
+                    {!token && !bookingId && (
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-widest text-zinc-400 mb-1.5 font-mono">
+                          Mobile Number (For 180-Day Vetted Pass)
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="tel"
+                            value={inputPhone}
+                            onChange={(e) => setInputPhone(e.target.value)}
+                            placeholder="+91 98765 43210"
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-accent-gold/60 font-mono"
+                          />
+                          <Smartphone className="w-4 h-4 text-zinc-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                       </div>
+                    )}
+
+                    {/* Step 1: No images uploaded yet -> Big 1-Click Dual Action Zone */}
+                    {uploadedImages.length === 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-400 font-mono">
+                            Capture or Upload ID Document
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => primaryCameraRef.current?.click()}
+                            className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-2xl p-5 transition-all flex flex-col items-center justify-center gap-2 bg-white/[0.02] hover:bg-accent-gold/[0.03] group cursor-pointer"
+                          >
+                            <Camera className="w-6 h-6 text-accent-gold group-hover:scale-110 transition-transform" />
+                            <span className="text-xs text-white/90 font-medium">Take Photo</span>
+                            <span className="text-[9px] text-white/40 font-mono">Direct Camera</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => primaryGalleryRef.current?.click()}
+                            className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-2xl p-5 transition-all flex flex-col items-center justify-center gap-2 bg-white/[0.02] hover:bg-accent-gold/[0.03] group cursor-pointer"
+                          >
+                            <ImageIcon className="w-6 h-6 text-white/60 group-hover:text-accent-gold group-hover:scale-110 transition-transform" />
+                            <span className="text-xs text-white/90 font-medium">Upload File(s)</span>
+                            <span className="text-[9px] text-white/40 font-mono">Select 1 or 2 Photos</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 2: Uploaded Previews (1 or 2 images) */}
+                    {uploadedImages.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-400 font-mono">
+                            Uploaded Document ({uploadedImages.length}/2)
+                          </p>
+                          <span className="text-[10px] text-green-400 font-mono font-bold">
+                            ✓ {uploadedImages.length === 1 ? '1 Photo Ready' : 'Both Photos Ready'}
+                          </span>
+                        </div>
+
+                        <div className={`grid ${uploadedImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
+                          {uploadedImages.map((img, idx) => (
+                            <div key={img.id} className="relative group rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900">
+                              <IDScanningAnimation imagePreview={img.preview} isScanning={loading} />
+                              <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveImage(idx)}
+                                  disabled={loading}
+                                  className="p-1.5 bg-black/80 hover:bg-red-500 hover:text-white border border-white/20 text-white rounded-lg text-[10px] transition-colors cursor-pointer"
+                                  title="Remove Photo"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/75 rounded text-[9px] text-zinc-300 font-mono">
+                                {idx === 0 ? 'Document Photo 1' : 'Back / Photo 2'}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Optional 2nd image addition when 1 image is already added */}
+                        {uploadedImages.length === 1 && (
+                          <div className="border border-dashed border-zinc-800/80 rounded-xl p-3 bg-white/[0.01] flex items-center justify-between">
+                            <div className="text-left">
+                              <p className="text-[11px] text-zinc-300 font-medium">Add Back Side Photo?</p>
+                              <p className="text-[9px] text-zinc-500 font-mono">Optional if your document is in 1 photo</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => addCameraRef.current?.click()}
+                                className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white rounded-lg text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Camera className="w-3 h-3 text-accent-gold" />
+                                <span>Camera</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => addGalleryRef.current?.click()}
+                                className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white rounded-lg text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <ImageIcon className="w-3 h-3 text-accent-gold" />
+                                <span>Gallery</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs flex items-center gap-2 mt-4">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{error}</span>
                     </div>
                   )}
-                </div>
 
-                {/* Back ID */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-400 font-mono">
-                      Back of ID Document (Address)
-                    </p>
-                    {backPreview && <span className="text-[10px] text-green-400 font-mono font-bold">✓ Back Captured</span>}
-                  </div>
-
-                  {!backPreview ? (
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => backCameraRef.current?.click()}
-                        className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-xl p-4 transition-all flex flex-col items-center justify-center gap-1.5 bg-white/[0.02] hover:bg-accent-gold/[0.03] group cursor-pointer"
-                      >
-                        <Camera className="w-5 h-5 text-accent-gold group-hover:scale-110 transition-transform" />
-                        <span className="text-xs text-white/80 font-medium">Take Photo</span>
-                        <span className="text-[9px] text-white/40 font-mono">Direct Camera</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => backGalleryRef.current?.click()}
-                        className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-xl p-4 transition-all flex flex-col items-center justify-center gap-1.5 bg-white/[0.02] hover:bg-accent-gold/[0.03] group cursor-pointer"
-                      >
-                        <ImageIcon className="w-5 h-5 text-white/50 group-hover:text-accent-gold group-hover:scale-110 transition-transform" />
-                        <span className="text-xs text-white/80 font-medium">Upload File</span>
-                        <span className="text-[9px] text-white/40 font-mono">From Gallery</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="relative group">
-                      <IDScanningAnimation imagePreview={backPreview} isScanning={loading} />
-                      <div className="absolute top-2 right-2 flex gap-1 z-10">
-                        <button
-                          type="button"
-                          onClick={() => backCameraRef.current?.click()}
-                          className="px-2.5 py-1 bg-black/80 hover:bg-accent-gold hover:text-black border border-white/20 text-white rounded-lg text-[10px] font-mono transition-colors cursor-pointer"
-                        >
-                          Retake
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs flex items-center gap-2 mt-4">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <button
-                onClick={submitVerification}
-                disabled={loading || !frontPreview || !backPreview}
-                className="w-full mt-6 bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xl cursor-pointer"
-              >
-                {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                {loading ? 'Authenticating Security Hologram...' : 'Submit & Verify ID'}
-              </button>
+                  <button
+                    onClick={submitVerification}
+                    disabled={loading || uploadedImages.length === 0}
+                    className="w-full mt-6 bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xl cursor-pointer"
+                  >
+                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    {loading
+                      ? 'Authenticating Security Hologram...'
+                      : uploadedImages.length > 1
+                      ? 'Submit & Verify Both Photos'
+                      : 'Submit & Verify ID'}
+                  </button>
                 </>
               )}
             </div>

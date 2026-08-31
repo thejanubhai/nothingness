@@ -103,8 +103,9 @@ export async function callNvidiaChat(options: {
  * using NVIDIA Multimodal Vision AI with high accuracy and zero cost.
  */
 export async function extractDocumentWithNvidiaVision(params: {
-  frontBase64: string;
+  frontBase64?: string | null;
   backBase64?: string | null;
+  images?: string[];
   mimeType?: string;
 }): Promise<{
   success: boolean;
@@ -122,11 +123,23 @@ export async function extractDocumentWithNvidiaVision(params: {
   };
   error?: string;
 }> {
-  const { frontBase64, backBase64, mimeType = 'image/jpeg' } = params;
+  const { frontBase64, backBase64, images = [], mimeType = 'image/jpeg' } = params;
+
+  const imageList: string[] = [];
+  if (images.length > 0) {
+    imageList.push(...images);
+  } else {
+    if (frontBase64) imageList.push(frontBase64);
+    if (backBase64) imageList.push(backBase64);
+  }
+
+  if (imageList.length === 0) {
+    return { success: false, error: 'No image data provided for verification' };
+  }
 
   const promptText = `You are a strict automated Identity Verification and KYC System for luxury hospitality compliance under statutory Delhi Police regulations.
 
-Analyze the uploaded FRONT and BACK images carefully.
+Analyze the uploaded image(s) carefully. The user has provided 1 or 2 photos of their identity document (Aadhaar Card with front/back together in one image, e-Aadhaar, Passport page, or separate front and back photos).
 
 CRITICAL VERIFICATION RULES:
 1. STRICT GENUINE IDENTITY DOCUMENT ENFORCEMENT:
@@ -141,14 +154,14 @@ CRITICAL VERIFICATION RULES:
      reason: "Driving License, PAN Card, and Voter ID are not accepted. Please upload an official Aadhaar Card or Passport."
 
 3. AGE COMPLIANCE:
-   - The primary guest MUST be 18 years of age or older based on the Date of Birth (DOB).
+   - The primary guest MUST be 18 years of age or older based on Date of Birth (DOB).
    - If the guest is under 18, set valid: false, above18: false, reason: "Guest must be 18 years or older."
 
 4. DATA EXTRACTION:
    - Extract the full legal name (must be a real person's name printed on the card).
    - Extract the document number (Aadhaar number / last 4 digits or Passport number).
    - Extract DOB (DD/MM/YYYY) and permanent address if visible.
-   - If name or document number is unreadable, blurry, or missing, set valid: false with reason: "Document details are blurry or unreadable. Please upload a clear photo."
+   - If document is genuine and name & document number are readable, set valid: true.
 
 Return ONLY a valid raw JSON object matching this exact schema (NO markdown formatting or fences):
 {
@@ -164,18 +177,14 @@ Return ONLY a valid raw JSON object matching this exact schema (NO markdown form
   "reason": "Rejection reason if valid is false"
 }`;
 
-  const cleanFront = frontBase64.includes('base64,') ? frontBase64.split('base64,')[1] : frontBase64;
-  const frontDataUrl = `data:${mimeType};base64,${cleanFront}`;
+  const contentParts: any[] = [{ type: 'text', text: promptText }];
 
-  const contentParts: any[] = [
-    { type: 'text', text: promptText },
-    { type: 'image_url', image_url: { url: frontDataUrl } },
-  ];
-
-  if (backBase64) {
-    const cleanBack = backBase64.includes('base64,') ? backBase64.split('base64,')[1] : backBase64;
-    const backDataUrl = `data:${mimeType};base64,${cleanBack}`;
-    contentParts.push({ type: 'image_url', image_url: { url: backDataUrl } });
+  for (const rawImg of imageList) {
+    const cleanImg = rawImg.includes('base64,') ? rawImg.split('base64,')[1] : rawImg;
+    contentParts.push({
+      type: 'image_url',
+      image_url: { url: `data:${mimeType};base64,${cleanImg}` },
+    });
   }
 
   const result = await callNvidiaChat({

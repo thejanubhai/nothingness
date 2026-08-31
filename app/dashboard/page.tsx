@@ -17,12 +17,20 @@ export default async function DashboardOverview() {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
-    redirect('/auth');
+    redirect('/auth?redirect=/dashboard');
   }
+
+  // Handle synthetic bridge emails
+  const isSyntheticEmail = Boolean(user.email && user.email.includes('@auth.nothingness'));
+  const effectivePhone = user.phone
+    ? user.phone.replace(/[^0-9+]/g, '')
+    : isSyntheticEmail && user.email
+    ? user.email.split('@')[0].replace(/[^0-9+]/g, '')
+    : null;
 
   // Security Isolation: If admin lands on /dashboard, redirect them directly to /admin command center
   const adminIdentifier = env.ADMIN ? normalizeIdentifier(env.ADMIN) : null;
-  const userPhone = user.phone ? normalizeIdentifier(user.phone) : null;
+  const userPhone = effectivePhone ? normalizeIdentifier(effectivePhone) : null;
   const isAdmin = (adminIdentifier && userPhone === adminIdentifier) || 
                   Boolean(user.email && (user.email.includes('admin') || user.email.includes('hudav')));
 
@@ -45,12 +53,11 @@ export default async function DashboardOverview() {
 
   // 2. Fetch Identity Profile from guest_profiles by phone or user_id
   let profile = null;
-  if (user.phone) {
-    const cleanPhone = user.phone.replace(/[^0-9+]/g, '');
+  if (effectivePhone) {
     const { data: pData } = await supabase
       .from('guest_profiles')
       .select('*')
-      .eq('phone', cleanPhone)
+      .eq('phone', effectivePhone)
       .limit(1)
       .maybeSingle();
     profile = pData;

@@ -17,7 +17,7 @@ export async function handleAiFallback(
   let spacesInfo = "Available Luxury Sanctuaries & Max Guest Limits:\n";
   if (activeSpaces && activeSpaces.length > 0) {
     activeSpaces.forEach(s => {
-      spacesInfo += `- ${s.title}: Max ${s.max_guests} Guests (Check-in ${s.check_in_time || '3:00 PM'}, Check-out ${s.check_out_time || '11:00 AM'}). Key Info: ${s.key_instructions || 'Key lockbox'}\n`;
+      spacesInfo += `- ${s.title}: Max ${s.max_guests} Guests (Check-in ${s.check_in_time || '1:00 PM onwards'}, Check-out ${s.check_out_time || 'Strictly 11:00 AM'}). Key Info: ${s.key_instructions || 'Key lockbox'}\n`;
     });
   }
 
@@ -42,7 +42,9 @@ You are the Nothingness Stays AI Concierge. You handle guest inquiries outside o
 
 ${spacesInfo}
 
-Guest Verification & Account Rules:
+Guest Policy & Timings:
+- Check-in: Anytime after 1:00 PM (1:00 PM onwards with autonomous keyless lockbox PIN).
+- Check-out: Strictly 11:00 AM across all properties to ensure professional sanitization and turnover.
 - Primary bookers can add accompanying guests up to the listing's max guest capacity.
 - Every verified accompanying guest receives their own verified Nothingness Guest Account (valid for 180 days across all stays).
 - Only Aadhaar Card and Passport are accepted (Driving License and Voter ID are strictly rejected).
