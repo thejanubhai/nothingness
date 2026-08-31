@@ -137,36 +137,37 @@ export async function extractDocumentWithNvidiaVision(params: {
     return { success: false, error: 'No image data provided for verification' };
   }
 
-  const promptText = `You are an automated Identity Document Verification AI for luxury hospitality compliance under statutory Delhi Police regulations.
+  const promptText = `You are an automated Hospitality Identity Document Extraction & KYC AI.
 
-Analyze the uploaded image(s) carefully. The user has uploaded 1 or 2 photos of their identity document (Aadhaar Card with front/back together in one image, e-Aadhaar PDF printout, PVC Aadhaar card, Passport bio page, or separate front and back photos).
+Analyze the uploaded image(s). Just like in luxury hotel check-ins, guests provide a physical Aadhaar card, a clear photo of their card, a photocopy / printed scan, an e-Aadhaar sheet, a PVC card, or a Passport.
 
-VERIFICATION RULES:
-1. STRICT GENUINE IDENTITY ENFORCEMENT:
-   - Accept Indian AADHAAR CARDS (showing UIDAI logo, Government of India emblem, Mera Aadhaar Meri Pehchan, 12-digit number, masked number XXXX XXXX 1234, QR code, or address) and international PASSPORTS.
-   - Both full 12-digit Aadhaar and Masked Aadhaar (e.g. XXXX XXXX 1234 or •••• •••• 5678) are 100% VALID and legally compliant.
-   - If the image is NOT a government ID (e.g., food, chicken, eggs, memes, animals, selfies, landscapes, clothing, random objects), set valid: false with reason: "The uploaded image does not contain an official government identity document (Aadhaar Card or Passport)."
+HOSPITALITY EXTRACTION GUIDELINES:
+1. ACCEPT ALL GENUINE AADHAAR & PASSPORT FORMATS:
+   - Accept standard Aadhaar cards, photocopies, scanned prints, e-Aadhaar, PVC smart cards, or Passport bio pages.
+   - Both full 12-digit numbers and masked numbers (e.g. XXXX XXXX 1234) are 100% valid.
+   - As long as the document is an Indian Aadhaar or Passport, set "valid": true.
 
-2. UNACCEPTED DOCUMENTS:
-   - Driving License, PAN Card, Voter ID, Student IDs are NOT accepted. Set valid: false with reason: "Driving License, PAN Card, and Voter ID are not accepted. Please upload an Aadhaar Card or Passport."
+2. REJECT ONLY OBVIOUS NON-ID IMAGES:
+   - Only reject if the image is completely unrelated to identification (e.g. food, chicken, eggs, animals, memes, landscapes, clothing, random selfies, app screenshots).
+   - If Driving License or PAN card is uploaded, set "valid": false, "reason": "Please upload an Aadhaar Card or Passport."
 
-3. DATA EXTRACTION:
-   - If the document is a genuine Aadhaar or Passport, set "valid": true.
-   - Extract full legal name from the card (e.g. "John Doe").
-   - Extract document number (e.g. 12-digit UID, masked XXXX XXXX 1234, or Passport number).
-   - Extract DOB (DD/MM/YYYY) and permanent address if present.
-   - Set "document_type": "Aadhaar" or "Passport".
-   - Primary guest must be 18+ years old based on DOB (if visible or adult card, set above18: true).
+3. ACCURATE DETAIL EXTRACTION:
+   - "name": Extract the guest's full legal name as printed on the card.
+   - "document_number": Extract the 12-digit Aadhaar number (or masked number / Passport number).
+   - "dob": Extract the Date of Birth (DD/MM/YYYY) or Year of Birth.
+   - "permanent_address": Extract the residential address (from the back side if provided).
+   - "document_type": "Aadhaar" or "Passport".
+   - "above18": true (unless DOB clearly indicates a minor).
 
-Return ONLY valid JSON (no markdown formatting):
+Return ONLY valid JSON (no markdown fences):
 {
   "valid": true,
-  "name": "Extracted Legal Name",
+  "name": "Full Legal Name",
   "dob": "DD/MM/YYYY",
   "above18": true,
   "document_type": "Aadhaar",
   "document_number": "1234 5678 9012",
-  "permanent_address": "Address if visible",
+  "permanent_address": "Residential address",
   "is_foreign_national": false,
   "nationality": "Indian",
   "reason": ""
