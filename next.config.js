@@ -6,7 +6,8 @@ const nextConfig = {
   serverExternalPackages: [
     'qrcode',
     'node-ical',
-    '@google/genai'
+    '@google/genai',
+    'cloudinary'
   ],
   experimental: {
     optimizePackageImports: [

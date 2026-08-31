@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import SingleSpaceClient from "./SingleSpaceClient";
 import SpaceCarousel from "@/components/SpaceCarousel";
 import { createClient } from "@/lib/supabase/server";
+import { getOptimizedImageUrl } from "@/lib/cloudinary/client";
 import Script from "next/script";
 
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const title = `${space.title} | Luxury Private Sanctuary in ${space.city || 'Delhi NCR'}`;
   const description = space.description;
   const canonicalUrl = `https://nothingness.asia/spaces/${slug}`;
+  const ogImageUrl = getOptimizedImageUrl(space.featured_image || '/images/IMG_9955.jpg', { width: 1200, height: 630, crop: 'fill' });
 
   return {
     title,
@@ -31,7 +33,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title,
       description,
       url: canonicalUrl,
-      images: [space.featured_image || '/images/IMG_9955.jpg'],
+      images: [ogImageUrl],
       type: 'website',
       locale: 'en_IN',
     },
@@ -39,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       card: 'summary_large_image',
       title,
       description,
-      images: [space.featured_image || '/images/IMG_9955.jpg'],
+      images: [ogImageUrl],
     }
   };
 }

@@ -327,7 +327,7 @@ function parseAirbnbHtml(html: string, url: string, listingId: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { url } = await request.json();
+    const { url, mirrorToCloudinary = false } = await request.json();
 
     if (!url || !url.includes('airbnb.')) {
       return NextResponse.json({ success: false, error: 'Invalid Airbnb URL' }, { status: 400 });
@@ -362,6 +362,27 @@ export async function POST(request: NextRequest) {
 
     const html = await response.text();
     const data = parseAirbnbHtml(html, url, listingId);
+
+    // Optional: Mirror photos to Cloudinary if requested and configured
+    if (mirrorToCloudinary && data.photos && data.photos.length > 0) {
+      try {
+        const { mirrorRemoteImageToCloudinary, isCloudinaryConfigured } = await import('@/lib/cloudinary/server');
+        if (isCloudinaryConfigured()) {
+          const mirroredPhotos: string[] = [];
+          for (const photoUrl of data.photos.slice(0, 10)) {
+            const mirrorRes = await mirrorRemoteImageToCloudinary(photoUrl, `nothingness/spaces/${data.slug}`);
+            if (mirrorRes.success && mirrorRes.url) {
+              mirroredPhotos.push(mirrorRes.url);
+            } else {
+              mirroredPhotos.push(photoUrl);
+            }
+          }
+          data.photos = mirroredPhotos;
+        }
+      } catch (mirrorErr) {
+        console.warn('[Airbnb Scraper] Cloudinary photo mirror warning:', mirrorErr);
+      }
+    }
 
     return NextResponse.json({
       success: true,

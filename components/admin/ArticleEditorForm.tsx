@@ -9,9 +9,10 @@ import { createArticle, updateArticle, generateArticleWithAI } from '@/app/actio
 import { 
   ArrowLeft, Save, Sparkles, Image as ImageIcon, Tag, 
   Clock, Eye, FileText, CheckCircle2, AlertCircle, Loader2,
-  Wand2, ChevronDown
+  Wand2, ChevronDown, UploadCloud
 } from 'lucide-react';
 import { toast } from 'sonner';
+import CloudinaryUploadZone from '@/components/admin/CloudinaryUploadZone';
 
 interface ArticleEditorFormProps {
   initialData?: Partial<Article>;
@@ -493,9 +494,17 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
 
             {/* Cover Image URL */}
             <div className="md:col-span-2 space-y-2">
-              <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
-                Cover Image URL / Path *
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                  Cover Image URL / Path *
+                </label>
+                <CloudinaryUploadZone
+                  buttonOnly={true}
+                  folder="nothingness/journal"
+                  onUploadSuccess={(url) => setCoverImage(url)}
+                  buttonLabel="Upload Cover Image"
+                />
+              </div>
               <input
                 type="text"
                 required

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BookOpen } from 'lucide-react';
 import CancelBookingButton from '@/components/CancelBookingButton';
 import GuestVerificationList from '@/components/GuestVerificationList';
+import CloudinaryImage from '@/components/CloudinaryImage';
 
 export const metadata: Metadata = {
   title: 'My Bookings | Guest Portal',
@@ -44,11 +45,13 @@ export default async function BookingsPage() {
         <div className="space-y-6">
           {bookings.map((booking: any) => (
             <div key={booking.id} className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-8">
-              <div className="w-full md:w-48 aspect-[4/3] relative rounded-2xl overflow-hidden shrink-0 border border-white/10">
-                <img 
+              <div className="w-full md:w-48 aspect-[4/3] relative rounded-2xl overflow-hidden shrink-0 border border-white/10 bg-zinc-900">
+                <CloudinaryImage 
                   src={booking.spaces?.featured_image || ''} 
                   alt={booking.spaces?.title || 'Sanctuary'}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  transformOptions={{ width: 400, height: 300, crop: 'fill', quality: 'auto' }}
                 />
               </div>
               

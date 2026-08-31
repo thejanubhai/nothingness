@@ -110,7 +110,7 @@ export async function extractDocumentWithNvidiaVision(params: {
   success: boolean;
   extracted?: {
     valid: boolean;
-    name: string;
+    name?: string;
     dob?: string;
     above18?: boolean;
     document_type?: string;
@@ -124,26 +124,44 @@ export async function extractDocumentWithNvidiaVision(params: {
 }> {
   const { frontBase64, backBase64, mimeType = 'image/jpeg' } = params;
 
-  const promptText = `Analyze these images representing the FRONT and BACK of a guest identity document for "Nothingness" luxury retreats.
+  const promptText = `You are a strict automated Identity Verification and KYC System for luxury hospitality compliance under statutory Delhi Police regulations.
 
-STRICT VERIFICATION RULES:
-1. Document MUST be an official AADHAAR CARD or PASSPORT.
-2. Driving License (DL), Voter ID, PAN Card, or any other document MUST BE STRICTLY REJECTED with reason: "Driving License and Voter ID are not accepted. Please upload a clear Aadhaar Card or Passport."
-3. Primary booker MUST be 18 years of age or older based on Date of Birth.
-4. Extract full name, document type ("Aadhaar" or "Passport"), document number, DOB (DD/MM/YYYY), and permanent address.
+Analyze the uploaded FRONT and BACK images carefully.
 
-Return ONLY a valid JSON object matching this exact schema (no markdown fences):
+CRITICAL VERIFICATION RULES:
+1. STRICT GENUINE IDENTITY DOCUMENT ENFORCEMENT:
+   - The image MUST clearly be an official Indian AADHAAR CARD (showing UIDAI logo, Government of India emblem, 12-digit/masked UID, QR code) or an official international PASSPORT.
+   - If the image contains ANY non-ID content (such as food, chicken, eggs, animals, memes, selfies, landscapes, vehicles, clothing, screenshots of apps, or random objects), you MUST IMMEDIATELY REJECT with:
+     valid: false
+     reason: "The uploaded image does not contain an official government identity document (Aadhaar Card or Passport)."
+
+2. UNACCEPTED DOCUMENT TYPES:
+   - Driving Licenses, Voter IDs, PAN Cards, Student IDs, Ration Cards, and Company IDs are STRICTLY REJECTED with:
+     valid: false
+     reason: "Driving License, PAN Card, and Voter ID are not accepted. Please upload an official Aadhaar Card or Passport."
+
+3. AGE COMPLIANCE:
+   - The primary guest MUST be 18 years of age or older based on the Date of Birth (DOB).
+   - If the guest is under 18, set valid: false, above18: false, reason: "Guest must be 18 years or older."
+
+4. DATA EXTRACTION:
+   - Extract the full legal name (must be a real person's name printed on the card).
+   - Extract the document number (Aadhaar number / last 4 digits or Passport number).
+   - Extract DOB (DD/MM/YYYY) and permanent address if visible.
+   - If name or document number is unreadable, blurry, or missing, set valid: false with reason: "Document details are blurry or unreadable. Please upload a clear photo."
+
+Return ONLY a valid raw JSON object matching this exact schema (NO markdown formatting or fences):
 {
-  "valid": true,
+  "valid": false,
   "name": "Full Legal Name",
   "dob": "DD/MM/YYYY",
   "above18": true,
   "document_type": "Aadhaar",
-  "document_number": "XXXX",
-  "permanent_address": "Extracted address from card",
+  "document_number": "XXXX XXXX XXXX",
+  "permanent_address": "Residential address",
   "is_foreign_national": false,
   "nationality": "Indian",
-  "reason": "Reason if rejected"
+  "reason": "Rejection reason if valid is false"
 }`;
 
   const cleanFront = frontBase64.includes('base64,') ? frontBase64.split('base64,')[1] : frontBase64;

@@ -37,6 +37,15 @@ const envSchema = z.object({
   PAYU_ENV: z.enum(['TEST', 'SANDBOX', 'PRODUCTION']).default('PRODUCTION'),
   NEXT_PUBLIC_PAYU_KEY: z.string().optional(),
 
+  // Cloudinary Media Delivery & Storage Configuration
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+  CLOUDINARY_URL: z.string().optional(),
+  CLOUDINARY_WEBHOOK_SECRET: z.string().optional(),
+  CLOUDINARY_UPLOAD_PRESET: z.string().optional(),
+
   NVIDIA_API_KEY: z.string().optional(),
   NVIDIA_AI_API_KEY: z.string().optional(),
   nVidia_AI_API_Key: z.string().optional(),
@@ -82,6 +91,15 @@ export const env = envSchema.parse({
   PayU_Client_Secret: process.env.PayU_Client_Secret || process.env.PAYU_CLIENT_SECRET,
   PAYU_ENV: process.env.PAYU_ENV || process.env.PayU_Env,
   NEXT_PUBLIC_PAYU_KEY: process.env.NEXT_PUBLIC_PAYU_KEY || process.env.PAYU_KEY || process.env.PayU_Key,
+
+  // Cloudinary
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+  CLOUDINARY_URL: process.env.CLOUDINARY_URL,
+  CLOUDINARY_WEBHOOK_SECRET: process.env.CLOUDINARY_WEBHOOK_SECRET || process.env.CLOUDINARY_API_SECRET,
+  CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET,
 
   NVIDIA_API_KEY: process.env.NVIDIA_API_KEY || process.env.nVidia_AI_API_Key || process.env.NVIDIA_AI_API_KEY,
   NVIDIA_AI_API_KEY: process.env.NVIDIA_AI_API_KEY || process.env.nVidia_AI_API_Key || process.env.NVIDIA_API_KEY,

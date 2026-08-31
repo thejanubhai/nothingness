@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, MapPin, Sparkles, Key, Star, CheckCircle2, ShieldCheck, Heart, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import BookingWidget from '@/components/BookingWidget';
+import CloudinaryImage from '@/components/CloudinaryImage';
 
 interface Space {
   id: string;
@@ -140,10 +141,14 @@ export default function PropertySwipeDeck() {
       >
         
         {/* Background Image Carousel */}
-        <img
+        <CloudinaryImage
           src={spaceImages[activeImageIndex]}
           alt={currentSpace.title}
-          className="w-full h-full object-cover transition-opacity duration-300"
+          fill
+          priority={currentIndex === 0}
+          className="object-cover transition-opacity duration-300"
+          sizes="(max-width: 640px) 100vw, 600px"
+          transformOptions={{ width: 900, height: 1200, crop: 'fill', quality: 'auto' }}
         />
 
         {/* Dark Vignette Overlay for Crisp Typography */}

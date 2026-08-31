@@ -21,6 +21,17 @@ export async function POST(req: Request) {
     const sessionUserId = user?.id || null;
     const sessionEmail = user?.email || null;
 
+    // Enforce authentication for standalone / lifestyle ID verifications
+    if (!token && !bookingId && !sessionUserId) {
+      return NextResponse.json(
+        {
+          verified: false,
+          error: 'Authentication Required: Please sign in with Mobile OTP to verify your ID and link it to your account.',
+        },
+        { status: 401 }
+      );
+    }
+
     const effectivePhone = phone
       ? phone.replace(/[^0-9+]/g, '')
       : sessionPhone;
@@ -98,7 +109,7 @@ export async function POST(req: Request) {
     // 2. Optical Document Recognition via Primary NVIDIA NIM Vision AI (with Gemini Fallback)
     let result: {
       valid: boolean;
-      name: string;
+      name?: string;
       dob?: string;
       above18?: boolean;
       document_type?: string;
@@ -108,13 +119,8 @@ export async function POST(req: Request) {
       nationality?: string;
       reason?: string;
     } = {
-      valid: true,
-      name: 'Nothingness Guest',
-      document_type: 'Aadhaar',
-      document_number: '',
-      above18: true,
-      nationality: 'Indian',
-      is_foreign_national: false,
+      valid: false,
+      reason: 'Could not detect an official identity document (Aadhaar Card or Passport) in the uploaded images.',
     };
 
     let visionSucceeded = false;
@@ -144,27 +150,45 @@ export async function POST(req: Request) {
           const { GoogleGenAI } = await import('@google/genai');
           const ai = new GoogleGenAI({ apiKey });
 
-          const prompt = `Analyze these two images representing the FRONT and BACK of a guest identity document for "Nothingness" luxury retreats.
-          
-          STRICT VERIFICATION RULES:
-          1. Document MUST be an official AADHAAR CARD or PASSPORT. 
-          2. Driving License (DL), Voter ID, PAN Card, or any other document MUST BE STRICTLY REJECTED with reason: "Driving License and Voter ID are not accepted. Please upload a clear Aadhaar Card or Passport."
-          3. Primary booker MUST be 18 years of age or older based on Date of Birth.
-          4. Extract full name, document type ("Aadhaar" or "Passport"), document number, DOB, and permanent address.
-          
-          Return ONLY a valid JSON object matching this exact schema:
-          {
-            "valid": true,
-            "name": "Full Legal Name",
-            "dob": "DD/MM/YYYY",
-            "above18": true,
-            "document_type": "Aadhaar" or "Passport",
-            "document_number": "XXXX",
-            "permanent_address": "Extracted address from card",
-            "is_foreign_national": false,
-            "nationality": "Indian",
-            "reason": "Reason if rejected"
-          }`;
+          const prompt = `You are a strict automated Identity Verification and KYC System for luxury hospitality compliance under statutory Delhi Police regulations.
+
+Analyze the uploaded FRONT and BACK images carefully.
+
+CRITICAL VERIFICATION RULES:
+1. STRICT GENUINE IDENTITY DOCUMENT ENFORCEMENT:
+   - The image MUST clearly be an official Indian AADHAAR CARD (showing UIDAI logo, Government of India emblem, 12-digit/masked UID, QR code) or an official international PASSPORT.
+   - If the image contains ANY non-ID content (such as food, chicken, eggs, animals, memes, selfies, landscapes, vehicles, clothing, screenshots of apps, or random objects), you MUST IMMEDIATELY REJECT with:
+     "valid": false,
+     "reason": "The uploaded image does not contain an official government identity document (Aadhaar Card or Passport)."
+
+2. UNACCEPTED DOCUMENT TYPES:
+   - Driving Licenses, Voter IDs, PAN Cards, Student IDs, Ration Cards, and Company IDs are STRICTLY REJECTED with:
+     "valid": false,
+     "reason": "Driving License, PAN Card, and Voter ID are not accepted. Please upload an official Aadhaar Card or Passport."
+
+3. AGE COMPLIANCE:
+   - The primary guest MUST be 18 years of age or older based on the Date of Birth (DOB).
+   - If the guest is under 18, set "valid": false, "above18": false, "reason": "Guest must be 18 years or older."
+
+4. DATA EXTRACTION:
+   - Extract the full legal name (must be a real person's name printed on the card).
+   - Extract the document number (Aadhaar number / last 4 digits or Passport number).
+   - Extract DOB (DD/MM/YYYY) and permanent address if visible.
+   - If name or document number is unreadable, blurry, or missing, set "valid": false with "reason": "Document details are blurry or unreadable. Please upload a clear photo."
+
+Return ONLY a valid raw JSON object matching this exact schema:
+{
+  "valid": true,
+  "name": "Full Legal Name",
+  "dob": "DD/MM/YYYY",
+  "above18": true,
+  "document_type": "Aadhaar",
+  "document_number": "XXXX XXXX XXXX",
+  "permanent_address": "Residential address",
+  "is_foreign_national": false,
+  "nationality": "Indian",
+  "reason": "Rejection reason if valid is false"
+}`;
 
           const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -185,6 +209,7 @@ export async function POST(req: Request) {
           const parsed = JSON.parse(cleanJson);
           if (parsed && typeof parsed === 'object') {
             result = { ...result, ...parsed };
+            visionSucceeded = true;
           }
         } catch (aiErr: any) {
           console.warn('[Verify ID] Gemini OCR processing warning:', aiErr?.message);
@@ -192,13 +217,29 @@ export async function POST(req: Request) {
       }
     }
 
-    if (!result.valid) {
+    if (!visionSucceeded) {
+      return NextResponse.json(
+        {
+          verified: false,
+          error:
+            'Identity verification AI service is temporarily unavailable or could not process the images. Please ensure clear photos of an official Aadhaar Card or Passport are uploaded.',
+        },
+        { status: 503 }
+      );
+    }
+
+    const cleanName = result.name?.trim();
+    const cleanDocNumber = result.document_number?.trim().toUpperCase();
+    const isDocTypeValid = result.document_type === 'Aadhaar' || result.document_type === 'Passport';
+    const isNameValid = Boolean(cleanName && cleanName.length >= 2 && cleanName !== 'Nothingness Guest' && cleanName !== 'Guest');
+
+    if (!result.valid || !isDocTypeValid || !isNameValid || !cleanDocNumber) {
       return NextResponse.json(
         {
           verified: false,
           reason:
             result.reason ||
-            'Driving License and Voter ID are not accepted due to verification regulations. Please submit a valid Aadhaar Card or Passport.',
+            'The uploaded image could not be verified as an official Aadhaar Card or Passport. Please submit clear photos of a genuine document.',
         },
         { status: 400 }
       );

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
+import { getOptimizedImageUrl } from '@/lib/cloudinary/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -78,13 +79,14 @@ export default function PropertyCarousel({ images, title }: { images: string[], 
             className="absolute inset-0 cursor-pointer"
             onClick={() => setLightboxOpen(true)}
           >
-            <Image 
+            <CloudinaryImage 
               src={images[currentIndex]}
               alt={`${title} - ${currentIndex + 1}`}
               fill
               priority={currentIndex === 0}
               className="object-cover"
               sizes="100vw"
+              transformOptions={{ width: 1920, quality: 'auto', crop: 'fill' }}
             />
           </motion.div>
         </AnimatePresence>
@@ -143,7 +145,9 @@ export default function PropertyCarousel({ images, title }: { images: string[], 
         open={lightboxOpen}
         close={() => setLightboxOpen(false)}
         index={currentIndex}
-        slides={images.map((src) => ({ src }))}
+        slides={images.map((src) => ({
+          src: getOptimizedImageUrl(src, { width: 2400, quality: 'auto', crop: 'fit' })
+        }))}
         styles={{ container: { backgroundColor: "rgba(0, 0, 0, 0.95)" } }}
       />
     </>

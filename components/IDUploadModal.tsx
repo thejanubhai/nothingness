@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle2,
@@ -11,6 +12,8 @@ import {
   AlertCircle,
   Image as ImageIcon,
   Smartphone,
+  Lock,
+  ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import IDScanningAnimation from '@/components/IDScanningAnimation';
@@ -35,6 +38,7 @@ export default function IDUploadModal({
   bookingId,
   onSuccess,
 }: IDUploadModalProps) {
+  const router = useRouter();
   const frontCameraRef = useRef<HTMLInputElement>(null);
   const frontGalleryRef = useRef<HTMLInputElement>(null);
   const backCameraRef = useRef<HTMLInputElement>(null);
@@ -49,26 +53,29 @@ export default function IDUploadModal({
   const [inputPhone, setInputPhone] = useState(initialPhone || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [checkingAuth, setCheckingAuth] = useState(!token && !bookingId);
 
   // Auto-fetch logged in user's phone if not passed as prop
   useEffect(() => {
     if (isOpen) {
-      if (initialPhone) {
-        setInputPhone(initialPhone);
-      } else {
-        const fetchUserPhone = async () => {
-          try {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user?.phone) {
-              setInputPhone(user.phone);
-            }
-          } catch (e) {
-            // ignore
+      const checkUserSession = async () => {
+        try {
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          setCurrentUser(user);
+          if (user?.phone) {
+            setInputPhone(user.phone);
+          } else if (initialPhone) {
+            setInputPhone(initialPhone);
           }
-        };
-        fetchUserPhone();
-      }
+        } catch (e) {
+          // ignore
+        } finally {
+          setCheckingAuth(false);
+        }
+      };
+      checkUserSession();
     }
   }, [isOpen, initialPhone]);
 
@@ -191,24 +198,51 @@ export default function IDUploadModal({
 
             <div className="p-5 sm:p-8">
               <div className="sheet-drag-pill sm:hidden" />
-              <div className="flex items-center gap-2 mb-2">
-                <span className="px-2.5 py-0.5 rounded-md bg-accent-gold/10 text-accent-gold border border-accent-gold/20 text-[10px] uppercase font-mono tracking-wider flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3" /> Digital Security Scan
-                </span>
-                <span className="px-2.5 py-0.5 rounded-md bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] uppercase font-mono tracking-wider">
-                  Delhi Police Compliant
-                </span>
-              </div>
 
-              <h2 className="font-serif text-xl sm:text-2xl mb-1.5 text-white">Digital Guest ID Verification</h2>
-              <p className="text-xs sm:text-sm text-zinc-400 mb-4 leading-relaxed">
-                Upload clear front &amp; back photos of your <span className="text-white font-medium">Aadhaar Card</span> or{' '}
-                <span className="text-white font-medium">Passport</span>.
-                <br />
-                <span className="text-[10px] sm:text-[11px] text-amber-400/90 mt-1 inline-block font-mono">
-                  ⚠️ Driving License &amp; Voter ID are not accepted per hospitality regulations.
-                </span>
-              </p>
+              {!token && !bookingId && !currentUser && !checkingAuth ? (
+                <div className="text-center py-6 space-y-4">
+                  <div className="w-14 h-14 bg-accent-gold/10 border border-accent-gold/20 rounded-full flex items-center justify-center mx-auto text-accent-gold">
+                    <Lock className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="font-serif text-xl sm:text-2xl text-white mb-2">Sign In Required</h2>
+                    <p className="text-xs text-zinc-400 max-w-sm mx-auto leading-relaxed">
+                      To securely link your 180-Day Vetted ID Pass and membership permissions to your profile, please sign in with Mobile OTP first.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      const returnPath = typeof window !== 'undefined' ? window.location.pathname : '/dashboard';
+                      router.push(`/auth?redirect=${encodeURIComponent(returnPath)}`);
+                    }}
+                    className="w-full mt-4 bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 shadow-xl flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Sign In with Mobile OTP</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2.5 py-0.5 rounded-md bg-accent-gold/10 text-accent-gold border border-accent-gold/20 text-[10px] uppercase font-mono tracking-wider flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" /> Digital Security Scan
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-md bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] uppercase font-mono tracking-wider">
+                      Delhi Police Compliant
+                    </span>
+                  </div>
+
+                  <h2 className="font-serif text-xl sm:text-2xl mb-1.5 text-white">Digital Guest ID Verification</h2>
+                  <p className="text-xs sm:text-sm text-zinc-400 mb-4 leading-relaxed">
+                    Upload clear front &amp; back photos of your <span className="text-white font-medium">Aadhaar Card</span> or{' '}
+                    <span className="text-white font-medium">Passport</span>.
+                    <br />
+                    <span className="text-[10px] sm:text-[11px] text-amber-400/90 mt-1 inline-block font-mono">
+                      ⚠️ Driving License &amp; Voter ID are not accepted per hospitality regulations.
+                    </span>
+                  </p>
 
               {/* Hidden file inputs for direct camera and gallery */}
               <input
@@ -372,6 +406,8 @@ export default function IDUploadModal({
                 {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 {loading ? 'Authenticating Security Hologram...' : 'Submit & Verify ID'}
               </button>
+                </>
+              )}
             </div>
           </motion.div>
         </motion.div>

@@ -2,16 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Plus, X, Star, Link as LinkIcon, Download, Calendar, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Star, Link as LinkIcon, Download, Calendar, Image as ImageIcon, Cloud, UploadCloud } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import CloudinaryUploadZone from '@/components/admin/CloudinaryUploadZone';
+import CloudinaryImage from '@/components/CloudinaryImage';
 
 export default function AddSpacePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [airbnbUrl, setAirbnbUrl] = useState('');
+  const [mirrorAirbnb, setMirrorAirbnb] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -61,7 +64,7 @@ export default function AddSpacePage() {
       const res = await fetch('/api/spaces/scrape-airbnb', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: airbnbUrl })
+        body: JSON.stringify({ url: airbnbUrl, mirrorToCloudinary: mirrorAirbnb })
       });
       
       const result = await res.json();
@@ -277,12 +280,27 @@ export default function AddSpacePage() {
             {importing ? (
               <span className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                Importing...
+                Importing &amp; Processing...
               </span>
             ) : (
               'Fetch Listing'
             )}
           </button>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1">
+          <label className="flex items-center gap-2.5 cursor-pointer text-xs text-white/70 hover:text-white transition-colors">
+            <input
+              type="checkbox"
+              checked={mirrorAirbnb}
+              onChange={(e) => setMirrorAirbnb(e.target.checked)}
+              className="w-4 h-4 rounded accent-accent-gold bg-transparent"
+            />
+            <span className="flex items-center gap-1.5">
+              <Cloud className="w-3.5 h-3.5 text-accent-gold" />
+              <span>Mirror Airbnb photos directly to Cloudinary CDN (Recommended for 100% uptime &amp; WebP optimization)</span>
+            </span>
+          </label>
         </div>
       </div>
 
@@ -343,14 +361,35 @@ export default function AddSpacePage() {
         {/* Gallery Section */}
         <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 md:p-8 space-y-6">
           <div className="flex justify-between items-center border-b border-white/10 pb-4">
-            <h2 className="font-serif text-xl text-white">Photo Gallery</h2>
-            <button type="button" onClick={addImage} className="flex items-center gap-1 text-xs text-accent-gold hover:text-white transition-colors">
-              <Plus className="w-3 h-3" /> Add Image
-            </button>
+            <div>
+              <h2 className="font-serif text-xl text-white">Photo Gallery</h2>
+              <p className="text-xs text-white/40 font-mono mt-0.5">High-resolution images delivered via Cloudinary CDN</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                type="button" 
+                onClick={addImage} 
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-white/70 hover:text-white transition-colors"
+              >
+                <LinkIcon className="w-3 h-3" /> Add Image URL
+              </button>
+            </div>
           </div>
+
+          {/* Cloudinary Direct Dropzone */}
+          <CloudinaryUploadZone
+            folder={`nothingness/spaces/${formData.slug || 'general'}`}
+            multiple={true}
+            onUploadSuccess={(url) => {
+              setImages(prev => [...prev, url]);
+              if (!formData.featured_image) {
+                setFormData(prev => ({ ...prev, featured_image: url }));
+              }
+            }}
+          />
           
           {images.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">
               {images.map((url, idx) => (
                 <div key={idx} className={`relative group aspect-square rounded-lg overflow-hidden border ${formData.featured_image === url ? 'border-accent-gold' : 'border-white/10'}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -379,13 +418,7 @@ export default function AddSpacePage() {
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="py-8 flex flex-col items-center justify-center border border-dashed border-white/20 rounded-xl bg-white/5">
-              <ImageIcon className="w-8 h-8 text-white/30 mb-2" />
-              <p className="text-sm text-white/50">No images added yet</p>
-              <p className="text-xs text-white/30 mt-1">Import from Airbnb or add manually</p>
-            </div>
-          )}
+          ) : null}
         </div>
 
         {/* Location & Specs */}

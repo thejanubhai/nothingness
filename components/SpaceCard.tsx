@@ -1,6 +1,6 @@
 'use client';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import Link from 'next/link';
 
 interface PropertyCardProps {
@@ -23,12 +23,13 @@ export default function PropertyCard({ title, location, image, price, slug }: Pr
       >
         {/* Image Container */}
         <div className="relative aspect-[3/4] sm:aspect-[4/5] md:aspect-[3/4] w-full overflow-hidden rounded-2xl bg-white/5 border border-white/5 shadow-xl">
-          <Image
+          <CloudinaryImage
             src={image}
             alt={title}
             fill
             className="object-cover transition-all duration-[1.2s] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            transformOptions={{ width: 800, height: 1066, crop: 'fill', quality: 'auto' }}
           />
           {/* Subtle gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-500" />

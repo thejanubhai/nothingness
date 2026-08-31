@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { adminAuth } from '@/lib/firebase/admin';
+import { verifyFirebaseIdToken } from '@/lib/firebase/admin';
 import { normalizeIdentifier, getRedirectPath } from '@/lib/auth-utils';
 import { saveInMemoryOtp, verifyInMemoryOtp, hashOtp } from '@/lib/otp-store';
 
@@ -18,9 +18,8 @@ export type SendOtpResult =
   | { success: false; error: string; message?: never; phone?: never };
 
 /**
- * Shared helper to ensure Supabase user exists with phone_confirm=true,
- * sets a deterministic HMAC password, signs in via Supabase SSR client
- * to set HTTP-only cookies, and auto-links guest_profiles.
+ * Shared helper to ensure Supabase user exists with verified phone & password,
+ * signs in via Supabase SSR client to set HTTP-only cookies, and auto-links guest_profiles.
  */
 async function establishSupabaseUserSession(phone: string): Promise<AuthActionResult> {
   const jwtSecret =
@@ -34,81 +33,90 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
     .update(phone)
     .digest('hex');
 
-  const supabaseAdmin = createAdminClient();
+  const supabase = await createClient();
+  const cleanDigits = phone.replace(/[^0-9]/g, '');
+  let syntheticEmail = `${cleanDigits}@auth.nothingness.asia`;
 
-  // 1. Check if user with this phone exists in Supabase auth.users
-  const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-
-  if (listError) {
-    console.warn('[Auth Bridge] Warning querying user list from Supabase Admin:', listError.message);
-  }
-
-  const existingUser = usersData?.users?.find(
-    (u) => u.phone && normalizeIdentifier(u.phone) === phone
-  );
-
-  if (existingUser) {
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      existingUser.id,
-      {
-        password: deterministicPassword,
-        phone_confirm: true,
-      }
-    );
-    if (updateError) {
-      console.error('[Auth Bridge] Failed to update Supabase user password:', updateError);
-      return { success: false, error: updateError.message };
-    }
-  } else {
-    const { error: createError } = await supabaseAdmin.auth.admin.createUser({
-      phone,
-      password: deterministicPassword,
-      phone_confirm: true,
+  // 1. Synchronize user in Supabase auth system via atomic Security Definer RPC
+  try {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('sync_phone_auth_user', {
+      p_phone: phone,
+      p_password: deterministicPassword,
     });
 
-    if (createError) {
-      if (createError.message?.toLowerCase().includes('already') || (createError as any).status === 422) {
-        const { data: retryUsersData } = await supabaseAdmin.auth.admin.listUsers();
-        const retryUser = retryUsersData?.users?.find(
-          (u) => u.phone && normalizeIdentifier(u.phone) === phone
-        );
-        if (retryUser) {
-          await supabaseAdmin.auth.admin.updateUserById(retryUser.id, {
-            password: deterministicPassword,
-            phone_confirm: true,
-          });
-        } else {
-          return { success: false, error: createError.message };
-        }
+    if (rpcData && (rpcData as any).email) {
+      syntheticEmail = (rpcData as any).email;
+    } else if (rpcError) {
+      console.warn('[Auth Bridge] sync_phone_auth_user RPC notice:', rpcError.message);
+      // Fallback: Attempt admin API if service role key is present
+      const supabaseAdmin = createAdminClient();
+      const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
+      const existingUser = usersData?.users?.find(
+        (u) => (u.phone && normalizeIdentifier(u.phone) === phone) || (u.email && u.email === syntheticEmail)
+      );
+
+      if (existingUser) {
+        await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
+          password: deterministicPassword,
+          phone_confirm: true,
+          email_confirm: true,
+        });
       } else {
-        console.error('[Auth Bridge] Failed to create Supabase user:', createError);
-        return { success: false, error: createError.message };
+        await supabaseAdmin.auth.admin.createUser({
+          email: syntheticEmail,
+          phone,
+          password: deterministicPassword,
+          phone_confirm: true,
+          email_confirm: true,
+        });
       }
     }
+  } catch (syncErr: any) {
+    console.warn('[Auth Bridge] User sync notice:', syncErr?.message || syncErr);
   }
 
   // 2. Execute signInWithPassword on Next.js Server Client (@supabase/ssr)
   // to set native Supabase HTTP-only session cookies
-  const supabase = await createClient();
-  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-    phone,
+  let signInData: any = null;
+  let signInError: any = null;
+
+  // Attempt A: Sign in with synthetic email bridge
+  const emailAttempt = await supabase.auth.signInWithPassword({
+    email: syntheticEmail,
     password: deterministicPassword,
   });
 
-  if (signInError || !signInData.user) {
+  if (emailAttempt.data?.user) {
+    signInData = emailAttempt.data;
+  } else {
+    // Attempt B: Fall back to phone sign-in if enabled on the project
+    const phoneAttempt = await supabase.auth.signInWithPassword({
+      phone,
+      password: deterministicPassword,
+    });
+
+    if (phoneAttempt.data?.user) {
+      signInData = phoneAttempt.data;
+    } else {
+      signInError = emailAttempt.error || phoneAttempt.error;
+    }
+  }
+
+  if (signInError || !signInData?.user) {
     console.error('[Auth Bridge] Failed to sign in with password in Supabase SSR client:', signInError);
     return {
       success: false,
-      error: signInError?.message || 'Authentication session failed.',
+      error: signInError?.message || 'Authentication session could not be established. Please try again.',
     };
   }
 
   // 3. Automatically link any unlinked guest_profiles matching this phone number
   try {
+    const supabaseAdmin = createAdminClient();
     await supabaseAdmin
       .from('guest_profiles')
       .update({ user_id: signInData.user.id })
-      .eq('phone', phone)
+      .or(`phone.eq.${phone},phone.eq.${cleanDigits}`)
       .is('user_id', null);
   } catch (linkErr) {
     console.warn('[Auth Bridge] Could not auto-link guest_profiles record:', linkErr);
@@ -133,11 +141,11 @@ export async function loginWithFirebasePhone(idToken: string): Promise<AuthActio
       return { success: false, error: 'Firebase ID token is required.' };
     }
 
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const decodedToken = await verifyFirebaseIdToken(idToken);
     const rawPhoneNumber = decodedToken.phone_number;
 
     if (!rawPhoneNumber) {
-      return { success: false, error: 'No phone number associated with verified Firebase token.' };
+      return { success: false, error: 'No mobile number associated with verified token.' };
     }
 
     const phone = normalizeIdentifier(rawPhoneNumber);

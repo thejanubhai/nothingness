@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { Article } from '@/lib/articles-data';
 import { Search, Clock, ArrowRight, Sparkles, Tag, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -197,13 +198,14 @@ export default function JournalClient({ initialArticles }: JournalClientProps) {
 
               {/* Right Image */}
               <div className="lg:col-span-5 relative min-h-[260px] sm:min-h-[340px] rounded-2xl overflow-hidden bg-zinc-900 border border-white/5">
-                <Image
+                <CloudinaryImage
                   src={featuredArticle.cover_image}
                   alt={featuredArticle.title}
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                   sizes="(max-width: 1024px) 100vw, 40vw"
                   priority
+                  transformOptions={{ width: 1000, height: 750, crop: 'fill', quality: 'auto' }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-1.5">
@@ -265,12 +267,13 @@ export default function JournalClient({ initialArticles }: JournalClientProps) {
                   <Link href={`/journal/${article.slug}`} className="block space-y-4">
                     {/* Thumbnail Image */}
                     <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-zinc-900 border border-white/5">
-                      <Image
+                      <CloudinaryImage
                         src={article.cover_image}
                         alt={article.title}
                         fill
                         className="object-cover transition-transform duration-700 group-hover:scale-105 opacity-85 group-hover:opacity-100"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        transformOptions={{ width: 800, height: 500, crop: 'fill', quality: 'auto' }}
                       />
                       <div className="absolute top-3 left-3 flex items-center gap-1.5">
                         <span className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[9px] font-mono uppercase tracking-widest text-accent-gold font-bold">

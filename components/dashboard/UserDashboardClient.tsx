@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import IDUploadModal from '@/components/IDUploadModal';
 import CancelBookingButton from '@/components/CancelBookingButton';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { toast } from 'sonner';
 
 interface UserDashboardClientProps {
@@ -297,13 +298,15 @@ export default function UserDashboardClient({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {upcomingBookings.map((booking: any) => (
               <div key={booking.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden group shadow-lg">
-                <div className="h-40 relative overflow-hidden">
-                  <img 
+                <div className="h-40 relative overflow-hidden bg-zinc-900">
+                  <CloudinaryImage 
                     src={booking.spaces?.featured_image || ''} 
                     alt={booking.spaces?.title || 'Sanctuary'}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    transformOptions={{ width: 600, height: 400, crop: 'fill', quality: 'auto' }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
                   <div className="absolute bottom-3 left-4 right-4 flex justify-between items-end">
                     <div>
                       <h3 className="font-serif text-base text-white font-bold">{booking.spaces?.title}</h3>

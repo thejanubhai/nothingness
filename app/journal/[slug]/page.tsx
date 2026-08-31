@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
+import { getOptimizedImageUrl } from '@/lib/cloudinary/client';
 import { getArticleBySlug, getPublishedArticles, incrementArticleViews } from '@/app/actions/journal';
 import { SEED_ARTICLES } from '@/lib/articles-data';
 import JsonLd, { generateArticleSchema, generateBreadcrumbSchema } from '@/components/JsonLd';
@@ -51,7 +53,7 @@ export async function generateMetadata({
       tags: article.tags,
       images: [
         {
-          url: article.cover_image,
+          url: getOptimizedImageUrl(article.cover_image, { width: 1200, height: 630, crop: 'fill' }),
           width: 1200,
           height: 630,
           alt: article.title,
@@ -64,7 +66,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title,
       description,
-      images: [article.cover_image],
+      images: [getOptimizedImageUrl(article.cover_image, { width: 1200, height: 630, crop: 'fill' })],
     },
   };
 }
@@ -127,12 +129,13 @@ function renderMarkdownContent(content: string) {
       elements.push(
         <div key={i} className="my-10 space-y-2">
           <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border border-white/10 shadow-xl">
-            <Image
+            <CloudinaryImage
               src={srcUrl}
               alt={altText || 'Sanctuary Intimacy Architecture'}
               fill
               className="object-cover"
               sizes="(max-width: 896px) 100vw, 896px"
+              transformOptions={{ width: 1200, quality: 'auto', crop: 'limit' }}
             />
           </div>
           {altText && (
@@ -285,13 +288,14 @@ export default async function ArticlePage({
 
       {/* Cover Image */}
       <div className="my-10 relative aspect-[16/9] w-full rounded-3xl overflow-hidden bg-zinc-900 border border-white/10 shadow-2xl">
-        <Image
+        <CloudinaryImage
           src={article.cover_image}
           alt={article.title}
           fill
           className="object-cover"
           sizes="(max-width: 896px) 100vw, 896px"
           priority
+          transformOptions={{ width: 1400, height: 788, crop: 'fill', quality: 'auto' }}
         />
       </div>
 
@@ -362,11 +366,12 @@ export default async function ArticlePage({
               >
                 <div className="space-y-3">
                   <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-zinc-900 border border-white/5">
-                    <Image
+                    <CloudinaryImage
                       src={rel.cover_image}
                       alt={rel.title}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      transformOptions={{ width: 600, height: 375, crop: 'fill', quality: 'auto' }}
                     />
                   </div>
                   <span className="text-[9px] font-mono uppercase tracking-widest text-accent-gold">

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ShieldCheck,
   Lock,
@@ -41,7 +41,9 @@ interface Post {
 }
 
 function KinkstersContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
   const [isIdVerified, setIsIdVerified] = useState<boolean>(false);
   const [isStayVerified, setIsStayVerified] = useState<boolean>(false);
@@ -56,10 +58,24 @@ function KinkstersContent() {
   const [showIdModal, setShowIdModal] = useState<boolean>(false);
   const [showStayModal, setShowStayModal] = useState<boolean>(false);
 
+  const handleRequireAuth = (actionName: string) => {
+    toast.info('Sign In Required', {
+      description: `Please sign in with Mobile OTP to ${actionName}.`,
+    });
+    router.push('/auth?redirect=/kinksters');
+  };
+
   const fetchProfileAndPosts = async () => {
     setLoading(true);
     try {
       const profileRes = await fetch('/api/kinkster/profile');
+      if (profileRes.status === 401) {
+        setIsLoggedIn(false);
+        setIsActivated(false);
+        setLoading(false);
+        return;
+      }
+      setIsLoggedIn(true);
       const profileData = await profileRes.json();
 
       setIsIdVerified(profileData.is_id_verified ?? false);
@@ -106,9 +122,27 @@ function KinkstersContent() {
           isActivated={isActivated}
           isIdVerified={isIdVerified}
           isStayVerified={isStayVerified}
-          onOpenActivation={() => setShowActivationModal(true)}
-          onOpenIdVerification={() => setShowIdModal(true)}
-          onOpenStayVerification={() => setShowStayModal(true)}
+          onOpenActivation={() => {
+            if (!isLoggedIn) {
+              handleRequireAuth('activate your Lifestyle Membership');
+            } else {
+              setShowActivationModal(true);
+            }
+          }}
+          onOpenIdVerification={() => {
+            if (!isLoggedIn) {
+              handleRequireAuth('verify your ID for Lifestyle Pass');
+            } else {
+              setShowIdModal(true);
+            }
+          }}
+          onOpenStayVerification={() => {
+            if (!isLoggedIn) {
+              handleRequireAuth('verify your sanctuary stay');
+            } else {
+              setShowStayModal(true);
+            }
+          }}
         />
       )}
 

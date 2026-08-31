@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { 
   Building2, Plus, Edit2, CheckCircle, XCircle, 
   Trash2, ExternalLink, Users, DollarSign, Search,
@@ -176,12 +177,12 @@ export default function AdminSpacesClient({ initialSpaces }: { initialSpaces: Sp
                 {/* Image */}
                 <div className="relative w-full md:w-64 h-48 md:h-40 rounded-xl overflow-hidden bg-zinc-900 shrink-0 border border-white/5">
                   {space.featured_image ? (
-                    <Image 
+                    <CloudinaryImage 
                       src={space.featured_image} 
                       alt={space.title} 
                       fill 
-                      unoptimized
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      transformOptions={{ width: 500, height: 350, crop: 'fill', quality: 'auto' }}
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-white/[0.02] text-white/30 font-mono text-xs gap-1.5 p-4 text-center">

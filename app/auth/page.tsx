@@ -119,7 +119,7 @@ export default function LoginPage() {
     const formattedPhone = normalizeIdentifier(identifier);
 
     try {
-      // If Firebase confirmation is active, try Firebase ID token bridge first
+      // 1. If Firebase confirmation is active, verify through Firebase Auth
       if (authMode === 'firebase' && confirmationResult) {
         try {
           const userCredential = await confirmationResult.confirm(otpToken);
@@ -131,13 +131,29 @@ export default function LoginPage() {
             router.push(result.redirectUrl || '/dashboard');
             router.refresh();
             return;
+          } else {
+            setErrorMsg(result.error || 'Authentication session failed. Please try again.');
+            setLoading(false);
+            return;
           }
         } catch (firebaseVerifyErr: any) {
-          console.warn('[Auth] Firebase verification rejected token, trying server OTP fallback:', firebaseVerifyErr?.message);
+          console.error('[Auth] Firebase verification error:', firebaseVerifyErr);
+          const fbCode = firebaseVerifyErr?.code || '';
+          let userFriendlyError = 'Invalid verification code. Please check the code and try again.';
+          if (fbCode === 'auth/invalid-verification-code') {
+            userFriendlyError = 'The 6-digit verification code is incorrect. Please re-check the SMS.';
+          } else if (fbCode === 'auth/code-expired' || fbCode === 'auth/session-expired') {
+            userFriendlyError = 'The verification code has expired. Please click "Resend OTP Code".';
+          } else if (firebaseVerifyErr?.message) {
+            userFriendlyError = firebaseVerifyErr.message;
+          }
+          setErrorMsg(userFriendlyError);
+          setLoading(false);
+          return;
         }
       }
 
-      // Verify with Server OTP Bridge
+      // 2. Otherwise verify with Server OTP Bridge (when authMode is 'server')
       const serverResult = await loginWithServerOtp(formattedPhone, otpToken);
 
       if (serverResult.success) {
