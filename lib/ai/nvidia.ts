@@ -137,44 +137,39 @@ export async function extractDocumentWithNvidiaVision(params: {
     return { success: false, error: 'No image data provided for verification' };
   }
 
-  const promptText = `You are a strict automated Identity Verification and KYC System for luxury hospitality compliance under statutory Delhi Police regulations.
+  const promptText = `You are an automated Identity Document Verification AI for luxury hospitality compliance under statutory Delhi Police regulations.
 
-Analyze the uploaded image(s) carefully. The user has provided 1 or 2 photos of their identity document (Aadhaar Card with front/back together in one image, e-Aadhaar, Passport page, or separate front and back photos).
+Analyze the uploaded image(s) carefully. The user has uploaded 1 or 2 photos of their identity document (Aadhaar Card with front/back together in one image, e-Aadhaar PDF printout, PVC Aadhaar card, Passport bio page, or separate front and back photos).
 
-CRITICAL VERIFICATION RULES:
-1. STRICT GENUINE IDENTITY DOCUMENT ENFORCEMENT:
-   - The image MUST clearly be an official Indian AADHAAR CARD (showing UIDAI logo, Government of India emblem, 12-digit/masked UID, QR code) or an official international PASSPORT.
-   - If the image contains ANY non-ID content (such as food, chicken, eggs, animals, memes, selfies, landscapes, vehicles, clothing, screenshots of apps, or random objects), you MUST IMMEDIATELY REJECT with:
-     valid: false
-     reason: "The uploaded image does not contain an official government identity document (Aadhaar Card or Passport)."
+VERIFICATION RULES:
+1. STRICT GENUINE IDENTITY ENFORCEMENT:
+   - Accept Indian AADHAAR CARDS (showing UIDAI logo, Government of India emblem, Mera Aadhaar Meri Pehchan, 12-digit number, masked number XXXX XXXX 1234, QR code, or address) and international PASSPORTS.
+   - Both full 12-digit Aadhaar and Masked Aadhaar (e.g. XXXX XXXX 1234 or •••• •••• 5678) are 100% VALID and legally compliant.
+   - If the image is NOT a government ID (e.g., food, chicken, eggs, memes, animals, selfies, landscapes, clothing, random objects), set valid: false with reason: "The uploaded image does not contain an official government identity document (Aadhaar Card or Passport)."
 
-2. UNACCEPTED DOCUMENT TYPES:
-   - Driving Licenses, Voter IDs, PAN Cards, Student IDs, Ration Cards, and Company IDs are STRICTLY REJECTED with:
-     valid: false
-     reason: "Driving License, PAN Card, and Voter ID are not accepted. Please upload an official Aadhaar Card or Passport."
+2. UNACCEPTED DOCUMENTS:
+   - Driving License, PAN Card, Voter ID, Student IDs are NOT accepted. Set valid: false with reason: "Driving License, PAN Card, and Voter ID are not accepted. Please upload an Aadhaar Card or Passport."
 
-3. AGE COMPLIANCE:
-   - The primary guest MUST be 18 years of age or older based on Date of Birth (DOB).
-   - If the guest is under 18, set valid: false, above18: false, reason: "Guest must be 18 years or older."
+3. DATA EXTRACTION:
+   - If the document is a genuine Aadhaar or Passport, set "valid": true.
+   - Extract full legal name from the card (e.g. "John Doe").
+   - Extract document number (e.g. 12-digit UID, masked XXXX XXXX 1234, or Passport number).
+   - Extract DOB (DD/MM/YYYY) and permanent address if present.
+   - Set "document_type": "Aadhaar" or "Passport".
+   - Primary guest must be 18+ years old based on DOB (if visible or adult card, set above18: true).
 
-4. DATA EXTRACTION:
-   - Extract the full legal name (must be a real person's name printed on the card).
-   - Extract the document number (Aadhaar number / last 4 digits or Passport number).
-   - Extract DOB (DD/MM/YYYY) and permanent address if visible.
-   - If document is genuine and name & document number are readable, set valid: true.
-
-Return ONLY a valid raw JSON object matching this exact schema (NO markdown formatting or fences):
+Return ONLY valid JSON (no markdown formatting):
 {
-  "valid": false,
-  "name": "Full Legal Name",
+  "valid": true,
+  "name": "Extracted Legal Name",
   "dob": "DD/MM/YYYY",
   "above18": true,
   "document_type": "Aadhaar",
-  "document_number": "XXXX XXXX XXXX",
-  "permanent_address": "Residential address",
+  "document_number": "1234 5678 9012",
+  "permanent_address": "Address if visible",
   "is_foreign_national": false,
   "nationality": "Indian",
-  "reason": "Rejection reason if valid is false"
+  "reason": ""
 }`;
 
   const contentParts: any[] = [{ type: 'text', text: promptText }];

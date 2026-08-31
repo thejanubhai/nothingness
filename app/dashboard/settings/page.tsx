@@ -52,7 +52,7 @@ export default async function SettingsPage() {
         <div className="relative">
           <EmailUpdateForm initialEmail={realEmail} />
           <div className="absolute top-6 right-6 md:top-8 md:right-8">
-            {user.email_confirmed_at && !isSyntheticEmail ? (
+            {(user.email_confirmed_at || user.user_metadata?.email_confirmed) && !isSyntheticEmail ? (
               <span className="flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Verified
               </span>

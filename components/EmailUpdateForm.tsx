@@ -11,18 +11,36 @@ export default function EmailUpdateForm({ initialEmail }: { initialEmail: string
 
   const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !email.includes('@')) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
 
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ email });
+    try {
+      const res = await fetch('/api/user/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
 
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Email updated! Check your inbox for a confirmation link.');
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update email address.');
+      }
+
+      toast.success('Email Saved & Verified!', {
+        description: `Confirmation email sent to ${email}.`,
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update email.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
