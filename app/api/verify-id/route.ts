@@ -163,44 +163,39 @@ export async function POST(req: Request) {
           const { GoogleGenAI } = await import('@google/genai');
           const ai = new GoogleGenAI({ apiKey });
 
-          const prompt = `You are a strict automated Identity Verification and KYC System for luxury hospitality compliance under statutory Delhi Police regulations.
+          const prompt = `You are an automated Identity Verification AI for hospitality compliance.
 
-Analyze the uploaded image(s) carefully. The user has provided 1 or 2 photos of their identity document (Aadhaar Card with front/back together in one image, e-Aadhaar, Passport page, or separate front and back photos).
+Analyze the uploaded image(s). The user has provided 1 or 2 photos of their identity document (Aadhaar Card with front/back together in one image, e-Aadhaar printout, PVC Aadhaar, Passport page, or separate front and back photos).
 
-CRITICAL VERIFICATION RULES:
-1. STRICT GENUINE IDENTITY DOCUMENT ENFORCEMENT:
-   - The image MUST clearly be an official Indian AADHAAR CARD (showing UIDAI logo, Government of India emblem, 12-digit/masked UID, QR code) or an official international PASSPORT.
-   - If the image contains ANY non-ID content (such as food, chicken, eggs, animals, memes, selfies, landscapes, vehicles, clothing, screenshots of apps, or random objects), you MUST IMMEDIATELY REJECT with:
-     "valid": false,
-     "reason": "The uploaded image does not contain an official government identity document (Aadhaar Card or Passport)."
+VERIFICATION GUIDELINES:
+1. ACCEPT GENUINE AADHAAR & PASSPORT DOCUMENTS:
+   - Accept all standard Indian Aadhaar cards (showing UIDAI, Government of India, Mera Aadhaar Meri Pehchan, 12-digit number, masked number XXXX XXXX 1234, QR code, photo, or address) and international Passports.
+   - Masked Aadhaar (where the first 8 digits are masked as XXXX XXXX 1234 or •••• •••• 5678) is 100% VALID and officially compliant by UIDAI.
+   - If the image contains a genuine Aadhaar or Passport card, set "valid": true.
 
-2. UNACCEPTED DOCUMENT TYPES:
-   - Driving Licenses, Voter IDs, PAN Cards, Student IDs, Ration Cards, and Company IDs are STRICTLY REJECTED with:
-     "valid": false,
-     "reason": "Driving License, PAN Card, and Voter ID are not accepted. Please upload an official Aadhaar Card or Passport."
+2. REJECT NON-ID IMAGES & UNACCEPTED TYPES:
+   - If the image is clearly NOT a government identity document (e.g., food, chicken, eggs, memes, animals, landscapes, clothing, random selfies, app screenshots), set "valid": false, "reason": "The uploaded image does not contain an official government identity document (Aadhaar Card or Passport)."
+   - If the image is a Driving License, PAN Card, or Voter ID, set "valid": false, "reason": "Driving License, PAN Card, and Voter ID are not accepted. Please upload an Aadhaar Card or Passport."
 
-3. AGE COMPLIANCE:
-   - The primary guest MUST be 18 years of age or older based on the Date of Birth (DOB).
-   - If the guest is under 18, set "valid": false, "above18": false, "reason": "Guest must be 18 years or older."
-
-4. DATA EXTRACTION:
-   - Extract the full legal name (must be a real person's name printed on the card).
-   - Extract the document number (Aadhaar number / last 4 digits or Passport number).
+3. EXTRACTION:
+   - Extract full legal name from the ID (e.g., "Full Name").
+   - Extract document number (e.g., "1234 5678 9012" or masked "XXXX XXXX 1234" or Passport Number).
    - Extract DOB (DD/MM/YYYY) and permanent address if visible.
-   - If document is genuine and name & document number are readable, set "valid": true.
+   - Set "above18": true (unless DOB explicitly indicates a minor under 18).
+   - Set "document_type": "Aadhaar" or "Passport".
 
-Return ONLY a valid raw JSON object matching this exact schema:
+Return ONLY valid JSON (no markdown formatting):
 {
   "valid": true,
   "name": "Full Legal Name",
   "dob": "DD/MM/YYYY",
   "above18": true,
   "document_type": "Aadhaar",
-  "document_number": "XXXX XXXX XXXX",
-  "permanent_address": "Residential address",
+  "document_number": "1234 5678 9012",
+  "permanent_address": "Address if visible",
   "is_foreign_national": false,
   "nationality": "Indian",
-  "reason": "Rejection reason if valid is false"
+  "reason": ""
 }`;
 
           const parts: any[] = [{ text: prompt }];
