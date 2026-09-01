@@ -92,15 +92,25 @@ Return ONLY a valid JSON object.
             });
           }
 
-          const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [{ role: 'user', parts }],
-          });
+          const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+          for (const modelName of geminiModels) {
+            try {
+              const response = await ai.models.generateContent({
+                model: modelName,
+                contents: [{ role: 'user', parts }],
+              });
 
-          const text = response.text || '{}';
-          const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-          extracted = JSON.parse(cleanJson);
-          scanSucceeded = true;
+              const text = response.text || '{}';
+              const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+              extracted = JSON.parse(cleanJson);
+              if (extracted && typeof extracted === 'object') {
+                scanSucceeded = true;
+                break;
+              }
+            } catch (modelErr: any) {
+              console.warn(`[Admin Scan ID] Gemini ${modelName} fallback error:`, modelErr?.message);
+            }
+          }
         } catch (geminiErr: any) {
           console.warn('[Admin Scan ID] Gemini OCR fallback warning:', geminiErr?.message);
         }

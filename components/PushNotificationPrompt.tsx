@@ -22,13 +22,36 @@ export default function PushNotificationPrompt() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
-      setIsSupported(true);
-      if (Notification.permission === 'granted') {
-        setIsSubscribed(true);
+    if (typeof window !== 'undefined') {
+      const isDismissed = localStorage.getItem('sanctuary_push_dismissed') === 'true';
+      const isSavedSubscribed = localStorage.getItem('sanctuary_push_subscribed') === 'true';
+
+      if (isDismissed) setDismissed(true);
+
+      if ('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window) {
+        setIsSupported(true);
+        if (Notification.permission === 'granted' || isSavedSubscribed) {
+          setIsSubscribed(true);
+        }
+
+        navigator.serviceWorker.ready.then((registration) => {
+          registration.pushManager.getSubscription().then((sub) => {
+            if (sub || Notification.permission === 'granted') {
+              setIsSubscribed(true);
+              localStorage.setItem('sanctuary_push_subscribed', 'true');
+            }
+          }).catch(() => {});
+        }).catch(() => {});
       }
     }
   }, []);
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sanctuary_push_dismissed', 'true');
+    }
+  };
 
   const subscribeUser = async () => {
     setLoading(true);
@@ -68,9 +91,17 @@ export default function PushNotificationPrompt() {
 
         if (res.ok) {
           setIsSubscribed(true);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('sanctuary_push_subscribed', 'true');
+          }
           toast.success('Discreet Alerts Enabled', {
             description: 'You will receive secret coordinates, waitlist calls, and door access on your screen.'
           });
+        }
+      } else {
+        setIsSubscribed(true);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('sanctuary_push_subscribed', 'true');
         }
       }
     } catch (err: any) {
@@ -112,7 +143,7 @@ export default function PushNotificationPrompt() {
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
           <button
-            onClick={() => setDismissed(true)}
+            onClick={handleDismiss}
             className="p-2 text-zinc-500 hover:text-white rounded-lg transition-colors cursor-pointer"
             aria-label="Dismiss"
           >
