@@ -105,9 +105,9 @@ export default function AdminPoliceRegisterClient({ initialGuests }: { initialGu
                 Official Law Enforcement Format
               </span>
             </div>
-            <h1 className="font-serif text-3xl md:text-4xl text-white">Delhi Police Digital Guest Register</h1>
+            <h1 className="font-serif text-3xl md:text-4xl text-white">Police Compliance Guest Register</h1>
             <p className="text-white/50 text-xs md:text-sm tracking-wide mt-0.5">
-              Guest check-in records formatted for Delhi Police station submission &amp; Form C foreign national compliance.
+              Guest check-in records formatted for Police station submission &amp; Form C foreign national compliance.
             </p>
           </div>
         </div>

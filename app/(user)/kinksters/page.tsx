@@ -306,11 +306,11 @@ function KinkstersContent() {
                 Discover
               </Link>
               <Link
-                href="/kinksters/events"
-                className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all"
+                href="/sanctuary-pass"
+                className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all"
               >
                 <Sparkles className="w-4 h-4 text-amber-400" />
-                Soirées
+                Sanctuary Pass
               </Link>
               <span className="text-xs font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 px-3 py-2 rounded-xl flex items-center gap-1.5">
                 <AtSign className="w-3.5 h-3.5 text-rose-400" />

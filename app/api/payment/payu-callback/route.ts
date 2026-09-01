@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
     const paymentType = body.udf2 || '';
     const udf3 = body.udf3 || '';
     const udf4 = body.udf4 || '';
+    const udf5 = body.udf5 || '';
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
 
     console.log(`[PayU Callback] Received callback for txnid: ${txnid}, status: ${status}, type: ${paymentType}`);
@@ -35,18 +36,140 @@ export async function POST(req: NextRequest) {
     const supabaseAdmin = createAdminClient();
 
     // ------------------------------------------------------------------
+    // 0. ONE-TIME SANCTUARY PASS LIFETIME MEMBERSHIP
+    // ------------------------------------------------------------------
+    if (paymentType === 'sanctuary_pass_fee' || txnid.startsWith('spass_')) {
+      if (status === 'success') {
+        const targetUserId = udf1 || udf5;
+        const amountPaid = Number(udf3) || 1499;
+
+        if (targetUserId) {
+          await supabaseAdmin
+            .from('sanctuary_passes')
+            .upsert(
+              {
+                user_id: targetUserId,
+                status: 'active',
+                amount_paid: amountPaid,
+                order_id: txnid,
+                created_at: new Date().toISOString(),
+              },
+              { onConflict: 'user_id' }
+            );
+
+          // Dispatch WebPush
+          const { sendPushNotificationToUser } = await import('@/lib/webpush');
+          await sendPushNotificationToUser(targetUserId, {
+            title: '✨ Sanctuary Pass Activated',
+            body: 'Your Lifetime Sanctuary Pass is active. The private gatherings portal is now unlocked.',
+            url: '/sanctuary-pass',
+          }).catch(console.error);
+        }
+
+        return NextResponse.redirect(`${siteUrl}/sanctuary-pass?pass_purchased=true`, 303);
+      } else {
+        const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'Sanctuary Pass payment failed.');
+        return NextResponse.redirect(`${siteUrl}/sanctuary-pass?payment=failed&error=${errorMsg}`, 303);
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // 0.1 EVENT TICKET GATHERING PASS
+    // ------------------------------------------------------------------
+    if (paymentType === 'event_ticket_fee' || txnid.startsWith('evtticket_')) {
+      const appId = udf1;
+      const eventId = udf3;
+      const targetUserId = udf5;
+      const amountPaid = Number(udf4) || 0;
+
+      if (status === 'success') {
+        if (appId) {
+          const { data: updatedApp } = await supabaseAdmin
+            .from('sanctuary_event_applications')
+            .update({
+              status: 'confirmed',
+              ticket_price_paid: amountPaid,
+              payment_order_id: txnid,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', appId)
+            .select('*, sanctuary_events(title)')
+            .single();
+
+          // Re-balance waitlist if slot was filled
+          if (eventId) {
+            const { checkAndPromoteWaitlistedCandidates } = await import('@/lib/events/ratio-balancer');
+            await checkAndPromoteWaitlistedCandidates(eventId).catch(console.error);
+          }
+
+          // Dispatch WebPush
+          if (targetUserId) {
+            const { sendPushNotificationToUser } = await import('@/lib/webpush');
+            await sendPushNotificationToUser(targetUserId, {
+              title: '🎟️ Gathering Pass Confirmed',
+              body: `Your ticket for "${updatedApp?.sanctuary_events?.title || 'Sanctuary Gathering'}" is confirmed. Entry QR is ready.`,
+              url: `/sanctuary-pass?eventId=${eventId}`,
+            }).catch(console.error);
+          }
+        }
+
+        return NextResponse.redirect(`${siteUrl}/sanctuary-pass?eventId=${eventId}&ticket_confirmed=true`, 303);
+      } else {
+        const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'Ticket payment failed.');
+        return NextResponse.redirect(`${siteUrl}/sanctuary-pass?eventId=${eventId}&payment=failed&error=${errorMsg}`, 303);
+      }
+    }
+
+    // ------------------------------------------------------------------
     // 1. PARTNER ONBOARDING SETUP FEE
     // ------------------------------------------------------------------
     if (paymentType === 'partner_onboarding_fee' || txnid.startsWith('partner_')) {
       if (status === 'success') {
-        await supabaseAdmin
+        const { data: order } = await supabaseAdmin
           .from('action_fee_orders')
           .update({
             payment_status: 'paid',
             payment_id: txnid,
             updated_at: new Date().toISOString(),
           })
-          .eq('payment_order_id', txnid);
+          .eq('payment_order_id', txnid)
+          .select('user_id, metadata')
+          .maybeSingle();
+
+        const targetUserId = order?.user_id || udf1;
+        const meta = order?.metadata || {};
+
+        if (targetUserId && targetUserId !== 'guest') {
+          const { data: existingProfile } = await supabaseAdmin
+            .from('partner_profiles')
+            .select('id, status')
+            .eq('user_id', targetUserId)
+            .maybeSingle();
+
+          if (existingProfile) {
+            await supabaseAdmin
+              .from('partner_profiles')
+              .update({
+                setup_fee_paid: true,
+                setup_fee_tx_id: txnid,
+                status: existingProfile.status === 'pending_payment' ? 'contract_pending' : existingProfile.status,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', existingProfile.id);
+          } else {
+            await supabaseAdmin
+              .from('partner_profiles')
+              .insert({
+                user_id: targetUserId,
+                full_name: meta.partnerName || udf5 || 'Partner Host',
+                email: meta.partnerEmail || 'partner@nothingness.asia',
+                phone: meta.partnerPhone || '+91 99999 99999',
+                setup_fee_paid: true,
+                setup_fee_tx_id: txnid,
+                status: 'contract_pending',
+              });
+          }
+        }
 
         return NextResponse.redirect(`${siteUrl}/partner/onboarding?step=2&payment=success`, 303);
       } else {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(req: Request) {
   try {
@@ -38,9 +39,9 @@ export async function POST(req: Request) {
       `\nNotes / Experience:\n${experience || 'No additional notes provided.'}`
     ].join('\n');
 
-    const supabase = await createClient();
+    const adminSupabase = createAdminClient();
 
-    const { data: lead, error } = await supabase
+    const { data: lead, error } = await adminSupabase
       .from('franchise_leads')
       .insert({
         name,

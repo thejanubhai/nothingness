@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import PartnerDashboardClient from '@/components/partner/PartnerDashboardClient';
 
 export const metadata: Metadata = {
@@ -12,23 +13,58 @@ export const dynamic = 'force-dynamic';
 export default async function PartnerPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const adminSupabase = createAdminClient();
 
-  // Fetch real partner properties from database
+  let dbProfile: any = null;
+  let partnerDbProps: any[] = [];
+
+  if (user) {
+    const { data: profile } = await adminSupabase
+      .from('partner_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (profile) {
+      dbProfile = profile;
+
+      const { data: props } = await adminSupabase
+        .from('partner_properties')
+        .select('*')
+        .eq('partner_id', profile.id);
+
+      partnerDbProps = props || [];
+    }
+  }
+
+  // Fetch real spaces from database
   const { data: spacesData } = await supabase
     .from('spaces')
     .select('id, title, city, area, featured_image, active, nightly_price')
     .order('created_at', { ascending: false });
 
-  const partnerProperties = (spacesData || []).map((s: any) => ({
-    id: s.id,
-    title: s.title,
-    city: s.city || 'New Delhi',
-    locality: s.area || 'South Delhi',
-    space_tier: 'luxury' as const,
-    housekeeping_status: 'ready' as const,
-    lounge_eligible: true,
-    lounge_type: 'terrace'
-  }));
+  // Merge partner properties or fallback to active spaces
+  const partnerProperties = partnerDbProps.length > 0
+    ? partnerDbProps.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        city: p.city || 'New Delhi',
+        locality: p.locality || 'South Delhi',
+        space_tier: (p.space_tier || 'luxury') as 'budget' | 'luxury',
+        housekeeping_status: (p.housekeeping_status || 'ready') as any,
+        lounge_eligible: !!p.lounge_eligible,
+        lounge_type: p.lounge_type || 'terrace'
+      }))
+    : (spacesData || []).map((s: any) => ({
+        id: s.id,
+        title: s.title,
+        city: s.city || 'New Delhi',
+        locality: s.area || 'South Delhi',
+        space_tier: 'luxury' as const,
+        housekeeping_status: 'ready' as const,
+        lounge_eligible: true,
+        lounge_type: 'terrace'
+      }));
 
   // Fetch real bookings from database
   const { data: bookingsData } = await supabase
@@ -74,18 +110,26 @@ export default async function PartnerPage() {
   });
 
   const partnerProfile = {
-    id: user?.id || 'partner-host',
+    id: dbProfile?.id || user?.id || 'partner-host',
     user_id: user?.id || 'partner-host',
-    full_name: user?.user_metadata?.full_name || 'Vetted Host Partner',
-    email: user?.email || 'partner@nothingness.asia',
-    phone: user?.phone || '+91 98101 22910',
-    status: 'active' as const,
-    payout_frequency: 'monthly' as const,
-    bank_name: 'HDFC Bank Ltd.',
-    bank_account_number: '••••••••8912',
-    bank_ifsc: 'HDFC0001234',
-    bank_account_name: 'Vetted Host Partner',
-    upi_id: 'partner@okhdfcbank'
+    full_name: dbProfile?.full_name || user?.user_metadata?.full_name || 'Vetted Host Partner',
+    email: dbProfile?.email || user?.email || 'partner@nothingness.asia',
+    phone: dbProfile?.phone || user?.phone || (user?.email?.includes('@auth.nothingness') ? `+${user.email.split('@')[0]}` : '+91 98101 22910'),
+    status: (dbProfile?.status || (user ? 'under_review' : 'active')) as any,
+    setup_fee_paid: !!dbProfile?.setup_fee_paid,
+    contract_signed: !!dbProfile?.contract_signed,
+    contract_signed_at: dbProfile?.contract_signed_at || null,
+    contract_city: dbProfile?.contract_city || 'National Capital Territory / Pan-India',
+    affidavit_uploaded: !!dbProfile?.affidavit_uploaded,
+    affidavit_url: dbProfile?.affidavit_url || null,
+    affidavit_notes: dbProfile?.affidavit_notes || null,
+    verified_by_admin: !!dbProfile?.verified_by_admin,
+    payout_frequency: (dbProfile?.payout_frequency || 'monthly') as any,
+    bank_name: dbProfile?.bank_name || 'HDFC Bank Ltd.',
+    bank_account_number: dbProfile?.bank_account_number || '••••••••8912',
+    bank_ifsc: dbProfile?.bank_ifsc || 'HDFC0001234',
+    bank_account_name: dbProfile?.bank_account_name || dbProfile?.full_name || 'Vetted Host Partner',
+    upi_id: dbProfile?.upi_id || 'partner@okhdfcbank'
   };
 
   return (

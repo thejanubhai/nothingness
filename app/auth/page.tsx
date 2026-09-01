@@ -420,7 +420,7 @@ export default function LoginPage() {
 
         <div className="mt-8 pt-4 border-t border-zinc-800/80 flex items-center justify-center gap-2 text-[10px] text-zinc-500 font-mono">
           <ShieldCheck className="w-3.5 h-3.5 text-accent-gold" />
-          <span>256-Bit Encrypted • Delhi Police Compliant</span>
+          <span>256-Bit Encrypted • Police Compliance Verified</span>
         </div>
       </motion.div>
     </main>

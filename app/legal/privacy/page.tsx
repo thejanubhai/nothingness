@@ -6,7 +6,7 @@ import { ShieldCheck, Building2, MapPin, Mail, Phone, Lock, EyeOff } from 'lucid
 export const metadata: Metadata = {
   title: 'Privacy Policy & Data Protection | Nothingness',
   description:
-    'Privacy Policy, data encryption standards, payment security protocols, and Delhi Police statutory compliance guidelines for Nothingness luxury sanctuaries operated by Sheikh Arsalan Ullah Chishti in New Delhi, India.',
+    'Privacy Policy, data encryption standards, payment security protocols, and Police Compliance statutory guidelines for Nothingness luxury sanctuaries operated by Sheikh Arsalan Ullah Chishti in New Delhi, India.',
   alternates: {
     canonical: 'https://nothingness.asia/legal/privacy',
   },
@@ -89,7 +89,7 @@ export default function PrivacyPage() {
           <p>We collect only the minimum necessary information required to facilitate sanctuary reservations, secure payments, and statutory hotel guest reporting:</p>
           <ul className="list-disc pl-5 space-y-1.5 text-zinc-300">
             <li><strong>Contact Details:</strong> Full Name, Mobile Phone Number, and Email Address.</li>
-            <li><strong>Government Identification:</strong> Front and back photographs of official Aadhaar Card or Passport for mandatory Delhi Police compliance.</li>
+            <li><strong>Government Identification:</strong> Front and back photographs of official Aadhaar Card or Passport for mandatory Police Compliance.</li>
             <li><strong>Transactional Data:</strong> Booking dates, selected sanctuary or event, payment transaction IDs, and invoice records.</li>
             <li><strong>Technical Data:</strong> IP address, device identifier, browser type, and authentication logs for Passkey / OTP session security.</li>
           </ul>
@@ -119,7 +119,7 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-1.5 text-zinc-300">
             <li>To process reservations, confirm payments, and dispatch electronic booking vouchers.</li>
             <li>To generate and provide secure lockbox entrance PINs and sanctuary directions.</li>
-            <li>To comply with statutory Delhi Police Form C and local hospitality security registrations.</li>
+            <li>To comply with statutory Police Compliance, Form C, and local hospitality security registrations.</li>
             <li>To facilitate passwordless OTP and biometric Passkey authentication.</li>
             <li>To communicate crucial stay updates, emergency alerts, or customer support responses.</li>
           </ul>

@@ -1409,7 +1409,7 @@ If a hotel staff member or third party claims you cannot stay together, politely
 ## Choosing the Right Sanctuaries
 
 1. **Opt for Autonomous Keyless Stays**: Properties with encrypted digital check-in remove the human interface where moral policing typically occurs.
-2. **Verify Police Digital Compliance**: Choose sanctuaries that digitally process guest IDs through state police compliance portals (such as Delhi Police Form C), ensuring your stay is 100% legally recognized and protected.
+2. **Verify Police Digital Compliance**: Choose sanctuaries that digitally process guest IDs through Police Compliance portals (such as Form C and state police registers), ensuring your stay is 100% legally recognized and protected.
 3. **Keep Emergency Legal Contacts Handy**: Always save contact numbers for trusted legal counsel or accredited civil rights helplines when traveling to unfamiliar regions.`,
     cover_image: '/images/IMG_4446.jpeg',
     category: 'Discretion & Safe Havens',
@@ -1423,6 +1423,6 @@ If a hotel staff member or third party claims you cannot stay together, politely
     reading_time_minutes: 8,
     meta_title: 'Unmarried Couples Legal & Safety Handbook India | Nothingness',
     meta_description: 'The definitive legal and safety guide for unmarried couples in India: Article 21 privacy rights, Supreme Court rulings, and police protocols.',
-    meta_keywords: ['unmarried couples legal rights india', 'hotel moral policing law', 'supreme court privacy ruling couples', 'delhi police id verification rules']
+    meta_keywords: ['unmarried couples legal rights india', 'hotel moral policing law', 'supreme court privacy ruling couples', 'police compliance id verification rules']
   }
 ];

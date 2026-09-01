@@ -106,10 +106,10 @@ export default function TermsPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-serif text-white tracking-tight border-b border-zinc-800/80 pb-2">
-            4. Mandatory Identity Verification (Delhi Police Compliance)
+            4. Mandatory Identity Verification (Police Compliance)
           </h2>
           <p>
-            Per government hospitality guidelines and local Delhi Police regulations, <strong className="text-white">all staying guests must submit valid Government ID verification (Aadhaar Card or Passport - Front &amp; Back)</strong> prior to check-in.
+            Per government hospitality guidelines and statutory Police Compliance regulations, <strong className="text-white">all staying guests must submit valid Government ID verification (Aadhaar Card or Passport - Front &amp; Back)</strong> prior to check-in.
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-zinc-300">
             <li>Accepted Documents: Official <strong>Aadhaar Card</strong> or <strong>Passport</strong> only.</li>

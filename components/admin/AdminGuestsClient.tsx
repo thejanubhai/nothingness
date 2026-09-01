@@ -94,7 +94,7 @@ export default function AdminGuestsClient({ initialGuests }: { initialGuests: Gu
         <div>
           <h1 className="font-serif text-3xl md:text-4xl text-white">Guest CRM &amp; Police Compliance</h1>
           <p className="text-white/50 text-sm tracking-wide mt-1">
-            Delhi Police verified guest registry, 180-day reusable vetting, and Form C foreign records.
+            Police verified guest registry, 180-day reusable vetting, and Form C foreign records.
           </p>
         </div>
 
@@ -104,7 +104,7 @@ export default function AdminGuestsClient({ initialGuests }: { initialGuests: Gu
             className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors"
           >
             <FileText className="w-4 h-4 text-accent-gold" />
-            Delhi Police Register
+            Police Register
           </Link>
 
           <Link

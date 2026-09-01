@@ -318,7 +318,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                     onChange={(e) => setFormData({...formData, fee_id_verification: parseFloat(e.target.value) || 0})}
                     className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
                   />
-                  <p className="text-[11px] text-white/40 leading-tight">One-time fee for 180-day Delhi Police ID pass verification. Set ₹0 for Free.</p>
+                  <p className="text-[11px] text-white/40 leading-tight">One-time fee for 180-day Police Compliance ID pass verification. Set ₹0 for Free.</p>
                 </div>
 
                 <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-2">

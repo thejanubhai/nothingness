@@ -113,9 +113,24 @@ export default function StayProofUploadModal({
         throw new Error(data.error || 'Optical stay verification failed.');
       }
 
-      setExtractedResult(data.extracted_data);
+      const resultData = data.extracted || data.extracted_data || {};
+      const spaceName = resultData.space_name || 'Nothingness Sanctuary';
+      const checkInDate = resultData.check_in || resultData.check_in_date || 'Verified';
+      const checkOutDate = resultData.check_out || resultData.check_out_date || 'Verified';
+
+      const formattedResult = {
+        ...resultData,
+        space_name: spaceName,
+        platform: resultData.platform || 'Direct / OTA',
+        check_in_date: checkInDate,
+        check_out_date: checkOutDate,
+        reservation_code: resultData.reservation_code || data.booking_id,
+        co_guests: resultData.co_guests || []
+      };
+
+      setExtractedResult(formattedResult);
       toast.success('Previous Stay Verified!', {
-        description: `Recognized reservation for ${data.extracted_data.space_name} (${data.extracted_data.check_in_date})`
+        description: `Recognized reservation for ${spaceName} (${checkInDate})`
       });
 
       setTimeout(() => {

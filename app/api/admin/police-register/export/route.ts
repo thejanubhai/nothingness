@@ -29,7 +29,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Generate CSV Header & Rows for Delhi Police Hospitality Register Format
+    // Generate CSV Header & Rows for Police Compliance Hospitality Register Format
     const headers = ['S.No', 'Full Name', 'DOB', 'ID Document Type', 'Document Number', 'Permanent Residential Address', 'Nationality', 'Is Foreign National', 'Visa Number', 'Verification Timestamp'];
     
     const rows = (guests || []).map((g, idx) => [
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
       status: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="delhi_police_guest_register_${new Date().toISOString().split('T')[0]}.csv"`,
+        'Content-Disposition': `attachment; filename="police_guest_register_${new Date().toISOString().split('T')[0]}.csv"`,
       },
     });
 

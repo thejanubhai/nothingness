@@ -80,6 +80,10 @@ export default function Header() {
               Spaces
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
             </Link>
+            <Link href="/sanctuary-pass" className="text-[12px] font-medium tracking-[0.2em] uppercase text-amber-400/90 hover:text-amber-300 transition-colors duration-300 relative group py-2 flex items-center gap-1">
+              Sanctuary Pass ✨
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-amber-400 group-hover:w-full transition-all duration-300" />
+            </Link>
             <Link href="/kinksters" className="text-[12px] font-medium tracking-[0.2em] uppercase text-rose-400/90 hover:text-rose-400 transition-colors duration-300 relative group py-2 flex items-center gap-1">
               Lifestyle 🔥
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-rose-500 group-hover:w-full transition-all duration-300" />
@@ -160,6 +164,9 @@ export default function Header() {
               </Link>
               <Link href="/spaces" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors py-1.5 border-b border-white/5" onClick={() => setMobileOpen(false)}>
                 Spaces &amp; Sanctuaries
+              </Link>
+              <Link href="/sanctuary-pass" className="text-2xl font-serif text-amber-400 hover:text-amber-300 transition-colors py-1.5 border-b border-white/5 flex items-center justify-center gap-2" onClick={() => setMobileOpen(false)}>
+                Sanctuary Pass ✨
               </Link>
               <Link href="/kinksters" className="text-2xl font-serif text-rose-400 hover:text-rose-300 transition-colors py-1.5 border-b border-white/5 flex items-center justify-center gap-2" onClick={() => setMobileOpen(false)}>
                 Lifestyle 🔥

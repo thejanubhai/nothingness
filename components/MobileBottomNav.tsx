@@ -18,14 +18,21 @@ const navItems: NavItem[] = [
   {
     name: 'Home',
     href: '/',
-    icon: Sparkles,
+    icon: Building2,
     isActive: (path) => path === '/',
   },
   {
-    name: 'Sanctuaries',
+    name: 'Spaces',
     href: '/spaces',
     icon: Building2,
     isActive: (path) => path.startsWith('/spaces'),
+  },
+  {
+    name: 'Events',
+    href: '/sanctuary-pass',
+    icon: Sparkles,
+    badge: '✨',
+    isActive: (path) => path.startsWith('/sanctuary-pass'),
   },
   {
     name: 'Lifestyle',

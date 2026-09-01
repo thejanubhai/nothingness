@@ -22,7 +22,7 @@ const faqs = [
   },
   {
     question: "How does check-in work?",
-    answer: "Check-in is 100% autonomous and keyless. Once your digital ID verification is completed per Delhi Police regulations, you receive a dynamic smart lockbox code directly on WhatsApp prior to arrival."
+    answer: "Check-in is 100% autonomous and keyless. Once your digital ID verification is completed per Police Compliance regulations, you receive a dynamic smart lockbox code directly on WhatsApp prior to arrival."
   },
   {
     question: "What are the standard Check-in and Check-out times?",
@@ -36,12 +36,12 @@ const faqs = [
 
 export const metadata: Metadata = {
   title: "Frequently Asked Questions | Nothingness",
-  description: "Common questions regarding private stays, keyless check-in, Delhi Police digital ID compliance, acoustic privacy, and guest discretion at Nothingness.",
+  description: "Common questions regarding private stays, keyless check-in, Police Compliance digital ID verification, acoustic privacy, and guest discretion at Nothingness.",
   keywords: [
     "nothingness faq",
     "private stay questions delhi",
     "keyless hotel check in india",
-    "delhi police guest id verification",
+    "police guest id verification",
     "alternate lifestyle stay safety"
   ],
   alternates: {

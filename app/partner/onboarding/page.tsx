@@ -14,7 +14,8 @@ import {
   ArrowRight, 
   Lock, 
   Building2,
-  AlertCircle
+  AlertCircle,
+  Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PartnerMouContractModal from '@/components/partner/PartnerMouContractModal';
@@ -23,10 +24,15 @@ import PropertyNocAffidavitModal from '@/components/partner/PropertyNocAffidavit
 function PartnerOnboardingContent() {
   const searchParams = useSearchParams();
 
-  const [partnerName, setPartnerName] = useState('Partner Principal');
-  const [partnerEmail, setPartnerEmail] = useState('partner@nothingness.asia');
+  // Partner Particulars
+  const [partnerName, setPartnerName] = useState('');
+  const [partnerEmail, setPartnerEmail] = useState('');
+  const [partnerPhone, setPartnerPhone] = useState('');
+  const [state, setState] = useState('Delhi (NCT)');
   const [city, setCity] = useState('New Delhi');
-  const [propertyAddress, setPropertyAddress] = useState('A-42 Hauz Khas Enclave');
+  const [propertyAddress, setPropertyAddress] = useState('');
+  const [spaceTier, setSpaceTier] = useState<'budget' | 'luxury'>('luxury');
+  const [carpetArea, setCarpetArea] = useState('1,100 sq ft');
 
   // Dynamic Fee from Admin
   const [setupFee, setSetupFee] = useState<number>(300000);
@@ -35,7 +41,9 @@ function PartnerOnboardingContent() {
   const [setupFeePaid, setSetupFeePaid] = useState(false);
   const [mouSigned, setMouSigned] = useState(false);
   const [affidavitUploaded, setAffidavitUploaded] = useState(false);
+  const [partnerStatus, setPartnerStatus] = useState<string>('pending_payment');
   const [paying, setPaying] = useState(false);
+  const [loadingInitial, setLoadingInitial] = useState(true);
 
   // Modals
   const [mouModalOpen, setMouModalOpen] = useState(false);
@@ -54,25 +62,65 @@ function PartnerOnboardingContent() {
       toast.error('PayU Payment Failed', { description: decodeURIComponent(errorMsg) });
     }
 
-    // Fetch active fee and status
+    // Fetch active fee and partner onboarding status
     async function loadStatus() {
       try {
         const res = await fetch('/api/partner/onboarding');
         const data = await res.json();
+        
         if (data.fee !== undefined) {
           setSetupFee(data.fee);
         }
         if (data.setupFeePaid) {
           setSetupFeePaid(true);
         }
+        if (data.mouSigned) {
+          setMouSigned(true);
+        }
+        if (data.affidavitUploaded) {
+          setAffidavitUploaded(true);
+        }
+        if (data.status) {
+          setPartnerStatus(data.status);
+        }
+
+        if (data.user) {
+          if (data.user.fullName && !partnerName) setPartnerName(data.user.fullName);
+          if (data.user.email && !partnerEmail) setPartnerEmail(data.user.email);
+          if (data.user.phone && !partnerPhone) setPartnerPhone(data.user.phone);
+        }
+
+        if (data.profile) {
+          if (data.profile.full_name) setPartnerName(data.profile.full_name);
+          if (data.profile.email) setPartnerEmail(data.profile.email);
+          if (data.profile.phone) setPartnerPhone(data.profile.phone);
+          if (data.profile.contract_city) setCity(data.profile.contract_city);
+          if (data.profile.affidavit_notes) setPropertyAddress(data.profile.affidavit_notes);
+        }
+
+        if (data.properties && data.properties.length > 0) {
+          const prop = data.properties[0];
+          if (prop.city) setCity(prop.city);
+          if (prop.state) setState(prop.state);
+          if (prop.locality) setPropertyAddress(prop.locality);
+          if (prop.space_tier) setSpaceTier(prop.space_tier);
+          if (prop.carpet_area) setCarpetArea(prop.carpet_area);
+        }
       } catch (err) {
         console.warn('Failed to load partner onboarding status:', err);
+      } finally {
+        setLoadingInitial(false);
       }
     }
     loadStatus();
   }, [searchParams]);
 
   const handlePaySetupFee = async () => {
+    if (!partnerName.trim() || !partnerEmail.trim()) {
+      toast.error('Please enter your full name and email before proceeding to payment.');
+      return;
+    }
+
     setPaying(true);
     try {
       const res = await fetch('/api/partner/onboarding', {
@@ -82,8 +130,13 @@ function PartnerOnboardingContent() {
           action: 'initiate_setup_payment',
           partnerName,
           partnerEmail,
+          partnerPhone,
           city,
-          propertyAddress
+          state,
+          locality: propertyAddress,
+          propertyAddress,
+          spaceTier,
+          carpetArea
         })
       });
 
@@ -92,8 +145,8 @@ function PartnerOnboardingContent() {
 
       if (!data.requiresPayment) {
         setSetupFeePaid(true);
-        toast.success('Zero-fee Onboarding Verified', {
-          description: 'Proceed to sign the MoU agreement.'
+        toast.success('Zero-Fee Setup Verified', {
+          description: 'Proceed to review and sign the 70/30 MoU agreement.'
         });
         return;
       }
@@ -125,12 +178,38 @@ function PartnerOnboardingContent() {
     }
   };
 
-  const handleSignComplete = () => {
-    setMouSigned(true);
+  const handleSignComplete = async (signatureData: { signedAt: string; signatureText: string; city: string }) => {
+    try {
+      const res = await fetch('/api/partner/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'sign_mou',
+          partnerName,
+          partnerEmail,
+          partnerPhone,
+          city: signatureData.city || city,
+          signatureText: signatureData.signatureText
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to record MoU signature');
+      }
+
+      setMouSigned(true);
+      toast.success('MoU Contract Logged Successfully', {
+        description: 'Next: Print and upload your Property NOC Affidavit.'
+      });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save signature');
+    }
   };
 
   const handleUploadSuccess = () => {
     setAffidavitUploaded(true);
+    setPartnerStatus('under_review');
   };
 
   const allCompleted = setupFeePaid && mouSigned && affidavitUploaded;
@@ -150,6 +229,97 @@ function PartnerOnboardingContent() {
         <p className="text-white/60 text-xs sm:text-sm leading-relaxed">
           Complete the 3-step compliance onboarding to activate your hyper-personalised Partner Dashboard, live booking calendar, and 70/30 revenue distribution.
         </p>
+      </div>
+
+      {/* Property & Host Particulars Form */}
+      <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-accent-gold" />
+            <h3 className="font-serif text-base sm:text-lg text-white font-semibold">
+              Host Partner &amp; Property Particulars
+            </h3>
+          </div>
+          <span className="text-[10px] font-mono uppercase text-white/40">Step 0: Verification Info</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">Full Legal Name</label>
+            <input
+              type="text"
+              required
+              value={partnerName}
+              onChange={(e) => setPartnerName(e.target.value)}
+              placeholder="e.g. Kabir Varma"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-accent-gold/50"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">Email Address</label>
+            <input
+              type="email"
+              required
+              value={partnerEmail}
+              onChange={(e) => setPartnerEmail(e.target.value)}
+              placeholder="partner@domain.com"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-accent-gold/50"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">WhatsApp Phone</label>
+            <input
+              type="tel"
+              value={partnerPhone}
+              onChange={(e) => setPartnerPhone(e.target.value)}
+              placeholder="+91 98765 43210"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-accent-gold/50"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-1">
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">State / Region</label>
+            <select
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-accent-gold/50"
+            >
+              <option value="Delhi (NCT)">Delhi (NCT)</option>
+              <option value="Haryana">Haryana (Gurgaon)</option>
+              <option value="Uttar Pradesh">Uttar Pradesh (Noida)</option>
+              <option value="Maharashtra">Maharashtra (Mumbai / Pune)</option>
+              <option value="Karnataka">Karnataka (Bengaluru)</option>
+              <option value="Goa">Goa</option>
+              <option value="Other State">Other State</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">City / District</label>
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="e.g. New Delhi"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-accent-gold/50"
+            />
+          </div>
+
+          <div className="space-y-1.5 sm:col-span-2">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">Locality / Property Address</label>
+            <input
+              type="text"
+              value={propertyAddress}
+              onChange={(e) => setPropertyAddress(e.target.value)}
+              placeholder="e.g. A-42 Hauz Khas Enclave"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-accent-gold/50"
+            />
+          </div>
+        </div>
       </div>
 
       {/* 3-Step Wizard Cards */}
@@ -181,21 +351,22 @@ function PartnerOnboardingContent() {
               {setupFee > 0 ? `₹${setupFee.toLocaleString('en-IN')} Setup Fee` : 'Zero-Fee Onboarding'}
             </h3>
             <p className="text-xs text-white/60 leading-relaxed">
-              PAN India operational setup covering smart keyless hardware, local vendor integrations, valet/parking setup, and statutory ID registry.
+              PAN India operational setup covering smart keyless hardware, vendor supply chain, parking/valet logistics, and statutory ID registry.
             </p>
           </div>
 
           <div className="pt-6 border-t border-white/5 mt-6">
             {setupFeePaid ? (
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-center text-xs font-mono font-bold">
-                ✓ Payment Confirmed
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-center text-xs font-mono font-bold flex items-center justify-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Payment Confirmed</span>
               </div>
             ) : (
               <button
                 type="button"
                 disabled={paying}
                 onClick={handlePaySetupFee}
-                className="w-full bg-accent-gold hover:bg-white text-black py-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-accent-gold hover:bg-white text-black py-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <CreditCard className="w-4 h-4" />
                 <span>
@@ -232,15 +403,20 @@ function PartnerOnboardingContent() {
 
             <h3 className="font-serif text-xl text-white">70/30 MoU Agreement</h3>
             <p className="text-xs text-white/60 leading-relaxed">
-              Legally valid franchise draft governed under Indian Contract Act 1872 &amp; local city hospitality norms, locking in the 70/30 commercial split.
+              Legally valid franchise contract governed under Indian Contract Act 1872 &amp; local hospitality norms, locking in the 70/30 commercial split.
             </p>
           </div>
 
           <div className="pt-6 border-t border-white/5 mt-6">
             {mouSigned ? (
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-center text-xs font-mono font-bold">
-                ✓ Agreement Executed
-              </div>
+              <button
+                type="button"
+                onClick={() => setMouModalOpen(true)}
+                className="w-full p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-center text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>View Executed MoU</span>
+              </button>
             ) : (
               <button
                 type="button"
@@ -287,9 +463,14 @@ function PartnerOnboardingContent() {
 
           <div className="pt-6 border-t border-white/5 mt-6">
             {affidavitUploaded ? (
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-center text-xs font-mono font-bold">
-                ✓ Affidavit Under Review
-              </div>
+              <button
+                type="button"
+                onClick={() => setAffidavitModalOpen(true)}
+                className="w-full p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-center text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Affidavit Under Review</span>
+              </button>
             ) : (
               <button
                 type="button"
@@ -349,6 +530,7 @@ function PartnerOnboardingContent() {
         isOpen={mouModalOpen}
         onClose={() => setMouModalOpen(false)}
         onSignComplete={handleSignComplete}
+        isReadOnly={mouSigned}
       />
 
       {/* Property NOC Affidavit Modal */}
@@ -356,9 +538,13 @@ function PartnerOnboardingContent() {
         partnerName={partnerName}
         propertyAddress={propertyAddress}
         city={city}
+        state={state}
+        spaceTier={spaceTier}
+        carpetArea={carpetArea}
         isOpen={affidavitModalOpen}
         onClose={() => setAffidavitModalOpen(false)}
         onUploadSuccess={handleUploadSuccess}
+        isReadOnly={affidavitUploaded}
       />
 
     </main>

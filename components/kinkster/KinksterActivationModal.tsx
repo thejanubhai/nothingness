@@ -125,7 +125,7 @@ export default function KinksterActivationModal({
             <p className="mt-1 opacity-90">
               {isIdVerified
                 ? 'Your Aadhaar/Passport verification is active. Your legal identity remains 100% private & encrypted.'
-                : 'Delhi Police & Hospitality compliance rules require Aadhaar/Passport verification before entering Kinkster Mode.'}
+                : 'Police Compliance & Hospitality rules require Aadhaar/Passport verification before entering Kinkster Mode.'}
             </p>
             {!isIdVerified && onOpenIdVerification && (
               <button

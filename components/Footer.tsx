@@ -51,6 +51,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/sanctuary-pass" className={linkClass}>
+                  Sanctuary Pass ✨
+                  <span className={underlineClass} />
+                </Link>
+              </li>
+              <li>
                 <Link href="/kinksters" className={linkClass}>
                   Lifestyle 🔥
                   <span className={underlineClass} />
@@ -162,7 +168,7 @@ export default function Footer() {
             </Tooltip>
             <span className="w-1 h-1 rounded-full bg-white/15" />
             <Tooltip content="Identity verification required before check-in">
-              <span className="text-white/30 text-[10px] sm:text-[11px] tracking-[0.15em] uppercase font-mono">Delhi Police Compliant</span>
+              <span className="text-white/30 text-[10px] sm:text-[11px] tracking-[0.15em] uppercase font-mono">Police Compliant</span>
             </Tooltip>
           </div>
         </div>

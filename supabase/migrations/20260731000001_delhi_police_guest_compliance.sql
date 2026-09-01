@@ -1,4 +1,4 @@
--- Add Delhi Police & Hotel/BnB Check-in Law Compliance fields to guest_profiles
+-- Add Police Compliance & Hotel/BnB Check-in Law Compliance fields to guest_profiles
 ALTER TABLE public.guest_profiles
 ADD COLUMN IF NOT EXISTS permanent_address TEXT,
 ADD COLUMN IF NOT EXISTS is_foreign_national BOOLEAN DEFAULT FALSE,

@@ -340,7 +340,7 @@ Return ONLY valid JSON (no markdown fences):
         const { paymentUrl, params } = createPayUPaymentRequest({
           txnid: orderId,
           amount: fee_id_verification,
-          productinfo: 'Delhi Police Statutory ID Verification Fee',
+          productinfo: 'Police Compliance Statutory ID Verification Fee',
           firstname: guestName,
           email: sessionEmail || 'concierge@nothingness.asia',
           phone: effectivePhone || '9999999999',

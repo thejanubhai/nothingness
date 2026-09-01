@@ -217,7 +217,7 @@ export default function AddGuestPage() {
       if (insertError) throw insertError;
 
       toast.success('Guest Profile Registered & Verified for 180 Days!', {
-        description: `${formData.full_name} is now active in Delhi Police Digital Register.`
+        description: `${formData.full_name} is now active in Police Compliance Digital Register.`
       });
 
       router.push('/admin/guests');
@@ -530,7 +530,7 @@ export default function AddGuestPage() {
                 }`}
               >
                 <span>🇮🇳 Indian Resident</span>
-                <span className="text-[10px] opacity-70 font-mono">(Delhi Police Check-in)</span>
+                <span className="text-[10px] opacity-70 font-mono">(Police Compliance Check-in)</span>
               </button>
 
               <button
@@ -588,7 +588,7 @@ export default function AddGuestPage() {
           {/* PERMANENT ADDRESS */}
           <div className="space-y-2">
             <label className="text-[10px] uppercase tracking-widest text-white/50 font-mono">
-              Permanent Residential Address (For Delhi Police Compliance)
+              Permanent Residential Address (For Police Compliance)
             </label>
             <textarea 
               rows={2}
@@ -653,7 +653,7 @@ export default function AddGuestPage() {
                   Guest is Verified (180-Day Vetted Protocol)
                 </span>
                 <p className="text-xs text-white/50 mt-0.5 leading-relaxed">
-                  Confirms government ID authenticity. Sets compliance status to <code className="text-accent-gold">verified_compliant</code> for Delhi Police Digital Guest Register with 180 days reusable validity.
+                  Confirms government ID authenticity. Sets compliance status to <code className="text-accent-gold">verified_compliant</code> for Police Compliance Digital Guest Register with 180 days reusable validity.
                 </p>
               </div>
             </label>

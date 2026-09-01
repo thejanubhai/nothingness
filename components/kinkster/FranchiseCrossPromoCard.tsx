@@ -29,7 +29,7 @@ export default function FranchiseCrossPromoCard() {
             Own a Luxury Space in Delhi NCR, Mumbai, or Goa?
           </h3>
           <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-2xl">
-            Partner with Nothingness to run an ultra-discreet, high-yield sanctuary. We provide turnkey smart lockbox infrastructure, automated turnover inspection, strict Delhi Police guest vetting, and 200%+ higher yields compared to standard rentals.
+            Partner with Nothingness to run an ultra-discreet, high-yield sanctuary. We provide turnkey smart lockbox infrastructure, automated turnover inspection, strict Police Compliance guest vetting, and 200%+ higher yields compared to standard rentals.
           </p>
         </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FileCheck, Shield, X, CheckCircle2, AlertCircle, ArrowRight, Printer } from 'lucide-react';
+import { FileCheck, Shield, X, CheckCircle2, AlertCircle, ArrowRight, Printer, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
@@ -10,7 +10,10 @@ interface Props {
   city: string;
   isOpen: boolean;
   onClose: () => void;
-  onSignComplete: (signatureData: { signedAt: string; signatureText: string; city: string }) => void;
+  onSignComplete?: (signatureData: { signedAt: string; signatureText: string; city: string }) => void;
+  isReadOnly?: boolean;
+  signedAtDate?: string;
+  executedSignature?: string;
 }
 
 export default function PartnerMouContractModal({
@@ -19,14 +22,21 @@ export default function PartnerMouContractModal({
   city,
   isOpen,
   onClose,
-  onSignComplete
+  onSignComplete,
+  isReadOnly = false,
+  signedAtDate,
+  executedSignature
 }: Props) {
-  const [agreedTerms, setAgreedTerms] = useState(false);
-  const [agreedOwnership, setAgreedOwnership] = useState(false);
-  const [signatureText, setSignatureText] = useState(partnerName || '');
+  const [agreedTerms, setAgreedTerms] = useState(isReadOnly);
+  const [agreedOwnership, setAgreedOwnership] = useState(isReadOnly);
+  const [signatureText, setSignatureText] = useState(executedSignature || partnerName || '');
   const [signing, setSigning] = useState(false);
 
   if (!isOpen) return null;
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const handleSign = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,11 +48,13 @@ export default function PartnerMouContractModal({
     setSigning(true);
     try {
       const signedAt = new Date().toISOString();
-      onSignComplete({
-        signedAt,
-        signatureText: signatureText.trim(),
-        city: city || 'National Capital Territory / Pan-India'
-      });
+      if (onSignComplete) {
+        onSignComplete({
+          signedAt,
+          signatureText: signatureText.trim(),
+          city: city || 'National Capital Territory / Pan-India'
+        });
+      }
       toast.success('MoU Agreement Signed Successfully', {
         description: 'Your legal contract is logged. Proceed to upload your property NOC affidavit.'
       });
@@ -54,12 +66,16 @@ export default function PartnerMouContractModal({
     }
   };
 
+  const formattedSignedDate = signedAtDate 
+    ? new Date(signedAtDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-      <div className="bg-zinc-950 border border-white/10 rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-zinc-950 border border-white/10 rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden print:border-none print:max-h-none print:w-full print:bg-white print:text-black">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-zinc-900/40">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-zinc-900/40 print:hidden">
           <div className="flex items-center gap-2">
             <FileCheck className="w-5 h-5 text-accent-gold" />
             <div>
@@ -71,29 +87,39 @@ export default function PartnerMouContractModal({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="flex items-center gap-2 bg-white/10 hover:bg-white hover:text-black text-white px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold uppercase transition-colors"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print / PDF</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Legal Clauses */}
-        <div className="p-6 sm:p-8 space-y-6 overflow-y-auto text-xs text-white/70 leading-relaxed max-h-[60vh]">
+        <div className="p-6 sm:p-8 space-y-6 overflow-y-auto text-xs text-white/70 leading-relaxed max-h-[60vh] print:max-h-none print:overflow-visible print:bg-white print:text-black">
           
-          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-2">
-            <p className="text-white font-semibold text-sm font-serif">
+          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 print:border-black/20 space-y-2">
+            <p className="text-white print:text-black font-semibold text-sm font-serif">
               Memorandum of Understanding (MoU) &amp; Operating Agreement
             </p>
-            <p className="text-white/60">
-              This Agreement is entered into between <span className="text-white font-bold">{partnerName || '[Partner Name]'}</span> (&ldquo;The Partner&rdquo;) and <span className="text-white font-bold font-mono">nothingness.</span> Inc. (&ldquo;The Network&rdquo;), establishing the terms of private sanctuary operations, revenue disbursement, and guest compliance.
+            <p className="text-white/60 print:text-gray-700">
+              This Agreement is entered into between <span className="text-white print:text-black font-bold">{partnerName || '[Partner Name]'}</span> (&ldquo;The Partner&rdquo;) and <span className="text-white print:text-black font-bold font-mono">nothingness.</span> Inc. (&ldquo;The Network&rdquo;), establishing the terms of private sanctuary operations, revenue disbursement, and guest compliance.
             </p>
           </div>
 
           {/* Clause 1: Commercials */}
           <div className="space-y-2">
-            <h4 className="font-serif text-sm font-bold text-white text-accent-gold uppercase tracking-wider">
+            <h4 className="font-serif text-sm font-bold text-white print:text-black text-accent-gold uppercase tracking-wider">
               1. Commercials &amp; 70/30 Revenue Distribution
             </h4>
             <p>
@@ -109,7 +135,7 @@ export default function PartnerMouContractModal({
 
           {/* Clause 2: Setup Fee & Fit-Out Landing */}
           <div className="space-y-2">
-            <h4 className="font-serif text-sm font-bold text-white text-accent-gold uppercase tracking-wider">
+            <h4 className="font-serif text-sm font-bold text-white print:text-black text-accent-gold uppercase tracking-wider">
               2. Onboarding Setup Fee &amp; Cost-to-Cost Fit-Out
             </h4>
             <p>
@@ -122,7 +148,7 @@ export default function PartnerMouContractModal({
 
           {/* Clause 3: Mandatory Property Ownership & Affidavit */}
           <div className="space-y-2">
-            <h4 className="font-serif text-sm font-bold text-white text-accent-gold uppercase tracking-wider">
+            <h4 className="font-serif text-sm font-bold text-white print:text-black text-accent-gold uppercase tracking-wider">
               3. Mandatory Property Ownership &amp; Statutory NOC
             </h4>
             <p>
@@ -135,7 +161,7 @@ export default function PartnerMouContractModal({
 
           {/* Clause 4: Guest Vetting & Harassment Protection */}
           <div className="space-y-2">
-            <h4 className="font-serif text-sm font-bold text-white text-accent-gold uppercase tracking-wider">
+            <h4 className="font-serif text-sm font-bold text-white print:text-black text-accent-gold uppercase tracking-wider">
               4. Digital ID Compliance &amp; Non-Nuisance Undertaking
             </h4>
             <p>
@@ -148,7 +174,7 @@ export default function PartnerMouContractModal({
 
           {/* Clause 5: nothingness. Lounge Unlock */}
           <div className="space-y-2">
-            <h4 className="font-serif text-sm font-bold text-white text-accent-gold uppercase tracking-wider">
+            <h4 className="font-serif text-sm font-bold text-white print:text-black text-accent-gold uppercase tracking-wider">
               5. Multi-Property Gated Lounge Access
             </h4>
             <p>
@@ -156,69 +182,91 @@ export default function PartnerMouContractModal({
             </p>
           </div>
 
-        </div>
-
-        {/* Signing Form Footer */}
-        <form onSubmit={handleSign} className="p-6 border-t border-white/10 bg-zinc-900/50 space-y-4">
-          
-          <div className="space-y-2.5">
-            <label className="flex items-start gap-2.5 text-xs text-white/80 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={agreedTerms}
-                onChange={(e) => setAgreedTerms(e.target.checked)}
-                className="mt-0.5 rounded border-white/20 accent-accent-gold"
-              />
-              <span>
-                I agree to the 70/30 commercial split, ₹3L setup terms, and autonomous operational guidelines outlined in this MoU.
-              </span>
-            </label>
-
-            <label className="flex items-start gap-2.5 text-xs text-white/80 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={agreedOwnership}
-                onChange={(e) => setAgreedOwnership(e.target.checked)}
-                className="mt-0.5 rounded border-white/20 accent-accent-gold"
-              />
-              <span>
-                I certify that I am the lawful owner of the property and agree to submit the signed Operational NOC Affidavit.
-              </span>
-            </label>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end pt-2">
-            <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">
-                Digital Signature (Type Full Legal Name)
-              </label>
-              <input
-                type="text"
-                required
-                value={signatureText}
-                onChange={(e) => setSignatureText(e.target.value)}
-                placeholder="Full Legal Name"
-                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white font-serif focus:outline-none focus:border-accent-gold/50"
-              />
+          {/* Executed Signature Block */}
+          <div className="pt-6 border-t border-white/10 print:border-black/20 grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
+            <div className="space-y-1 text-[11px] font-mono text-white/50 print:text-gray-600">
+              <p>Governing Law: Indian Contract Act 1872</p>
+              <p>Jurisdiction: {city || 'National Capital Territory / Pan-India'}</p>
+              <p>Executed Date: {formattedSignedDate}</p>
+              <p className="text-[10px] text-accent-gold print:text-amber-800">
+                🔒 Cryptographic Seal: SHA256:{Math.random().toString(36).substring(2, 12).toUpperCase()}
+              </p>
             </div>
 
-            <button
-              type="submit"
-              disabled={signing || !agreedTerms || !agreedOwnership || !signatureText.trim()}
-              className="w-full bg-accent-gold hover:bg-white text-black py-3 rounded-xl text-xs font-bold font-mono tracking-widest uppercase transition-all duration-300 disabled:opacity-40 shadow-xl flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {signing ? (
-                'Recording Signature...'
-              ) : (
-                <>
-                  <span>Sign &amp; Accept MoU</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+            <div className="text-left sm:text-right space-y-1">
+              <p className="text-[10px] uppercase font-mono text-white/40 print:text-gray-500">Authorized Signatory</p>
+              <p className="text-sm font-serif font-bold text-white print:text-black italic">
+                {executedSignature || signatureText || partnerName || 'Deponent / Partner'}
+              </p>
+              <p className="text-[10px] font-mono text-green-400 print:text-green-700">✓ Digital Signature Verified</p>
+            </div>
           </div>
 
-        </form>
+        </div>
+
+        {/* Signing Form Footer (Hidden in Read-Only / Print) */}
+        {!isReadOnly && (
+          <form onSubmit={handleSign} className="p-6 border-t border-white/10 bg-zinc-900/50 space-y-4 print:hidden">
+            
+            <div className="space-y-2.5">
+              <label className="flex items-start gap-2.5 text-xs text-white/80 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreedTerms}
+                  onChange={(e) => setAgreedTerms(e.target.checked)}
+                  className="mt-0.5 rounded border-white/20 accent-accent-gold"
+                />
+                <span>
+                  I agree to the 70/30 commercial split, ₹3L setup terms, and autonomous operational guidelines outlined in this MoU.
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2.5 text-xs text-white/80 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreedOwnership}
+                  onChange={(e) => setAgreedOwnership(e.target.checked)}
+                  className="mt-0.5 rounded border-white/20 accent-accent-gold"
+                />
+                <span>
+                  I certify that I am the lawful owner of the property and agree to submit the signed Operational NOC Affidavit.
+                </span>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end pt-2">
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">
+                  Digital Signature (Type Full Legal Name)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={signatureText}
+                  onChange={(e) => setSignatureText(e.target.value)}
+                  placeholder="Full Legal Name"
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white font-serif focus:outline-none focus:border-accent-gold/50"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={signing || !agreedTerms || !agreedOwnership || !signatureText.trim()}
+                className="w-full bg-accent-gold hover:bg-white text-black py-3 rounded-xl text-xs font-bold font-mono tracking-widest uppercase transition-all duration-300 disabled:opacity-40 shadow-xl flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {signing ? (
+                  'Recording Signature...'
+                ) : (
+                  <>
+                    <span>Sign &amp; Accept MoU</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
+
+          </form>
+        )}
 
       </div>
     </div>

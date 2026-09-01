@@ -109,12 +109,21 @@ export default function PartnerApplicationForm() {
               <p>2. Cost-to-cost fit-out estimate &amp; smart access review.</p>
               <p>3. WhatsApp concierge onboarding call.</p>
             </div>
-            <button
-              onClick={() => setSubmitted(false)}
-              className="text-xs uppercase tracking-widest text-accent-gold hover:text-white transition-colors underline underline-offset-4"
-            >
-              Submit Another Property
-            </button>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Link
+                href="/partner/onboarding"
+                className="w-full sm:w-auto px-6 py-3 bg-accent-gold hover:bg-white text-black font-mono font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
+              >
+                <span>Proceed to Legal Onboarding &rarr;</span>
+              </Link>
+              <button
+                onClick={() => setSubmitted(false)}
+                className="text-xs uppercase tracking-widest text-white/60 hover:text-white transition-colors underline underline-offset-4 py-2"
+              >
+                Submit Another Property
+              </button>
+            </div>
           </div>
         ) : (
           <div className="relative z-10">

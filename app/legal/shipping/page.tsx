@@ -107,7 +107,7 @@ export default function ShippingPage() {
                 <ShieldCheck className="w-4 h-4" /> 2. Smart Check-in &amp; Access PINs
               </div>
               <p className="text-xs sm:text-sm text-zinc-300">
-                Following mandatory Government ID verification per Delhi Police hospitality guidelines, confidential sanctuary entrance directions, concierge contacts, and smart lockbox PIN codes are electronically delivered to the primary guest on check-in day.
+                Following mandatory Government ID verification per Police Compliance hospitality guidelines, confidential sanctuary entrance directions, concierge contacts, and smart lockbox PIN codes are electronically delivered to the primary guest on check-in day.
               </p>
               <p className="text-[11px] text-zinc-500 font-mono">⏱️ Delivery Time: On or before scheduled check-in day</p>
             </div>

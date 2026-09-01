@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { addDays } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing booking ID' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data: booking, error } = await supabase
       .from('bookings')
       .select(`
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const cleanPhone = phone.replace(/[^0-9+]/g, '');
     const cleanDigits = phone.replace(/[^0-9]/g, '');
     const last10 = cleanDigits.slice(-10);
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // 1. Check if guest already exists and is 180-day verified
     const { data: existingProfile } = await supabase

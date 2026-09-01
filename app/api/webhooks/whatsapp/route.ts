@@ -32,7 +32,7 @@ export async function POST(request: Request) {
                 role: 'user',
                 parts: [
                   {
-                    text: `Analyze this image submitted via WhatsApp for Delhi Hotel & BnB police check-in compliance.
+                    text: `Analyze this image submitted via WhatsApp for Hotel & BnB Police Compliance regulations.
                     Determine if it is a government-issued ID (Aadhaar, Passport, Voter ID, Driving License, Foreign Passport).
                     Extract: Name, Document Type, Document Number, 18+ verification, Permanent Address.
                     
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
               is_verified: true,
             }, { onConflict: 'document_number' });
 
-            const replyXml = `<Response><Message>✅ Identity Verified! Thank you ${parsed.name}. Your ID (${parsed.document_type}) has been digitally registered per Delhi Police regulations.\n\n👥 If you have accompanying guests staying with you, please send their ID photos in this chat as well!</Message></Response>`;
+            const replyXml = `<Response><Message>✅ Identity Verified! Thank you ${parsed.name}. Your ID (${parsed.document_type}) has been digitally registered per Police Compliance regulations.\n\n👥 If you have accompanying guests staying with you, please send their ID photos in this chat as well!</Message></Response>`;
             return new NextResponse(replyXml, { status: 200, headers: { 'Content-Type': 'text/xml' } });
           }
         } catch (idErr) {

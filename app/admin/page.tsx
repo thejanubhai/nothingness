@@ -48,6 +48,17 @@ export default async function AdminDashboard() {
     .select('*', { count: 'exact', head: true })
     .neq('status', 'completed');
 
+  // 4b. Fetch pending franchise leads and partner verifications
+  const { count: newFranchiseLeads } = await supabase
+    .from('franchise_leads')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'new');
+
+  const { count: pendingPartnerVerifications } = await supabase
+    .from('partner_profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'under_review');
+
   // 5. Today's Movements
   const { data: todayArrivals } = await supabase
     .from('bookings')
@@ -201,13 +212,14 @@ export default async function AdminDashboard() {
       )}
 
       {/* Quick Launch Control Hub */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         {[
           { label: "Master Calendar", href: "/admin/calendar", icon: CalendarDays, desc: "2-Way OTA Hub" },
           { label: "Sanctuaries", href: "/admin/spaces", icon: Building2, desc: "Property CRUD" },
+          { label: "Franchise & Partners", href: "/admin/partners", icon: Sparkles, desc: "Leads & KYC" },
           { label: "Editorial Journal", href: "/admin/journal", icon: Sparkles, desc: "30 Articles & AI" },
           { label: "Bookings CRM", href: "/admin/bookings", icon: CalendarDays, desc: "Reservations" },
-          { label: "Police Log", href: "/admin/guests/police-register", icon: ShieldCheck, desc: "Delhi Form C" },
+          { label: "Police Log", href: "/admin/guests/police-register", icon: ShieldCheck, desc: "Police Compliance" },
           { label: "Housekeeping", href: "/admin/housekeeping", icon: Sparkles, desc: "Turnover Dispatch" },
           { label: "Financials", href: "/admin/financials", icon: CreditCard, desc: "Ledger & GST" },
         ].map((item) => (
@@ -280,6 +292,36 @@ export default async function AdminDashboard() {
             <h3 className="font-serif text-xl text-white mb-6">Operations Queue</h3>
             
             <div className="space-y-3">
+              {(pendingPartnerVerifications || 0) > 0 && (
+                <div className="flex items-center justify-between p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <Building2 className="w-5 h-5 text-amber-400" />
+                    <div>
+                      <p className="text-xs text-white font-semibold">Partner NOC / KYC Audits</p>
+                      <p className="text-[10px] text-amber-400/80 font-mono">{pendingPartnerVerifications} partner(s) awaiting verification</p>
+                    </div>
+                  </div>
+                  <Link href="/admin/partners" className="text-xs bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-lg hover:bg-amber-500/30 transition-colors font-bold font-mono">
+                    Audit
+                  </Link>
+                </div>
+              )}
+
+              {(newFranchiseLeads || 0) > 0 && (
+                <div className="flex items-center justify-between p-4 bg-accent-gold/10 border border-accent-gold/20 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="w-5 h-5 text-accent-gold" />
+                    <div>
+                      <p className="text-xs text-white font-semibold">New Franchise Applications</p>
+                      <p className="text-[10px] text-accent-gold/80 font-mono">{newFranchiseLeads} new prospect inquiry</p>
+                    </div>
+                  </div>
+                  <Link href="/admin/partners" className="text-xs bg-accent-gold text-black px-3 py-1.5 rounded-lg hover:bg-white transition-colors font-bold font-mono">
+                    View
+                  </Link>
+                </div>
+              )}
+
               {(pendingGuestVerifications || 0) > 0 && (
                 <div className="flex items-center justify-between p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
                   <div className="flex items-center gap-3">
@@ -310,7 +352,7 @@ export default async function AdminDashboard() {
                 </div>
               )}
               
-              {!pendingGuestVerifications && !pendingHousekeeping && (
+              {!pendingGuestVerifications && !pendingHousekeeping && !pendingPartnerVerifications && !newFranchiseLeads && (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <CheckCircle className="w-8 h-8 text-green-500/50 mb-3" />
                   <p className="text-sm text-white/50 font-mono">All systems operating smoothly.</p>

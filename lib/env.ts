@@ -25,6 +25,11 @@ const envSchema = z.object({
   FIREBASE_CLIENT_EMAIL: z.string().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
 
+  // Firebase VAPID WebPush Keys
+  FIREBASE_WEBPUSH_CERTIFICATE: z.string().optional(),
+  FIREBASE_WEBPUSH_CERTIFICATE_PRIVATEKEY: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_WEBPUSH_CERTIFICATE: z.string().optional(),
+
   // PayU Payment Gateway Configuration (Key, Salt, OAuth Client ID & Secret)
   PAYU_KEY: z.string().optional(),
   PayU_Key: z.string().optional(),
@@ -80,6 +85,10 @@ export const env = envSchema.parse({
   FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
   FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
+
+  FIREBASE_WEBPUSH_CERTIFICATE: process.env.FIREBASE_WEBPUSH_CERTIFICATE || process.env.NEXT_PUBLIC_FIREBASE_WEBPUSH_CERTIFICATE,
+  FIREBASE_WEBPUSH_CERTIFICATE_PRIVATEKEY: process.env.FIREBASE_WEBPUSH_CERTIFICATE_PRIVATEKEY,
+  NEXT_PUBLIC_FIREBASE_WEBPUSH_CERTIFICATE: process.env.NEXT_PUBLIC_FIREBASE_WEBPUSH_CERTIFICATE || process.env.FIREBASE_WEBPUSH_CERTIFICATE,
 
   PAYU_KEY: process.env.PAYU_KEY || process.env.PayU_Key,
   PayU_Key: process.env.PayU_Key || process.env.PAYU_KEY,

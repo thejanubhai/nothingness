@@ -3,7 +3,7 @@ import AdminPoliceRegisterClient from "@/components/admin/AdminPoliceRegisterCli
 
 export const dynamic = 'force-dynamic';
 
-export default async function DelhiPoliceRegisterPage() {
+export default async function PoliceRegisterPage() {
   const supabase = await createClient();
 
   const { data: guests } = await supabase

@@ -193,7 +193,7 @@ function InviteVerificationContent() {
             </div>
 
             <p className="text-xs text-white/50 leading-relaxed">
-              Per Delhi Police hospitality check-in laws, please submit clear photos of your <strong className="text-white">Aadhaar Card</strong> or <strong className="text-white">Passport</strong> (Front &amp; Back).
+              Per Police Compliance hospitality check-in laws, please submit clear photos of your <strong className="text-white">Aadhaar Card</strong> or <strong className="text-white">Passport</strong> (Front &amp; Back).
             </p>
 
             {/* Hidden Inputs */}
@@ -332,7 +332,7 @@ function InviteVerificationContent() {
                 <span className="font-bold">Active</span>
               </div>
               <div className="flex items-center justify-between">
-                <span>✓ Delhi Police Digital Register:</span>
+                <span>✓ Police Compliance Digital Register:</span>
                 <span>Compliant</span>
               </div>
               <div className="flex items-center justify-between">

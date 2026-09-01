@@ -11,7 +11,9 @@ import { signOut } from '@/app/actions/auth';
 
 const navItems = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { name: 'Sanctuary Gatherings', href: '/admin/events', icon: Sparkles },
   { name: 'Sanctuaries', href: '/admin/spaces', icon: Building2 },
+  { name: 'Franchise & Partners', href: '/admin/partners', icon: Sparkles },
   { name: 'Editorial Journal', href: '/admin/journal', icon: Sparkles },
   { name: 'Calendar & OTA', href: '/admin/calendar', icon: CalendarDays },
   { name: 'Bookings', href: '/admin/bookings', icon: CalendarDays },

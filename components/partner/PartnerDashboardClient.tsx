@@ -29,6 +29,8 @@ import { format } from 'date-fns';
 import LegalGuestDossierModal, { BookingGuestDetail } from './LegalGuestDossierModal';
 import LoungeQrScannerModal from './LoungeQrScannerModal';
 import PartnerInventoryManager from './PartnerInventoryManager';
+import PartnerMouContractModal from './PartnerMouContractModal';
+import PropertyNocAffidavitModal from './PropertyNocAffidavitModal';
 
 interface PartnerProfile {
   id: string;
@@ -36,7 +38,15 @@ interface PartnerProfile {
   full_name: string;
   email: string;
   phone: string;
-  status: 'active' | 'under_review' | 'pending_payment' | 'contract_pending' | 'affidavit_pending';
+  status: 'active' | 'under_review' | 'pending_payment' | 'contract_pending' | 'affidavit_pending' | 'rejected';
+  setup_fee_paid?: boolean;
+  contract_signed?: boolean;
+  contract_signed_at?: string | null;
+  contract_city?: string | null;
+  affidavit_uploaded?: boolean;
+  affidavit_url?: string | null;
+  affidavit_notes?: string | null;
+  verified_by_admin?: boolean;
   payout_frequency: 'monthly' | 'quarterly' | 'yearly';
   bank_name?: string;
   bank_account_number?: string;
@@ -151,6 +161,10 @@ export default function PartnerDashboardClient({ profile, properties, initialBoo
   const [upiId, setUpiId] = useState(profile.upi_id || '');
   const [savingPayout, setSavingPayout] = useState(false);
 
+  // Legal Document Modals
+  const [mouModalOpen, setMouModalOpen] = useState(false);
+  const [affidavitModalOpen, setAffidavitModalOpen] = useState(false);
+
   // Dynamic Financial Aggregations (70% Partner / 30% nothingness.)
   const totalGrossRevenue = bookings.reduce((sum, b) => sum + (b.grossAmount || 0), 0);
   const partnerNetEarnings = Math.round(totalGrossRevenue * 0.70); // 70%
@@ -188,6 +202,8 @@ export default function PartnerDashboardClient({ profile, properties, initialBoo
     }
   };
 
+  const isUnderReview = profile.status === 'under_review' || (!profile.verified_by_admin && profile.status !== 'active');
+
   return (
     <div className="min-h-screen bg-black text-white pt-24 pb-20 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto space-y-8">
       
@@ -196,31 +212,77 @@ export default function PartnerDashboardClient({ profile, properties, initialBoo
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
             <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-accent-gold bg-accent-gold/10 px-2.5 py-1 rounded-full border border-accent-gold/20">
-              Verified Partner Command Center
+              {isUnderReview ? 'Partner Application in Verification' : 'Verified Partner Command Center'}
             </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs text-emerald-400 font-mono">Sanctuaries Live</span>
+            <span className={`w-2 h-2 rounded-full ${isUnderReview ? 'bg-amber-400' : 'bg-emerald-400'} animate-pulse`} />
+            <span className={`text-xs font-mono ${isUnderReview ? 'text-amber-400' : 'text-emerald-400'}`}>
+              {isUnderReview ? 'Statutory Audit Active' : 'Sanctuaries Live'}
+            </span>
           </div>
 
           <h1 className="font-serif text-2xl sm:text-4xl text-white">
             Welcome, <span className="text-accent-gold">{profile.full_name || 'Partner'}</span>
           </h1>
           <p className="text-white/60 text-xs sm:text-sm mt-1">
-            Managing <span className="text-white font-semibold font-mono">{properties.length || 2} Active Sanctuaries</span> with autonomous WhatsApp keyless ops &amp; 70/30 yield distribution.
+            Managing <span className="text-white font-semibold font-mono">{properties.length || 1} Active Sanctuaries</span> with autonomous WhatsApp keyless ops &amp; 70/30 yield distribution.
           </p>
         </div>
 
         {/* Quick Top Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setMouModalOpen(true)}
+            className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 px-3.5 py-2 rounded-xl text-xs font-mono transition-colors cursor-pointer"
+          >
+            <FileText className="w-3.5 h-3.5 text-accent-gold" />
+            <span>View Signed MoU</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAffidavitModalOpen(true)}
+            className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 px-3.5 py-2 rounded-xl text-xs font-mono transition-colors cursor-pointer"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Property NOC</span>
+          </button>
+
           <button
             onClick={() => setLoungeScannerOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-amber-700/20 hover:from-amber-500/30 hover:to-amber-700/30 text-accent-gold border border-accent-gold/40 px-4 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg cursor-pointer"
+            className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-amber-700/20 hover:from-amber-500/30 hover:to-amber-700/30 text-accent-gold border border-accent-gold/40 px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg cursor-pointer"
           >
             <QrCode className="w-4 h-4" />
             <span>Scan Lounge Pass</span>
           </button>
         </div>
       </div>
+
+      {/* Under Review Alert Banner */}
+      {isUnderReview && (
+        <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                Property Verification &amp; Statutory Audit in Progress
+              </p>
+              <p className="text-xs text-white/60 mt-0.5">
+                Your ₹3L setup, executed 70/30 MoU, and property NOC affidavit are logged. Our admin compliance team is completing statutory verification.
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="/partner/onboarding"
+            className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-colors whitespace-nowrap"
+          >
+            Onboarding Pipeline &rarr;
+          </a>
+        </div>
+      )}
 
       {/* Top Stat Cards (70/30 Commercial Split Highlight) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -680,7 +742,7 @@ export default function PartnerDashboardClient({ profile, properties, initialBoo
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono pt-2">
             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
               <p className="text-accent-gold font-bold">Pre-Stay ID Vetting</p>
-              <p className="text-white/50 text-[11px]">Delhi / State Police statutory registry prevents unverified guests.</p>
+              <p className="text-white/50 text-[11px]">Police Compliance statutory registry prevents unverified guests.</p>
             </div>
             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
               <p className="text-accent-gold font-bold">Dedicated Concierge Escalation</p>
@@ -710,6 +772,30 @@ export default function PartnerDashboardClient({ profile, properties, initialBoo
       <LoungeQrScannerModal
         isOpen={loungeScannerOpen}
         onClose={() => setLoungeScannerOpen(false)}
+      />
+
+      {/* Executed MoU Contract Modal */}
+      <PartnerMouContractModal
+        partnerName={profile.full_name}
+        partnerEmail={profile.email}
+        city={profile.contract_city || 'National Capital Territory / Pan-India'}
+        isOpen={mouModalOpen}
+        onClose={() => setMouModalOpen(false)}
+        isReadOnly={true}
+        signedAtDate={profile.contract_signed_at || undefined}
+        executedSignature={profile.full_name}
+      />
+
+      {/* Property NOC Affidavit Modal */}
+      <PropertyNocAffidavitModal
+        partnerName={profile.full_name}
+        propertyAddress={profile.affidavit_notes || 'Registered Sanctuary'}
+        city={profile.contract_city || 'New Delhi'}
+        isOpen={affidavitModalOpen}
+        onClose={() => setAffidavitModalOpen(false)}
+        onUploadSuccess={() => {}}
+        isReadOnly={true}
+        uploadedAffidavitUrl={profile.affidavit_url || undefined}
       />
 
     </div>

@@ -121,7 +121,7 @@ export default function UserDashboardClient({
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  Required by Delhi Police compliance to book any sanctuary space.
+                  Required by Police Compliance to book any sanctuary space.
                 </p>
               </div>
             </div>
@@ -199,10 +199,10 @@ export default function UserDashboardClient({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* OPTION A: BECOME A SANCTUARY PARTNER & HOST */}
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 sm:p-8 flex flex-col justify-between group hover:border-amber-500/40 transition-all duration-300 shadow-xl relative overflow-hidden">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 sm:p-7 flex flex-col justify-between group hover:border-amber-500/40 transition-all duration-300 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
             
             <div>
@@ -210,38 +210,55 @@ export default function UserDashboardClient({
                 <Building2 className="w-6 h-6" />
               </div>
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-serif text-xl sm:text-2xl text-white font-bold">Sanctuary Partner &amp; Host</h3>
+                <h3 className="font-serif text-lg sm:text-xl text-white font-bold">Partner &amp; Host</h3>
                 <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold">
-                  200%+ Yields
+                  200%+ Yield
                 </span>
               </div>
               <p className="text-xs text-zinc-400 leading-relaxed mb-6">
-                Monetize your premium apartment, villa, or penthouse. Nothingness handles autonomous check-in, strict ID vetting, automated turnover reviews, and channel manager sync.
+                Monetize your premium apartment, villa, or penthouse. Nothingness handles autonomous check-in, strict ID vetting, and automated housekeeping.
               </p>
-
-              <div className="space-y-2 text-xs text-zinc-300 font-mono mb-8">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>Turnkey hardware &amp; ambient lighting guidelines</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>AirCover &amp; strict ₹10,000 security deposit protection</span>
-                </div>
-              </div>
             </div>
 
             <Link
               href="/franchise"
-              className="w-full inline-flex items-center justify-between px-5 py-4 bg-zinc-900 group-hover:bg-amber-400 group-hover:text-black text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-lg"
+              className="w-full inline-flex items-center justify-between px-4 py-3.5 bg-zinc-900 group-hover:bg-amber-400 group-hover:text-black text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-lg"
             >
-              <span>Explore Host Prospectus &amp; Apply</span>
+              <span>Explore Host Prospectus</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
-          {/* OPTION B: LIFESTYLE & KINKSTER CIRCLE */}
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 sm:p-8 flex flex-col justify-between group hover:border-rose-500/40 transition-all duration-300 shadow-xl relative overflow-hidden">
+          {/* OPTION B: SANCTUARY PASS & SECRET GATHERINGS */}
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 sm:p-7 flex flex-col justify-between group hover:border-amber-400/40 transition-all duration-300 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-amber-600/10 rounded-full blur-2xl pointer-events-none" />
+
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-5">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-serif text-lg sm:text-xl text-white font-bold">Sanctuary Pass</h3>
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-mono font-bold">
+                  Secret Gatherings
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+                Unlock confidential munches, noir masquerades, and intimate soirées. Protected by tamper-proof camera bans and on-ground floor consent marshalls.
+              </p>
+            </div>
+
+            <Link
+              href="/sanctuary-pass"
+              className="w-full inline-flex items-center justify-between px-4 py-3.5 bg-zinc-900 group-hover:bg-gradient-to-r group-hover:from-amber-600 group-hover:to-rose-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-lg"
+            >
+              <span>Sanctuary Events Vault</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* OPTION C: LIFESTYLE & KINKSTER CIRCLE */}
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 sm:p-7 flex flex-col justify-between group hover:border-rose-500/40 transition-all duration-300 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-48 h-48 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
 
             <div>
@@ -249,32 +266,21 @@ export default function UserDashboardClient({
                 <Flame className="w-6 h-6" />
               </div>
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-serif text-xl sm:text-2xl text-white font-bold">Alternate Lifestyle Circle</h3>
+                <h3 className="font-serif text-lg sm:text-xl text-white font-bold">Lifestyle Circle</h3>
                 <span className="px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[10px] font-mono font-bold">
-                  {kinksterProfile?.is_activated ? `@${kinksterProfile.alias}` : 'Private & Anonymous'}
+                  {kinksterProfile?.is_activated ? `@${kinksterProfile.alias}` : 'Anonymous @Alias'}
                 </span>
               </div>
               <p className="text-xs text-zinc-400 leading-relaxed mb-6">
-                Exclusive community for vetted adults. Create an encrypted alias to explore private media feeds, curated sensory parties, mutual matching &amp; dating, and audio stories.
+                Exclusive community for vetted adults. Create an encrypted alias to explore private media feeds, mutual matching, and audio stories.
               </p>
-
-              <div className="space-y-2 text-xs text-zinc-300 font-mono mb-8">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                  <span>100% Discretion Agreement with zero identity leaks</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                  <span>Private events, parties, and mutual match discovery</span>
-                </div>
-              </div>
             </div>
 
             <Link
               href="/kinksters"
-              className="w-full inline-flex items-center justify-between px-5 py-4 bg-zinc-900 group-hover:bg-gradient-to-r group-hover:from-rose-600 group-hover:to-purple-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-lg"
+              className="w-full inline-flex items-center justify-between px-4 py-3.5 bg-zinc-900 group-hover:bg-gradient-to-r group-hover:from-rose-600 group-hover:to-purple-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-lg"
             >
-              <span>{kinksterProfile?.is_activated ? 'Enter Lifestyle Circle' : 'Activate Anonymous @Alias'}</span>
+              <span>{kinksterProfile?.is_activated ? 'Enter Lifestyle Feed' : 'Activate Anonymous @Alias'}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

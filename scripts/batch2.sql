@@ -151,7 +151,7 @@ This level of operational autonomy creates a profound sense of psychological own
   7,
   'Autonomous Hospitality & Legal ID Compliance in India',
   'Learn how modern boutique stays in India achieve 100% autonomous keyless check-in while maintaining strict state police guest compliance.',
-  ARRAY['autonomous checkin hotel india','delhi police hotel compliance','keyless private stays','hotel guest verification india'],
+  ARRAY['autonomous checkin hotel india','police compliance hotel stays','keyless private stays','hotel guest verification india'],
   380
 ) ON CONFLICT (slug) DO UPDATE SET
   title = EXCLUDED.title,

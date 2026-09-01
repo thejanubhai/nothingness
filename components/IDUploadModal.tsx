@@ -259,7 +259,7 @@ export default function IDUploadModal({
                       <ShieldCheck className="w-3 h-3" /> Digital Security Scan
                     </span>
                     <span className="px-2.5 py-0.5 rounded-md bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] uppercase font-mono tracking-wider">
-                      Delhi Police Compliant
+                      Police Compliant
                     </span>
                   </div>
 
