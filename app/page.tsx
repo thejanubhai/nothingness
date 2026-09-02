@@ -10,13 +10,13 @@ export const revalidate = 3600; // Cache for 1 hour
 
 export const metadata: Metadata = {
   title: "Cinematic Private Stays & Luxury Sanctuaries in Delhi NCR | Nothingness",
-  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Autonomous keyless check-in, Jacuzzi bath soaks, brutalist interiors, and 100% ID-vetted discretion in Delhi NCR.",
+  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Discreet private check-in, Jacuzzi bath soaks, brutalist interiors, and 100% ID-vetted discretion in Delhi NCR.",
   alternates: {
     canonical: 'https://nothingness.asia',
   },
   openGraph: {
     title: 'Cinematic Private Stays & Luxury Sanctuaries | Nothingness',
-    description: "Ultra-discreet, design-forward private sanctuaries with keyless digital check-in and Jacuzzi tubs across Delhi NCR.",
+    description: "Ultra-discreet, design-forward private sanctuaries with total privacy and Jacuzzi tubs across Delhi NCR.",
     url: 'https://nothingness.asia',
     images: ['/images/IMG_9955.jpg'],
   },
@@ -44,7 +44,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            High-design private sanctuaries featuring keyless digital check-in, Jacuzzi bath soaks, aesthetic interiors, and 100% ID-vetted discretion.
+            High-design private sanctuaries featuring total acoustic privacy, Jacuzzi bath soaks, aesthetic interiors, and 100% ID-vetted discretion.
           </p>
         </div>
       </section>
@@ -62,9 +62,9 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
               <Key className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-white font-serif">Seamless Keyless Check-In</h3>
+            <h3 className="text-base font-bold text-white font-serif">Discreet Private Check-In</h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Arrive entirely in your own time with zero front-desk friction. Receive your private access code and discreet entry directions directly on your screen before arrival.
+              Arrive peacefully with zero judgement or awkward front-desk questioning. Confidential arrival directions and dedicated hospitality support prepared prior to your stay.
             </p>
           </div>
 

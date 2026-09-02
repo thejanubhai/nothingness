@@ -167,7 +167,7 @@ export default function UserDashboardClient({
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                 <div>
-                  <span className="font-bold">Level 1 Complete ({docType || 'Aadhaar / Passport'})</span>: You are fully approved for keyless lockbox check-ins.
+                  <span className="font-bold">Level 1 Complete ({docType || 'Aadhaar / Passport'})</span>: You are fully approved for discreet secret key check-in.
                 </div>
               </div>
               <div className="flex items-center gap-1.5 text-zinc-400 font-mono text-[11px] shrink-0">
@@ -345,7 +345,7 @@ export default function UserDashboardClient({
                         href={`/booking/${booking.id}/success`}
                         className="flex-1 text-center text-xs font-bold uppercase tracking-wider text-black bg-accent-gold hover:bg-white py-2.5 rounded-xl transition-colors shadow-md"
                       >
-                        Smart Lockbox PIN
+                        Arrival &amp; Secret Key
                       </Link>
                     ) : (
                       <Link 

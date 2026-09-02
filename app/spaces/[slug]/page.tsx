@@ -118,10 +118,55 @@ export default async function SpacePage({ params }: { params: Promise<{ slug: st
             </p>
             <h1 className="font-serif text-5xl md:text-6xl mb-8 text-white leading-[1.05]">{displayProp.title}</h1>
 
-            <div className="mb-16">
+            <div className="mb-12">
               <p className="text-[16px] md:text-[18px] font-light leading-[1.8] text-white/60">
                 {displayProp.description}
               </p>
+            </div>
+
+            {/* Sanctuary Lifestyle & Discretion Standard */}
+            <div className="mb-14 p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-zinc-950 via-rose-950/20 to-zinc-950 border border-rose-500/30 shadow-2xl relative overflow-hidden">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-rose-400 font-bold px-3 py-1 bg-rose-500/10 border border-rose-500/30 rounded-full">
+                  Sanctuary Lifestyle Standard
+                </span>
+                <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
+                  ✦ 100% Discretion Assured
+                </span>
+              </div>
+
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2 font-serif">
+                Designed for Unhurried Intimacy &amp; Freedom
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6">
+                Nothingness sanctuaries are engineered from the ground up for total sensory privacy. Whether you are retreating for candlelit soaks, restorative aftercare, or artistic Shibari suspension sessions, your freedom is protected by uncompromising hospitality standards.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono mb-6">
+                <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl">
+                  <span className="text-rose-400 font-bold block mb-1">Discreet Arrival</span>
+                  <span className="text-zinc-400 text-[11px]">Private, peaceful entry; zero moral policing, judgment, or awkward questioning.</span>
+                </div>
+                <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl">
+                  <span className="text-purple-400 font-bold block mb-1">Acoustic Privacy</span>
+                  <span className="text-zinc-400 text-[11px]">Heavy architectural soundproofing &amp; secluded residential entryways.</span>
+                </div>
+                <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl">
+                  <span className="text-amber-400 font-bold block mb-1">Lifestyle Circle</span>
+                  <span className="text-zinc-400 text-[11px]">Confirmed guests unlock sovereign invitations to secret Noir Soirées.</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-zinc-800 text-xs font-mono">
+                <span className="text-zinc-400">Curious about our private lifestyle circle?</span>
+                <a
+                  href="/kinksters"
+                  className="text-rose-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors"
+                >
+                  <span>Explore Kinkster Mode &amp; Member Vault</span>
+                  <span>→</span>
+                </a>
+              </div>
             </div>
 
             <hr className="border-white/5 mb-12" />

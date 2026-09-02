@@ -53,7 +53,7 @@ export default function PartnerOnboardingBanner() {
             </h2>
             
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              As an authenticated Nothingness guest, you have <strong className="text-white">priority access</strong> to list your residential apartment or villa under our 70/30 revenue-sharing model with turnkey setup, statutory Police Compliance, and autonomous keyless access.
+              As an authenticated Nothingness guest, you have <strong className="text-white">priority access</strong> to list your residential apartment or villa under our 70/30 revenue-sharing model with turnkey setup, statutory Police Compliance, and discreet contactless guest access.
             </p>
           </div>
 

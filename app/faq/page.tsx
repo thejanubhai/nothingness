@@ -22,7 +22,7 @@ const faqs = [
   },
   {
     question: "How does check-in work?",
-    answer: "Check-in is completely seamless and keyless. Once your quick private verification is completed, you receive your unique private keycode and discrete entrance directions directly in your Guest Portal prior to arrival. Arrive at your convenience with zero front-desk friction."
+    answer: "Keys are placed in a discreet, secret location on the property. Once your online ID verification is complete, you receive the exact location and your designated caretaker's phone number. If you prefer total privacy, check-in and check-out can happen 100% without meeting anyone. If you need assistance finding the property, your caretaker can guide you over the phone or meet you to drop you off. The choice of how you check in is entirely yours."
   },
   {
     question: "What is the Sanctuary Pass and how do private gatherings work?",
@@ -34,7 +34,7 @@ const faqs = [
   },
   {
     question: "What are the standard Check-in and Check-out times?",
-    answer: "Check-in begins at 1:00 PM onwards (you may arrive anytime after 1:00 PM using your keyless access code). Check-out is strictly at 11:00 AM across all properties to ensure our dedicated turnaround and sanitization team can prepare the sanctuary."
+    answer: "Check-in begins at 1:00 PM onwards. Check-out is strictly at 11:00 AM across all properties to ensure our dedicated turnaround and sanitization team can prepare the sanctuary."
   },
   {
     question: "Can I host a party or bring unregistered visitors?",
@@ -44,11 +44,11 @@ const faqs = [
 
 export const metadata: Metadata = {
   title: "Frequently Asked Questions | Nothingness",
-  description: "Common questions regarding private stays, keyless check-in, Police Compliance digital ID verification, acoustic privacy, and guest discretion at Nothingness.",
+  description: "Common questions regarding private stays, discreet check-in, Police Compliance digital ID verification, acoustic privacy, and guest discretion at Nothingness.",
   keywords: [
     "nothingness faq",
     "private stay questions delhi",
-    "keyless hotel check in india",
+    "discreet hotel check in india",
     "police guest id verification",
     "alternate lifestyle stay safety"
   ],
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Frequently Asked Questions | Nothingness",
-    description: "Learn about safety protocols, keyless check-in, and guest discretion policies.",
+    description: "Learn about safety protocols, discreet check-in, and guest discretion policies.",
     url: "https://nothingness.asia/faq",
     images: ['/images/IMG_9955.jpg'],
   },

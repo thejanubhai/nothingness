@@ -122,31 +122,31 @@ export default function KinksterDiscoverPage() {
             Kinkster Discovery Circle
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Minimalist micro badges, mutual "Spice Up 🔥" matching, and sandboxed in-app communication.
+            Explore mutual chemistry, send confidential Sparks 🔥, and unlock private direct messaging.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowHealthUploadModal(true)}
-            className="px-3.5 py-2 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/40 text-purple-300 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
+            className="px-3.5 py-2 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/40 text-purple-300 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            <FileText className="w-4 h-4 text-purple-400" />
-            Upload Blood Test
+            <ShieldCheck className="w-4 h-4 text-purple-400" />
+            Wellness Badge
           </button>
 
           {/* Tab Switcher */}
           <div className="flex bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
             <button
               onClick={() => setActiveTab('compatibility')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
                 activeTab === 'compatibility'
                   ? 'bg-rose-600 text-white shadow-lg'
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
               <Flame className="w-4 h-4" />
-              Vibe Match %
+              Chemistry Matches
             </button>
             <button
               onClick={() => setActiveTab('incoming_spice')}

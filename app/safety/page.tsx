@@ -35,29 +35,29 @@ export default function SafetyPage() {
         <h1 className="font-serif text-4xl md:text-5xl mb-8">Safety & Sanitation</h1>
         <p className="text-white/60 mb-12">Uncompromising Hygiene Standards.</p>
 
-        <p>At Nothingness, we understand that the nature of our spaces requires absolute perfection in cleanliness and safety. We go above and beyond standard hospitality practices to ensure an impeccably sterile and secure environment for every guest.</p>
+        <p>At Nothingness, we understand that our intimate sanctuaries require absolute dedication to cleanliness, structural safety, and privacy. Here is exactly how we prepare and protect our spaces for every single reservation:</p>
 
-        <h2>1. Medical-Grade Sanitation</h2>
-        <p>Between every stay, our properties undergo a rigorous 3-stage cleaning process:</p>
+        <h2>1. Fresh Linens & Surface Sanitation</h2>
+        <p>Before every guest arrival, our team performs a complete turnover of the sanctuary:</p>
         <ul>
-          <li><strong>Surface Sterilization:</strong> All high-touch surfaces, particularly leather, polyurethane, and metal equipment, are sterilized using hospital-grade, non-toxic disinfectants.</li>
-          <li><strong>UVC Light Treatment:</strong> We utilize UVC light towers in all rooms to neutralize airborne pathogens and sanitize hard-to-reach areas.</li>
-          <li><strong>Linens & Textiles:</strong> All linens, including specialized restraints and straps that are fabric-based, are industrially laundered at high temperatures with antibacterial agents.</li>
+          <li><strong>Fresh Chemically Washed Linens:</strong> Bedsheets, duvet covers, and pillow covers are changed fresh for every single booking and professionally, chemically laundered to ensure impeccable hygiene.</li>
+          <li><strong>Surface Sanitization:</strong> All furniture, play surfaces, high-touch areas, and bathroom fixtures are thoroughly wiped down and sanitized before your arrival.</li>
+          <li><strong>Complete Turnaround Inspection:</strong> Rooms are individually inspected prior to check-in to ensure pristine condition and complete comfort.</li>
         </ul>
 
-        <h2>2. Equipment Safety</h2>
-        <p>Your physical safety is our primary concern. All specialized equipment is:</p>
+        <h2>2. Specialized Fixture Safety (300 kg Load Tested)</h2>
+        <p>Your physical safety is non-negotiable:</p>
         <ul>
-          <li><strong>Industrial Grade:</strong> Hardpoints and suspension rigs are installed by professional structural engineers and rated for 500kg+ loads.</li>
-          <li><strong>Routine Inspections:</strong> Equipment is visually and structurally inspected after every single checkout. Leather straps, carabiners, and chains are replaced periodically to prevent wear-and-tear failures.</li>
+          <li><strong>300 kg Tested Chains & Wall Anchors:</strong> Wall-mounted chains and anchor points installed in our suites are structurally tested and rated to comfortably bear up to <strong>300 kg load</strong>.</li>
+          <li><strong>Visual Inspection:</strong> Chains, anchor links, and hardware are checked after every checkout for wear, tension, and security.</li>
         </ul>
 
-        <h2>3. Personal Security & Discretion</h2>
-        <p>We prioritize your privacy as a matter of security:</p>
+        <h2>3. Confidential Check-In & Privacy</h2>
+        <p>We believe in total discretion with zero awkwardness:</p>
         <ul>
-          <li><strong>Keyless Entry:</strong> Properties are accessed via unique, time-sensitive digital codes. You will never interact with staff unless requested.</li>
-          <li><strong>No Cameras:</strong> There are absolutely no cameras inside the property. We strictly enforce our privacy policies.</li>
-          <li><strong>Emergency Support:</strong> An emergency contact number is provided upon check-in for immediate, discreet assistance 24/7.</li>
+          <li><strong>Secret Key Location:</strong> Keys are placed in a discreet, secret location on the property. If you prefer complete privacy, check-in and check-out can happen 100% without meeting anyone, as long as your Govt ID is verified online.</li>
+          <li><strong>Caretaker On-Call Assistance:</strong> After booking, you receive the exact location and your caretaker's phone number. If you need assistance finding the property, the caretaker can guide you over the phone or meet you to drop you off. The choice of how you check in is entirely yours.</li>
+          <li><strong>Strictly No Cameras:</strong> There are zero cameras inside the suites. Your private time remains completely confidential.</li>
         </ul>
 
         <hr className="my-12 border-white/10" />

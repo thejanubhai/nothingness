@@ -212,8 +212,8 @@ export default function EventConciergeModal({
                 type="submit"
                 className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Bot className="w-4 h-4" />
-                <span>Submit to Sanctuary AI</span>
+                <Sparkles className="w-4 h-4" />
+                <span>Submit to Concierge</span>
               </button>
             </div>
           </form>
@@ -226,8 +226,8 @@ export default function EventConciergeModal({
               <Sparkles className="w-7 h-7 animate-spin" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Synthesizing Sanctuary Trust Score...</h3>
-              <p className="text-xs text-zinc-400 mt-1">Analyzing boundary clarity, discretion maturity, and ratio compatibility.</p>
+              <h3 className="text-base font-bold text-white">Reviewing Sanctuary Compatibility...</h3>
+              <p className="text-xs text-zinc-400 mt-1">Checking boundary clarity, discretion maturity, and room balance.</p>
             </div>
           </div>
         )}

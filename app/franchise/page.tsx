@@ -187,11 +187,11 @@ export default function FranchisePage() {
                 Stable High-Yield Apartment Hotel
               </h3>
               <p className="text-xs sm:text-sm text-white/60 leading-relaxed">
-                Autonomous WhatsApp smart lockbox access, dynamic RevPAR pricing, automated housekeeping dispatch, and continuous high-occupancy guest booking pipeline.
+                Discreet contactless guest arrival, dynamic RevPAR pricing, automated housekeeping dispatch, and continuous high-occupancy guest booking pipeline.
               </p>
             </div>
             <div className="pt-6 border-t border-white/5 mt-6 flex items-center justify-between text-xs font-mono text-emerald-400">
-              <span>Autonomous Keyless Ops</span>
+              <span>Autonomous Contactless Ops</span>
               <span>92%+ Occupancy</span>
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function FranchisePage() {
               </li>
               <li className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-white/40 shrink-0" />
-                <span>Smart Lockbox &amp; IoT Keyless entry integration</span>
+                <span>Discreet Secure Access &amp; Caretaker Logistics</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-white/40 shrink-0" />
@@ -407,7 +407,7 @@ export default function FranchisePage() {
             {
               step: '03',
               title: 'Fit-Out & Vendor Setup',
-              desc: 'Cost-to-cost landing fit-out (₹1-2L Budget / ₹2-4L Luxury), smart keyless lockboxes, linen supply chain, valet & dining integrations.'
+              desc: 'Cost-to-cost landing fit-out (₹1-2L Budget / ₹2-4L Luxury), discreet secure access setup, linen supply chain, valet & dining integrations.'
             },
             {
               step: '04',

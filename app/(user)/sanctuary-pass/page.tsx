@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import PushNotificationPrompt from '@/components/PushNotificationPrompt';
 import SanctuaryPassBuyModal from '@/components/events/SanctuaryPassBuyModal';
 import EventConciergeModal from '@/components/events/EventConciergeModal';
+import EventDossierModal from '@/components/events/EventDossierModal';
 import LiveTicketQRModal from '@/components/events/LiveTicketQRModal';
 import IDUploadModal from '@/components/IDUploadModal';
 
@@ -84,21 +85,16 @@ function SanctuaryPassContent() {
   const [showBuyPassModal, setShowBuyPassModal] = useState(false);
   const [showIdModal, setShowIdModal] = useState(false);
   const [selectedEventForConcierge, setSelectedEventForConcierge] = useState<SanctuaryEvent | null>(null);
+  const [selectedEventForDossier, setSelectedEventForDossier] = useState<SanctuaryEvent | null>(null);
   const [selectedEventForTicket, setSelectedEventForTicket] = useState<{ event: SanctuaryEvent; app: EventApplication } | null>(null);
 
   const fetchPortalData = async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/sanctuary-pass/portal-data');
-      if (res.status === 401) {
-        setIsLoggedIn(false);
-        setLoading(false);
-        return;
-      }
-
-      setIsLoggedIn(true);
       const data = await res.json();
 
+      setIsLoggedIn(!!data.isLoggedIn);
       setIsIdVerified(data.isIdVerified || false);
       setHasSanctuaryPass(data.hasSanctuaryPass || false);
       setPassPrice(data.passPrice || 1499);
@@ -257,6 +253,40 @@ function SanctuaryPassContent() {
 
       {/* GATHERINGS DIRECTORY */}
       <div className="space-y-6">
+        {/* The 2-Level Vetting & Munches Architecture */}
+        <div className="p-6 rounded-3xl bg-zinc-950/80 border border-zinc-800/90 space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
+              The Vetting Progression
+            </span>
+            <span className="text-xs font-mono text-zinc-400">
+              Sanctuary Pass Required for Level 1
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+            <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-[10px]">1</span>
+                <span className="text-white font-bold">Level 1: Munches &amp; Salons</span>
+              </div>
+              <p className="text-zinc-400 text-[11px] leading-relaxed">
+                ID verification &amp; Sanctuary Pass unlocks Tier 1 Munches. Relaxed conversational meetups where phones ARE allowed. A Nothingness representative is present to discreetly observe vibe and mutual etiquette.
+              </p>
+            </div>
+
+            <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-[10px]">2</span>
+                <span className="text-white font-bold">Level 2: Masquerades &amp; Soirées</span>
+              </div>
+              <p className="text-zinc-400 text-[11px] leading-relaxed">
+                In-person Munch vetting unlocks higher tiers confidentially. Phones are stored safely outside the premises before entry—because every attendee is already physically vetted, there is zero suspicion or anxiety.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Tier Filter Tabs */}
         <div className="flex flex-wrap items-center gap-2 border-b border-zinc-900 pb-4">
           {[
@@ -305,6 +335,25 @@ function SanctuaryPassContent() {
                   key={evt.id}
                   className="bg-zinc-950 border border-zinc-900 hover:border-amber-500/40 rounded-3xl p-6 sm:p-7 shadow-2xl transition-all flex flex-col justify-between relative overflow-hidden"
                 >
+                  {/* Visual Space Image Preview if available */}
+                  {evt.spaces?.images?.[0] && (
+                    <div className="relative h-44 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 mb-4 overflow-hidden rounded-t-3xl">
+                      <img
+                        src={evt.spaces.images[0]}
+                        alt={evt.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        onError={(e: any) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+                      <div className="absolute bottom-3 left-4 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/15 text-[10px] font-mono text-zinc-300 flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3 text-rose-400" />
+                        <span>{evt.spaces.title} • {evt.spaces.city || 'South Delhi'}</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-4">
                     {/* Tier and Date Badge */}
                     <div className="flex items-center justify-between gap-2">
@@ -348,13 +397,23 @@ function SanctuaryPassContent() {
                   </div>
 
                   {/* Dynamic Action Area */}
-                  <div className="pt-6 mt-4 border-t border-zinc-900">
+                  <div className="pt-6 mt-4 border-t border-zinc-900 space-y-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEventForDossier(evt)}
+                      className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-xs font-mono font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>View Gathering Dossier &amp; Lookbook →</span>
+                    </button>
+
                     {!isLoggedIn ? (
                       <Link
                         href="/auth?redirect=/sanctuary-pass"
-                        className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all"
+                        className="w-full py-3.5 bg-gradient-to-r from-amber-600 via-rose-600 to-purple-600 hover:from-amber-500 hover:to-rose-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer"
                       >
-                        Sign in to View Pass Access →
+                        <Sparkles className="w-4 h-4" />
+                        <span>Sign In with OTP to Request Pass →</span>
                       </Link>
                     ) : !hasSanctuaryPass ? (
                       <button
@@ -441,6 +500,25 @@ function SanctuaryPassContent() {
         application={selectedEventForTicket?.app || null}
         userAlias={userAlias}
         onDropOutSuccess={fetchPortalData}
+      />
+
+      <EventDossierModal
+        isOpen={!!selectedEventForDossier}
+        onClose={() => setSelectedEventForDossier(null)}
+        event={selectedEventForDossier}
+        isLoggedIn={isLoggedIn}
+        hasSanctuaryPass={hasSanctuaryPass}
+        onRequestPass={() => {
+          const target = selectedEventForDossier;
+          setSelectedEventForDossier(null);
+          if (!isIdVerified) setShowIdModal(true);
+          else if (target) setSelectedEventForConcierge(target);
+        }}
+        onBuySanctuaryPass={() => {
+          setSelectedEventForDossier(null);
+          if (!isIdVerified) setShowIdModal(true);
+          else setShowBuyPassModal(true);
+        }}
       />
 
       <IDUploadModal

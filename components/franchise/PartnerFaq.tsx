@@ -15,7 +15,7 @@ const FAQS: FaqItem[] = [
   },
   {
     question: 'What is included in the ₹3 Lakh nothingness. Partner Setup Fee?',
-    answer: 'The ₹3,00,000 base fee (PAN India) covers the complete operational onboarding of your property into the nothingness. ecosystem. This includes brand rights, hardware & IoT integration (encrypted WhatsApp smart lockbox access), local vendor supply chain setup (linens, luxury toiletries, aesthetic decor), parking & valet co-ordination, in-suite dining/food service integrations, and our automated State Police & Hospitality Statutory ID verification engine.'
+    answer: 'The ₹3,00,000 base fee (PAN India) covers the complete operational onboarding of your property into the nothingness. ecosystem. This includes brand rights, hardware setup (discreet secure arrival & caretaker operations), local vendor supply chain setup (linens, luxury toiletries, aesthetic decor), parking & valet co-ordination, in-suite dining/food service integrations, and our automated State Police & Hospitality Statutory ID verification engine.'
   },
   {
     question: 'What are the property ownership and NOC affidavit requirements?',

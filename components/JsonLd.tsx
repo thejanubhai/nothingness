@@ -25,7 +25,7 @@ export function generateOrganizationSchema() {
     url: 'https://nothingness.asia',
     logo: 'https://nothingness.asia/images/logo.png',
     image: 'https://nothingness.asia/images/IMG_9955.jpg',
-    description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Ultra-discreet, design-forward private sanctuaries with keyless digital check-in across Delhi NCR and India.",
+    description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Ultra-discreet, design-forward private sanctuaries with acoustic privacy across Delhi NCR and India.",
     email: 'concierge@nothingness.asia',
     address: {
       '@type': 'PostalAddress',
@@ -44,7 +44,7 @@ export function generateOrganizationSchema() {
     knowsAbout: [
       'Alternate Lifestyle Hospitality',
       'Brutalist Architecture',
-      'Autonomous Keyless Stays',
+      'Discreet Private Stays',
       'Acoustic Soundproofing',
       'Luxury Private Stays Delhi NCR'
     ]

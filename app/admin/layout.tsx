@@ -11,7 +11,10 @@ import {
   CreditCard, 
   Sparkles, 
   Settings,
-  LogOut
+  LogOut,
+  BookOpen,
+  Clock,
+  ShieldCheck
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 
@@ -32,18 +35,50 @@ export default async function AdminLayout({
     redirect('/dashboard');
   }
 
-  const navItems = [
-    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Sanctuary Gatherings', href: '/admin/events', icon: Sparkles },
-    { name: 'Sanctuaries', href: '/admin/spaces', icon: Building2 },
-    { name: 'Franchise & Partners', href: '/admin/partners', icon: Sparkles },
-    { name: 'Editorial Journal', href: '/admin/journal', icon: Sparkles },
-    { name: 'Calendar & Channels', href: '/admin/calendar', icon: CalendarDays },
-    { name: 'Bookings', href: '/admin/bookings', icon: CalendarDays },
-    { name: 'Guest CRM & Police', href: '/admin/guests', icon: Users },
-    { name: 'Housekeeping', href: '/admin/housekeeping', icon: Sparkles },
-    { name: 'Financials', href: '/admin/financials', icon: CreditCard },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
+  type NavItem = {
+    name: string;
+    href: string;
+    icon: any;
+    badge?: string;
+  };
+
+  type NavSection = {
+    title: string;
+    items: NavItem[];
+  };
+
+  const navSections: NavSection[] = [
+    {
+      title: 'Core Operations',
+      items: [
+        { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+        { name: 'Master Calendar', href: '/admin/calendar', icon: CalendarDays },
+        { name: 'All Bookings', href: '/admin/bookings', icon: Clock },
+      ],
+    },
+    {
+      title: 'Lifestyle & Gatherings',
+      items: [
+        { name: 'Gatherings & Munches', href: '/admin/events', icon: Sparkles, badge: 'Gatekeeper' },
+        { name: 'Guest CRM & Police', href: '/admin/guests', icon: Users, badge: 'ID Vetting' },
+      ],
+    },
+    {
+      title: 'Sanctuaries & Ops',
+      items: [
+        { name: 'Suites & Spaces', href: '/admin/spaces', icon: Building2 },
+        { name: 'Housekeeping Turnovers', href: '/admin/housekeeping', icon: ShieldCheck },
+        { name: 'Franchise & Partners', href: '/admin/partners', icon: Building2 },
+      ],
+    },
+    {
+      title: 'Finance & System',
+      items: [
+        { name: 'Financials & Ledger', href: '/admin/financials', icon: CreditCard },
+        { name: 'Editorial Journal', href: '/admin/journal', icon: BookOpen },
+        { name: 'Settings & Fees', href: '/admin/settings', icon: Settings },
+      ],
+    },
   ];
 
   return (
@@ -51,37 +86,57 @@ export default async function AdminLayout({
       <MobileNav />
       {/* Sidebar - Fixed on desktop */}
       <aside className="hidden md:flex w-64 bg-white/[0.02] border-r border-white/5 flex-col fixed inset-y-0 left-0 z-30 h-screen">
-        <div className="p-6 border-b border-white/5">
-          <Link href="/admin" className="font-serif text-2xl text-accent-gold tracking-wide">
-            Nothingness
-          </Link>
-          <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 mt-1">Command Center</p>
+        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+          <div>
+            <Link href="/admin" className="font-serif text-2xl text-accent-gold tracking-wide">
+              Nothingness
+            </Link>
+            <p className="text-[9px] uppercase tracking-[0.2em] text-white/40 mt-0.5">Admin Command</p>
+          </div>
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="System Live" />
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4">
-          <ul className="space-y-1 px-3">
-            {navItems.map((item) => (
-              <li key={item.name}>
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors group"
-                >
-                  <item.icon className="w-4 h-4 text-white/40 group-hover:text-accent-gold transition-colors" />
-                  {item.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <nav className="flex-1 overflow-y-auto py-3 space-y-4">
+          {navSections.map((section) => (
+            <div key={section.title} className="px-3">
+              <p className="text-[9px] uppercase font-mono tracking-widest text-zinc-500 font-bold px-3 mb-1">
+                {section.title}
+              </p>
+              <ul className="space-y-0.5">
+                {section.items.map((item) => (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs text-white/65 hover:text-white hover:bg-white/5 transition-all group font-sans"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <item.icon className="w-3.5 h-3.5 text-white/40 group-hover:text-accent-gold transition-colors shrink-0" />
+                        <span>{item.name}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="text-[8px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
 
         <div className="p-4 border-t border-white/5">
-          <div className="px-3 py-3 rounded-lg bg-white/[0.02] border border-white/5 mb-3">
-            <p className="text-xs text-white truncate">{user.email}</p>
-            <p className="text-[10px] text-accent-gold uppercase tracking-widest mt-1">Admin</p>
+          <div className="px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/5 mb-2.5">
+            <p className="text-xs text-white truncate font-medium">{user.email}</p>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[9px] text-accent-gold font-mono uppercase tracking-widest font-bold">Administrator</span>
+              <span className="text-[9px] text-emerald-400 font-mono">2FA Active</span>
+            </div>
           </div>
           <form action={signOut}>
-            <button type="submit" className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400/70 hover:text-red-400 hover:bg-red-400/10 transition-colors">
-              <LogOut className="w-4 h-4" />
+            <button type="submit" className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-red-400/80 hover:text-red-400 hover:bg-red-400/10 transition-colors font-mono cursor-pointer">
+              <LogOut className="w-3.5 h-3.5" />
               Sign Out
             </button>
           </form>

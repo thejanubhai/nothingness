@@ -342,7 +342,7 @@ function InviteVerificationContent() {
             </div>
 
             <p className="text-xs text-white/40 leading-relaxed max-w-md mx-auto">
-              You are all set for check-in. Smart lockbox PIN and sanctuary entrance directions will be active on check-in day.
+              You are all set for check-in. Secret key location instructions and caretaker guidance will be active on check-in day.
             </p>
           </div>
         )}

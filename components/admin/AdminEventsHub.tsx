@@ -105,6 +105,12 @@ export default function AdminEventsHub() {
 
   useEffect(() => {
     fetchAdminData();
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      if (hash === '#scanner') setActiveTab('scanner');
+      else if (hash === '#curation') setActiveTab('curation');
+      else if (hash === '#editor') setActiveTab('editor');
+    }
   }, []);
 
   const handleSaveEvent = async (e: React.FormEvent) => {
@@ -927,11 +933,27 @@ export default function AdminEventsHub() {
               ) : (
                 <button
                   onClick={() => handleVerifyQR(manualTokenInput, 'check_in')}
-                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs rounded-xl shadow-lg"
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs rounded-xl shadow-lg cursor-pointer"
                 >
                   Confirm Entry &amp; Mark Checked In →
                 </button>
               )}
+
+              {/* Physical In-Person Vetting Button for Munch */}
+              <div className="pt-2 border-t border-zinc-800">
+                <button
+                  onClick={async () => {
+                    await handleVerifyQR(manualTokenInput, 'certify_physical_vetting' as any);
+                    toast.success('In-Person Vetting Certified!', {
+                      description: 'Guest now holds confidential access to Level 2 Masquerades & Private Soirées.',
+                    });
+                  }}
+                  className="w-full py-2.5 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                  <span>Discreetly Certify In-Person Vetting (Level 2 Unlock)</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

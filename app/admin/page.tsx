@@ -65,6 +65,11 @@ export default async function AdminDashboard() {
     .select('*', { count: 'exact', head: true })
     .eq('status', 'applied');
 
+  // 4d. Fetch kinkster mode activations count
+  const { count: totalKinksters } = await supabase
+    .from('kinkster_profiles')
+    .select('*', { count: 'exact', head: true });
+
   // 5. Today's Movements
   const { data: todayArrivals } = await supabase
     .from('bookings')
@@ -99,8 +104,8 @@ export default async function AdminDashboard() {
 
   const stats = [
     { label: `${format(now, 'MMMM')} Tariff`, value: `₹${currentMonthRevenue.toLocaleString('en-IN')}`, subtext: "Paid & Confirmed" },
+    { label: "Kinkster Network", value: (totalKinksters || 0).toString(), subtext: `${pendingGatheringApplications || 0} Gathering Vetting Queue` },
     { label: `${format(now, 'MMMM')} Occupancy`, value: `${occupancyPercentage}%`, subtext: `${totalBookedNightsThisMonth} Nights Booked` },
-    { label: "Active Sanctuaries", value: (totalSpaces || 0).toString(), subtext: "Managed Properties" },
     { label: "Operations Queue", value: ((pendingGuestVerifications || 0) + (pendingHousekeeping || 0)).toString(), subtext: "IDs & Turnovers Pending" }
   ];
 
@@ -112,7 +117,15 @@ export default async function AdminDashboard() {
           <p className="text-white/50 text-xs md:text-sm tracking-wide">Autonomous Operations, Channel Manager &amp; Hospitality Intelligence.</p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link
+            href="/admin/events#scanner"
+            className="px-4 py-2.5 bg-rose-600/15 hover:bg-rose-600/25 border border-rose-500/30 text-rose-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-xl flex items-center gap-1.5"
+          >
+            <Sparkles className="w-4 h-4 text-rose-400" />
+            Gatekeeper Scanner
+          </Link>
+
           <Link
             href="/admin/calendar"
             className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors flex items-center gap-2"
@@ -159,7 +172,7 @@ export default async function AdminDashboard() {
               const spaceTitle = Array.isArray(b.spaces) ? b.spaces[0]?.title : b.spaces?.title;
               const cleanDigits = (b.guest_phone || '').replace(/[^0-9]/g, '');
               const cleanPhone = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
-              const waText = `Namaste ${b.guest_name || 'Guest'}! ✨ Welcome to Nothingness (${spaceTitle || 'The Chamber'})...`;
+              const waText = `Namaste ${b.guest_name || 'Guest'}! ✨ Welcome to Nothingness (${spaceTitle || 'The Sanctuary'}). Your check-in is today. As per our discreet check-in protocol, your physical key has been placed at the secret spot at the property. Caretaker assistance is available on call if you need guidance.`;
 
               return (
                 <div key={b.id} className="bg-black/50 border border-green-500/30 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-md">
@@ -172,6 +185,9 @@ export default async function AdminDashboard() {
                       </span>
                     </div>
                     <p className="text-[11px] text-white/50 font-mono mt-1">{spaceTitle} • {b.guest_phone || 'No phone'}</p>
+                    <p className="text-[10px] text-emerald-400 font-mono mt-0.5 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-400" /> Secret Key Placed • Contactless Check-in Ready
+                    </p>
                   </div>
                   {b.guest_phone && (
                     <a

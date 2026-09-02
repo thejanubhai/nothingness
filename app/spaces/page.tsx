@@ -9,13 +9,13 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Sanctuaries & Private Stays in Delhi NCR | Nothingness",
-  description: "Browse private brutalist sanctuaries, Jacuzzi suites, and aesthetic spaces for total isolation, intimacy, and keyless stays across Delhi NCR.",
+  description: "Browse private brutalist sanctuaries, Jacuzzi suites, and aesthetic spaces for total isolation, intimacy, and discreet stays across Delhi NCR.",
   keywords: [
     "private sanctuary delhi",
     "jacuzzi suite delhi ncr",
     "south delhi private stay",
     "aesthetic airbnb delhi",
-    "keyless boutique accommodation"
+    "discreet boutique accommodation"
   ],
   alternates: {
     canonical: 'https://nothingness.asia/spaces',

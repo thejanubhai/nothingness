@@ -142,9 +142,11 @@ export default function LiveTicketQRModal({
               <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex items-start gap-3">
                 <CameraOff className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold text-white">1. Sacred Privacy &amp; Lens Stickers</p>
+                  <p className="font-bold text-white">1. Sacred Privacy &amp; Phone Protocol</p>
                   <p className="text-[11px] text-zinc-400 mt-0.5">
-                    Zero cameras or recording devices. Tamper-proof camera stickers will be applied at the entrance.
+                    {event.tier === 'munch'
+                      ? 'In Munches, phones are allowed in this social setting where physical vetting takes place.'
+                      : 'All phones are safely stored outside the premises prior to entering. Zero cameras ensure total peace of mind.'}
                   </p>
                 </div>
               </div>
@@ -202,6 +204,15 @@ export default function LiveTicketQRModal({
               <span className="text-[9px] text-zinc-600 font-mono mt-2">
                 Anti-Screenshot Dynamic Pulse
               </span>
+            </div>
+
+            <div className="text-center space-y-1">
+              <span className="text-[11px] text-amber-300 font-mono font-bold block">
+                ✦ Dual Event Entry &amp; In-Person Vetting QR
+              </span>
+              <p className="text-[10px] text-zinc-400 font-mono max-w-xs mx-auto">
+                Admit yourself at the door, or present to a Nothingness team lead during the Munch for discreet in-person vetting.
+              </p>
             </div>
 
             {/* Secret Location Card */}

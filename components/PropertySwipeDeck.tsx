@@ -207,7 +207,7 @@ export default function PropertySwipeDeck() {
 
             <div className="text-right">
               <span className="text-[10px] text-emerald-400 font-mono uppercase flex items-center justify-end gap-1">
-                <ShieldCheck className="w-3 h-3" /> Keyless Lockbox
+                <ShieldCheck className="w-3 h-3" /> Secret Key Check-in
               </span>
               <span className="text-[10px] text-zinc-400 font-mono block mt-0.5">Max {currentSpace.max_guests || 2} Guests</span>
             </div>

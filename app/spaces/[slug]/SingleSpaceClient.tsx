@@ -455,7 +455,7 @@ export default function SingleSpaceClient({ space }: { space: any }) {
       </Magnetic>
 
       <p className="text-center text-white/30 text-[10px] tracking-wider font-mono">
-        Strict Discretion • Keyless Lockbox Check-in
+        Strict Discretion • Uncompromising Privacy
       </p>
     </div>
   );

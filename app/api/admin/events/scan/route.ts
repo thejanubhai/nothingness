@@ -88,6 +88,33 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (action === 'certify_physical_vetting') {
+      await adminClient
+        .from('sanctuary_event_applications')
+        .update({
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', app.id);
+
+      if (app.user_id) {
+        await adminClient
+          .from('kinkster_profiles')
+          .update({
+            is_trusted_host: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', app.user_id);
+      }
+
+      return NextResponse.json({
+        success: true,
+        physicallyVetted: true,
+        app,
+        guestProfile,
+        kinksterProfile,
+      });
+    }
+
     // Default: Return Verification Preview
     return NextResponse.json({
       success: true,
