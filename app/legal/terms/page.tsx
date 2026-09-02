@@ -151,7 +151,7 @@ export default function TermsPage() {
             7. Service Delivery &amp; Digital Fulfillment
           </h2>
           <p>
-            As a hospitality and event provider, no physical goods are shipped. Upon successful payment, an electronic reservation voucher is delivered immediately via Email, SMS, and WhatsApp (within 0–15 minutes). Smart lockbox access PINs and sanctuary directions are delivered to the primary guest on check-in day. Refer to our <Link href="/legal/shipping" className="text-accent-gold underline">Service Delivery Policy</Link>.
+            As a hospitality and event provider, no physical goods are shipped. Upon successful payment, an electronic reservation voucher is delivered immediately via Email, SMS, or In-App Digital Portal (within 0–15 minutes). Smart lockbox access PINs and sanctuary directions are delivered to the primary guest on check-in day. Refer to our <Link href="/legal/shipping" className="text-accent-gold underline">Service Delivery Policy</Link>.
           </p>
         </section>
 

@@ -133,7 +133,7 @@ export default function PrivacyPage() {
             Nothingness maintains an absolute <strong className="text-white">Zero Data Selling Policy</strong>. We do NOT sell, rent, trade, or monetize your personal information to any third-party advertisers, marketing agencies, or data brokers under any circumstances.
           </p>
           <p>
-            Information is only shared with trusted service infrastructure providers (such as SMS/WhatsApp delivery networks and government law enforcement when explicitly mandated under lawful warrant).
+            Information is only shared with trusted service infrastructure providers (such as SMS/WebPush notification delivery networks and government law enforcement when explicitly mandated under lawful warrant).
           </p>
         </section>
 

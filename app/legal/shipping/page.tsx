@@ -97,7 +97,7 @@ export default function ShippingPage() {
                 <CheckCircle2 className="w-4 h-4" /> 1. Booking Voucher Confirmation
               </div>
               <p className="text-xs sm:text-sm text-zinc-300">
-                Immediately upon successful payment authorization through the payment gateway, an official electronic booking confirmation voucher containing your unique Booking Reference ID, dates, and stay details is dispatched to your registered <strong className="text-white">Email Address</strong> and <strong className="text-white">Mobile Number (SMS / WhatsApp)</strong>.
+                Immediately upon successful payment authorization through the payment gateway, an official electronic booking confirmation voucher containing your unique Booking Reference ID, dates, and stay details is dispatched to your registered <strong className="text-white">Email Address</strong> and <strong className="text-white">Mobile Phone (SMS / Push Alerts)</strong>.
               </p>
               <p className="text-[11px] text-zinc-500 font-mono">⏱️ Delivery Time: Instant (0 to 15 minutes)</p>
             </div>

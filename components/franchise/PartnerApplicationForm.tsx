@@ -76,7 +76,7 @@ export default function PartnerApplicationForm() {
 
       setSubmitted(true);
       toast.success('Partner Application Received', {
-        description: 'Our expansion team will review your property feasibility and reach out via WhatsApp/email.',
+        description: 'Our expansion team will review your property feasibility and reach out via phone/email.',
       });
       form.reset();
     } catch (err: any) {
@@ -107,7 +107,7 @@ export default function PartnerApplicationForm() {
               <p className="font-mono text-accent-gold uppercase tracking-widest text-[10px]">Next Steps:</p>
               <p>1. Property feasibility &amp; discretion audit.</p>
               <p>2. Cost-to-cost fit-out estimate &amp; smart access review.</p>
-              <p>3. WhatsApp concierge onboarding call.</p>
+              <p>3. Direct concierge onboarding review.</p>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -369,7 +369,7 @@ export default function PartnerApplicationForm() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="phone" className="text-[10px] uppercase tracking-[0.2em] text-white/50 font-mono">
-                    WhatsApp Number
+                    Mobile Phone Number
                   </label>
                   <input
                     id="phone"

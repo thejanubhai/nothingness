@@ -269,7 +269,7 @@ function PartnerOnboardingContent() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">WhatsApp Phone</label>
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">Mobile Phone</label>
             <input
               type="tel"
               value={partnerPhone}

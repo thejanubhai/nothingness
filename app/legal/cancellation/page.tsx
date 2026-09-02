@@ -152,7 +152,7 @@ export default function CancellationPage() {
               <strong>Self-Service Dashboard:</strong> Log in to the <Link href="/auth" className="text-accent-gold underline">Nothingness Portal</Link>, navigate to <em>Bookings</em>, select the active reservation, and click <em>Cancel Booking</em>.
             </li>
             <li>
-              <strong>Direct Booking Link:</strong> Click the reservation management link provided in your instant booking confirmation Email / WhatsApp voucher.
+              <strong>Direct Booking Link:</strong> Click the reservation management link provided in your instant booking confirmation Email / SMS voucher.
             </li>
             <li>
               <strong>Email Support:</strong> Send an email from your registered email address to <a href="mailto:concierge@nothingness.asia" className="text-accent-gold underline">concierge@nothingness.asia</a> with your <strong>Booking ID</strong> and reason for cancellation.
@@ -162,7 +162,18 @@ export default function CancellationPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-serif text-white tracking-tight border-b border-zinc-800/80 pb-2">
-            5. Date Modifications &amp; Rescheduling
+            5. Sanctuary Pass &amp; Gathering Ticket Policies
+          </h2>
+          <ul className="list-disc pl-5 space-y-1.5 text-zinc-300">
+            <li><strong>Lifetime Sanctuary Pass:</strong> The 1-time Sanctuary Pass access fee (₹1,499) is non-refundable once activated.</li>
+            <li><strong>Per-Event Hospitality Tickets:</strong> All gathering ticket reservations are strictly non-refundable due to curated capacity caps and dynamic gender-ratio balancing.</li>
+            <li><strong>Slot Release / Drop-Out:</strong> Attendees who can no longer attend may release their slot via the in-app portal. Released seats are immediately offered to the #1 candidate on the dynamic waitlist. No refunds or partial credits are issued for drop-outs.</li>
+          </ul>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-serif text-white tracking-tight border-b border-zinc-800/80 pb-2">
+            6. Date Modifications &amp; Rescheduling
           </h2>
           <p>
             Subject to sanctuary availability, dates may be rescheduled if requested at least <strong className="text-white">7 days prior</strong> to the original check-in date. Any difference in seasonal pricing tariffs will be applicable. Rescheduling requests made within 7 days of check-in are treated as cancellations and re-bookings.
@@ -171,7 +182,7 @@ export default function CancellationPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-serif text-white tracking-tight border-b border-zinc-800/80 pb-2">
-            6. Force Majeure &amp; Emergency Exceptions
+            7. Force Majeure &amp; Emergency Exceptions
           </h2>
           <p>
             In the rare event of unforeseen natural disasters, government travel prohibitions, or verifiable medical emergencies, exceptions to the standard cancellation policy may be reviewed at the sole discretion of Nothingness management upon submission of relevant supporting documentation.
@@ -180,7 +191,7 @@ export default function CancellationPage() {
 
         <section className="space-y-3 border-t border-zinc-800 pt-6">
           <h2 className="text-xl sm:text-2xl font-serif text-white tracking-tight">
-            7. Contact for Refund Inquiries
+            8. Contact for Refund Inquiries
           </h2>
           <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl space-y-1 text-xs sm:text-sm font-mono text-zinc-300">
             <p><strong className="text-white">Merchant / Operator:</strong> Sheikh Arsalan Ullah Chishti (Nothingness)</p>

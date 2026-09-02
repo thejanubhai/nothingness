@@ -114,7 +114,7 @@ export default function ContactPage() {
               >
                 <Phone className="w-4 h-4 text-accent-gold group-hover:scale-110 transition-transform shrink-0" />
                 <div className="text-left">
-                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-mono">Helpline / WhatsApp</p>
+                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-mono">Helpline &amp; Phone Support</p>
                   <p className="text-xs text-white group-hover:text-accent-gold transition-colors font-mono">+91 85279 76791</p>
                 </div>
               </a>

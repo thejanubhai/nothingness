@@ -59,6 +59,12 @@ export default async function AdminDashboard() {
     .select('*', { count: 'exact', head: true })
     .eq('status', 'under_review');
 
+  // 4c. Fetch pending sanctuary gathering applications
+  const { count: pendingGatheringApplications } = await supabase
+    .from('sanctuary_event_applications')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'applied');
+
   // 5. Today's Movements
   const { data: todayArrivals } = await supabase
     .from('bookings')
@@ -212,15 +218,16 @@ export default async function AdminDashboard() {
       )}
 
       {/* Quick Launch Control Hub */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-3">
         {[
+          { label: "Gatherings", href: "/admin/events", icon: Sparkles, desc: "AI Vetting & Pass" },
           { label: "Master Calendar", href: "/admin/calendar", icon: CalendarDays, desc: "2-Way OTA Hub" },
           { label: "Sanctuaries", href: "/admin/spaces", icon: Building2, desc: "Property CRUD" },
-          { label: "Franchise & Partners", href: "/admin/partners", icon: Sparkles, desc: "Leads & KYC" },
-          { label: "Editorial Journal", href: "/admin/journal", icon: Sparkles, desc: "30 Articles & AI" },
-          { label: "Bookings CRM", href: "/admin/bookings", icon: CalendarDays, desc: "Reservations" },
-          { label: "Police Log", href: "/admin/guests/police-register", icon: ShieldCheck, desc: "Police Compliance" },
-          { label: "Housekeeping", href: "/admin/housekeeping", icon: Sparkles, desc: "Turnover Dispatch" },
+          { label: "Franchise", href: "/admin/partners", icon: Sparkles, desc: "Leads & KYC" },
+          { label: "Journal", href: "/admin/journal", icon: Sparkles, desc: "30 Works & AI" },
+          { label: "Bookings", href: "/admin/bookings", icon: CalendarDays, desc: "Reservations" },
+          { label: "Police Log", href: "/admin/guests/police-register", icon: ShieldCheck, desc: "Compliance" },
+          { label: "Housekeeping", href: "/admin/housekeeping", icon: Sparkles, desc: "Turnovers" },
           { label: "Financials", href: "/admin/financials", icon: CreditCard, desc: "Ledger & GST" },
         ].map((item) => (
           <Link
@@ -292,6 +299,21 @@ export default async function AdminDashboard() {
             <h3 className="font-serif text-xl text-white mb-6">Operations Queue</h3>
             
             <div className="space-y-3">
+              {(pendingGatheringApplications || 0) > 0 && (
+                <div className="flex items-center justify-between p-4 bg-purple-500/10 border border-purple-500/25 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="w-5 h-5 text-purple-400" />
+                    <div>
+                      <p className="text-xs text-white font-semibold">Gathering Concierge Vetting</p>
+                      <p className="text-[10px] text-purple-300/80 font-mono">{pendingGatheringApplications} applicant(s) in queue</p>
+                    </div>
+                  </div>
+                  <Link href="/admin/events" className="text-xs bg-purple-500/20 text-purple-200 px-3 py-1.5 rounded-lg hover:bg-purple-500/30 transition-colors font-bold font-mono">
+                    Curate
+                  </Link>
+                </div>
+              )}
+
               {(pendingPartnerVerifications || 0) > 0 && (
                 <div className="flex items-center justify-between p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
                   <div className="flex items-center gap-3">

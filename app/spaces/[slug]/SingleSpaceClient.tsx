@@ -106,7 +106,7 @@ export default function SingleSpaceClient({ space }: { space: any }) {
           return;
         }
         if (!g?.phone?.trim() || g.phone.replace(/[^0-9]/g, '').length < 10) {
-          toast.error(`Please enter a valid 10-digit WhatsApp number for Additional Guest ${i + 1}`);
+          toast.error(`Please enter a valid 10-digit Mobile number for Additional Guest ${i + 1}`);
           return;
         }
       }
@@ -305,7 +305,7 @@ export default function SingleSpaceClient({ space }: { space: any }) {
             </div>
 
             <p className="text-[11px] text-white/50 leading-relaxed">
-              Enter details for each additional guest. They will receive a private WhatsApp/SMS link for ID verification.
+              Enter details for each additional guest. They will receive a private SMS / digital verification link for ID vetting.
             </p>
 
             {/* Guest Details Form */}
@@ -327,7 +327,7 @@ export default function SingleSpaceClient({ space }: { space: any }) {
                     <input
                       required
                       type="tel"
-                      placeholder="WhatsApp Number (10 digits)"
+                      placeholder="Mobile Number (10 digits)"
                       value={additionalGuests[idx]?.phone || ''}
                       onChange={(e) => handleAdditionalGuestUpdate(idx, 'phone', e.target.value)}
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-base md:text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-gold/50 font-mono"
@@ -364,7 +364,7 @@ export default function SingleSpaceClient({ space }: { space: any }) {
                   <div className="space-y-0.5">
                     <span className="text-xs font-semibold text-white block">Primary Guest Pays Now (Recommended)</span>
                     <p className="text-[11px] text-white/50 leading-relaxed">
-                      I will pay the extra guest fee (₹{extraGuestTotal?.toLocaleString('en-IN')}) now. Guests only need to upload their Govt ID via the WhatsApp link.
+                      I will pay the extra guest fee (₹{extraGuestTotal?.toLocaleString('en-IN')}) now. Guests only need to upload their Govt ID via the verification link.
                     </p>
                   </div>
                 </label>

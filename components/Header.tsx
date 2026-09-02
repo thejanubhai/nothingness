@@ -3,7 +3,23 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, User, LayoutDashboard, LogOut, Sparkles, Flame, Building2 } from "lucide-react";
+import { 
+  Menu, 
+  X, 
+  User, 
+  LayoutDashboard, 
+  LogOut, 
+  Sparkles, 
+  Flame, 
+  Building2,
+  LogIn,
+  ShieldCheck,
+  BookOpen,
+  HelpCircle,
+  PhoneCall,
+  ChevronRight,
+  Handshake
+} from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Magnetic from "./Magnetic";
@@ -59,7 +75,7 @@ export default function Header() {
             : "bg-transparent py-3"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-5 md:px-8 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex justify-between items-center">
           <Link
             href="/"
             className="flex items-center justify-center transition-transform hover:scale-105 duration-300"
@@ -117,107 +133,245 @@ export default function Header() {
             </Magnetic>
           </nav>
 
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden w-11 h-11 flex items-center justify-center text-white rounded-full bg-white/5 border border-white/10 active:scale-95 transition-all"
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? <X className="w-5 h-5 text-accent-gold" /> : <Menu className="w-5 h-5" />}
-          </button>
+          {/* Mobile Right Controls (Quick Login + Menu Toggle) */}
+          <div className="flex md:hidden items-center gap-2">
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-gold/15 border border-accent-gold/30 text-accent-gold text-[11px] font-mono font-bold"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>Portal</span>
+              </Link>
+            ) : (
+              <Link
+                href="/auth"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold text-[11px] uppercase tracking-wider shadow-md active:scale-95 transition-all"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </Link>
+            )}
+
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="w-10 h-10 flex items-center justify-center text-white rounded-full bg-white/5 border border-white/10 active:scale-95 transition-all cursor-pointer"
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? <X className="w-5 h-5 text-accent-gold" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Mobile Full-Screen Menu */}
+      {/* Upgraded Mobile Drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-40 bg-black/95 backdrop-blur-3xl flex flex-col justify-between p-6 pt-28 pb-[calc(2rem+env(safe-area-inset-bottom))] overflow-y-auto"
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.22 }}
+            className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-3xl flex flex-col justify-between overflow-y-auto px-4 sm:px-6 pt-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
           >
-            <div className="flex flex-col space-y-3.5 text-center w-full max-w-sm mx-auto">
-              {user && (
-                <div className="mb-2 p-3 bg-zinc-900/80 border border-zinc-800 rounded-2xl flex items-center justify-between text-left">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-accent-gold/20 flex items-center justify-center text-accent-gold font-mono text-xs">
-                      <User className="w-4 h-4" />
+            {/* Top Navigation Row in Drawer */}
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <Link href="/" onClick={() => setMobileOpen(false)}>
+                <Image 
+                  src="/images/logo.png" 
+                  alt="Nothingness" 
+                  width={75} 
+                  height={30} 
+                  className="object-contain drop-shadow-[0_0_12px_rgba(220,38,38,0.5)]" 
+                />
+              </Link>
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:text-accent-gold transition-colors"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 py-4 space-y-4 max-w-md mx-auto w-full">
+              {/* Top Hero Card: Logged In vs Sign In / Sign Up */}
+              {user ? (
+                <div className="p-4 bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl shadow-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-accent-gold/20 border border-accent-gold/40 flex items-center justify-center text-accent-gold">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-mono block">Logged In Guest</span>
+                        <p className="text-sm font-bold text-white font-mono truncate max-w-[190px]">{userPhone}</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold">
+                      Active
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setMobileOpen(false)}
+                      className="py-2.5 px-3 bg-accent-gold hover:bg-white text-black font-bold text-xs uppercase tracking-wider rounded-xl text-center flex items-center justify-center gap-1.5 shadow-md transition-all"
+                    >
+                      <LayoutDashboard className="w-3.5 h-3.5" />
+                      <span>Dashboard</span>
+                    </Link>
+
+                    <form action={signOut} className="w-full">
+                      <button
+                        type="submit"
+                        onClick={() => setMobileOpen(false)}
+                        className="w-full py-2.5 px-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-red-400 hover:text-red-300 font-bold text-xs uppercase tracking-wider rounded-xl text-center flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign Out</span>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-gradient-to-br from-amber-950/40 via-zinc-900 to-zinc-950 border border-amber-500/30 rounded-2xl shadow-xl space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                      <ShieldCheck className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">Logged In Guest</p>
-                      <p className="text-xs text-white font-mono font-bold truncate max-w-[170px]">{userPhone}</p>
+                      <h4 className="text-sm font-bold text-white">Guest &amp; Member Portal</h4>
+                      <p className="text-[11px] text-zinc-400">Fast 1-tap OTP • Access passes, bookings &amp; circle</p>
                     </div>
                   </div>
+
                   <Link
-                    href="/dashboard"
+                    href="/auth"
                     onClick={() => setMobileOpen(false)}
-                    className="text-[10px] uppercase font-mono tracking-wider text-accent-gold hover:underline"
+                    className="w-full py-3 bg-gradient-to-r from-amber-500 via-amber-400 to-accent-gold hover:from-amber-400 hover:to-white text-black font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-98"
                   >
-                    View Portal →
+                    <LogIn className="w-4 h-4 text-black" />
+                    <span>Login / Sign Up with Phone OTP →</span>
                   </Link>
                 </div>
               )}
 
-              <Link href="/" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors py-1.5 border-b border-white/5" onClick={() => setMobileOpen(false)}>
-                Home
-              </Link>
-              <Link href="/spaces" className="text-2xl font-serif text-white hover:text-accent-gold transition-colors py-1.5 border-b border-white/5" onClick={() => setMobileOpen(false)}>
-                Spaces &amp; Sanctuaries
-              </Link>
-              <Link href="/sanctuary-pass" className="text-2xl font-serif text-amber-400 hover:text-amber-300 transition-colors py-1.5 border-b border-white/5 flex items-center justify-center gap-2" onClick={() => setMobileOpen(false)}>
-                Sanctuary Pass ✨
-              </Link>
-              <Link href="/kinksters" className="text-2xl font-serif text-rose-400 hover:text-rose-300 transition-colors py-1.5 border-b border-white/5 flex items-center justify-center gap-2" onClick={() => setMobileOpen(false)}>
-                Lifestyle 🔥
-              </Link>
-              <Link href="/franchise" className="text-xl font-serif text-white/80 hover:text-accent-gold transition-colors py-1" onClick={() => setMobileOpen(false)}>
-                Partner &amp; Franchise
-              </Link>
-              <Link href="/about" className="text-xl font-serif text-white/80 hover:text-accent-gold transition-colors py-1" onClick={() => setMobileOpen(false)}>
-                The Philosophy
-              </Link>
-              <Link href="/journal" className="text-xl font-serif text-white/80 hover:text-accent-gold transition-colors py-1" onClick={() => setMobileOpen(false)}>
-                Journal
-              </Link>
-              <Link href="/faq" className="text-xl font-serif text-white/80 hover:text-accent-gold transition-colors py-1" onClick={() => setMobileOpen(false)}>
-                FAQ
-              </Link>
-              <Link href="/contact" className="text-xl font-serif text-white/80 hover:text-accent-gold transition-colors py-1" onClick={() => setMobileOpen(false)}>
-                Contact Concierge
-              </Link>
+              {/* Core Experiences Section */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-zinc-400 px-1">Experiences &amp; Stays</span>
+                
+                <div className="grid grid-cols-1 gap-2">
+                  <Link
+                    href="/spaces"
+                    onClick={() => setMobileOpen(false)}
+                    className="p-3 bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800/90 rounded-xl flex items-center justify-between transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300 group-hover:text-accent-gold">
+                        <Building2 className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Spaces &amp; Sanctuaries</h4>
+                        <p className="text-[10px] text-zinc-400 font-mono">Autonomous suites &amp; dungeons</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
+                  </Link>
+
+                  <Link
+                    href="/sanctuary-pass"
+                    onClick={() => setMobileOpen(false)}
+                    className="p-3 bg-zinc-900/80 hover:bg-zinc-900 border border-amber-500/25 rounded-xl flex items-center justify-between transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-sm font-bold text-amber-300">Sanctuary Pass</h4>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-amber-500/20 text-amber-300">Secret Vault</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 font-mono">Munches, Masquerades &amp; Soirées</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-amber-500/60 group-hover:text-amber-300 transition-colors" />
+                  </Link>
+
+                  <Link
+                    href="/kinksters"
+                    onClick={() => setMobileOpen(false)}
+                    className="p-3 bg-zinc-900/80 hover:bg-zinc-900 border border-rose-500/25 rounded-xl flex items-center justify-between transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400">
+                        <Flame className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-sm font-bold text-rose-300">Lifestyle Circle</h4>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-rose-500/20 text-rose-300">18+ Circle</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 font-mono">Anonymous @Alias feed &amp; stories</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-rose-500/60 group-hover:text-rose-300 transition-colors" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Editorial & Information List */}
+              <div className="space-y-1 pt-1">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-zinc-400 px-1">Discover &amp; Support</span>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="/journal"
+                    onClick={() => setMobileOpen(false)}
+                    className="p-2.5 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800/60 rounded-xl flex items-center gap-2 text-xs text-zinc-300 hover:text-white transition-colors"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-accent-gold shrink-0" />
+                    <span>Journal</span>
+                  </Link>
+
+                  <Link
+                    href="/franchise"
+                    onClick={() => setMobileOpen(false)}
+                    className="p-2.5 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800/60 rounded-xl flex items-center gap-2 text-xs text-zinc-300 hover:text-white transition-colors"
+                  >
+                    <Handshake className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Host Partner</span>
+                  </Link>
+
+                  <Link
+                    href="/faq"
+                    onClick={() => setMobileOpen(false)}
+                    className="p-2.5 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800/60 rounded-xl flex items-center gap-2 text-xs text-zinc-300 hover:text-white transition-colors"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                    <span>FAQ</span>
+                  </Link>
+
+                  <Link
+                    href="/contact"
+                    onClick={() => setMobileOpen(false)}
+                    className="p-2.5 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800/60 rounded-xl flex items-center gap-2 text-xs text-zinc-300 hover:text-white transition-colors"
+                  >
+                    <PhoneCall className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                    <span>Concierge</span>
+                  </Link>
+                </div>
+              </div>
             </div>
 
-            <div className="w-full max-w-sm mx-auto pt-4 space-y-2">
-              {user ? (
-                <>
-                  <Link 
-                    href="/dashboard" 
-                    className="w-full block py-3.5 bg-accent-gold text-black font-bold text-xs tracking-widest uppercase rounded-2xl shadow-xl text-center" 
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    My Sanctuary Dashboard
-                  </Link>
-                  <form action={signOut}>
-                    <button
-                      type="submit"
-                      onClick={() => setMobileOpen(false)}
-                      className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-red-400 text-xs font-mono tracking-wider rounded-xl text-center flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Sign Out</span>
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <Link 
-                  href="/auth" 
-                  className="w-full block py-4 bg-gradient-to-r from-accent-gold to-amber-600 text-black font-bold text-xs tracking-widest uppercase rounded-2xl shadow-xl text-center" 
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Guest Portal Login
-                </Link>
-              )}
+            {/* Bottom Compliance & Brand Tag */}
+            <div className="pt-3 border-t border-zinc-900 flex items-center justify-between text-[10px] font-mono text-zinc-400 max-w-md mx-auto w-full">
+              <span>Nothingness • 100% Discretion</span>
+              <Link href="/about" onClick={() => setMobileOpen(false)} className="hover:text-accent-gold transition-colors">
+                The Philosophy →
+              </Link>
             </div>
           </motion.div>
         )}

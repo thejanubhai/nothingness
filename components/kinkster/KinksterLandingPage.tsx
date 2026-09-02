@@ -345,9 +345,9 @@ export default function KinksterLandingPage({
               <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mb-5">
                 <Ticket className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">04. Secret Sanctuary Soirées</h3>
+              <h3 className="text-lg font-bold text-white mb-2">04. Sanctuary Pass &amp; Gatherings</h3>
               <p className="text-xs text-zinc-400 leading-relaxed mb-4">
-                Access invite-only masked lounge gatherings hosted exclusively by Admin-Approved Trusted Hosts. Exact discreet location coordinates are dispatched via WhatsApp 2 hours prior to RSVP confirmed guests.
+                Access invite-only discussion salons, noir masquerades, and intimate soirées. Exact discreet location coordinates and in-app dynamic QR codes are unlocked via lockscreen push alerts 3 hours prior to start time.
               </p>
             </div>
             <div className="pt-4 border-t border-zinc-900 text-[11px] font-mono text-rose-400/90 flex items-center gap-1">
@@ -381,7 +381,7 @@ export default function KinksterLandingPage({
               </div>
               <h3 className="text-lg font-bold text-white mb-2">06. Multi-Screenshot Optical Stay Verification</h3>
               <p className="text-xs text-zinc-400 leading-relaxed mb-4">
-                Instant verification via previous Airbnb, MMT, Booking.com reservation receipts or WhatsApp concierge chats. Co-guests are identified and shadow-pre-stored with zero external leaks.
+                Instant verification via previous Airbnb, MMT, Booking.com reservation receipts or digital concierge chats. Co-guests are identified and shadow-pre-stored with zero external leaks.
               </p>
             </div>
             <div className="pt-4 border-t border-zinc-900 text-[11px] font-mono text-blue-400/90 flex items-center gap-1">

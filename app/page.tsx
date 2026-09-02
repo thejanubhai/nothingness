@@ -64,7 +64,7 @@ export default function HomePage() {
             </div>
             <h3 className="text-base font-bold text-white font-serif">100% Autonomous Keyless Check-In</h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              No front desk lines or intrusion. Receive your encrypted lockbox pin directly on WhatsApp 30 minutes before check-in.
+              No front desk lines or intrusion. Receive your encrypted lockbox PIN directly on your screen via instant lockscreen notification &amp; digital pass 30 minutes before check-in.
             </p>
           </div>
 
@@ -88,6 +88,53 @@ export default function HomePage() {
             </p>
           </div>
 
+        </div>
+      </section>
+
+      {/* Sanctuary Pass & Secret Gatherings Showcase */}
+      <section className="py-20 px-4 sm:px-6 max-w-6xl mx-auto">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-950/40 via-zinc-950 to-purple-950/30 border border-amber-500/30 p-8 sm:p-12 shadow-2xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 max-w-3xl space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-mono font-bold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Exclusive Members Access</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-serif tracking-tight text-white leading-tight">
+              Nothingness <span className="bg-gradient-to-r from-amber-400 via-rose-400 to-purple-400 bg-clip-text text-transparent">Sanctuary Pass</span>
+            </h2>
+
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+              Unlock private discussion salons, midnight noir masquerades, and strictly vetted intimate soirées across official Nothingness sanctuaries. Ratio-balanced, consent-governed, and protected by tamper-proof camera bans.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <div className="p-3.5 bg-black/50 border border-zinc-800/80 rounded-2xl">
+                <span className="text-amber-400 font-bold text-xs font-mono block">Tier 1: Salons &amp; Munches</span>
+                <span className="text-[11px] text-zinc-400">Power dynamics, Shibari &amp; dialogue</span>
+              </div>
+              <div className="p-3.5 bg-black/50 border border-zinc-800/80 rounded-2xl">
+                <span className="text-rose-400 font-bold text-xs font-mono block">Tier 2: Noir Masquerades</span>
+                <span className="text-[11px] text-zinc-400">Sensory techno &amp; masked anonymity</span>
+              </div>
+              <div className="p-3.5 bg-black/50 border border-zinc-800/80 rounded-2xl">
+                <span className="text-purple-400 font-bold text-xs font-mono block">Tier 3: Intimate Soirées</span>
+                <span className="text-[11px] text-zinc-400">Strictly capped play &amp; sanctuary floor leads</span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center gap-4">
+              <Link
+                href="/sanctuary-pass"
+                className="px-6 py-3.5 bg-gradient-to-r from-amber-500 via-rose-600 to-purple-600 hover:from-amber-400 hover:to-purple-500 text-white font-extrabold text-xs uppercase tracking-widest rounded-2xl shadow-xl transition-all flex items-center gap-2 active:scale-98"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Explore Sanctuary Pass &amp; Vault →</span>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

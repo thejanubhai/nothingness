@@ -22,7 +22,11 @@ const faqs = [
   },
   {
     question: "How does check-in work?",
-    answer: "Check-in is 100% autonomous and keyless. Once your digital ID verification is completed per Police Compliance regulations, you receive a dynamic smart lockbox code directly on WhatsApp prior to arrival."
+    answer: "Check-in is 100% autonomous and keyless. Once your digital ID verification is completed per Police Compliance regulations, you receive your dynamic smart lockbox code and discreet coordinates directly in your Guest Portal & via instant lockscreen alerts prior to arrival."
+  },
+  {
+    question: "What is the Sanctuary Pass and how do private gatherings work?",
+    answer: "The Nothingness Sanctuary Pass is a 1-time lifetime membership pass for ID-verified guests. It unlocks confidential access to our Secret Gatherings Vault (Tier 1 Salons & Munches, Tier 2 Noir Masquerades, Tier 3 Intimate Soirées), governed by 60-second AI Concierge vetting, automated gender-ratio balancing, and tamper-proof camera bans."
   },
   {
     question: "What are the standard Check-in and Check-out times?",

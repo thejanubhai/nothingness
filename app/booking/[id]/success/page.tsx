@@ -124,17 +124,23 @@ export default function SuccessPage({ params }: { params: Promise<{ id: string }
                   <MapPin className="w-4 h-4" />
                   <p className="text-[10px] uppercase tracking-[0.2em]">Location</p>
                 </div>
-                <p className="text-white text-base font-medium">Coordinates on WhatsApp</p>
+                <p className="text-white text-base font-medium">Digital Pass &amp; Push Alerts</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-12 flex gap-4 w-full md:w-auto">
+        <div className="mt-12 flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          <Link
+            href="/dashboard"
+            className="w-full sm:w-auto bg-accent-gold text-black px-8 py-4 rounded-xl text-[12px] font-bold tracking-[0.15em] uppercase hover:bg-white transition-colors text-center shadow-xl"
+          >
+            View Stay Pass in Dashboard →
+          </Link>
           <Magnetic>
             <Link 
               href="/"
-              className="block w-full md:w-auto bg-white/5 text-white px-8 py-4 rounded-xl text-[12px] font-semibold tracking-[0.15em] uppercase hover:bg-white/10 transition-colors text-center"
+              className="block w-full sm:w-auto bg-white/5 text-white px-8 py-4 rounded-xl text-[12px] font-semibold tracking-[0.15em] uppercase hover:bg-white/10 transition-colors text-center"
             >
               Return Home
             </Link>
