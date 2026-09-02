@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { loginWithFirebasePhone, loginWithServerOtp, sendServerOtp, onPasskeyLoginSuccess } from '@/app/actions/auth';
+import { loginWithFirebasePhone, onPasskeyLoginSuccess } from '@/app/actions/auth';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { auth } from '@/lib/firebase/client';
@@ -25,7 +25,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
-  const [authMode, setAuthMode] = useState<'firebase' | 'server'>('firebase');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   useEffect(() => {
@@ -63,21 +62,19 @@ export default function LoginPage() {
 
     const formattedPhone = normalizeIdentifier(identifier);
 
-    // 1. First attempt: Firebase Phone Auth client
-    let firebaseSucceeded = false;
     try {
       const appVerifier = getRecaptchaVerifier();
-      if (appVerifier) {
-        const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
-        setConfirmationResult(confirmation);
-        setAuthMode('firebase');
-        firebaseSucceeded = true;
-        setStep('verify-phone');
-        toast.success(`OTP sent to ${formattedPhone}`);
+      if (!appVerifier) {
+        throw new Error('reCAPTCHA security verification could not be initialized.');
       }
+
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+      setConfirmationResult(confirmation);
+      setStep('verify-phone');
+      toast.success(`SMS verification code sent to ${formattedPhone}`);
     } catch (err: any) {
-      console.warn('[Auth] Firebase client OTP failed or blocked by domain check:', err?.message || err);
-      // Clean up recaptcha verifier
+      console.error('[Auth] Firebase Phone Auth client error:', err);
+      // Clean up recaptcha verifier on error so it can be re-attempted
       if (window.recaptchaVerifier) {
         try {
           window.recaptchaVerifier.clear();
@@ -86,87 +83,58 @@ export default function LoginPage() {
           // ignore
         }
       }
-    }
 
-    // 2. Fallback: Direct Server-Side OTP Bridge
-    if (!firebaseSucceeded) {
-      try {
-        const result = await sendServerOtp(formattedPhone);
-        if (result.success) {
-          setAuthMode('server');
-          setConfirmationResult(null);
-          setStep('verify-phone');
-          setInfoMsg('Code dispatched via secure server bridge (WhatsApp / SMS).');
-          toast.success(`Verification code sent to ${formattedPhone}`);
-        } else {
-          setErrorMsg(result.error || 'Failed to send OTP code. Please check your phone number.');
-        }
-      } catch (fallbackErr: any) {
-        console.error('[Auth] Server OTP fallback error:', fallbackErr);
-        setErrorMsg(fallbackErr.message || 'Unable to connect to verification server. Please try again.');
+      const fbCode = err?.code || '';
+      let userFriendlyError = err?.message || 'Failed to send SMS OTP. Please check your phone number and try again.';
+      if (fbCode === 'auth/invalid-phone-number') {
+        userFriendlyError = 'Please enter a valid 10-digit mobile number with country code (e.g. +91 98765 43210).';
+      } else if (fbCode === 'auth/too-many-requests') {
+        userFriendlyError = 'Too many attempts. Please wait a few minutes before requesting another code.';
+      } else if (fbCode === 'auth/quota-exceeded') {
+        userFriendlyError = 'Daily SMS limit reached on Firebase. Please try again later or contact support.';
+      } else if (fbCode === 'auth/unauthorized-domain') {
+        userFriendlyError = 'Domain unauthorized for Firebase Phone Auth. Please ensure this domain is added in Firebase Console.';
+      } else if (fbCode === 'auth/invalid-app-credential' || fbCode === 'auth/api-key-not-valid') {
+        userFriendlyError = 'Firebase project configuration error. Please verify NEXT_PUBLIC_FIREBASE_API_KEY.';
       }
-    }
 
-    setLoading(false);
+      setErrorMsg(userFriendlyError);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpToken || otpToken.length < 6) return;
+    if (!otpToken || otpToken.length < 6 || !confirmationResult) return;
     setLoading(true);
     setErrorMsg('');
 
-    const formattedPhone = normalizeIdentifier(identifier);
-
     try {
-      // 1. If Firebase confirmation is active, verify through Firebase Auth
-      if (authMode === 'firebase' && confirmationResult) {
-        try {
-          const userCredential = await confirmationResult.confirm(otpToken);
-          const idToken = await userCredential.user.getIdToken();
-          const result = await loginWithFirebasePhone(idToken);
+      const userCredential = await confirmationResult.confirm(otpToken);
+      const idToken = await userCredential.user.getIdToken();
+      const result = await loginWithFirebasePhone(idToken);
 
-          if (result.success) {
-            toast.success('Successfully authenticated!');
-            router.push(result.redirectUrl || '/dashboard');
-            router.refresh();
-            return;
-          } else {
-            setErrorMsg(result.error || 'Authentication session failed. Please try again.');
-            setLoading(false);
-            return;
-          }
-        } catch (firebaseVerifyErr: any) {
-          console.error('[Auth] Firebase verification error:', firebaseVerifyErr);
-          const fbCode = firebaseVerifyErr?.code || '';
-          let userFriendlyError = 'Invalid verification code. Please check the code and try again.';
-          if (fbCode === 'auth/invalid-verification-code') {
-            userFriendlyError = 'The 6-digit verification code is incorrect. Please re-check the SMS.';
-          } else if (fbCode === 'auth/code-expired' || fbCode === 'auth/session-expired') {
-            userFriendlyError = 'The verification code has expired. Please click "Resend OTP Code".';
-          } else if (firebaseVerifyErr?.message) {
-            userFriendlyError = firebaseVerifyErr.message;
-          }
-          setErrorMsg(userFriendlyError);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // 2. Otherwise verify with Server OTP Bridge (when authMode is 'server')
-      const serverResult = await loginWithServerOtp(formattedPhone, otpToken);
-
-      if (serverResult.success) {
+      if (result.success) {
         toast.success('Successfully authenticated!');
-        router.push(serverResult.redirectUrl || '/dashboard');
+        router.push(result.redirectUrl || '/dashboard');
         router.refresh();
       } else {
-        setErrorMsg(serverResult.error || 'Invalid or expired verification code. Please try again.');
+        setErrorMsg(result.error || 'Authentication session failed. Please try again.');
         setLoading(false);
       }
-    } catch (err: any) {
-      console.error('[Auth] Verification exception:', err);
-      setErrorMsg(err.message || 'Verification failed. Please try again.');
+    } catch (firebaseVerifyErr: any) {
+      console.error('[Auth] Firebase verification error:', firebaseVerifyErr);
+      const fbCode = firebaseVerifyErr?.code || '';
+      let userFriendlyError = 'Invalid verification code. Please check the SMS and try again.';
+      if (fbCode === 'auth/invalid-verification-code') {
+        userFriendlyError = 'The 6-digit verification code is incorrect. Please re-check the SMS.';
+      } else if (fbCode === 'auth/code-expired' || fbCode === 'auth/session-expired') {
+        userFriendlyError = 'The verification code has expired. Please click "Resend OTP Code".';
+      } else if (firebaseVerifyErr?.message) {
+        userFriendlyError = firebaseVerifyErr.message;
+      }
+      setErrorMsg(userFriendlyError);
       setLoading(false);
     }
   };
@@ -379,7 +347,7 @@ export default function LoginPage() {
               </label>
               <input
                 type="text"
-                placeholder="123456"
+                placeholder="------"
                 value={otpToken}
                 onChange={(e) => setOtpToken(e.target.value.replace(/[^0-9]/g, ''))}
                 className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-4 py-3.5 sm:py-4 text-white focus:outline-none focus:border-accent-gold/60 text-center tracking-[0.5em] text-xl font-mono transition-colors"

@@ -18,7 +18,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: result.error }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, message: result.message, phone: result.phone });
+    return NextResponse.json({
+      success: true,
+      message: result.message,
+      phone: result.phone,
+      devOtp: result.devOtp,
+      isMockedOrDev: result.isMockedOrDev,
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }

@@ -206,22 +206,6 @@ export async function sendServerOtp(rawPhone: string): Promise<SendOtpResult> {
 
     console.log(`[Nothingness Auth] Server OTP generated for ${phone}: ${otpCode}`);
 
-    // 3. Attempt WhatsApp dispatch if WhatsApp Business session is active
-    try {
-      const supabaseAdmin = createAdminClient();
-      const { data: waSession } = await supabaseAdmin
-        .from('whatsapp_business_sessions')
-        .select('*')
-        .eq('status', 'connected')
-        .maybeSingle();
-
-      if (waSession) {
-        console.log(`[WhatsApp OTP] Dispatching OTP code ${otpCode} to ${phone} via WhatsApp Business`);
-      }
-    } catch (waErr) {
-      console.warn('[Auth Bridge] WhatsApp OTP dispatch non-fatal warning:', waErr);
-    }
-
     return {
       success: true,
       message: `Verification code sent to ${phone}`,
@@ -282,7 +266,7 @@ export async function loginWithServerOtp(rawPhone: string, otpCode: string): Pro
           const activeOtp = dbOtps[0];
           const attempts = activeOtp.attempts || 0;
 
-          if (attempts >= 5) {
+          if (attempts >= 8) {
             return {
               success: false,
               error: 'Too many incorrect attempts. Please request a new verification code.',
@@ -300,11 +284,6 @@ export async function loginWithServerOtp(rawPhone: string, otpCode: string): Pro
               .from('auth_otps')
               .update({ attempts: attempts + 1 })
               .eq('id', activeOtp.id);
-
-            return {
-              success: false,
-              error: `Invalid verification code. (${4 - attempts} attempts remaining)`,
-            };
           }
         }
       } catch (dbErr) {
@@ -312,15 +291,10 @@ export async function loginWithServerOtp(rawPhone: string, otpCode: string): Pro
       }
     }
 
-    // 3. Allow test passcodes for development/demo mode (+919876543210 or cleanOtp === '123456' for test environments)
-    if (!isValid && (cleanOtp === '123456' && (phone.includes('9876543210') || process.env.NODE_ENV !== 'production'))) {
-      isValid = true;
-    }
-
     if (!isValid) {
       return {
         success: false,
-        error: 'No active OTP request found or code has expired. Please request a new code.',
+        error: 'Invalid or expired verification code. Please request a new code.',
       };
     }
 

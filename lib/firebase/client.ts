@@ -1,6 +1,14 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 
+const isConfigured = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
+
+if (!isConfigured && typeof window !== 'undefined') {
+  console.warn(
+    '[Firebase] NEXT_PUBLIC_FIREBASE_API_KEY is missing from environment variables (.env.local). Phone Auth SMS requires valid Firebase project credentials.'
+  );
+}
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyDummyKeyForPrerender000000000000',
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'nothingness.firebaseapp.com',
