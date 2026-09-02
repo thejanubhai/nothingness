@@ -62,48 +62,31 @@ let cachedDbConfig: { key?: string; salt?: string; clientId?: string; clientSecr
  * Resolve PayU configuration from environment variables or platform settings.
  */
 export function getPayUConfig(dbFallback?: { key?: string; salt?: string; clientId?: string; clientSecret?: string; env?: string }): PayUConfig {
-  // Check for Test Credentials in Vercel: payUTESTKEY / payUTESTSALT / PAYU_TEST_KEY / PAYU_TEST_SALT
-  const testKey = (
+  // Resolve primary merchant Key
+  const key = (
+    process.env.PAYU_KEY ||
+    process.env.PayU_Key ||
+    process.env.PAYU_MERCHANT_KEY ||
+    process.env.NEXT_PUBLIC_PAYU_KEY ||
+    process.env.NEXT_PUBLIC_PayU_Key ||
     process.env.payUTESTKEY ||
     process.env.PAYU_TEST_KEY ||
-    process.env.PayU_Test_Key ||
-    process.env.NEXT_PUBLIC_payUTESTKEY ||
+    dbFallback?.key ||
+    cachedDbConfig?.key ||
     ''
   ).trim();
 
-  const testSalt = (
+  // Resolve primary merchant Salt
+  const salt = (
+    process.env.PAYU_SALT ||
+    process.env.PayU_Salt ||
+    process.env.PAYU_MERCHANT_SALT ||
     process.env.payUTESTSALT ||
     process.env.PAYU_TEST_SALT ||
-    process.env.PayU_Test_Salt ||
+    dbFallback?.salt ||
+    cachedDbConfig?.salt ||
     ''
   ).trim();
-
-  // If user provided payUTESTKEY or payUTESTSALT in Vercel, automatically switch to TEST environment!
-  const isTestMode = Boolean(testKey || testSalt);
-
-  const key = isTestMode
-    ? testKey
-    : (
-        process.env.PAYU_KEY ||
-        process.env.PayU_Key ||
-        process.env.PAYU_MERCHANT_KEY ||
-        process.env.NEXT_PUBLIC_PAYU_KEY ||
-        process.env.NEXT_PUBLIC_PayU_Key ||
-        dbFallback?.key ||
-        cachedDbConfig?.key ||
-        ''
-      ).trim();
-
-  const salt = isTestMode
-    ? testSalt
-    : (
-        process.env.PAYU_SALT ||
-        process.env.PayU_Salt ||
-        process.env.PAYU_MERCHANT_SALT ||
-        dbFallback?.salt ||
-        cachedDbConfig?.salt ||
-        ''
-      ).trim();
 
   const clientId =
     process.env.PAYU_CLIENT_ID ||
@@ -121,36 +104,13 @@ export function getPayUConfig(dbFallback?: { key?: string; salt?: string; client
     cachedDbConfig?.clientSecret ||
     '';
 
-  const envRaw = isTestMode
-    ? 'TEST'
-    : (
-        process.env.PAYU_ENV ||
-        process.env.PayU_Env ||
-        dbFallback?.env ||
-        cachedDbConfig?.env ||
-        (process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'TEST')
-      ).toUpperCase();
+  // Explicit Production Mode for Live Payments
+  const env: 'TEST' | 'SANDBOX' | 'PRODUCTION' = 'PRODUCTION';
 
-  const env: 'TEST' | 'SANDBOX' | 'PRODUCTION' =
-    envRaw === 'PRODUCTION' ? 'PRODUCTION' : envRaw === 'SANDBOX' ? 'SANDBOX' : 'TEST';
-
-  const isProd = env === 'PRODUCTION';
-
-  const paymentUrl = isProd
-    ? 'https://secure.payu.in/_payment'
-    : 'https://test.payu.in/_payment';
-
-  const serviceUrl = isProd
-    ? 'https://info.payu.in/merchant/postservice.php?form=2'
-    : 'https://test.payu.in/merchant/postservice.php?form=2';
-
-  const oauthUrl = isProd
-    ? 'https://accounts.payu.in/oauth/token'
-    : 'https://test-accounts.payu.in/oauth/token';
-
-  const apiBaseUrl = isProd
-    ? 'https://api.payu.in'
-    : 'https://test-api.payu.in';
+  const paymentUrl = 'https://secure.payu.in/_payment';
+  const serviceUrl = 'https://info.payu.in/merchant/postservice.php?form=2';
+  const oauthUrl = 'https://accounts.payu.in/oauth/token';
+  const apiBaseUrl = 'https://api.payu.in';
 
   return {
     key,

@@ -2,7 +2,7 @@ import React from 'react';
 import PropertySwipeDeck from '@/components/PropertySwipeDeck';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import Link from 'next/link';
-import { ShieldCheck, Key, Sparkles, Building2, Smartphone, Calendar, Award } from 'lucide-react';
+import { ShieldCheck, Key, Sparkles, Building2, Smartphone, Calendar, Award, Flame } from 'lucide-react';
 import { Metadata } from 'next';
 import JsonLd, { generateWebSiteSchema } from '@/components/JsonLd';
 
@@ -54,7 +54,7 @@ export default function HomePage() {
         <PropertySwipeDeck />
       </section>
 
-      {/* Trust & Discretion Highlights (Payment Gateway Friendly) */}
+      {/* Trust & Discretion Highlights */}
       <section className="py-16 bg-zinc-950 border-t border-b border-zinc-900 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           
@@ -62,9 +62,9 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
               <Key className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-white font-serif">100% Autonomous Keyless Check-In</h3>
+            <h3 className="text-base font-bold text-white font-serif">Seamless Keyless Check-In</h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              No front desk lines or intrusion. Receive your encrypted lockbox PIN directly on your screen via instant lockscreen notification &amp; digital pass 30 minutes before check-in.
+              Arrive entirely in your own time with zero front-desk friction. Receive your private access code and discreet entry directions directly on your screen before arrival.
             </p>
           </div>
 
@@ -72,9 +72,9 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-white font-serif">Digital State Police &amp; Govt ID Compliance</h3>
+            <h3 className="text-base font-bold text-white font-serif">100% Private &amp; Verified</h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              100% online guest vetting compliant with state hospitality regulations. 180-day reusable Aadhaar &amp; Passport ID verification prevents local harassment &amp; guarantees discretion.
+              Fast, discreet online verification before arrival. Your legal identity remains strictly private and protected, guaranteeing complete peace of mind and hassle-free stays.
             </p>
           </div>
 
@@ -82,12 +82,62 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <Award className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-white font-serif">Aesthetic Cinematic Interiors</h3>
+            <h3 className="text-base font-bold text-white font-serif">Aesthetic Cinematic Suites</h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Custom mood lighting, private Jacuzzi tubs, plush bedding, and high-speed Wi-Fi designed for relaxation and photo aesthetics.
+              Deep soaking jacuzzi tubs, warm ambient candle lighting, acoustic privacy, and custom sensory amenities designed for ultimate relaxation and connection.
             </p>
           </div>
 
+        </div>
+      </section>
+
+      {/* Nothingness Lifestyle Circle Showcase */}
+      <section className="py-16 px-4 sm:px-6 max-w-6xl mx-auto">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-950/40 via-zinc-950 to-purple-950/30 border border-rose-500/30 p-8 sm:p-12 shadow-2xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 max-w-3xl space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px] font-mono font-bold uppercase tracking-wider">
+              <Flame className="w-3.5 h-3.5" />
+              <span>The Lifestyle Circle • Private Monikers</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-serif tracking-tight text-white leading-tight">
+              Where High Discretion <br />
+              <span className="bg-gradient-to-r from-rose-400 via-purple-300 to-amber-200 bg-clip-text text-transparent italic font-serif">
+                Meets Raw Chemistry.
+              </span>
+            </h2>
+
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+              An intimate, confidential society reserved exclusively for verified guests of Nothingness. Connect under complete anonymity with private @aliases, explore deep aesthetic chemistry, and unlock private sanctuary suites. Protected by a one-time lifetime membership entry barrier.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+              <div className="p-3.5 bg-black/50 border border-zinc-800/80 rounded-2xl">
+                <span className="text-rose-400 font-bold font-mono block">100% Anonymous</span>
+                <span className="text-[11px] text-zinc-400">Real names never revealed to other members</span>
+              </div>
+              <div className="p-3.5 bg-black/50 border border-zinc-800/80 rounded-2xl">
+                <span className="text-purple-400 font-bold font-mono block">Mutual Spark DMs</span>
+                <span className="text-[11px] text-zinc-400">Direct messaging unlocks solely on mutual desire</span>
+              </div>
+              <div className="p-3.5 bg-black/50 border border-zinc-800/80 rounded-2xl">
+                <span className="text-amber-400 font-bold font-mono block">Verified Guests Only</span>
+                <span className="text-[11px] text-zinc-400">Zero bots, fake accounts, or strangers</span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center gap-4">
+              <Link
+                href="/kinksters"
+                className="px-6 py-3.5 bg-gradient-to-r from-rose-600 via-rose-500 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-extrabold text-xs uppercase tracking-widest rounded-2xl shadow-xl transition-all flex items-center gap-2 active:scale-98"
+              >
+                <Flame className="w-4 h-4" />
+                <span>Explore Lifestyle Circle &rarr;</span>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

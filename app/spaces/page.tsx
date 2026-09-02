@@ -1,5 +1,6 @@
 import Link from "next/link";
 import SpaceCard from "@/components/SpaceCard";
+import { Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Metadata } from 'next';
 import JsonLd, { generateBreadcrumbSchema } from '@/components/JsonLd';
@@ -61,21 +62,22 @@ export default async function SpacesPage() {
           </p>
         </div>
         <Link
-          href="/admin/spaces/new"
-          className="hidden md:inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-xs font-mono text-white/60 hover:text-white transition-colors"
+          href="/contact"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-xs font-mono text-accent-gold hover:text-white transition-colors"
         >
-          + Add Space
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Concierge Inquiries</span>
         </Link>
       </div>
 
       {displaySpaces.length === 0 ? (
         <div className="text-center py-24 bg-white/[0.01] border border-white/5 rounded-3xl p-8 space-y-4">
-          <p className="text-white/40 text-sm">No active sanctuaries currently listed.</p>
+          <p className="text-white/60 text-sm">Sanctuary availability refreshes regularly.</p>
           <Link
-            href="/admin/spaces/new"
+            href="/contact"
             className="inline-block bg-accent-gold text-black px-6 py-3 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-white transition-colors"
           >
-            Create Space in Admin
+            Inquire with Concierge
           </Link>
         </div>
       ) : (

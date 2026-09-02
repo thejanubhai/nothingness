@@ -221,8 +221,8 @@ function SanctuaryPassContent() {
               Unlock the <span className="text-amber-400">Secret Gatherings</span> Vault
             </h2>
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              Every Nothingness gathering is strictly capped, ratio-balanced, and protected by tamper-proof camera bans and on-ground floor consent marshalls. 
-              Acquire your 1-time Lifetime Sanctuary Pass to consult our AI Concierge and request entry passes.
+              Every Nothingness gathering is strictly capped, balanced, and protected by strict camera bans and discrete on-ground marshalls. 
+              Acquire your 1-time Lifetime Sanctuary Pass to consult with our Concierge and request confidential gathering passes.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -239,7 +239,7 @@ function SanctuaryPassContent() {
                   className="px-6 py-3.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-xl transition-all cursor-pointer flex items-center gap-2"
                 >
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Verify Govt ID (Step 1) →</span>
+                  <span>Verify Identity Privately (Step 1) →</span>
                 </button>
               ) : (
                 <button
@@ -282,7 +282,7 @@ function SanctuaryPassContent() {
         {/* Event Cards Grid */}
         {loading ? (
           <div className="text-center py-24 font-mono text-xs text-zinc-500 animate-pulse">
-            Authenticating Sanctuary Gatherings Vault...
+            Loading Sanctuary Gatherings...
           </div>
         ) : filteredEvents.length === 0 ? (
           <div className="text-center py-20 bg-zinc-950 border border-zinc-900 rounded-3xl p-8">
