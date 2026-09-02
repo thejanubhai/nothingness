@@ -372,8 +372,8 @@ function SanctuaryPassContent() {
                         onClick={() => setSelectedEventForConcierge(evt)}
                         className="w-full py-3 bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all"
                       >
-                        <Bot className="w-4 h-4" />
-                        <span>Request Discretion Pass (AI Concierge)</span>
+                        <Sparkles className="w-4 h-4" />
+                        <span>Request Discretion Pass (Concierge)</span>
                       </button>
                     ) : app.status === 'confirmed' ? (
                       <button

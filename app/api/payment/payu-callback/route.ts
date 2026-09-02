@@ -55,18 +55,6 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
 
     const supabaseAdmin = createAdminClient();
 
-    // ------------------------------------------------------------------
-    // TEST TRANSACTION / GATEWAY ACTIVATION (₹10 TEST VERIFICATION)
-    // ------------------------------------------------------------------
-    if (paymentType === 'test_verification' || txnid.startsWith('testpay_')) {
-      if (status === 'success') {
-        const amt = body.amount || '10.00';
-        return NextResponse.redirect(`${siteUrl}/test-pay?status=success&txnid=${encodeURIComponent(txnid)}&amount=${encodeURIComponent(amt)}`, 303);
-      } else {
-        const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'Transaction failed or was cancelled.');
-        return NextResponse.redirect(`${siteUrl}/test-pay?status=failed&txnid=${encodeURIComponent(txnid)}&error=${errorMsg}`, 303);
-      }
-    }
 
     // ------------------------------------------------------------------
     // 0. ONE-TIME SANCTUARY PASS LIFETIME MEMBERSHIP
