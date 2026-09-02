@@ -22,8 +22,6 @@ export async function POST(req: NextRequest) {
       success: true,
       message: result.message,
       phone: result.phone,
-      devOtp: result.devOtp,
-      isMockedOrDev: result.isMockedOrDev,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });

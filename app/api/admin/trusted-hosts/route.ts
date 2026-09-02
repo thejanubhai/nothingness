@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { normalizeIdentifier } from '@/lib/auth-utils';
-import { env } from '@/lib/env';
+import { isUserAdmin } from '@/lib/auth-utils';
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    const adminIdentifier = normalizeIdentifier(env.ADMIN || '');
-    const userPhone = user?.phone ? normalizeIdentifier(user.phone) : null;
-
-    if (!user || (userPhone !== adminIdentifier && !user.email?.includes('admin') && !user.email?.includes('hudav'))) {
+    if (!user || !isUserAdmin(user)) {
       return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 });
     }
 

@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { 
   Settings2, Key, Shield, Save, Clock, Percent, 
-  Bot, Megaphone, Smartphone, CreditCard, Mail
+  Bot, Megaphone, Smartphone, CreditCard, Mail, KeyRound,
+  Flame, Sparkles, ArrowUpRight, CheckCircle2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import RegisterPasskeyButton from "@/components/RegisterPasskeyButton";
 
 type SettingsType = {
   id: string;
@@ -40,7 +42,7 @@ type SettingsType = {
 export default function SettingsClient({ initialSettings }: { initialSettings: SettingsType | null }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'policies' | 'financials' | 'ai' | 'api'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'kinksters' | 'policies' | 'financials' | 'ai' | 'api'>('general');
   
   // Initialize with empty/default values if null
   const [formData, setFormData] = useState<SettingsType>(initialSettings || {
@@ -100,6 +102,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
 
   const tabs = [
     { id: 'general', name: 'General', icon: Settings2 },
+    { id: 'kinksters', name: 'Lifestyle & Kinksters', icon: Flame },
     { id: 'policies', name: 'Bookings & Policies', icon: Clock },
     { id: 'financials', name: 'Financials', icon: Percent },
     { id: 'ai', name: 'AI Engine', icon: Bot },
@@ -199,6 +202,162 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                     />
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Admin Biometrics & Security */}
+            <div className="pt-6 border-t border-white/10">
+              <h2 className="font-serif text-xl text-white mb-4">Admin Biometrics &amp; Passkey</h2>
+              <p className="text-xs text-white/50 mb-4">
+                Enroll this device to access the Admin Command Center using FaceID, TouchID, or Windows Hello. Once enrolled, you can sign in directly from the login portal with 1-click biometrics.
+              </p>
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 sm:p-5 max-w-lg">
+                <RegisterPasskeyButton />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* LIFESTYLE & KINKSTERS SETTINGS */}
+        {activeTab === 'kinksters' && (
+          <div className="space-y-8 animate-in fade-in">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-rose-500" />
+                  <h2 className="font-serif text-xl text-white">Lifestyle Circle &amp; Entry Barrier</h2>
+                </div>
+                <p className="text-xs text-white/50 mt-1">
+                  Manage the private sanctuary social network and configure the one-time paid entry barrier for members.
+                </p>
+              </div>
+              <a
+                href="/kinksters"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg text-xs transition-colors self-start md:self-auto"
+              >
+                <span>View Member Page</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-white/60" />
+              </a>
+            </div>
+
+            {/* Main Entry Fee Card */}
+            <div className="bg-gradient-to-br from-rose-950/20 via-black to-purple-950/20 border border-rose-500/20 rounded-2xl p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <span className="text-[10px] uppercase font-mono tracking-widest text-rose-400 block mb-1">
+                    Primary Membership Barrier
+                  </span>
+                  <h3 className="text-lg font-bold text-white">One-Time Lifetime Entry Fee</h3>
+                  <p className="text-xs text-zinc-400 mt-1 max-w-xl">
+                    Every member pays this one-time fee before launching their private @alias. Setting this fee establishes an exclusive barrier that eliminates bots, casual lurkers, and non-serious tourists.
+                  </p>
+                </div>
+                <div className="px-4 py-2 bg-black/60 border border-rose-500/30 rounded-xl text-right shrink-0">
+                  <span className="text-[10px] font-mono text-zinc-400 uppercase block">Active Fee</span>
+                  <span className="text-2xl font-bold font-mono text-rose-400">
+                    {Number(formData.fee_kinkster_activation) > 0
+                      ? `₹${Number(formData.fee_kinkster_activation).toLocaleString('en-IN')}`
+                      : 'Free Entry (₹0)'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs uppercase tracking-wider text-white/70 font-semibold mb-2 block">
+                  Entry Barrier Amount (₹ INR)
+                </label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <div className="relative flex-1">
+                    <span className="absolute left-4 top-3 text-zinc-400 font-mono text-base">₹</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formData.fee_kinkster_activation ?? 0}
+                      onChange={(e) =>
+                        setFormData({ ...formData, fee_kinkster_activation: parseFloat(e.target.value) || 0 })
+                      }
+                      className="w-full bg-black/60 border border-white/15 rounded-xl pl-9 pr-4 py-3 text-white font-mono text-base focus:outline-none focus:border-rose-500 transition-colors"
+                      placeholder="e.g. 4999"
+                    />
+                  </div>
+                  {/* Preset quick buttons */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {[
+                      { label: 'Free (₹0)', val: 0 },
+                      { label: '₹1,999', val: 1999 },
+                      { label: '₹2,999', val: 2999 },
+                      { label: '₹4,999', val: 4999 },
+                      { label: '₹9,999', val: 9999 },
+                    ].map((preset) => (
+                      <button
+                        key={preset.val}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, fee_kinkster_activation: preset.val })}
+                        className={`px-3 py-2 text-xs font-mono rounded-lg border transition-all ${
+                          formData.fee_kinkster_activation === preset.val
+                            ? 'bg-rose-500/20 border-rose-500 text-rose-300 font-bold'
+                            : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[11px] text-zinc-400 mt-2">
+                  Changes take effect immediately on <span className="font-mono text-rose-300">/kinksters</span> once you click "Save Settings".
+                </p>
+              </div>
+
+              {/* Live Card Preview */}
+              <div className="pt-4 border-t border-white/10">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-zinc-400 block mb-3">
+                  Live Member Display Preview
+                </span>
+                <div className="p-4 rounded-xl bg-zinc-950/80 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-white">The Sovereign Pass</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono">
+                        Lifetime Membership
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-400">
+                      Private @alias, vetted member feed, mutual spark discovery, and secret sanctuary access.
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-lg font-bold font-mono text-rose-400">
+                      {Number(formData.fee_kinkster_activation) > 0
+                        ? `₹${Number(formData.fee_kinkster_activation).toLocaleString('en-IN')}`
+                        : 'Complimentary'}
+                    </span>
+                    <span className="block text-[10px] text-zinc-500 font-mono">One-time payment</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Vetting Criteria Notice */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-5 rounded-xl bg-white/[0.02] border border-white/10 space-y-2">
+                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold font-mono uppercase">
+                  <CheckCircle2 className="w-4 h-4" /> Discretion &amp; Identity Verification
+                </div>
+                <p className="text-xs text-white/60 leading-relaxed">
+                  Real names are never revealed publicly. Every member is verified with Aadhaar or Passport to preserve mutual safety and ensure legal hospitality compliance.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-xl bg-white/[0.02] border border-white/10 space-y-2">
+                <div className="flex items-center gap-2 text-purple-400 text-xs font-bold font-mono uppercase">
+                  <CheckCircle2 className="w-4 h-4" /> Sanctuary Stay Requirement
+                </div>
+                <p className="text-xs text-white/60 leading-relaxed">
+                  Only individuals and couples who have stayed at Nothingness can complete onboarding, maintaining an intimate, respectful circle of guests who appreciate the culture.
+                </p>
               </div>
             </div>
           </div>

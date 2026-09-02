@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import MobileNav from "@/components/admin/MobileNav";
 import { createClient } from "@/lib/supabase/server";
-import { normalizeIdentifier } from "@/lib/auth-utils";
-import { env } from "@/lib/env";
+import { isUserAdminAsync } from "@/lib/auth-utils";
 import Link from "next/link";
 import { 
   LayoutDashboard, 
@@ -24,11 +23,13 @@ export default async function AdminLayout({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const adminIdentifier = normalizeIdentifier(env.ADMIN || '');
-  const userPhone = user?.phone ? normalizeIdentifier(user.phone) : null;
-
-  if (!user || (userPhone !== adminIdentifier && !user.email?.includes('admin') && !user.email?.includes('hudav'))) {
+  if (!user) {
     redirect('/auth');
+  }
+
+  const isAdmin = await isUserAdminAsync(user);
+  if (!isAdmin) {
+    redirect('/dashboard');
   }
 
   const navItems = [

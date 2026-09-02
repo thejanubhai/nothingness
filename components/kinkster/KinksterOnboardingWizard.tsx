@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   Sparkles,
@@ -11,10 +11,10 @@ import {
   ArrowLeft,
   AtSign,
   X,
-  AlertCircle,
   Building2,
-  UploadCloud,
-  Check
+  Ticket,
+  Check,
+  CreditCard
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,17 +30,18 @@ interface KinksterOnboardingWizardProps {
   onClose: () => void;
   isIdVerified: boolean;
   isStayVerified?: boolean;
+  entryFee?: number;
   onCompleted: () => void;
   onOpenIdVerification?: () => void;
   onOpenStayVerification?: () => void;
 }
 
 const DEFAULT_KINKS: KinkOption[] = [
-  { id: 'shibari', name: 'Shibari & Rope Aesthetics', category: 'Aesthetic', intensity: 3 },
-  { id: 'dom_sub', name: 'Dominance & Submission', category: 'Dynamics', intensity: 4 },
-  { id: 'sensory', name: 'Sensory Deprivation & Play', category: 'Sensory', intensity: 3 },
-  { id: 'roleplay', name: 'Roleplay & Storytelling', category: 'Creative', intensity: 3 },
-  { id: 'aftercare', name: 'Mindfulness & Aftercare', category: 'Emotional', intensity: 5 },
+  { id: 'shibari', name: 'Rope Art & Shibari Aesthetics', category: 'Aesthetic', intensity: 3 },
+  { id: 'dom_sub', name: 'Dominance & Surrender Dynamics', category: 'Dynamics', intensity: 4 },
+  { id: 'sensory', name: 'Sensory Deprivation & Blindfolds', category: 'Sensory', intensity: 3 },
+  { id: 'roleplay', name: 'Roleplay & Atmospheric Storytelling', category: 'Creative', intensity: 3 },
+  { id: 'aftercare', name: 'Mindfulness & Grounded Aftercare', category: 'Emotional', intensity: 5 },
   { id: 'jacuzzi', name: 'Private Jacuzzi & Bath Soaks', category: 'Luxury Vibe', intensity: 4 }
 ];
 
@@ -49,6 +50,7 @@ export default function KinksterOnboardingWizard({
   onClose,
   isIdVerified,
   isStayVerified = false,
+  entryFee: propEntryFee,
   onCompleted,
   onOpenIdVerification,
   onOpenStayVerification
@@ -57,6 +59,7 @@ export default function KinksterOnboardingWizard({
   const [alias, setAlias] = useState('');
   const [bio, setBio] = useState('');
   const [kinks, setKinks] = useState<KinkOption[]>(DEFAULT_KINKS);
+  const [effectiveFee, setEffectiveFee] = useState<number>(propEntryFee ?? 0);
 
   // Step 3 Questionnaire Answers
   const [stayDynamic, setStayDynamic] = useState<'solo' | 'couple' | 'host'>('solo');
@@ -66,6 +69,19 @@ export default function KinksterOnboardingWizard({
   const [confidentialityAgreed, setConfidentialityAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (propEntryFee !== undefined && propEntryFee !== null) {
+      setEffectiveFee(propEntryFee);
+    } else {
+      fetch('/api/kinkster/info')
+        .then(r => r.json())
+        .then(data => {
+          if (data.entry_fee !== undefined) setEffectiveFee(Number(data.entry_fee));
+        })
+        .catch(() => {});
+    }
+  }, [propEntryFee]);
+
   if (!isOpen) return null;
 
   const handleKinkIntensityChange = (id: string, stars: number) => {
@@ -74,19 +90,19 @@ export default function KinksterOnboardingWizard({
 
   const handleNextStepFromStep1 = () => {
     if (!isIdVerified) {
-      toast.error('ID Verification Required (Aadhaar or Passport).');
+      toast.error('Identity Verification Required (Aadhaar or Passport).');
       if (onOpenIdVerification) onOpenIdVerification();
       return;
     }
 
     if (!isStayVerified) {
-      toast.error('Previous Stay Verification Required. Upload your Airbnb/MMT reservation or WhatsApp booking screenshot.');
+      toast.error('Previous Stay Verification Required. Link your Airbnb/MMT reservation or booking confirmation.');
       if (onOpenStayVerification) onOpenStayVerification();
       return;
     }
 
     if (!alias.trim() || alias.trim().length < 3) {
-      toast.error('Please enter a valid unique alias (at least 3 characters).');
+      toast.error('Please choose a valid unique moniker (at least 3 characters).');
       return;
     }
 
@@ -95,7 +111,7 @@ export default function KinksterOnboardingWizard({
 
   const handleFinish = async () => {
     if (!isIdVerified) {
-      toast.error('ID Verification Required before completing onboarding.');
+      toast.error('Identity Verification Required before completing onboarding.');
       if (onOpenIdVerification) onOpenIdVerification();
       return;
     }
@@ -107,12 +123,12 @@ export default function KinksterOnboardingWizard({
     }
 
     if (!alias.trim() || alias.trim().length < 3) {
-      toast.error('Please enter a valid unique alias (at least 3 characters).');
+      toast.error('Please enter a valid unique moniker (at least 3 characters).');
       return;
     }
 
     if (!confidentialityAgreed) {
-      toast.error('You must accept the Confidentiality & Mutual Privacy Agreement.');
+      toast.error('You must accept the Confidentiality & Mutual Discretion Agreement.');
       return;
     }
 
@@ -158,7 +174,7 @@ export default function KinksterOnboardingWizard({
         return;
       }
 
-      toast.success(`Welcome to Nothingness Kinksters! Profile @${data.profile?.alias || alias} is live.`);
+      toast.success(`Welcome to the Lifestyle Circle! Your moniker @${data.profile?.alias || alias} is active.`);
       onCompleted();
       onClose();
     } catch (err: any) {
@@ -178,7 +194,7 @@ export default function KinksterOnboardingWizard({
 
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full z-10 transition-colors"
+          className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full z-10 transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -190,8 +206,8 @@ export default function KinksterOnboardingWizard({
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Kinkster Profile Onboarding</h2>
-              <p className="text-xs text-zinc-400">Step {step} of 4 • Confidential Lifestyle Setup</p>
+              <h2 className="text-lg font-bold text-white tracking-tight">Lifestyle Circle Initiation</h2>
+              <p className="text-xs text-zinc-400">Step {step} of 4 • Confidential Sanctuary Setup</p>
             </div>
           </div>
 
@@ -207,7 +223,7 @@ export default function KinksterOnboardingWizard({
         {/* STEP 1: Prerequisites & Alias */}
         {step === 1 && (
           <div className="space-y-5 animate-fadeIn">
-            {/* Prerequisite Twin Checkcards */}
+            {/* Prerequisite Checkcards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Check 1: Govt ID */}
               <div className={`p-3.5 rounded-2xl border flex flex-col justify-between text-xs transition-all ${
@@ -215,18 +231,18 @@ export default function KinksterOnboardingWizard({
               }`}>
                 <div className="flex items-center gap-2 mb-1">
                   <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
-                  <span className="font-bold">Govt ID Vetting</span>
+                  <span className="font-bold">Identity Verification</span>
                 </div>
                 <p className="text-[11px] text-zinc-400 mt-1 mb-2">
-                  {isIdVerified ? '✓ Aadhaar / Passport Authenticated' : 'Aadhaar or Passport required for discretion.'}
+                  {isIdVerified ? '✓ Identity Verified (100% Private)' : 'Aadhaar or Passport required for discretion.'}
                 </p>
                 {!isIdVerified && (
                   <button
                     type="button"
                     onClick={onOpenIdVerification}
-                    className="w-full py-1.5 px-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 rounded-lg text-[11px] font-bold transition-colors text-center"
+                    className="w-full py-1.5 px-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 rounded-lg text-[11px] font-bold transition-colors text-center cursor-pointer"
                   >
-                    Upload Govt ID
+                    Verify Govt ID
                   </button>
                 )}
               </div>
@@ -237,7 +253,7 @@ export default function KinksterOnboardingWizard({
               }`}>
                 <div className="flex items-center gap-2 mb-1">
                   <Building2 className="w-4 h-4 shrink-0 text-rose-400" />
-                  <span className="font-bold">Previous Stay Proof</span>
+                  <span className="font-bold">Sanctuary Stay</span>
                 </div>
                 <p className="text-[11px] text-zinc-400 mt-1 mb-2">
                   {isStayVerified ? '✓ Verified Nothingness Guest' : '1 previous stay required (Airbnb/MMT/Chat).'}
@@ -246,9 +262,9 @@ export default function KinksterOnboardingWizard({
                   <button
                     type="button"
                     onClick={onOpenStayVerification}
-                    className="w-full py-1.5 px-2 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-200 rounded-lg text-[11px] font-bold transition-colors text-center"
+                    className="w-full py-1.5 px-2 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-200 rounded-lg text-[11px] font-bold transition-colors text-center cursor-pointer"
                   >
-                    Verify Stay (Screenshots)
+                    Link Sanctuary Stay
                   </button>
                 )}
               </div>
@@ -256,7 +272,7 @@ export default function KinksterOnboardingWizard({
 
             <div>
               <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
-                Choose Unique Alias Handle
+                Choose Your Private Moniker (@alias)
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-3 text-zinc-500">
@@ -270,7 +286,7 @@ export default function KinksterOnboardingWizard({
                   className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 text-sm font-mono"
                 />
               </div>
-              <p className="text-[11px] text-zinc-500 mt-1">Real names are NEVER exposed on social profiles.</p>
+              <p className="text-[11px] text-zinc-500 mt-1">Real names are NEVER visible to other members.</p>
             </div>
 
             <div>
@@ -279,7 +295,7 @@ export default function KinksterOnboardingWizard({
               </label>
               <textarea
                 rows={3}
-                placeholder="Share your aesthetic, luxury stay vibes, or discretion preferences..."
+                placeholder="Share your aesthetic sensibilities, favorite stay vibes, or conversation preferences..."
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 text-sm"
@@ -292,8 +308,8 @@ export default function KinksterOnboardingWizard({
         {step === 2 && (
           <div className="space-y-4 animate-fadeIn">
             <div>
-              <h3 className="text-sm font-bold text-white mb-1">Aesthetic &amp; Kink Preferences</h3>
-              <p className="text-xs text-zinc-400 mb-4">Set your preference intensity (1 to 5 Stars) for accurate Vibe Match % calculation.</p>
+              <h3 className="text-sm font-bold text-white mb-1">Aesthetic Sensibilities</h3>
+              <p className="text-xs text-zinc-400 mb-4">Set your affinity level (1 to 5 Stars) for thoughtful chemistry alignment.</p>
             </div>
 
             <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
@@ -311,7 +327,7 @@ export default function KinksterOnboardingWizard({
                         key={star}
                         type="button"
                         onClick={() => handleKinkIntensityChange(kink.id, star)}
-                        className={`p-1 transition-transform hover:scale-125 ${
+                        className={`p-1 transition-transform hover:scale-125 cursor-pointer ${
                           star <= kink.intensity ? 'text-amber-400' : 'text-zinc-700'
                         }`}
                       >
@@ -329,8 +345,8 @@ export default function KinksterOnboardingWizard({
         {step === 3 && (
           <div className="space-y-5 animate-fadeIn">
             <div>
-              <h3 className="text-sm font-bold text-white mb-1">Lifestyle &amp; Stay Questionnaire</h3>
-              <p className="text-xs text-zinc-400">Specify your travel dynamics and intentions for sanctuary matches.</p>
+              <h3 className="text-sm font-bold text-white mb-1">Travel &amp; Stay Dynamics</h3>
+              <p className="text-xs text-zinc-400">Specify your travel dynamics and primary intentions for sanctuary connections.</p>
             </div>
 
             <div>
@@ -347,7 +363,7 @@ export default function KinksterOnboardingWizard({
                     key={dyn.id}
                     type="button"
                     onClick={() => setStayDynamic(dyn.id as any)}
-                    className={`py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                    className={`py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                       stayDynamic === dyn.id
                         ? 'bg-rose-500/20 border-rose-500 text-rose-300'
                         : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
@@ -366,14 +382,14 @@ export default function KinksterOnboardingWizard({
               <div className="space-y-2">
                 {[
                   { id: 'discreet_stays', title: 'Luxury Discreet Stays', desc: 'Private stays at Nothingness properties with zero public exposure.' },
-                  { id: 'aesthetic_chemistry', title: 'Aesthetic & Kink Chemistry', desc: 'Connecting with vetted members matching your kink matrix.' },
-                  { id: 'sanctuary_co_hosting', title: 'Sanctuary Co-Hosting', desc: 'Posting & joining private co-stay invites at Nothingness listings.' }
+                  { id: 'aesthetic_chemistry', title: 'Aesthetic & Lifestyle Chemistry', desc: 'Connecting with vetted members matching your sensibilities.' },
+                  { id: 'sanctuary_co_hosting', title: 'Sanctuary Co-Hosting', desc: 'Sharing private suite bookings and exclusive soirées.' }
                 ].map((intent) => (
                   <button
                     key={intent.id}
                     type="button"
                     onClick={() => setPrimaryIntent(intent.id as any)}
-                    className={`w-full p-3 rounded-xl border text-left transition-all ${
+                    className={`w-full p-3 rounded-xl border text-left transition-all cursor-pointer ${
                       primaryIntent === intent.id
                         ? 'bg-rose-500/10 border-rose-500/50 text-white'
                         : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
@@ -388,16 +404,50 @@ export default function KinksterOnboardingWizard({
           </div>
         )}
 
-        {/* STEP 4: Confidentiality Agreement & Launch */}
+        {/* STEP 4: Lifetime Membership Pass & Confidentiality Agreement */}
         {step === 4 && (
           <div className="space-y-5 animate-fadeIn">
+            
+            {/* Membership Pass Summary Card */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-rose-500/10 to-purple-600/10 border border-amber-500/30 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Ticket className="w-5 h-5 text-amber-400" />
+                  <span className="font-bold text-white text-sm">The Sovereign Lifetime Pass</span>
+                </div>
+                <span className="text-lg font-bold font-mono text-amber-300">
+                  {effectiveFee > 0 ? `₹${effectiveFee.toLocaleString('en-IN')}` : 'Complimentary'}
+                </span>
+              </div>
+
+              <p className="text-xs text-zinc-300 leading-relaxed">
+                One-time membership entry barrier. Zero recurring subscriptions. Guarantees that every member is invested in mutual discretion and respectful sanctuary etiquette.
+              </p>
+
+              <div className="space-y-1.5 text-[11px] text-zinc-300 font-mono pt-1 border-t border-white/10">
+                <div className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Moniker: <strong className="text-rose-400">@{alias || 'alias'}</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Direct messaging unlocks solely on mutual sparks</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Invitations to private discussions &amp; midnight soirées</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Confidentiality Checkbox */}
             <div className="p-4 bg-zinc-900/80 border border-zinc-800 rounded-2xl space-y-3">
               <div className="flex items-center gap-2 text-rose-400 font-semibold text-xs uppercase tracking-wider">
                 <Lock className="w-4 h-4" />
                 Confidentiality &amp; Discretion Agreement
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
-                By completing onboarding, I agree that all profiles, media, and chats inside Nothingness Kinkster Mode are strictly confidential. I commit to zero screenshots, zero leaks, and absolute mutual consent.
+                By entering the Lifestyle Circle, I pledge that all member profiles, media, and conversations are strictly confidential. I commit to zero screenshots, zero leaks, and absolute mutual consent at all times.
               </p>
               <label className="flex items-center gap-3 pt-2 cursor-pointer">
                 <input
@@ -419,7 +469,7 @@ export default function KinksterOnboardingWizard({
           {step > 1 ? (
             <button
               onClick={() => setStep(step - 1)}
-              className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all"
+              className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" /> Back
             </button>
@@ -428,7 +478,7 @@ export default function KinksterOnboardingWizard({
           {step < 4 ? (
             <button
               onClick={step === 1 ? handleNextStepFromStep1 : () => setStep(step + 1)}
-              className="px-5 py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg transition-all"
+              className="px-5 py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg transition-all cursor-pointer"
             >
               Next Step <ArrowRight className="w-4 h-4" />
             </button>
@@ -436,9 +486,21 @@ export default function KinksterOnboardingWizard({
             <button
               onClick={handleFinish}
               disabled={loading || !confidentialityAgreed || !isIdVerified || !isStayVerified}
-              className="px-6 py-3 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-xl transition-all disabled:opacity-50"
+              className="px-6 py-3.5 bg-gradient-to-r from-rose-600 via-rose-500 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl transition-all disabled:opacity-50 cursor-pointer"
             >
-              {loading ? 'Launching...' : <><CheckCircle2 className="w-4 h-4" /> Complete Onboarding &amp; Launch Profile 🔥</>}
+              {loading ? (
+                'Processing Initiation...'
+              ) : effectiveFee > 0 ? (
+                <>
+                  <CreditCard className="w-4 h-4" />
+                  <span>Activate Pass • ₹{effectiveFee.toLocaleString('en-IN')}</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Complete Initiation &amp; Enter Circle</span>
+                </>
+              )}
             </button>
           )}
         </div>

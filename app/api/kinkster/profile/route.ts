@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getPlatformActionFees } from '@/lib/payu';
 
 export async function GET(req: NextRequest) {
   try {
@@ -112,13 +113,16 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const { fee_kinkster_activation } = await getPlatformActionFees();
+
     return NextResponse.json({
       is_id_verified: isIdVerified,
       is_stay_verified: isStayVerified,
       stay_source: staySource,
       existing_booking: existingBookingInfo,
       profile: kinksterProfile || null,
-      is_activated: kinksterProfile?.is_activated ?? false
+      is_activated: kinksterProfile?.is_activated ?? false,
+      entry_fee: fee_kinkster_activation ?? 0
     });
   } catch (err: any) {
     console.error('Kinkster profile route exception:', err);

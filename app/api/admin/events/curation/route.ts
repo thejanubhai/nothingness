@@ -1,20 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { normalizeIdentifier } from '@/lib/auth-utils';
-import { env } from '@/lib/env';
+import { isUserAdmin } from '@/lib/auth-utils';
 import { sendPushNotificationToUser } from '@/lib/webpush';
 import { checkAndPromoteWaitlistedCandidates } from '@/lib/events/ratio-balancer';
 
 async function checkAdminAuth(supabase: any) {
   const { data: { user } } = await supabase.auth.getUser();
-  const adminIdentifier = normalizeIdentifier(env.ADMIN || '');
-  const userPhone = user?.phone ? normalizeIdentifier(user.phone) : null;
-
-  if (!user || (userPhone !== adminIdentifier && !user.email?.includes('admin') && !user.email?.includes('hudav'))) {
-    return false;
-  }
-  return true;
+  return isUserAdmin(user);
 }
 
 export async function POST(req: NextRequest) {

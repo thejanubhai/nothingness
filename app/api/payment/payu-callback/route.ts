@@ -1,39 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { verifyPayUResponseHash } from '@/lib/payu';
+import { verifyPayUResponseHash, verifyPaymentWithPayUS2S } from '@/lib/payu';
 import { addDays } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+async function handlePayUCallback(req: NextRequest, isGet = false) {
   try {
-    const formData = await req.formData();
     const body: Record<string, string> = {};
-    formData.forEach((value, key) => {
-      body[key] = value.toString();
-    });
 
-    const status = (body.status || '').toLowerCase();
+    if (isGet) {
+      req.nextUrl.searchParams.forEach((value, key) => {
+        body[key] = value;
+      });
+    } else {
+      try {
+        const formData = await req.formData();
+        formData.forEach((value, key) => {
+          body[key] = value.toString();
+        });
+      } catch (_) {
+        try {
+          const json = await req.json();
+          Object.entries(json).forEach(([k, v]) => {
+            body[k] = String(v);
+          });
+        } catch (_) {}
+      }
+    }
+
+    let status = (body.status || '').toLowerCase();
     const txnid = body.txnid || '';
     const udf1 = body.udf1 || '';
     const paymentType = body.udf2 || '';
     const udf3 = body.udf3 || '';
     const udf4 = body.udf4 || '';
     const udf5 = body.udf5 || '';
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
+    const siteUrl = req.nextUrl.origin || process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
 
-    console.log(`[PayU Callback] Received callback for txnid: ${txnid}, status: ${status}, type: ${paymentType}`);
+    console.log(`[PayU Callback] Received ${isGet ? 'GET' : 'POST'} for txnid: ${txnid}, status: ${status}, type: ${paymentType}`);
 
     const isHashValid = verifyPayUResponseHash(body);
-    if (!isHashValid) {
-      console.warn('[PayU Callback] Hash verification mismatch. Inspecting parameters:', {
-        txnid,
-        status,
-        receivedHash: body.hash,
-      });
+    if (!isHashValid && txnid) {
+      console.warn('[PayU Callback] Hash check failed or missing. Verifying via PayU S2S API:', txnid);
+      // Double check directly with PayU S2S server
+      const s2sResult = await verifyPaymentWithPayUS2S(txnid);
+      if (s2sResult.success) {
+        console.log('[PayU Callback] PayU S2S confirmed payment success for txnid:', txnid);
+        status = 'success';
+      } else {
+        console.warn('[PayU Callback] S2S verify returned:', s2sResult.status);
+      }
     }
 
     const supabaseAdmin = createAdminClient();
+
+    // ------------------------------------------------------------------
+    // TEST TRANSACTION / GATEWAY ACTIVATION (₹10 TEST VERIFICATION)
+    // ------------------------------------------------------------------
+    if (paymentType === 'test_verification' || txnid.startsWith('testpay_')) {
+      if (status === 'success') {
+        const amt = body.amount || '10.00';
+        return NextResponse.redirect(`${siteUrl}/test-pay?status=success&txnid=${encodeURIComponent(txnid)}&amount=${encodeURIComponent(amt)}`, 303);
+      } else {
+        const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'Transaction failed or was cancelled.');
+        return NextResponse.redirect(`${siteUrl}/test-pay?status=failed&txnid=${encodeURIComponent(txnid)}&error=${errorMsg}`, 303);
+      }
+    }
 
     // ------------------------------------------------------------------
     // 0. ONE-TIME SANCTUARY PASS LIFETIME MEMBERSHIP
@@ -373,7 +406,15 @@ export async function POST(req: NextRequest) {
     }
   } catch (error: any) {
     console.error('[PayU Callback] Unexpected error processing callback:', error);
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
+    const siteUrl = req.nextUrl.origin || process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
     return NextResponse.redirect(`${siteUrl}/dashboard?payment=error`, 303);
   }
+}
+
+export async function POST(req: NextRequest) {
+  return handlePayUCallback(req, false);
+}
+
+export async function GET(req: NextRequest) {
+  return handlePayUCallback(req, true);
 }

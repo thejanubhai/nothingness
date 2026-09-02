@@ -23,13 +23,13 @@ export interface PayUPaymentParams {
   phone: string;
   surl: string;
   furl: string;
+  curl?: string;
   hash: string;
   udf1?: string;
   udf2?: string;
   udf3?: string;
   udf4?: string;
   udf5?: string;
-  service_provider?: string;
   address1?: string;
   city?: string;
   state?: string;
@@ -46,8 +46,9 @@ export interface CreatePaymentOptions {
   phone: string;
   surl?: string;
   furl?: string;
+  curl?: string;
   udf1?: string; // bookingId / userId / orderId
-  udf2?: string; // actionType: 'primary_stay' | 'guest_self_pay' | 'id_verification_fee' | 'kinkster_activation_fee' | 'partner_onboarding_fee'
+  udf2?: string; // actionType: 'primary_stay' | 'guest_self_pay' | 'id_verification_fee' | 'kinkster_activation_fee' | 'partner_onboarding_fee' | 'sanctuary_pass_fee' | 'event_ticket_fee'
   udf3?: string; // token / metadata / alias
   udf4?: string;
   udf5?: string;
@@ -55,42 +56,80 @@ export interface CreatePaymentOptions {
 
 // In-memory OAuth token cache
 let cachedOAuthToken: { token: string; expiresAt: number } | null = null;
+let cachedDbConfig: { key?: string; salt?: string; clientId?: string; clientSecret?: string; env?: 'TEST' | 'SANDBOX' | 'PRODUCTION'; fetchedAt: number } | null = null;
 
 /**
- * Resolve PayU configuration from environment variables with support for
- * PAYU_KEY, PayU_Key, PAYU_SALT, PayU_Salt, PAYU_CLIENT_ID, PayU_ClientID,
- * PAYU_CLIENT_SECRET, PayU_Client_Secret, and PAYU_ENV.
+ * Resolve PayU configuration from environment variables or platform settings.
  */
-export function getPayUConfig(): PayUConfig {
-  const key =
-    process.env.PAYU_KEY ||
-    process.env.PayU_Key ||
-    process.env.NEXT_PUBLIC_PAYU_KEY ||
-    process.env.NEXT_PUBLIC_PayU_Key ||
-    '';
+export function getPayUConfig(dbFallback?: { key?: string; salt?: string; clientId?: string; clientSecret?: string; env?: string }): PayUConfig {
+  // Check for Test Credentials in Vercel: payUTESTKEY / payUTESTSALT / PAYU_TEST_KEY / PAYU_TEST_SALT
+  const testKey = (
+    process.env.payUTESTKEY ||
+    process.env.PAYU_TEST_KEY ||
+    process.env.PayU_Test_Key ||
+    process.env.NEXT_PUBLIC_payUTESTKEY ||
+    ''
+  ).trim();
 
-  const salt =
-    process.env.PAYU_SALT ||
-    process.env.PayU_Salt ||
-    '';
+  const testSalt = (
+    process.env.payUTESTSALT ||
+    process.env.PAYU_TEST_SALT ||
+    process.env.PayU_Test_Salt ||
+    ''
+  ).trim();
+
+  // If user provided payUTESTKEY or payUTESTSALT in Vercel, automatically switch to TEST environment!
+  const isTestMode = Boolean(testKey || testSalt);
+
+  const key = isTestMode
+    ? testKey
+    : (
+        process.env.PAYU_KEY ||
+        process.env.PayU_Key ||
+        process.env.PAYU_MERCHANT_KEY ||
+        process.env.NEXT_PUBLIC_PAYU_KEY ||
+        process.env.NEXT_PUBLIC_PayU_Key ||
+        dbFallback?.key ||
+        cachedDbConfig?.key ||
+        ''
+      ).trim();
+
+  const salt = isTestMode
+    ? testSalt
+    : (
+        process.env.PAYU_SALT ||
+        process.env.PayU_Salt ||
+        process.env.PAYU_MERCHANT_SALT ||
+        dbFallback?.salt ||
+        cachedDbConfig?.salt ||
+        ''
+      ).trim();
 
   const clientId =
     process.env.PAYU_CLIENT_ID ||
     process.env.PayU_ClientID ||
     process.env.PayU_ClientId ||
+    dbFallback?.clientId ||
+    cachedDbConfig?.clientId ||
     '';
 
   const clientSecret =
     process.env.PAYU_CLIENT_SECRET ||
     process.env.PayU_Client_Secret ||
     process.env.PayU_ClientSecret ||
+    dbFallback?.clientSecret ||
+    cachedDbConfig?.clientSecret ||
     '';
 
-  const envRaw = (
-    process.env.PAYU_ENV ||
-    process.env.PayU_Env ||
-    (process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'TEST')
-  ).toUpperCase();
+  const envRaw = isTestMode
+    ? 'TEST'
+    : (
+        process.env.PAYU_ENV ||
+        process.env.PayU_Env ||
+        dbFallback?.env ||
+        cachedDbConfig?.env ||
+        (process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'TEST')
+      ).toUpperCase();
 
   const env: 'TEST' | 'SANDBOX' | 'PRODUCTION' =
     envRaw === 'PRODUCTION' ? 'PRODUCTION' : envRaw === 'SANDBOX' ? 'SANDBOX' : 'TEST';
@@ -113,21 +152,57 @@ export function getPayUConfig(): PayUConfig {
     ? 'https://api.payu.in'
     : 'https://test-api.payu.in';
 
-  if (!key || !salt) {
-    console.warn('[PayU] Warning: PayU_Key or PayU_Salt environment variables are not configured.');
-  }
-
   return {
     key,
     salt,
-    clientId,
-    clientSecret,
+    clientId: clientId.trim(),
+    clientSecret: clientSecret.trim(),
     env,
     paymentUrl,
     serviceUrl,
     oauthUrl,
     apiBaseUrl,
   };
+}
+
+/**
+ * Async PayU config resolver that queries platform_settings in Supabase if env vars are missing.
+ */
+export async function getPayUConfigAsync(): Promise<PayUConfig> {
+  const syncConfig = getPayUConfig();
+  if (syncConfig.key && syncConfig.salt) {
+    return syncConfig;
+  }
+
+  // Check cache (TTL 2 minutes)
+  const now = Date.now();
+  if (cachedDbConfig && cachedDbConfig.fetchedAt > now - 120000) {
+    return getPayUConfig();
+  }
+
+  try {
+    const adminSupabase = createAdminClient();
+    const { data } = await adminSupabase
+      .from('platform_settings')
+      .select('payu_key, payu_salt, payu_client_id, payu_client_secret, payu_env')
+      .maybeSingle();
+
+    if (data) {
+      cachedDbConfig = {
+        key: data.payu_key || undefined,
+        salt: data.payu_salt || undefined,
+        clientId: data.payu_client_id || undefined,
+        clientSecret: data.payu_client_secret || undefined,
+        env: data.payu_env ? (data.payu_env.toUpperCase() as any) : undefined,
+        fetchedAt: now,
+      };
+      return getPayUConfig();
+    }
+  } catch (err) {
+    console.warn('[PayU] Could not fetch DB platform_settings fallback:', err);
+  }
+
+  return syncConfig;
 }
 
 /**
@@ -236,76 +311,110 @@ export function generatePayUHash(params: {
  * Formula with additionalCharges: sha512(additionalCharges|SALT|status||||||udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key)
  * Formula standard: sha512(SALT|status||||||udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key)
  */
-export function verifyPayUResponseHash(responseParams: Record<string, any>): boolean {
+export function verifyPayUResponseHash(responseParams: Record<string, any>, saltOverride?: string): boolean {
   const config = getPayUConfig();
-  const salt = config.salt;
   const receivedHash = (responseParams.hash || responseParams.signature || '').toLowerCase();
 
-  if (!receivedHash || !salt) {
+  if (!receivedHash) {
     return false;
   }
 
-  const status = responseParams.status || '';
-  const txnid = responseParams.txnid || '';
-  const amount = responseParams.amount ? Number(responseParams.amount).toFixed(2) : '';
-  const productinfo = responseParams.productinfo || '';
-  const firstname = responseParams.firstname || '';
-  const email = responseParams.email || '';
-  const key = responseParams.key || config.key;
+  const testSalt = (
+    process.env.payUTESTSALT ||
+    process.env.PAYU_TEST_SALT ||
+    process.env.PayU_Test_Salt ||
+    ''
+  ).trim();
 
-  const udf1 = responseParams.udf1 || '';
-  const udf2 = responseParams.udf2 || '';
-  const udf3 = responseParams.udf3 || '';
-  const udf4 = responseParams.udf4 || '';
-  const udf5 = responseParams.udf5 || '';
+  const liveSalt = (
+    process.env.PAYU_SALT ||
+    process.env.PayU_Salt ||
+    process.env.PAYU_MERCHANT_SALT ||
+    ''
+  ).trim();
 
-  const additionalCharges = responseParams.additionalCharges;
+  const candidateSalts = Array.from(
+    new Set([saltOverride?.trim(), config.salt, testSalt, liveSalt].filter(Boolean) as string[])
+  );
 
-  // Calculate standard reverse hash
-  const standardSequence = [
-    salt.trim(),
-    status.trim(),
-    '', // udf10
-    '', // udf9
-    '', // udf8
-    '', // udf7
-    '', // udf6
-    udf5.trim(),
-    udf4.trim(),
-    udf3.trim(),
-    udf2.trim(),
-    udf1.trim(),
-    email.trim(),
-    firstname.trim(),
-    productinfo.trim(),
-    amount,
-    txnid.trim(),
-    key.trim(),
-  ];
-
-  let hashSequence = standardSequence;
-  if (additionalCharges) {
-    hashSequence = [Number(additionalCharges).toFixed(2), ...standardSequence];
+  if (candidateSalts.length === 0) {
+    return false;
   }
 
-  const calculatedHash = crypto
-    .createHash('sha512')
-    .update(hashSequence.join('|'))
-    .digest('hex')
-    .toLowerCase();
+  const status = (responseParams.status || '').trim();
+  const txnid = (responseParams.txnid || '').trim();
+  const rawAmount = responseParams.amount !== undefined && responseParams.amount !== null ? String(responseParams.amount).trim() : '';
+  const formattedAmount = rawAmount ? Number(rawAmount).toFixed(2) : '';
+  const productinfo = (responseParams.productinfo || '').trim();
+  const firstname = (responseParams.firstname || '').trim();
+  const email = (responseParams.email || '').trim();
+  const key = (responseParams.key || config.key || '').trim();
 
-  if (calculatedHash === receivedHash) {
-    return true;
-  }
+  const udf1 = (responseParams.udf1 || '').trim();
+  const udf2 = (responseParams.udf2 || '').trim();
+  const udf3 = (responseParams.udf3 || '').trim();
+  const udf4 = (responseParams.udf4 || '').trim();
+  const udf5 = (responseParams.udf5 || '').trim();
 
-  // Fallback check without additional charges if initial check failed
-  if (additionalCharges) {
-    const fallbackHash = crypto
-      .createHash('sha512')
-      .update(standardSequence.join('|'))
-      .digest('hex')
-      .toLowerCase();
-    if (fallbackHash === receivedHash) return true;
+  const additionalCharges = responseParams.additionalCharges ? String(responseParams.additionalCharges).trim() : undefined;
+
+  // Build candidate reverse sequences
+  // Official sequence: sha512(SALT|status||||||udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key)
+  const candidateAmounts = [rawAmount, formattedAmount].filter(Boolean);
+  const uniqueAmounts = Array.from(new Set(candidateAmounts));
+
+  for (const currentSalt of candidateSalts) {
+    for (const amt of uniqueAmounts) {
+      const standardSequence = [
+        currentSalt,
+        status,
+        '', // udf10
+        '', // udf9
+        '', // udf8
+        '', // udf7
+        '', // udf6
+        udf5,
+        udf4,
+        udf3,
+        udf2,
+        udf1,
+        email,
+        firstname,
+        productinfo,
+        amt,
+        txnid,
+        key,
+      ].join('|');
+
+      // 1. Check with additionalCharges if present
+      if (additionalCharges) {
+        const addHash = crypto
+          .createHash('sha512')
+          .update(`${additionalCharges}|${standardSequence}`)
+          .digest('hex')
+          .toLowerCase();
+        if (addHash === receivedHash) return true;
+
+        // Also try with formatted additional charges
+        const formattedAddCharges = Number(additionalCharges).toFixed(2);
+        if (formattedAddCharges !== additionalCharges) {
+          const addHashFmt = crypto
+            .createHash('sha512')
+            .update(`${formattedAddCharges}|${standardSequence}`)
+            .digest('hex')
+            .toLowerCase();
+          if (addHashFmt === receivedHash) return true;
+        }
+      }
+
+      // 2. Check standard sequence without additional charges
+      const standardHash = crypto
+        .createHash('sha512')
+        .update(standardSequence)
+        .digest('hex')
+        .toLowerCase();
+      if (standardHash === receivedHash) return true;
+    }
   }
 
   return false;
@@ -314,21 +423,30 @@ export function verifyPayUResponseHash(responseParams: Record<string, any>): boo
 /**
  * Constructs complete PayU form parameters and hashes for initiating payment.
  */
-export function createPayUPaymentRequest(options: CreatePaymentOptions): {
+export function createPayUPaymentRequest(options: CreatePaymentOptions, configOverride?: PayUConfig): {
   paymentUrl: string;
   params: PayUPaymentParams;
 } {
-  const config = getPayUConfig();
+  const config = configOverride || getPayUConfig();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
+
+  if (!config.key || !config.salt) {
+    console.warn('[PayU] Warning: Initiating payment request without configured key or salt.');
+  }
+
+  console.log(`[PayU] Initiating ${options.txnid} in ${config.env} mode (Endpoint: ${config.paymentUrl}, Key: ${config.key ? config.key.slice(0, 4) + '...' : 'none'})`);
 
   const surl = options.surl || `${siteUrl}/api/payment/payu-callback`;
   const furl = options.furl || `${siteUrl}/api/payment/payu-callback`;
+  const curl = options.curl || options.furl || `${siteUrl}/api/payment/payu-callback`;
 
   const cleanPhone = options.phone.replace(/[^0-9]/g, '');
   const customerPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : '9999999999';
   const customerEmail = options.email || 'concierge@nothingness.asia';
   const customerName = options.firstname.trim() || 'Nothingness Guest';
-  const formattedAmount = options.amount.toFixed(2);
+  const formattedAmount = typeof options.amount === 'number'
+    ? options.amount.toFixed(2)
+    : Number(options.amount).toFixed(2);
   const cleanProductInfo = options.productinfo.replace(/[^a-zA-Z0-9\s_-]/g, '').slice(0, 100) || 'Sanctuary Reservation';
 
   const hash = generatePayUHash({
@@ -356,19 +474,30 @@ export function createPayUPaymentRequest(options: CreatePaymentOptions): {
     phone: customerPhone,
     surl,
     furl,
+    curl,
     hash,
     udf1: options.udf1,
     udf2: options.udf2,
     udf3: options.udf3,
     udf4: options.udf4,
     udf5: options.udf5,
-    service_provider: 'payu_paisa',
   };
 
   return {
     paymentUrl: config.paymentUrl,
     params,
   };
+}
+
+/**
+ * Async version that ensures database platform_settings fallback is queried before generating hash.
+ */
+export async function createPayUPaymentRequestAsync(options: CreatePaymentOptions): Promise<{
+  paymentUrl: string;
+  params: PayUPaymentParams;
+}> {
+  const config = await getPayUConfigAsync();
+  return createPayUPaymentRequest(options, config);
 }
 
 /**

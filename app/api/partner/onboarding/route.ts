@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getPlatformActionFees, createPayUPaymentRequest } from '@/lib/payu';
+import { getPlatformActionFees, createPayUPaymentRequestAsync } from '@/lib/payu';
 
 export const dynamic = 'force-dynamic';
 
@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const { paymentUrl, params } = createPayUPaymentRequest({
+      const { paymentUrl, params } = await createPayUPaymentRequestAsync({
         txnid: orderId,
         amount: targetFee,
         productinfo: 'Sanctuary Partner Onboarding Setup Fee',

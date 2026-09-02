@@ -41,17 +41,65 @@ export default function LoginPage() {
     };
   }, []);
 
+  // WebOTP API: Auto-read incoming SMS on Android & Mobile Chrome
+  useEffect(() => {
+    if (step !== 'verify-phone') return;
+
+    let ac: AbortController | null = null;
+    if (typeof window !== 'undefined' && 'OTPCredential' in window) {
+      try {
+        ac = new AbortController();
+        navigator.credentials
+          .get({
+            // @ts-ignore - OTPCredential is standard in modern browsers
+            otp: { transport: ['sms'] },
+            signal: ac.signal,
+          })
+          .then((otp: any) => {
+            if (otp && otp.code) {
+              setOtpToken(otp.code);
+            }
+          })
+          .catch(() => {
+            // User dismissed or timed out
+          });
+      } catch (_) {}
+    }
+
+    return () => {
+      if (ac) ac.abort();
+    };
+  }, [step]);
+
   const getRecaptchaVerifier = () => {
     if (typeof window === 'undefined') return null;
-    if (!window.recaptchaVerifier) {
+    try {
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (_) {}
+        window.recaptchaVerifier = null;
+      }
+
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         size: 'invisible',
         callback: () => {
           // reCAPTCHA solved
         },
+        'expired-callback': () => {
+          if (window.recaptchaVerifier) {
+            try {
+              window.recaptchaVerifier.clear();
+            } catch (_) {}
+            window.recaptchaVerifier = null;
+          }
+        },
       });
+      return window.recaptchaVerifier;
+    } catch (e) {
+      console.error('[Auth] RecaptchaVerifier error:', e);
+      return null;
     }
-    return window.recaptchaVerifier;
   };
 
   const handleSendOtp = async () => {
@@ -271,6 +319,8 @@ export default function LoginPage() {
                   type="tel"
                   placeholder="+91 98765 43210"
                   value={identifier}
+                  autoComplete="tel"
+                  inputMode="tel"
                   onChange={(e) => setIdentifier(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && identifier && !loading) {
@@ -346,7 +396,12 @@ export default function LoginPage() {
                 Enter 6-Digit Verification Code
               </label>
               <input
+                id="otp-token-input"
+                name="one-time-code"
                 type="text"
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="------"
                 value={otpToken}
                 onChange={(e) => setOtpToken(e.target.value.replace(/[^0-9]/g, ''))}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getPlatformActionFees, createPayUPaymentRequest } from '@/lib/payu';
+import { getPlatformActionFees, createPayUPaymentRequestAsync } from '@/lib/payu';
 
 export async function POST(req: NextRequest) {
   try {
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        const { paymentUrl, params } = createPayUPaymentRequest({
+        const { paymentUrl, params } = await createPayUPaymentRequestAsync({
           txnid: orderId,
           amount: fee_kinkster_activation,
           productinfo: 'Kinkster Mode Lifetime Membership Fee',

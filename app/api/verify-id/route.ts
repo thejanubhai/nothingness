@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendVerificationApprovedNotification } from '@/lib/notifications/verification';
-import { getPlatformActionFees, createPayUPaymentRequest } from '@/lib/payu';
+import { getPlatformActionFees, createPayUPaymentRequestAsync } from '@/lib/payu';
 import { addDays } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
@@ -353,7 +353,7 @@ Return ONLY valid JSON (no markdown fences):
           },
         });
 
-        const { paymentUrl, params } = createPayUPaymentRequest({
+        const { paymentUrl, params } = await createPayUPaymentRequestAsync({
           txnid: orderId,
           amount: fee_id_verification,
           productinfo: 'Police Compliance Statutory ID Verification Fee',

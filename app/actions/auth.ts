@@ -123,7 +123,7 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
   }
 
   revalidatePath('/', 'layout');
-  const redirectUrl = getRedirectPath(signInData.user);
+  const redirectUrl = await getRedirectPath(signInData.user);
 
   return {
     success: true,
@@ -326,5 +326,6 @@ export async function onPasskeyLoginSuccess() {
   }
 
   revalidatePath('/', 'layout');
-  redirect(getRedirectPath(user));
+  const path = await getRedirectPath(user);
+  redirect(path);
 }

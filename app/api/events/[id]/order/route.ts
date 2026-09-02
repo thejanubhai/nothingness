@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createPayUPaymentRequest } from '@/lib/payu';
+import { createPayUPaymentRequestAsync } from '@/lib/payu';
 
 export async function POST(
   req: NextRequest,
@@ -72,7 +72,7 @@ export async function POST(
     const customerName = guestProfile?.full_name || user.user_metadata?.full_name || 'Sanctuary Member';
     const customerEmail = isSyntheticEmail ? 'hospitality@nothingness.asia' : user.email || 'hospitality@nothingness.asia';
 
-    const { paymentUrl, params: payuParams } = createPayUPaymentRequest({
+    const { paymentUrl, params: payuParams } = await createPayUPaymentRequestAsync({
       txnid,
       amount: ticketPrice,
       productinfo: `Private Hospitality Pass #${event.id.slice(0, 8)}`,

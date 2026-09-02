@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { normalizeIdentifier } from '@/lib/auth-utils';
-import { env } from '@/lib/env';
+import { isUserAdmin } from '@/lib/auth-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,16 +24,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const adminIdentifier = normalizeIdentifier(env.ADMIN || '');
-    const userPhone = user.phone ? normalizeIdentifier(user.phone) : null;
-    const isAdmin = (adminIdentifier && userPhone === adminIdentifier) || 
-                    Boolean(user.email && (user.email.includes('admin') || user.email.includes('hudav')));
-
-    if (!isAdmin) {
+    if (!user || !isUserAdmin(user)) {
       return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 });
     }
 

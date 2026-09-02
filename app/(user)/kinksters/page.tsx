@@ -48,6 +48,7 @@ function KinkstersContent() {
   const [isIdVerified, setIsIdVerified] = useState<boolean>(false);
   const [isStayVerified, setIsStayVerified] = useState<boolean>(false);
   const [userAlias, setUserAlias] = useState<string>('');
+  const [entryFee, setEntryFee] = useState<number>(0);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeView, setActiveView] = useState<'feed' | 'manifesto'>('feed');
@@ -72,6 +73,13 @@ function KinkstersContent() {
       if (profileRes.status === 401) {
         setIsLoggedIn(false);
         setIsActivated(false);
+        // Fetch public info for live entry fee
+        fetch('/api/kinkster/info')
+          .then(r => r.json())
+          .then(inf => {
+            if (inf?.entry_fee !== undefined) setEntryFee(Number(inf.entry_fee));
+          })
+          .catch(() => {});
         setLoading(false);
         return;
       }
@@ -81,6 +89,9 @@ function KinkstersContent() {
       setIsIdVerified(profileData.is_id_verified ?? false);
       setIsStayVerified(profileData.is_stay_verified ?? false);
       setIsActivated(profileData.is_activated ?? false);
+      if (profileData.entry_fee !== undefined) {
+        setEntryFee(Number(profileData.entry_fee));
+      }
       if (profileData.profile?.alias) {
         setUserAlias(profileData.profile.alias);
       }
@@ -119,7 +130,7 @@ function KinkstersContent() {
       {/* ------------------------------------------------------------- */}
       {!isActivated && !loading && (
         <>
-          {/* Level 2 Fast-Track Onboarding Banner for Authenticated Guests */}
+          {/* VIP Guest Invitation Banner for Authenticated Guests */}
           {isLoggedIn && (
             <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 pb-2">
               <div className="bg-gradient-to-br from-zinc-950 via-zinc-900 to-rose-950/30 border border-rose-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
@@ -130,13 +141,13 @@ function KinkstersContent() {
                     <div>
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[10px] font-mono uppercase tracking-widest mb-2">
                         <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-                        <span>Level 2 Ecosystem • Fast-Track Member Activation</span>
+                        <span>Sanctuary Guest Invitation • Claim Your Private Moniker</span>
                       </div>
                       <h2 className="text-xl sm:text-2xl font-serif text-white font-bold">
                         Welcome to the <span className="text-rose-400">Lifestyle Circle</span>
                       </h2>
-                      <p className="text-xs text-zinc-400 mt-1 max-w-xl">
-                        As a verified sanctuary guest, you can activate your private @alias to connect anonymously with vetted members and unlock access to discreet soirées.
+                      <p className="text-xs text-zinc-400 mt-1 max-w-xl leading-relaxed">
+                        As a verified sanctuary guest, you are invited to activate your private @alias, connect with vetted members under absolute confidentiality, and unlock secret soirées.
                       </p>
                     </div>
 
@@ -145,7 +156,7 @@ function KinkstersContent() {
                       className="shrink-0 px-5 py-3 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
                     >
                       <Flame className="w-4 h-4" />
-                      <span>Start Onboarding</span>
+                      <span>Activate Lifetime Pass {entryFee > 0 ? `• ₹${entryFee.toLocaleString('en-IN')}` : ''}</span>
                     </button>
                   </div>
 
@@ -166,11 +177,11 @@ function KinkstersContent() {
                         )}
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-white">Govt ID Vetting</p>
+                        <p className="text-xs font-bold text-white">Private Identity Check</p>
                         <p className="text-[10px] text-zinc-400 mt-0.5 leading-relaxed">
                           {isIdVerified
-                            ? 'Aadhaar / Passport verified on file (180-Day Pass).'
-                            : 'Upload 1-click photo of your Aadhaar or Passport.'}
+                            ? 'Aadhaar / Passport verified on file (100% private).'
+                            : 'Submit 1-click photo of your Aadhaar or Passport.'}
                         </p>
                       </div>
                       {!isIdVerified && (
@@ -215,25 +226,25 @@ function KinkstersContent() {
                       )}
                     </div>
 
-                    {/* Step 3: @Alias & Activation */}
+                    {/* Step 3: @Alias & Lifetime Pass */}
                     <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">Step 3</span>
                         <span className="px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[10px] font-mono">
-                          Lifetime Pass
+                          {entryFee > 0 ? `₹${entryFee.toLocaleString('en-IN')}` : 'Lifetime Pass'}
                         </span>
                       </div>
                       <div>
                         <p className="text-xs font-bold text-white">Choose Private @Alias</p>
                         <p className="text-[10px] text-zinc-400 mt-0.5 leading-relaxed">
-                          Set your anonymous handle & activate lifetime vault access.
+                          Set your anonymous handle &amp; activate lifetime membership.
                         </p>
                       </div>
                       <button
                         onClick={() => setShowActivationModal(true)}
                         className="w-full py-2 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white text-[11px] font-bold rounded-lg transition-all shadow-md cursor-pointer"
                       >
-                        Choose @Alias & Activate →
+                        Choose @Alias &amp; Activate →
                       </button>
                     </div>
                   </div>
@@ -246,6 +257,7 @@ function KinkstersContent() {
             isActivated={isActivated}
             isIdVerified={isIdVerified}
             isStayVerified={isStayVerified}
+            entryFee={entryFee}
             onOpenActivation={() => {
               if (!isLoggedIn) {
                 handleRequireAuth('activate your Lifestyle Membership');
@@ -449,6 +461,7 @@ function KinkstersContent() {
               isActivated={isActivated}
               isIdVerified={isIdVerified}
               isStayVerified={isStayVerified}
+              entryFee={entryFee}
               onOpenActivation={() => setShowActivationModal(true)}
               onOpenIdVerification={() => setShowIdModal(true)}
               onOpenStayVerification={() => setShowStayModal(true)}
@@ -472,6 +485,7 @@ function KinkstersContent() {
         onClose={() => setShowActivationModal(false)}
         isIdVerified={isIdVerified}
         isStayVerified={isStayVerified}
+        entryFee={entryFee}
         onCompleted={fetchProfileAndPosts}
         onOpenIdVerification={() => {
           setShowActivationModal(false);

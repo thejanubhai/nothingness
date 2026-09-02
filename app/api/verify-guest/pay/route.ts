@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createPayUPaymentRequest } from '@/lib/payu';
+import { createPayUPaymentRequestAsync } from '@/lib/payu';
 
 export async function POST(req: Request) {
   try {
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const customerPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : "9999999999";
 
     // Generate PayU payment parameters
-    const { paymentUrl, params } = createPayUPaymentRequest({
+    const { paymentUrl, params } = await createPayUPaymentRequestAsync({
       txnid: orderId,
       amount: paymentAmount,
       productinfo: 'Sanctuary Stay Fee - Additional Guest',
