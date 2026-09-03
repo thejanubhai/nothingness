@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import UserDashboardClient from '@/components/dashboard/UserDashboardClient';
-import { normalizeIdentifier } from '@/lib/auth-utils';
+import { normalizeIdentifier, isUserAdminAsync } from '@/lib/auth-utils';
 import { env } from '@/lib/env';
 
 export const metadata: Metadata = {
@@ -20,6 +20,12 @@ export default async function DashboardOverview() {
     redirect('/auth?redirect=/dashboard');
   }
 
+  // Security Isolation: If admin lands on /dashboard, redirect them directly to /admin command center
+  const isAdmin = await isUserAdminAsync(user);
+  if (isAdmin) {
+    redirect('/admin');
+  }
+
   // Handle synthetic bridge emails
   const isSyntheticEmail = Boolean(user.email && user.email.includes('@auth.nothingness'));
   const effectivePhone = user.phone
@@ -27,16 +33,6 @@ export default async function DashboardOverview() {
     : isSyntheticEmail && user.email
     ? user.email.split('@')[0].replace(/[^0-9+]/g, '')
     : null;
-
-  // Security Isolation: If admin lands on /dashboard, redirect them directly to /admin command center
-  const adminIdentifier = env.ADMIN ? normalizeIdentifier(env.ADMIN) : null;
-  const userPhone = effectivePhone ? normalizeIdentifier(effectivePhone) : null;
-  const isAdmin = (adminIdentifier && userPhone === adminIdentifier) || 
-                  Boolean(user.email && (user.email.includes('admin') || user.email.includes('hudav')));
-
-  if (isAdmin) {
-    redirect('/admin');
-  }
 
   // 1. Fetch upcoming bookings
   const today = new Date().toISOString().split('T')[0];

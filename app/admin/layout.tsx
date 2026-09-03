@@ -14,7 +14,13 @@ import {
   LogOut,
   BookOpen,
   Clock,
-  ShieldCheck
+  ShieldCheck,
+  MessageSquare,
+  Bell,
+  FileText,
+  Ticket,
+  ScrollText,
+  PenTool
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 
@@ -27,7 +33,7 @@ export default async function AdminLayout({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/auth');
+    redirect('/auth?redirect=/admin');
   }
 
   const isAdmin = await isUserAdminAsync(user);
@@ -60,6 +66,7 @@ export default async function AdminLayout({
       title: 'Lifestyle & Gatherings',
       items: [
         { name: 'Gatherings & Munches', href: '/admin/events', icon: Sparkles, badge: 'Gatekeeper' },
+        { name: 'Sanctuary Pass', href: '/admin/sanctuary-pass', icon: Ticket },
         { name: 'Guest CRM & Police', href: '/admin/guests', icon: Users, badge: 'ID Vetting' },
       ],
     },
@@ -72,10 +79,25 @@ export default async function AdminLayout({
       ],
     },
     {
+      title: 'Communications',
+      items: [
+        { name: 'Inbox & Flows', href: '/admin/inbox', icon: MessageSquare, badge: 'Omnichannel' },
+        { name: 'Contact Inquiries', href: '/admin/messages', icon: FileText },
+        { name: 'Push Broadcasts', href: '/admin/notifications', icon: Bell },
+      ],
+    },
+    {
+      title: 'Content & Brand',
+      items: [
+        { name: 'Homepage CMS', href: '/admin/cms', icon: PenTool },
+        { name: 'Editorial Journal', href: '/admin/journal', icon: BookOpen },
+      ],
+    },
+    {
       title: 'Finance & System',
       items: [
         { name: 'Financials & Ledger', href: '/admin/financials', icon: CreditCard },
-        { name: 'Editorial Journal', href: '/admin/journal', icon: BookOpen },
+        { name: 'Audit Log', href: '/admin/audit', icon: ScrollText },
         { name: 'Settings & Fees', href: '/admin/settings', icon: Settings },
       ],
     },

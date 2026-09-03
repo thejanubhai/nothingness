@@ -1,5 +1,5 @@
 // Service Worker for Nothingness PWA
-const CACHE_NAME = 'nothingness-pwa-v2';
+const CACHE_NAME = 'nothingness-pwa-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -34,22 +34,50 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Do not intercept or cache POST/PUT/DELETE, auth/admin/api requests
+  // 1. Never intercept non-GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // 2. Never intercept Next.js App Router RSC streams or internal data fetches
+  // Caching or returning HTML fallbacks for RSC requests breaks the router and causes infinite reload loops
   if (
-    event.request.method !== 'GET' ||
-    url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/admin') ||
-    url.pathname.startsWith('/auth')
+    url.searchParams.has('_rsc') ||
+    url.searchParams.has('__rsc') ||
+    event.request.headers.get('RSC') === '1' ||
+    event.request.headers.get('Next-Router-State-Tree') ||
+    event.request.headers.get('Next-Url') ||
+    url.pathname.startsWith('/_next/data/')
   ) {
     return;
   }
 
-  // Static images and fonts: Cache First / Stale While Revalidate
+  // 3. Never intercept or cache authenticated, dynamic, or transactional paths
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/admin') ||
+    url.pathname.startsWith('/auth') ||
+    url.pathname.startsWith('/dashboard') ||
+    url.pathname.startsWith('/sanctuary-pass') ||
+    url.pathname.startsWith('/booking') ||
+    url.pathname.startsWith('/verify-guest') ||
+    url.pathname.startsWith('/verify-id') ||
+    url.pathname.startsWith('/kinksters') ||
+    url.pathname.startsWith('/partner')
+  ) {
+    return;
+  }
+
+  // 4. Static media, fonts, and static bundles: Stale While Revalidate / Cache First
   if (
     url.pathname.startsWith('/images/') ||
     url.pathname.startsWith('/_next/static/') ||
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.jpg') ||
+    url.pathname.endsWith('.jpeg') ||
+    url.pathname.endsWith('.webp') ||
+    url.pathname.endsWith('.svg') ||
+    url.pathname.endsWith('.ico') ||
     url.pathname.endsWith('.woff2')
   ) {
     event.respondWith(
@@ -72,24 +100,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML Pages: Network First with Cache Fallback
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response && response.status === 200) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return response;
+  // 5. Root page navigation fallback (Only for standalone browser navigation, never for subrequests)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match('/');
       })
-      .catch(() => {
-        return caches.match(event.request).then((cached) => {
-          return cached || caches.match('/');
-        });
-      })
-  );
+    );
+  }
 });
 
 // --- WebPush Notifications Handler ---

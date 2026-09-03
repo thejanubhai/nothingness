@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { ShieldCheck, Key, Sparkles, Building2, Smartphone, Calendar, Award, Flame } from 'lucide-react';
 import { Metadata } from 'next';
 import JsonLd, { generateWebSiteSchema } from '@/components/JsonLd';
+import { createClient } from '@/lib/supabase/server';
 
-export const revalidate = 3600; // Cache for 1 hour
+export const revalidate = 60; // Revalidate every 60s for fresh CMS edits
 
 export const metadata: Metadata = {
   title: "Cinematic Private Stays & Luxury Sanctuaries in Delhi NCR | Nothingness",
@@ -22,7 +23,58 @@ export const metadata: Metadata = {
   },
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+  const { data: cmsBlocks } = await supabase
+    .from('cms_content_blocks')
+    .select('block_key, title, subtitle, body, is_active');
+
+  const getBlock = (key: string, defaults: { title: string; subtitle?: string; body?: string }) => {
+    const found = cmsBlocks?.find((b: any) => b.block_key === key && b.is_active !== false);
+    return {
+      title: found?.title ?? defaults.title,
+      subtitle: found?.subtitle ?? defaults.subtitle ?? '',
+      body: found?.body ?? defaults.body ?? '',
+    };
+  };
+
+  const hero = getBlock('homepage_hero', {
+    title: 'Cinematic Private Stays.',
+    subtitle: 'Ultra-Discreet Hospitality.',
+    body: 'High-design private sanctuaries featuring total acoustic privacy, Jacuzzi bath soaks, aesthetic interiors, and 100% ID-vetted discretion.'
+  });
+
+  const badge = getBlock('homepage_badge', {
+    title: "India's Premier Luxury Private Sanctuaries"
+  });
+
+  const trust1 = getBlock('trust_card_1', {
+    title: 'Discreet Private Check-In',
+    body: 'Arrive peacefully with zero judgement or awkward front-desk questioning. Confidential arrival directions and dedicated hospitality support prepared prior to your stay.'
+  });
+
+  const trust2 = getBlock('trust_card_2', {
+    title: '100% Private & Verified',
+    body: 'Fast, discreet online verification before arrival. Your legal identity remains strictly private and protected, guaranteeing complete peace of mind and hassle-free stays.'
+  });
+
+  const trust3 = getBlock('trust_card_3', {
+    title: 'Aesthetic Cinematic Suites',
+    body: 'Deep soaking jacuzzi tubs, warm ambient candle lighting, acoustic privacy, and custom sensory amenities designed for ultimate relaxation and connection.'
+  });
+
+  const lifestyle = getBlock('lifestyle_showcase', {
+    title: 'Where High Discretion Meets Raw Chemistry.',
+    subtitle: 'The Lifestyle Circle • Private Monikers',
+    body: 'An intimate, confidential society reserved exclusively for verified guests of Nothingness. Connect under complete anonymity with private @aliases, explore deep aesthetic chemistry, and unlock private sanctuary suites. Protected by a one-time lifetime membership entry barrier.'
+  });
+
+  const sanctuary = getBlock('sanctuary_pass_showcase', {
+    title: 'Nothingness Sanctuary Pass',
+    subtitle: 'Exclusive Members Access',
+    body: 'Unlock private discussion salons, midnight noir masquerades, and strictly vetted intimate soirées across official Nothingness sanctuaries. Ratio-balanced, consent-governed, and protected by tamper-proof camera bans.'
+  });
+
   return (
     <div className="min-h-screen bg-black text-white selection:bg-rose-500/30">
       <JsonLd data={generateWebSiteSchema()} id="home-website-schema" />
@@ -33,18 +85,18 @@ export default function HomePage() {
 
         <div className="relative z-10 space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-zinc-900/80 border border-zinc-800 text-rose-400 text-xs font-mono font-bold rounded-full shadow-lg">
-            <Sparkles className="w-3.5 h-3.5" /> India's Premier Luxury Private Sanctuaries
+            <Sparkles className="w-3.5 h-3.5" /> {badge.title}
           </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold font-serif tracking-tight text-white max-w-4xl mx-auto leading-tight">
-            Cinematic Private Stays. <br />
+            {hero.title} <br />
             <span className="bg-gradient-to-r from-rose-400 via-purple-400 to-amber-300 bg-clip-text text-transparent">
-              Ultra-Discreet Hospitality.
+              {hero.subtitle}
             </span>
           </h1>
 
           <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            High-design private sanctuaries featuring total acoustic privacy, Jacuzzi bath soaks, aesthetic interiors, and 100% ID-vetted discretion.
+            {hero.body}
           </p>
         </div>
       </section>
@@ -62,9 +114,9 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
               <Key className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-white font-serif">Discreet Private Check-In</h3>
+            <h3 className="text-base font-bold text-white font-serif">{trust1.title}</h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Arrive peacefully with zero judgement or awkward front-desk questioning. Confidential arrival directions and dedicated hospitality support prepared prior to your stay.
+              {trust1.body}
             </p>
           </div>
 
@@ -72,9 +124,9 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-white font-serif">100% Private &amp; Verified</h3>
+            <h3 className="text-base font-bold text-white font-serif">{trust2.title}</h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Fast, discreet online verification before arrival. Your legal identity remains strictly private and protected, guaranteeing complete peace of mind and hassle-free stays.
+              {trust2.body}
             </p>
           </div>
 
@@ -82,9 +134,9 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <Award className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-white font-serif">Aesthetic Cinematic Suites</h3>
+            <h3 className="text-base font-bold text-white font-serif">{trust3.title}</h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Deep soaking jacuzzi tubs, warm ambient candle lighting, acoustic privacy, and custom sensory amenities designed for ultimate relaxation and connection.
+              {trust3.body}
             </p>
           </div>
 
@@ -99,18 +151,15 @@ export default function HomePage() {
           <div className="relative z-10 max-w-3xl space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px] font-mono font-bold uppercase tracking-wider">
               <Flame className="w-3.5 h-3.5" />
-              <span>The Lifestyle Circle • Private Monikers</span>
+              <span>{lifestyle.subtitle}</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-serif tracking-tight text-white leading-tight">
-              Where High Discretion <br />
-              <span className="bg-gradient-to-r from-rose-400 via-purple-300 to-amber-200 bg-clip-text text-transparent italic font-serif">
-                Meets Raw Chemistry.
-              </span>
+              {lifestyle.title}
             </h2>
 
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              An intimate, confidential society reserved exclusively for verified guests of Nothingness. Connect under complete anonymity with private @aliases, explore deep aesthetic chemistry, and unlock private sanctuary suites. Protected by a one-time lifetime membership entry barrier.
+              {lifestyle.body}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
@@ -149,15 +198,15 @@ export default function HomePage() {
           <div className="relative z-10 max-w-3xl space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-mono font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Exclusive Members Access</span>
+              <span>{sanctuary.subtitle}</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-serif tracking-tight text-white leading-tight">
-              Nothingness <span className="bg-gradient-to-r from-amber-400 via-rose-400 to-purple-400 bg-clip-text text-transparent">Sanctuary Pass</span>
+              {sanctuary.title}
             </h2>
 
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              Unlock private discussion salons, midnight noir masquerades, and strictly vetted intimate soirées across official Nothingness sanctuaries. Ratio-balanced, consent-governed, and protected by tamper-proof camera bans.
+              {sanctuary.body}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">

@@ -25,6 +25,7 @@ import { usePathname } from "next/navigation";
 import Magnetic from "./Magnetic";
 import { createClient } from "@/lib/supabase/client";
 import { signOut } from "@/app/actions/auth";
+import { isUserAdmin } from "@/lib/auth-utils";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -38,20 +39,37 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Sync auth state across navigations, tab focus, and Supabase auth events
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
+    let isMounted = true;
+
+    const checkUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (isMounted) {
+          setUser(user || null);
+        }
+      } catch (_) {}
+    };
+
+    checkUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
+      if (isMounted) {
+        setUser(session?.user || null);
+      }
     });
 
+    const onFocus = () => checkUser();
+    window.addEventListener('focus', onFocus);
+
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
+      window.removeEventListener('focus', onFocus);
     };
-  }, []);
+  }, [pathname]);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -65,6 +83,7 @@ export default function Header() {
 
   // Format phone or email for display
   const userPhone = user?.phone || (user?.email?.includes('@auth.nothingness') ? `+${user.email.split('@')[0]}` : user?.email || '');
+  const isAdmin = isUserAdmin(user);
 
   return (
     <>
@@ -116,18 +135,19 @@ export default function Header() {
             <Magnetic>
               {user ? (
                 <Link
-                  href="/dashboard"
+                  href={isAdmin ? "/admin" : "/dashboard"}
                   className="text-[12px] font-bold tracking-[0.15em] uppercase text-black bg-accent-gold hover:bg-white transition-all duration-300 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(212,175,55,0.3)] flex items-center gap-2"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>Dashboard</span>
+                  <span>{isAdmin ? "Command Center" : "Dashboard"}</span>
                 </Link>
               ) : (
                 <Link
                   href="/auth"
-                  className="text-[12px] font-medium tracking-[0.2em] uppercase text-accent-gold/80 hover:text-accent-gold transition-colors duration-300 border border-accent-gold/30 px-4 py-2 rounded-full hover:bg-accent-gold/10"
+                  className="text-[12px] font-bold tracking-[0.15em] uppercase text-black bg-accent-gold hover:bg-white transition-all duration-300 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(212,175,55,0.3)] flex items-center gap-2"
                 >
-                  Guest Portal
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Guest Portal</span>
                 </Link>
               )}
             </Magnetic>
@@ -137,11 +157,11 @@ export default function Header() {
           <div className="flex md:hidden items-center gap-2">
             {user ? (
               <Link
-                href="/dashboard"
+                href={isAdmin ? "/admin" : "/dashboard"}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-gold/15 border border-accent-gold/30 text-accent-gold text-[11px] font-mono font-bold"
               >
                 <User className="w-3.5 h-3.5" />
-                <span>Portal</span>
+                <span>{isAdmin ? "Admin" : "Portal"}</span>
               </Link>
             ) : (
               <Link
@@ -215,12 +235,12 @@ export default function Header() {
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <Link
-                      href="/dashboard"
+                      href={isAdmin ? "/admin" : "/dashboard"}
                       onClick={() => setMobileOpen(false)}
                       className="py-2.5 px-3 bg-accent-gold hover:bg-white text-black font-bold text-xs uppercase tracking-wider rounded-xl text-center flex items-center justify-center gap-1.5 shadow-md transition-all"
                     >
                       <LayoutDashboard className="w-3.5 h-3.5" />
-                      <span>Dashboard</span>
+                      <span>{isAdmin ? "Admin Center" : "Dashboard"}</span>
                     </Link>
 
                     <form action={signOut} className="w-full">

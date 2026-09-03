@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { isUserAdmin } from '@/lib/auth-utils';
+import { isUserAdminAsync } from '@/lib/auth-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,12 +24,46 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user || !isUserAdmin(user)) {
+    if (!user || !(await isUserAdminAsync(user))) {
       return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 });
     }
 
     const body = await req.json();
-    const { id, ...updateData } = body;
+    const { id, updated_at, updated_by, ...rawUpdateData } = body;
+
+    const allowedColumns = [
+      'maintenance_mode',
+      'admin_contact_email',
+      'default_check_in_time',
+      'default_check_out_time',
+      'min_advance_booking_days',
+      'max_advance_booking_days',
+      'cancellation_policy_text',
+      'base_tax_rate_percent',
+      'default_security_deposit',
+      'ai_system_prompt',
+      'frontend_banner_text',
+      'frontend_banner_active',
+      'whatsapp_api_key',
+      'resend_api_key',
+      'gemini_api_key',
+      'nvidia_api_key',
+      'fee_id_verification',
+      'fee_kinkster_activation',
+      'fee_partner_onboarding',
+      'payu_key',
+      'payu_salt',
+      'payu_client_id',
+      'payu_client_secret',
+      'payu_env',
+    ];
+
+    const cleanUpdateData: Record<string, any> = {};
+    for (const key of allowedColumns) {
+      if (key in rawUpdateData) {
+        cleanUpdateData[key] = rawUpdateData[key];
+      }
+    }
 
     // Check if platform_settings record already exists
     const { data: existing } = await supabase
@@ -42,7 +76,7 @@ export async function POST(req: NextRequest) {
       const { data, error } = await supabase
         .from('platform_settings')
         .update({
-          ...updateData,
+          ...cleanUpdateData,
           updated_at: new Date().toISOString(),
           updated_by: user.id
         })
@@ -56,7 +90,7 @@ export async function POST(req: NextRequest) {
       const { data, error } = await supabase
         .from('platform_settings')
         .insert({
-          ...updateData,
+          ...cleanUpdateData,
           updated_by: user.id
         })
         .select()

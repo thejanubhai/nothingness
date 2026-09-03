@@ -229,9 +229,9 @@ export default async function AdminInbox({
                     <p className="text-xs text-white/50 mt-1">Connect your official WhatsApp API number.</p>
                   </div>
                 </div>
-                <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-sm rounded-lg border border-white/10 transition-colors">
-                  Connect
-                </button>
+                <Link href="/admin/whatsapp-connect" className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-sm rounded-lg border border-white/10 transition-colors">
+                  Connect Device
+                </Link>
               </div>
 
               {/* Instagram Connection */}

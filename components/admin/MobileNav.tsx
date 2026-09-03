@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation';
 import { 
   Menu, X, LayoutDashboard, Building2, CalendarDays, 
   Users, CreditCard, Sparkles, Settings, LogOut, ChevronRight,
-  BookOpen, Clock, ShieldCheck
+  BookOpen, Clock, ShieldCheck, MessageSquare, Bell, FileText,
+  Ticket, ScrollText, PenTool
 } from 'lucide-react';
 import { signOut } from '@/app/actions/auth';
 
@@ -35,6 +36,7 @@ const navSections: NavSection[] = [
     title: 'Lifestyle & Gatherings',
     items: [
       { name: 'Gatherings & Munches', href: '/admin/events', icon: Sparkles, badge: 'Gatekeeper' },
+      { name: 'Sanctuary Pass', href: '/admin/sanctuary-pass', icon: Ticket },
       { name: 'Guest CRM & Police', href: '/admin/guests', icon: Users, badge: 'ID Vetting' },
     ],
   },
@@ -47,10 +49,25 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    title: 'Communications',
+    items: [
+      { name: 'Inbox & Flows', href: '/admin/inbox', icon: MessageSquare, badge: 'Omnichannel' },
+      { name: 'Contact Inquiries', href: '/admin/messages', icon: FileText },
+      { name: 'Push Broadcasts', href: '/admin/notifications', icon: Bell },
+    ],
+  },
+  {
+    title: 'Content & Brand',
+    items: [
+      { name: 'Homepage CMS', href: '/admin/cms', icon: PenTool },
+      { name: 'Editorial Journal', href: '/admin/journal', icon: BookOpen },
+    ],
+  },
+  {
     title: 'Finance & System',
     items: [
       { name: 'Financials & Ledger', href: '/admin/financials', icon: CreditCard },
-      { name: 'Editorial Journal', href: '/admin/journal', icon: BookOpen },
+      { name: 'Audit Log', href: '/admin/audit', icon: ScrollText },
       { name: 'Settings & Fees', href: '/admin/settings', icon: Settings },
     ],
   },

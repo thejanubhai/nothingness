@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { 
-  Settings2, Key, Shield, Save, Clock, Percent, 
-  Bot, Megaphone, Smartphone, CreditCard, Mail, KeyRound,
-  Flame, Sparkles, ArrowUpRight, CheckCircle2
+  Settings2, Save, Clock, Percent, 
+  Bot, Megaphone, Flame, ArrowUpRight, CheckCircle2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -25,24 +24,15 @@ type SettingsType = {
   ai_system_prompt: string | null;
   frontend_banner_text: string | null;
   frontend_banner_active: boolean;
-  whatsapp_api_key: string | null;
-  payu_key?: string | null;
-  payu_salt?: string | null;
-  payu_client_id?: string | null;
-  payu_client_secret?: string | null;
-  payu_env?: string | null;
   fee_id_verification?: number;
   fee_kinkster_activation?: number;
   fee_partner_onboarding?: number;
-  resend_api_key: string | null;
-  gemini_api_key: string | null;
-  nvidia_api_key?: string | null;
 };
 
 export default function SettingsClient({ initialSettings }: { initialSettings: SettingsType | null }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'kinksters' | 'policies' | 'financials' | 'ai' | 'api'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'kinksters' | 'policies' | 'financials' | 'ai'>('general');
   
   // Initialize with empty/default values if null
   const [formData, setFormData] = useState<SettingsType>(initialSettings || {
@@ -62,15 +52,13 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
     ai_system_prompt: '',
     frontend_banner_text: '',
     frontend_banner_active: false,
-    whatsapp_api_key: '',
-    payu_key: '',
-    payu_salt: '',
-    payu_client_id: '',
-    payu_client_secret: '',
-    payu_env: 'PRODUCTION',
-    resend_api_key: '',
-    gemini_api_key: '',
   });
+
+  const [savedSnapshot, setSavedSnapshot] = useState<string>(
+    JSON.stringify(initialSettings || {})
+  );
+
+  const hasChanges = JSON.stringify(formData) !== savedSnapshot;
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -89,6 +77,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
       if (data.settings?.id) {
         setFormData(prev => ({ ...prev, id: data.settings.id }));
       }
+      setSavedSnapshot(JSON.stringify(formData));
       
       toast.success('Settings updated successfully in Supabase!');
       router.refresh();
@@ -106,23 +95,37 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
     { id: 'policies', name: 'Bookings & Policies', icon: Clock },
     { id: 'financials', name: 'Financials', icon: Percent },
     { id: 'ai', name: 'AI Engine', icon: Bot },
-    { id: 'api', name: 'API Keys', icon: Key },
   ] as const;
 
   return (
     <div className="space-y-8 max-w-5xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="font-serif text-3xl md:text-4xl mb-2 text-white">Platform Settings</h1>
-          <p className="text-white/50 text-sm tracking-wide">Configure integrations, policies, and global preferences.</p>
+          <div className="flex items-center gap-3">
+            <h1 className="font-serif text-3xl md:text-4xl text-white">Platform Settings</h1>
+            {hasChanges ? (
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-[10px] font-bold animate-pulse">
+                ● Unsaved Changes
+              </span>
+            ) : (
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[10px] flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" /> Synced with Database
+              </span>
+            )}
+          </div>
+          <p className="text-white/50 text-sm tracking-wide mt-1">Configure integrations, policies, and global preferences.</p>
         </div>
         <button 
           onClick={handleSave}
           disabled={loading}
-          className="flex items-center justify-center gap-2 bg-accent-gold text-black px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-accent-gold/90 transition-colors disabled:opacity-50"
+          className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-xl cursor-pointer disabled:opacity-50 ${
+            hasChanges
+              ? 'bg-accent-gold hover:bg-white text-black ring-2 ring-accent-gold/50'
+              : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
+          }`}
         >
           <Save className="w-4 h-4" />
-          {loading ? 'Saving...' : 'Save Settings'}
+          {loading ? 'Saving...' : hasChanges ? 'Save Changes' : 'Save Settings'}
         </button>
       </div>
 
@@ -480,16 +483,26 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                   <p className="text-[11px] text-white/40 leading-tight">One-time fee for 180-day Police Compliance ID pass verification. Set ₹0 for Free.</p>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-accent-gold font-bold block">Kinkster Lifetime Fee (₹)</label>
-                  <input 
-                    type="number" 
-                    min={0}
-                    value={formData.fee_kinkster_activation ?? 0}
-                    onChange={(e) => setFormData({...formData, fee_kinkster_activation: parseFloat(e.target.value) || 0})}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
-                  />
-                  <p className="text-[11px] text-white/40 leading-tight">One-time membership onboarding fee to enter Kinkster network. Set ₹0 for Free.</p>
+                <div className="bg-rose-950/20 border border-rose-500/20 p-5 rounded-2xl flex flex-col justify-between space-y-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-rose-400 font-bold block">Kinkster Lifetime Pass</span>
+                    <p className="text-2xl font-bold font-mono text-white mt-1">
+                      {Number(formData.fee_kinkster_activation) > 0
+                        ? `₹${Number(formData.fee_kinkster_activation).toLocaleString('en-IN')}`
+                        : 'Free Entry (₹0)'}
+                    </p>
+                    <p className="text-[11px] text-zinc-400 leading-tight mt-1">
+                      Configured in the dedicated Lifestyle &amp; Kinksters studio with presets &amp; live member preview.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('kinksters')}
+                    className="inline-flex items-center gap-1.5 text-xs text-rose-400 hover:text-rose-300 font-mono transition-colors cursor-pointer self-start"
+                  >
+                    <span>Manage in Lifestyle Tab</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
                 <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-2">
@@ -501,7 +514,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                     onChange={(e) => setFormData({...formData, fee_partner_onboarding: parseFloat(e.target.value) || 0})}
                     className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
                   />
-                  <p className="text-[11px] text-white/40 leading-tight">One-time setup fee for property partners (hardware, smart locks, valet). Default ₹3,00,000.</p>
+                  <p className="text-[11px] text-white/40 leading-tight">One-time setup fee for property partners (branding, hardware, valet &amp; ops setup). Default ₹3,00,000.</p>
                 </div>
               </div>
             </div>
@@ -527,138 +540,6 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                 />
                 <p className="text-xs text-white/30 mt-2">This prompt governs the personality and strict boundaries of your AI chatbot across all omnichannel integrations.</p>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* API KEYS */}
-        {activeTab === 'api' && (
-          <div className="space-y-8 animate-in fade-in">
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <Shield className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="text-amber-500 font-medium text-sm">Security Notice</h3>
-                  <p className="text-amber-500/70 text-xs mt-1">API keys entered here will override your `.env` variables and be stored in the database. Ensure your admin portal is securely restricted.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
-                <div className="flex items-center gap-2 mb-4">
-                  <Smartphone className="w-4 h-4 text-white/50" />
-                  <h3 className="text-white font-medium">WhatsApp Business API</h3>
-                </div>
-                <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">Access Token</label>
-                <input 
-                  type="password" 
-                  value={formData.whatsapp_api_key || ''}
-                  onChange={(e) => setFormData({...formData, whatsapp_api_key: e.target.value})}
-                  placeholder="EAA..."
-                  className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
-                />
-              </div>
-
-              <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
-                <div className="flex items-center gap-2 mb-4">
-                  <CreditCard className="w-4 h-4 text-white/50" />
-                  <h3 className="text-white font-medium">PayU Payment Gateway</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">Merchant Key (PayU_Key)</label>
-                    <input 
-                      type="text" 
-                      value={formData.payu_key || ''}
-                      onChange={(e) => setFormData({...formData, payu_key: e.target.value})}
-                      placeholder="e.g. gtKFFx"
-                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">Merchant Salt (PayU_Salt)</label>
-                    <input 
-                      type="password" 
-                      value={formData.payu_salt || ''}
-                      onChange={(e) => setFormData({...formData, payu_salt: e.target.value})}
-                      placeholder="e.g. eCwWELxi"
-                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">OAuth Client ID (PayU_ClientID)</label>
-                    <input 
-                      type="text" 
-                      value={formData.payu_client_id || ''}
-                      onChange={(e) => setFormData({...formData, payu_client_id: e.target.value})}
-                      placeholder="e.g. 5d9f8c..."
-                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">OAuth Client Secret (PayU_Client_Secret)</label>
-                    <input 
-                      type="password" 
-                      value={formData.payu_client_secret || ''}
-                      onChange={(e) => setFormData({...formData, payu_client_secret: e.target.value})}
-                      placeholder="e.g. 8a7b6c..."
-                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
-                <div className="flex items-center gap-2 mb-4">
-                  <Mail className="w-4 h-4 text-white/50" />
-                  <h3 className="text-white font-medium">Resend Email</h3>
-                </div>
-                <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">API Key</label>
-                <input 
-                  type="password" 
-                  value={formData.resend_api_key || ''}
-                  onChange={(e) => setFormData({...formData, resend_api_key: e.target.value})}
-                  placeholder="re_..."
-                  className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
-                />
-              </div>
-
-              <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
-                <div className="flex items-center gap-2 mb-4">
-                  <Bot className="w-4 h-4 text-white/50" />
-                  <h3 className="text-white font-medium">Optical &amp; Intelligence Engine</h3>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-[10px] uppercase tracking-widest text-white/40 block">Primary: NVIDIA NIM AI API Key (nVidia_AI_API_Key)</label>
-                      <span className="text-[10px] font-mono text-emerald-400">Free High-Speed OCR &amp; Llama 3.3</span>
-                    </div>
-                    <input 
-                      type="password" 
-                      value={formData.nvidia_api_key || ''}
-                      onChange={(e) => setFormData({...formData, nvidia_api_key: e.target.value})}
-                      placeholder="nvapi-..."
-                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-[10px] uppercase tracking-widest text-white/40 block">Secondary Fallback: Google Gemini API Key</label>
-                      <span className="text-[10px] font-mono text-white/30">Backup Engine</span>
-                    </div>
-                    <input 
-                      type="password" 
-                      value={formData.gemini_api_key || ''}
-                      onChange={(e) => setFormData({...formData, gemini_api_key: e.target.value})}
-                      placeholder="AIza..."
-                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50" 
-                    />
-                  </div>
-                </div>
-              </div>
-
             </div>
           </div>
         )}

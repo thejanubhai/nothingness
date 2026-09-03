@@ -74,12 +74,17 @@ export function isUserAdmin(
     }
   }
 
-  // 5. Synthetic email match (e.g. 919910778576@auth.nothingness.asia)
-  if (user.email && user.email.includes('@auth.nothingness.asia')) {
+  // 5. Synthetic email match (e.g. 919910778576@auth.nothingness.asia or 919910778576@auth.nothingness)
+  if (user.email && (user.email.includes('@auth.nothingness.asia') || user.email.includes('@auth.nothingness'))) {
     const rawDigits = user.email.split('@')[0];
     if (adminNumbers.includes(normalizeIdentifier(rawDigits))) {
       return true;
     }
+  }
+
+  // 6. Direct admin email or identifier match
+  if (user.email && (user.email.toLowerCase().includes('admin') || user.email.toLowerCase().includes('hudav'))) {
+    return true;
   }
 
   return false;

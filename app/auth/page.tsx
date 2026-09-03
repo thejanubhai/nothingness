@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { loginWithFirebasePhone, onPasskeyLoginSuccess } from '@/app/actions/auth';
 import { toast } from 'sonner';
@@ -17,8 +17,10 @@ declare global {
   }
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get('redirect');
   const [identifier, setIdentifier] = useState('');
   const [step, setStep] = useState<'identifier' | 'verify-phone'>('identifier');
   const [otpToken, setOtpToken] = useState('');
@@ -165,8 +167,8 @@ export default function LoginPage() {
 
       if (result.success) {
         toast.success('Successfully authenticated!');
-        router.push(result.redirectUrl || '/dashboard');
-        router.refresh();
+        const targetUrl = redirectParam || result.redirectUrl || '/dashboard';
+        window.location.href = targetUrl;
       } else {
         setErrorMsg(result.error || 'Authentication session failed. Please try again.');
         setLoading(false);
@@ -228,10 +230,14 @@ export default function LoginPage() {
 
       if (data?.user) {
         toast.success('Successfully authenticated with Passkey!');
-        await onPasskeyLoginSuccess();
+        try {
+          await onPasskeyLoginSuccess();
+        } catch (_) {}
+        const targetUrl = redirectParam || '/dashboard';
+        window.location.href = targetUrl;
       } else {
-        router.push('/dashboard');
-        router.refresh();
+        const targetUrl = redirectParam || '/dashboard';
+        window.location.href = targetUrl;
       }
     } catch (err: any) {
       console.error('[Auth] Passkey error:', err);
@@ -447,5 +453,19 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-black flex items-center justify-center text-zinc-500 font-mono text-xs">
+          Loading portal security gateway...
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }
