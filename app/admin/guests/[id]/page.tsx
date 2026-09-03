@@ -23,5 +23,30 @@ export default async function GuestProfilePage({ params }: { params: Promise<{ i
     notFound();
   }
 
-  return <AdminGuestProfileClient initialGuest={guest as any} />;
+  const effectiveUserId = guest.user_id || guest.id;
+
+  // Fetch Sanctuary Pass
+  const { data: sanctuaryPass } = await supabase
+    .from('sanctuary_passes')
+    .select('*')
+    .or(`guest_profile_id.eq.${id},user_id.eq.${effectiveUserId},user_id.eq.${id}`)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // Fetch Kinkster Profile
+  const { data: kinksterProfile } = await supabase
+    .from('kinkster_profiles')
+    .select('*')
+    .or(`id.eq.${effectiveUserId},guest_profile_id.eq.${id},id.eq.${id}`)
+    .limit(1)
+    .maybeSingle();
+
+  return (
+    <AdminGuestProfileClient 
+      initialGuest={guest as any} 
+      initialSanctuaryPass={sanctuaryPass}
+      initialKinksterProfile={kinksterProfile}
+    />
+  );
 }

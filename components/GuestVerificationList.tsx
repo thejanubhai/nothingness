@@ -3,7 +3,17 @@
 import { CheckCircle, Clock, Copy, ShieldAlert, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function GuestVerificationList({ guests, siteUrl }: { guests: any[], siteUrl?: string }) {
+export default function GuestVerificationList({ 
+  guests, 
+  siteUrl,
+  isAdmin = false,
+  bookingId
+}: { 
+  guests: any[], 
+  siteUrl?: string,
+  isAdmin?: boolean,
+  bookingId?: string
+}) {
   if (!guests || guests.length === 0) return null;
 
   const getShareableLink = (guest: any) => {
@@ -64,68 +74,95 @@ export default function GuestVerificationList({ guests, siteUrl }: { guests: any
   };
 
   return (
-    <div className="mt-6 pt-6 border-t border-white/5">
-      <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-4">Guest Roster & Verification</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {guests.map((guest: any) => (
-          <div key={guest.id} className="bg-white/[0.01] border border-white/5 rounded-xl p-4 flex flex-col gap-3">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-[10px] text-white/30 uppercase tracking-widest mb-1">
-                  {guest.guest_index === 0 ? 'Main Guest' : `Guest ${guest.guest_index + 1}`}
-                </p>
-                <p className="text-white text-sm">{guest.name || 'Awaiting Upload'}</p>
+    <div className="mt-4 pt-4 border-t border-white/5">
+      <p className="text-[10px] uppercase font-mono tracking-[0.2em] text-zinc-400 mb-3">Guest Roster &amp; Verification</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {guests.map((guest: any) => {
+          const isMain = guest.guest_index === 0;
+          const isVerified = guest.verification_status === 'verified';
+
+          return (
+            <div key={guest.id} className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3.5 flex flex-col justify-between gap-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase font-mono tracking-wider mb-0.5">
+                    {isMain ? 'Main Guest' : `Guest ${guest.guest_index + 1}`}
+                  </p>
+                  <p className="text-white text-sm font-medium">{guest.name || (isMain ? 'You (Booker)' : 'Awaiting Guest')}</p>
+                </div>
+                <div>
+                  {isVerified ? (
+                    <div className="flex items-center gap-1 text-emerald-400 text-[10px] font-mono uppercase tracking-wider bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
+                      <CheckCircle className="w-3 h-3" /> VERIFIED
+                    </div>
+                  ) : guest.verification_status === 'failed' ? (
+                    <div className="flex items-center gap-1 text-red-400 text-[10px] font-mono uppercase tracking-wider bg-red-500/10 px-2.5 py-1 rounded-md border border-red-500/20">
+                      <ShieldAlert className="w-3 h-3" /> REJECTED
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-amber-400 text-[10px] font-mono uppercase tracking-wider bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
+                      <Clock className="w-3 h-3" /> PENDING
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                {guest.verification_status === 'verified' ? (
-                  <div className="flex items-center gap-1 text-green-400 text-[10px] uppercase tracking-wider bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20">
-                    <CheckCircle className="w-3 h-3" /> VERIFIED
-                  </div>
-                ) : guest.verification_status === 'failed' ? (
-                  <div className="flex items-center gap-1 text-red-400 text-[10px] uppercase tracking-wider bg-red-500/10 px-2 py-1 rounded-md border border-red-500/20">
-                    <ShieldAlert className="w-3 h-3" /> REJECTED
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-accent-gold text-[10px] uppercase tracking-wider bg-accent-gold/10 px-2 py-1 rounded-md border border-accent-gold/20">
-                    <Clock className="w-3 h-3" /> PENDING
-                  </div>
+              
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-zinc-800/60">
+                {isAdmin && !isVerified && (
+                  <>
+                    <button 
+                      onClick={() => handleUpdateStatus(guest.id, 'verified')}
+                      className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg text-[10px] uppercase font-mono tracking-wider transition-colors cursor-pointer"
+                    >
+                      Approve
+                    </button>
+                    <button 
+                      onClick={() => handleUpdateStatus(guest.id, 'failed')}
+                      className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-1.5 rounded-lg text-[10px] uppercase font-mono tracking-wider transition-colors cursor-pointer"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+
+                {!isAdmin && !isVerified && (
+                  <>
+                    {isMain ? (
+                      <a 
+                        href={bookingId ? `/booking/${bookingId}/verify` : getShareableLink(guest)}
+                        className="flex-1 text-center bg-amber-400 hover:bg-white text-black font-bold text-[10px] uppercase tracking-wider py-1.5 px-3 rounded-lg transition-colors cursor-pointer shadow-sm"
+                      >
+                        Upload ID Document
+                      </a>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={() => handleCopy(guest)}
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white px-2.5 py-1.5 rounded-lg text-[10px] uppercase font-mono tracking-wider transition-colors cursor-pointer border border-zinc-700/60"
+                        >
+                          <Copy className="w-3 h-3" /> Copy
+                        </button>
+                        <button 
+                          onClick={() => handleWhatsApp(guest)}
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg text-[10px] uppercase font-mono tracking-wider transition-colors cursor-pointer"
+                          title="Share via WhatsApp"
+                        >
+                          <Share2 className="w-3 h-3" /> WhatsApp
+                        </button>
+                      </>
+                    )}
+                  </>
+                )}
+
+                {isVerified && (
+                  <span className="text-[10px] text-zinc-500 font-mono italic">
+                    Identity verified for police compliance
+                  </span>
                 )}
               </div>
             </div>
-            
-            <div className="flex flex-wrap gap-2 mt-1">
-              {guest.verification_status !== 'verified' && (
-                <>
-                  <button 
-                    onClick={() => handleUpdateStatus(guest.id, 'verified')}
-                    className="flex-1 bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-colors"
-                  >
-                    Approve
-                  </button>
-                  <button 
-                    onClick={() => handleUpdateStatus(guest.id, 'failed')}
-                    className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-colors"
-                  >
-                    Reject
-                  </button>
-                </>
-              )}
-              <button 
-                onClick={() => handleCopy(guest)}
-                className="flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
-              >
-                <Copy className="w-3 h-3" /> Copy
-              </button>
-              <button 
-                onClick={() => handleWhatsApp(guest)}
-                className="flex items-center justify-center gap-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
-                title="Share via WhatsApp"
-              >
-                <Share2 className="w-3 h-3" /> WhatsApp
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

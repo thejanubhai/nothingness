@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 import { 
   ShieldCheck, 
   ShieldAlert, 
@@ -44,10 +45,8 @@ interface UserDashboardClientProps {
     live_face_url?: string;
     face_id_vetted_at?: string;
   } | null;
-  kinksterProfile: {
-    alias?: string;
-    is_activated?: boolean;
-  } | null;
+  kinksterProfile: any | null;
+  sanctuaryPass?: any | null;
   upcomingBookings: any[];
 }
 
@@ -55,6 +54,7 @@ export default function UserDashboardClient({
   user,
   profile,
   kinksterProfile,
+  sanctuaryPass,
   upcomingBookings,
 }: UserDashboardClientProps) {
   const [showIdModal, setShowIdModal] = useState(false);
@@ -65,10 +65,67 @@ export default function UserDashboardClient({
   const [isFaceIdVetted, setIsFaceIdVetted] = useState(Boolean(profile?.face_id_vetted));
   const [liveFaceUrl, setLiveFaceUrl] = useState(profile?.live_face_url || '');
   const [bookings, setBookings] = useState<any[]>(upcomingBookings || []);
+  const [currentPass, setCurrentPass] = useState(sanctuaryPass);
+  const [currentKinkster, setCurrentKinkster] = useState(kinksterProfile);
 
   useEffect(() => {
     setBookings(upcomingBookings || []);
   }, [upcomingBookings]);
+
+  useEffect(() => {
+    setCurrentPass(sanctuaryPass);
+  }, [sanctuaryPass]);
+
+  useEffect(() => {
+    setCurrentKinkster(kinksterProfile);
+  }, [kinksterProfile]);
+
+  // Real-time synchronization with Supabase
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel(`realtime-user-dashboard-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sanctuary_passes' },
+        (payload) => {
+          if (payload.new && ((payload.new as any).user_id === user.id || (payload.new as any).guest_profile_id === profile?.id)) {
+            setCurrentPass(payload.new);
+          } else if (payload.eventType === 'DELETE') {
+            setCurrentPass(null);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'kinkster_profiles' },
+        (payload) => {
+          if (payload.new && ((payload.new as any).id === user.id || (payload.new as any).guest_profile_id === profile?.id)) {
+            setCurrentKinkster(payload.new);
+          } else if (payload.eventType === 'DELETE') {
+            setCurrentKinkster(null);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'guest_profiles' },
+        (payload) => {
+          if (payload.new && (payload.new as any).id === profile?.id) {
+            setIsVerified((payload.new as any).is_verified);
+            setIsFaceIdVetted((payload.new as any).face_id_vetted);
+            if ((payload.new as any).live_face_url) setLiveFaceUrl((payload.new as any).live_face_url);
+            if ((payload.new as any).full_name) setVerifiedName((payload.new as any).full_name);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user.id, profile?.id]);
 
   const activeBookings = bookings.filter((b: any) => b.status !== 'cancelled');
 
@@ -313,7 +370,11 @@ export default function UserDashboardClient({
           </div>
 
           {/* OPTION B: SANCTUARY PASS & SECRET GATHERINGS */}
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 sm:p-7 flex flex-col justify-between group hover:border-amber-400/40 transition-all duration-300 shadow-xl relative overflow-hidden">
+          <div className={`border rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-500 shadow-xl relative overflow-hidden ${
+            currentPass?.status === 'active' 
+              ? 'bg-gradient-to-b from-amber-950/25 via-zinc-950 to-zinc-950 border-amber-500/40 shadow-amber-500/5' 
+              : 'bg-zinc-950 border-zinc-800 hover:border-amber-400/40'
+          }`}>
             <div className="absolute top-0 right-0 w-48 h-48 bg-amber-600/10 rounded-full blur-2xl pointer-events-none" />
 
             <div>
@@ -322,26 +383,40 @@ export default function UserDashboardClient({
               </div>
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="font-serif text-lg sm:text-xl text-white font-bold">Sanctuary Pass</h3>
-                <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-mono font-bold">
-                  Secret Gatherings
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase ${
+                  currentPass?.status === 'active' 
+                    ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+                    : 'bg-amber-500/10 border border-amber-500/30 text-amber-300'
+                }`}>
+                  {currentPass?.status === 'active' ? `✓ ${currentPass.pass_tier || 'Noir Luminary'}` : 'Secret Gatherings'}
                 </span>
               </div>
               <p className="text-xs text-zinc-400 leading-relaxed mb-6">
-                Unlock confidential munches, noir masquerades, and intimate soirées. Protected by tamper-proof camera bans and on-ground floor consent marshalls.
+                {currentPass?.status === 'active'
+                  ? 'Your VIP Sanctuary Pass is active. You have full clearance to secret munches, noir masquerades, and intimate salon soirées.'
+                  : 'Unlock confidential munches, noir masquerades, and intimate soirées. Protected by tamper-proof camera bans and on-ground floor consent marshalls.'}
               </p>
             </div>
 
             <Link
               href="/sanctuary-pass"
-              className="w-full inline-flex items-center justify-between px-4 py-3.5 bg-zinc-900 group-hover:bg-gradient-to-r group-hover:from-amber-600 group-hover:to-rose-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-lg"
+              className={`w-full inline-flex items-center justify-between px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-lg ${
+                currentPass?.status === 'active'
+                  ? 'bg-gradient-to-r from-amber-500 to-accent-gold text-black hover:from-amber-400 hover:to-white'
+                  : 'bg-zinc-900 group-hover:bg-gradient-to-r group-hover:from-amber-600 group-hover:to-rose-600 text-white'
+              }`}
             >
-              <span>Sanctuary Events Vault</span>
+              <span>{currentPass?.status === 'active' ? 'Enter Sanctuary Events Vault' : 'Sanctuary Events Vault'}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
           {/* OPTION C: LIFESTYLE & KINKSTER CIRCLE */}
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 sm:p-7 flex flex-col justify-between group hover:border-rose-500/40 transition-all duration-300 shadow-xl relative overflow-hidden">
+          <div className={`border rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-500 shadow-xl relative overflow-hidden ${
+            currentKinkster?.is_activated 
+              ? 'bg-gradient-to-b from-rose-950/25 via-zinc-950 to-zinc-950 border-rose-500/40 shadow-rose-500/5' 
+              : 'bg-zinc-950 border-zinc-800 hover:border-rose-500/40'
+          }`}>
             <div className="absolute top-0 right-0 w-48 h-48 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
 
             <div>
@@ -350,20 +425,48 @@ export default function UserDashboardClient({
               </div>
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="font-serif text-lg sm:text-xl text-white font-bold">Lifestyle Circle</h3>
-                <span className="px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[10px] font-mono font-bold">
-                  {kinksterProfile?.is_activated ? `@${kinksterProfile.alias}` : 'Anonymous @Alias'}
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                  currentKinkster?.is_activated 
+                    ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
+                    : 'bg-zinc-800 border border-zinc-700 text-zinc-400'
+                }`}>
+                  {currentKinkster?.is_activated ? `@${currentKinkster.alias}` : 'Anonymous @Alias'}
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+              <p className="text-xs text-zinc-400 leading-relaxed mb-4">
                 Exclusive community for vetted adults. Create an encrypted alias to explore private media feeds, mutual matching, and audio stories.
               </p>
+              
+              {currentKinkster?.is_activated && (
+                <div className="flex flex-wrap gap-1.5 mb-5">
+                  {currentKinkster.stay_verified && (
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9px] font-mono font-bold">
+                      Stay Verified ✓
+                    </span>
+                  )}
+                  {currentKinkster.face_id_vetted && (
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9px] font-mono font-bold">
+                      3D Face ID ✓
+                    </span>
+                  )}
+                  {currentKinkster.is_trusted_host && (
+                    <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[9px] font-mono font-bold">
+                      Trusted Host 👑
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <Link
               href="/kinksters"
-              className="w-full inline-flex items-center justify-between px-4 py-3.5 bg-zinc-900 group-hover:bg-gradient-to-r group-hover:from-rose-600 group-hover:to-purple-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-lg"
+              className={`w-full inline-flex items-center justify-between px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-lg ${
+                currentKinkster?.is_activated
+                  ? 'bg-gradient-to-r from-rose-600 to-purple-600 text-white hover:from-rose-500 hover:to-purple-500'
+                  : 'bg-zinc-900 group-hover:bg-gradient-to-r group-hover:from-rose-600 group-hover:to-purple-600 text-white'
+              }`}
             >
-              <span>{kinksterProfile?.is_activated ? 'Enter Lifestyle Feed' : 'Activate Anonymous @Alias'}</span>
+              <span>{currentKinkster?.is_activated ? 'Enter Lifestyle Feed' : 'Activate Anonymous @Alias'}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

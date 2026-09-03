@@ -45,82 +45,118 @@ export default async function BookingsPage() {
         <div className="space-y-6">
           {bookings.map((booking: any) => {
             const space = Array.isArray(booking.spaces) ? booking.spaces[0] : booking.spaces;
+            const isCancelled = booking.status === 'cancelled';
+            const isConfirmed = booking.status === 'confirmed';
+            const isPending = booking.status === 'pending';
+
             return (
-              <div key={booking.id} className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-8">
-                <div className="w-full md:w-48 aspect-[4/3] relative rounded-2xl overflow-hidden shrink-0 border border-white/10 bg-zinc-900">
+              <div 
+                key={booking.id} 
+                className="bg-zinc-950 border border-zinc-800/80 hover:border-zinc-700/80 rounded-3xl p-5 sm:p-6 lg:p-7 flex flex-col md:flex-row items-start gap-6 lg:gap-8 transition-all shadow-xl"
+              >
+                {/* Sanctuary Room Thumbnail - Cinematic Wide Aspect Ratio (NEVER Stretched!) */}
+                <div className="w-full md:w-80 lg:w-96 aspect-[16/10] relative rounded-2xl overflow-hidden shrink-0 self-start border border-zinc-800 bg-zinc-900 shadow-md group">
                   <CloudinaryImage 
                     src={space?.featured_image || ''} 
                     alt={space?.title || 'Sanctuary'}
                     fill
-                    className="object-cover"
-                    transformOptions={{ width: 400, height: 300, crop: 'fill', quality: 'auto' }}
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    transformOptions={{ width: 800, height: 500, crop: 'fill', quality: 'auto' }}
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-white/90 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/10">
+                      {space?.city || 'Sanctuary'}
+                    </span>
+                  </div>
                 </div>
                 
-                <div className="flex-grow space-y-4">
-                  <div className="flex justify-between items-start">
+                {/* Stay Details & Management */}
+                <div className="flex-grow w-full space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-serif text-2xl text-white mb-1">{space?.title || 'Sanctuary Stay'}</h3>
-                      <p className="text-white/40 text-xs uppercase tracking-widest">{space?.city || ''}</p>
+                      <h3 className="font-serif text-2xl lg:text-3xl text-white font-bold mb-1">
+                        {space?.title || 'Sanctuary Stay'}
+                      </h3>
+                      <p className="text-zinc-400 text-xs uppercase font-mono tracking-widest">
+                        {space?.area ? `${space.area}, ${space.city}` : space?.city || 'Private Sanctuary'}
+                      </p>
                     </div>
-                    <div className={`px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase ${
-                      booking.status === 'confirmed' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-                      booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                      'bg-accent-gold/10 text-accent-gold border border-accent-gold/20'
+                    <span className={`self-start px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase ${
+                      isConfirmed ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                      isCancelled ? 'bg-red-500/15 text-red-400 border border-red-500/30' :
+                      'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                     }`}>
                       {booking.status}
+                    </span>
+                  </div>
+                
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800/80">
+                    <div>
+                      <p className="text-zinc-500 text-[10px] uppercase font-mono tracking-wider mb-1">Check In</p>
+                      <p className="text-white font-medium text-xs sm:text-sm">{new Date(booking.check_in).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    </div>
+                    <div>
+                      <p className="text-zinc-500 text-[10px] uppercase font-mono tracking-wider mb-1">Check Out</p>
+                      <p className="text-white font-medium text-xs sm:text-sm">{new Date(booking.check_out).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    </div>
+                    <div>
+                      <p className="text-zinc-500 text-[10px] uppercase font-mono tracking-wider mb-1">Total Amount</p>
+                      <p className="text-white font-medium text-xs sm:text-sm">₹{booking.total_price ? Number(booking.total_price).toLocaleString('en-IN') : '0'}</p>
+                    </div>
+                    <div>
+                      <p className="text-zinc-500 text-[10px] uppercase font-mono tracking-wider mb-1">Reference ID</p>
+                      <p className="text-accent-gold font-mono text-xs font-semibold">{booking.id.split('-')[0].toUpperCase()}</p>
                     </div>
                   </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border-y border-white/5 py-4">
-                  <div>
-                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Check In</p>
-                    <p className="text-white/90 font-medium">{new Date(booking.check_in).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Check Out</p>
-                    <p className="text-white/90 font-medium">{new Date(booking.check_out).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Total Amount</p>
-                    <p className="text-white/90 font-medium">₹{booking.total_price.toLocaleString('en-IN')}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Reference ID</p>
-                    <p className="text-white/90 font-mono text-xs">{booking.id.split('-')[0]}</p>
-                  </div>
-                </div>
 
-                <div className="flex flex-wrap gap-3 pt-2">
-                  {booking.status === 'pending' && (
-                    <Link 
-                      href={`/booking/${booking.id}/verify`}
-                      className="text-[11px] font-bold tracking-[0.1em] uppercase text-black bg-accent-gold px-5 py-2.5 rounded-xl hover:bg-white transition-colors"
-                    >
-                      Complete Verification
-                    </Link>
-                  )}
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    {isPending && (
+                      <Link 
+                        href={`/booking/${booking.id}/verify`}
+                        className="text-[11px] font-bold tracking-[0.1em] uppercase text-black bg-amber-400 hover:bg-white px-5 py-2.5 rounded-xl transition-colors shadow-sm"
+                      >
+                        Complete Verification
+                      </Link>
+                    )}
+                    
+                    {isConfirmed && (
+                      <Link 
+                        href={`/booking/${booking.id}/success`}
+                        className="text-[11px] font-bold tracking-[0.1em] uppercase text-black bg-accent-gold hover:bg-white px-5 py-2.5 rounded-xl transition-colors shadow-sm"
+                      >
+                        Arrival &amp; Secret Key
+                      </Link>
+                    )}
+
+                    {!isCancelled && (
+                      <CancelBookingButton bookingId={booking.id} bookingTitle={space?.title} />
+                    )}
+
+                    {isCancelled && (
+                      <div className="w-full p-3.5 rounded-xl bg-red-950/20 border border-red-900/30 text-xs text-red-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <span className="font-mono text-[11px]">Reservation Cancelled • Date locks on Airbnb &amp; MMT released</span>
+                        <Link href="/spaces" className="text-accent-gold hover:text-white font-mono text-[11px] underline">
+                          Rebook Another Stay →
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                   
-                  {booking.status === 'confirmed' && (
-                    <Link 
-                      href={`/booking/${booking.id}/success`}
-                      className="text-[11px] font-bold tracking-[0.1em] uppercase text-accent-gold border border-accent-gold/30 px-5 py-2.5 rounded-xl hover:bg-accent-gold/10 transition-colors"
-                    >
-                      View Access Code
-                    </Link>
+                  {/* Co-Guest Verification Roster (Only for active bookings) */}
+                  {!isCancelled && booking.booking_guests && booking.booking_guests.length > 0 && (
+                    <GuestVerificationList 
+                      guests={booking.booking_guests} 
+                      siteUrl={process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia'} 
+                      bookingId={booking.id}
+                      isAdmin={false}
+                    />
                   )}
-
-                  {booking.status !== 'cancelled' && (
-                    <CancelBookingButton bookingId={booking.id} bookingTitle={space?.title} />
-                  )}
-                </div>
-                
-                <div className="pt-4">
-                  <GuestVerificationList guests={booking.booking_guests} siteUrl={process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia'} />
                 </div>
               </div>
-            </div>
-          )})}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-20 border border-white/5 rounded-3xl bg-white/[0.01]">

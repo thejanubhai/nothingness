@@ -70,11 +70,23 @@ export default async function DashboardOverview() {
     profile = pData;
   }
 
+  const effectiveUserId = user.id;
+
   // 3. Fetch Kinkster Profile status
   const { data: kinksterProfile } = await supabase
     .from('kinkster_profiles')
-    .select('alias, is_activated')
-    .eq('id', user.id)
+    .select('*')
+    .or(`id.eq.${effectiveUserId},guest_profile_id.eq.${profile?.id || effectiveUserId},id.eq.${profile?.id || effectiveUserId}`)
+    .limit(1)
+    .maybeSingle();
+
+  // 4. Fetch Sanctuary Pass status
+  const { data: sanctuaryPass } = await supabase
+    .from('sanctuary_passes')
+    .select('*')
+    .or(`user_id.eq.${effectiveUserId},guest_profile_id.eq.${profile?.id || effectiveUserId},user_id.eq.${profile?.id || effectiveUserId}`)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   return (
@@ -87,6 +99,7 @@ export default async function DashboardOverview() {
       }}
       profile={profile}
       kinksterProfile={kinksterProfile}
+      sanctuaryPass={sanctuaryPass}
       upcomingBookings={upcomingBookings || []}
     />
   );
