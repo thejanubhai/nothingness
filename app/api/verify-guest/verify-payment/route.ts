@@ -15,8 +15,9 @@ export async function POST(req: Request) {
     const { data: guest, error: guestError } = await supabase
       .from('booking_guests')
       .select('id, payment_status, payment_order_id')
-      .eq('verification_token', token)
-      .single();
+      .or(`verification_token.eq.${token},id.eq.${token}`)
+      .limit(1)
+      .maybeSingle();
 
     if (guestError || !guest) {
       return NextResponse.json({ error: 'Guest record not found' }, { status: 404 });

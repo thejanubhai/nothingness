@@ -98,7 +98,7 @@ export default function AdminBookingsClient({ initialBookings }: { initialBookin
   };
 
   const shareVerificationWhatsApp = (b: Booking) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia';
+    const origin = typeof window !== 'undefined' && !window.location.origin.includes('localhost') ? window.location.origin : 'https://nothingness.asia';
     const inviteUrl = `${origin}/verify-guest/invite?booking=${b.id}`;
     const message = `Namaste ${b.guest_name || 'Guest'}! ✨ Regarding your reservation at Nothingness (${b.spaces?.title || 'Sanctuary'}).\n\nPlease complete your quick 30-second digital ID check-in here:\n${inviteUrl}`;
     

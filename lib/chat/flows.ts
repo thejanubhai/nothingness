@@ -269,7 +269,7 @@ async function handleBookingFlow(state: ConversationState, input: string, _guest
       if (guests > maxAllowed) {
         responseText = `Per our listing policy, the maximum capacity for ${spaceTitle} is ${maxAllowed} guests. Please enter a guest count up to ${maxAllowed}.`;
       } else {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes('localhost') ? process.env.NEXT_PUBLIC_SITE_URL : 'https://nothingness.asia';
         responseText = `Thanks! I have recorded your reservation for ${guests} guest(s) at ${spaceTitle} (Max Capacity: ${maxAllowed}).\n\n👥 Every accompanying guest can verify their Aadhaar/Passport via their private link so they get their own Nothingness Account (valid 180 days):\n${siteUrl}/verify-guest\n\nYou can complete your reservation securely here: ${siteUrl}/spaces`;
         updatedState.active_flow = 'id_verification';
         updatedState.flow_step = 'ask_id';

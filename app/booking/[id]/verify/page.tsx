@@ -2,7 +2,7 @@
 
 import { useState, use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, CheckCircle2, Copy, Link as LinkIcon } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, Copy, Link as LinkIcon, Share2 } from 'lucide-react';
 import IDUploadModal from '@/components/IDUploadModal';
 import { toast } from 'sonner';
 
@@ -10,6 +10,7 @@ interface Guest {
   id: string;
   guest_index: number;
   name: string | null;
+  phone?: string | null;
   verification_status: string;
   verification_token: string;
 }
@@ -51,10 +52,32 @@ export default function VerificationDashboard({ params }: { params: Promise<{ id
     }
   };
 
-  const copyLink = (token: string) => {
-    const url = `${window.location.origin}/verify-guest/${token}`;
+  const getGuestVerificationUrl = (guest: Guest) => {
+    const token = guest.verification_token || guest.id;
+    const origin = typeof window !== 'undefined' && !window.location.origin.includes('localhost') 
+      ? window.location.origin 
+      : 'https://nothingness.asia';
+    return `${origin}/verify-guest/${token}`;
+  };
+
+  const copyLink = (guest: Guest) => {
+    const url = getGuestVerificationUrl(guest);
     navigator.clipboard.writeText(url);
     toast.success('Link Copied!', { description: 'Share this link with your co-guest.' });
+  };
+
+  const shareCoGuestWhatsApp = (guest: Guest) => {
+    const url = getGuestVerificationUrl(guest);
+    const guestLabel = guest.name || `Guest ${guest.guest_index + 1}`;
+    const text = encodeURIComponent(`Namaste ${guestLabel}! ✨ Please complete your discreet 30-second digital ID check-in for our upcoming stay at Nothingness:\n${url}`);
+    
+    const cleanDigits = guest.phone ? guest.phone.replace(/[^0-9]/g, '') : '';
+    if (cleanDigits) {
+      const cleanPhone = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
+      window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
+    } else {
+      window.open(`https://wa.me/?text=${text}`, '_blank');
+    }
   };
 
   return (
@@ -107,12 +130,21 @@ export default function VerificationDashboard({ params }: { params: Promise<{ id
                       Verify Now
                     </button>
                     {!isMain && (
-                      <button 
-                        onClick={() => copyLink(guest.verification_token)}
-                        className="flex-1 md:flex-none bg-white/5 text-white px-6 py-3 rounded-xl text-[11px] font-bold tracking-[0.15em] uppercase hover:bg-white/10 transition-colors flex items-center justify-center gap-2 border border-white/10"
-                      >
-                        <Copy className="w-3 h-3" /> Share Link
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => copyLink(guest)}
+                          className="flex-1 md:flex-none bg-white/5 text-white px-4 py-3 rounded-xl text-[11px] font-bold tracking-[0.15em] uppercase hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5 border border-white/10 cursor-pointer"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> Copy
+                        </button>
+                        <button 
+                          onClick={() => shareCoGuestWhatsApp(guest)}
+                          className="flex-1 md:flex-none bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 px-4 py-3 rounded-xl text-[11px] font-bold tracking-[0.15em] uppercase transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                          title="Share via WhatsApp"
+                        >
+                          <Share2 className="w-3.5 h-3.5" /> WhatsApp
+                        </button>
+                      </div>
                     )}
                   </>
                 )}

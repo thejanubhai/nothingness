@@ -43,6 +43,7 @@ export default async function DashboardOverview() {
       spaces ( title, city, featured_image )
     `)
     .eq('user_id', user.id)
+    .neq('status', 'cancelled')
     .gte('check_in', today)
     .order('check_in', { ascending: true })
     .limit(3);

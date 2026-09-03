@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShieldCheck, 
@@ -64,6 +64,13 @@ export default function UserDashboardClient({
   const [docType, setDocType] = useState(profile?.id_document_type || '');
   const [isFaceIdVetted, setIsFaceIdVetted] = useState(Boolean(profile?.face_id_vetted));
   const [liveFaceUrl, setLiveFaceUrl] = useState(profile?.live_face_url || '');
+  const [bookings, setBookings] = useState<any[]>(upcomingBookings || []);
+
+  useEffect(() => {
+    setBookings(upcomingBookings || []);
+  }, [upcomingBookings]);
+
+  const activeBookings = bookings.filter((b: any) => b.status !== 'cancelled');
 
   // Calculate Days Left for 180-day ID validity
   let daysLeft = 0;
@@ -179,9 +186,17 @@ export default function UserDashboardClient({
                   <span className="font-bold">Level 1 Complete ({docType || 'Aadhaar / Passport'})</span>: You are fully approved for discreet secret key check-in.
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 text-zinc-400 font-mono text-[11px] shrink-0">
-                <Clock className="w-3.5 h-3.5 text-accent-gold" />
-                <span>Valid for next {daysLeft} days</span>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-1.5 text-zinc-400 font-mono text-[11px]">
+                  <Clock className="w-3.5 h-3.5 text-accent-gold" />
+                  <span>Valid for next {daysLeft} days</span>
+                </div>
+                <button
+                  onClick={() => setShowIdModal(true)}
+                  className="text-[11px] font-mono text-emerald-400 hover:text-white underline cursor-pointer"
+                >
+                  Update ID
+                </button>
               </div>
             </div>
           ) : (
@@ -368,10 +383,10 @@ export default function UserDashboardClient({
           </Link>
         </div>
 
-        {upcomingBookings && upcomingBookings.length > 0 ? (
+        {activeBookings && activeBookings.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {upcomingBookings.map((booking: any) => (
-              <div key={booking.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden group shadow-lg">
+            {activeBookings.map((booking: any) => (
+              <div key={booking.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden group shadow-lg transition-all">
                 <div className="h-40 relative overflow-hidden bg-zinc-900">
                   <CloudinaryImage 
                     src={booking.spaces?.featured_image || ''} 
@@ -423,7 +438,13 @@ export default function UserDashboardClient({
                         Complete Verification
                       </Link>
                     )}
-                    <CancelBookingButton bookingId={booking.id} />
+                    <CancelBookingButton 
+                      bookingId={booking.id}
+                      bookingTitle={booking.spaces?.title}
+                      onCancelled={(bId) => {
+                        setBookings(prev => prev.filter(b => b.id !== bId));
+                      }}
+                    />
                   </div>
                 </div>
               </div>

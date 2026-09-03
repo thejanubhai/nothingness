@@ -35,7 +35,7 @@ export async function sendVerificationApprovedNotification({
 
   try {
     const resend = new Resend(env.RESEND_API_KEY);
-    const siteUrl = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const siteUrl = env.NEXT_PUBLIC_SITE_URL && !env.NEXT_PUBLIC_SITE_URL.includes('localhost') ? env.NEXT_PUBLIC_SITE_URL : 'https://nothingness.asia';
 
     const htmlContent = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0c0c0e; color: #f3f3f3; padding: 40px 24px; border-radius: 16px; border: 1px solid #1a1a22;">
@@ -119,7 +119,7 @@ export async function sendVerificationRejectedNotification({
 
   try {
     const resend = new Resend(env.RESEND_API_KEY);
-    const siteUrl = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const siteUrl = env.NEXT_PUBLIC_SITE_URL && !env.NEXT_PUBLIC_SITE_URL.includes('localhost') ? env.NEXT_PUBLIC_SITE_URL : 'https://nothingness.asia';
     const link = retryUrl || `${siteUrl}/verify-guest`;
 
     const htmlContent = `

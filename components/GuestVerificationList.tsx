@@ -3,21 +3,42 @@
 import { CheckCircle, Clock, Copy, ShieldAlert, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function GuestVerificationList({ guests, siteUrl }: { guests: any[], siteUrl: string }) {
+export default function GuestVerificationList({ guests, siteUrl }: { guests: any[], siteUrl?: string }) {
   if (!guests || guests.length === 0) return null;
 
-  const handleCopy = (id: string) => {
-    const link = `${siteUrl}/verify-guest/${id}`;
+  const getShareableLink = (guest: any) => {
+    const token = guest.verification_token || guest.id;
+    let base = 'https://nothingness.asia';
+
+    if (typeof window !== 'undefined' && window.location.origin && !window.location.origin.includes('localhost')) {
+      base = window.location.origin;
+    } else if (siteUrl && !siteUrl.includes('localhost')) {
+      base = siteUrl;
+    }
+
+    return `${base}/verify-guest/${token}`;
+  };
+
+  const handleCopy = (guest: any) => {
+    const link = getShareableLink(guest);
     navigator.clipboard.writeText(link);
     toast.success('Link Copied', {
       description: 'Send this securely to your guest.'
     });
   };
 
-  const handleWhatsApp = (id: string) => {
-    const link = `${siteUrl}/verify-guest/${id}`;
-    const text = encodeURIComponent(`Please verify your identity for our upcoming stay at Nothingness: ${link}`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
+  const handleWhatsApp = (guest: any) => {
+    const link = getShareableLink(guest);
+    const guestLabel = guest.name || (guest.guest_index ? `Guest ${guest.guest_index + 1}` : 'Guest');
+    const message = `Namaste ${guestLabel}! ✨ Please complete your discreet 30-second digital ID check-in for our upcoming stay at Nothingness:\n${link}`;
+    
+    const cleanDigits = guest.phone ? guest.phone.replace(/[^0-9]/g, '') : '';
+    if (cleanDigits) {
+      const cleanPhone = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
+      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    }
   };
 
   const handleUpdateStatus = async (guestId: string, status: 'verified' | 'failed') => {
@@ -90,14 +111,14 @@ export default function GuestVerificationList({ guests, siteUrl }: { guests: any
                 </>
               )}
               <button 
-                onClick={() => handleCopy(guest.id)}
-                className="flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-colors"
+                onClick={() => handleCopy(guest)}
+                className="flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
               >
                 <Copy className="w-3 h-3" /> Copy
               </button>
               <button 
-                onClick={() => handleWhatsApp(guest.id)}
-                className="flex items-center justify-center gap-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-colors"
+                onClick={() => handleWhatsApp(guest)}
+                className="flex items-center justify-center gap-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
                 title="Share via WhatsApp"
               >
                 <Share2 className="w-3 h-3" /> WhatsApp

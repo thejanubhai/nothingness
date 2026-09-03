@@ -106,7 +106,7 @@ export async function POST(req: Request) {
               name: existingProfile.full_name,
               guest_profile_id: existingProfile.id,
             })
-            .eq('verification_token', token);
+            .or(`verification_token.eq.${token},id.eq.${token}`);
         }
 
         if (sessionUserId && !existingProfile.user_id) {
@@ -456,7 +456,7 @@ Return ONLY a valid JSON object without markdown formatting.`;
           name: finalName,
           guest_profile_id: profileId,
         })
-        .eq('verification_token', token);
+        .or(`verification_token.eq.${token},id.eq.${token}`);
     } else if (bookingId && guestId) {
       await adminSupabase
         .from('booking_guests')

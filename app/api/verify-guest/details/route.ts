@@ -53,8 +53,9 @@ export async function GET(req: NextRequest) {
           )
         )
       `)
-      .eq('verification_token', token)
-      .single();
+      .or(`verification_token.eq.${token},id.eq.${token}`)
+      .limit(1)
+      .maybeSingle();
 
     if (guestError || !guest) {
       return NextResponse.json({ error: 'Invalid or expired verification token' }, { status: 404 });

@@ -111,12 +111,12 @@ export default async function BookingsPage() {
                   )}
 
                   {booking.status !== 'cancelled' && (
-                    <CancelBookingButton bookingId={booking.id} />
+                    <CancelBookingButton bookingId={booking.id} bookingTitle={space?.title} />
                   )}
                 </div>
                 
                 <div className="pt-4">
-                  <GuestVerificationList guests={booking.booking_guests} siteUrl={process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'} />
+                  <GuestVerificationList guests={booking.booking_guests} siteUrl={process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia'} />
                 </div>
               </div>
             </div>

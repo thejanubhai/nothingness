@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { isUserAdminAsync } from '@/lib/auth-utils';
 import { env } from '@/lib/env';
@@ -58,35 +59,53 @@ export async function createBooking(spaceId: string, checkIn: Date, checkOut: Da
 }
 
 export async function cancelBooking(bookingId: string, formData?: FormData): Promise<any> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { error: 'Unauthorized' };
+    if (!user) {
+      return { error: 'Unauthorized. Please sign in.' };
+    }
+
+    const adminClient = createAdminClient();
+
+    const { data: booking, error: fetchError } = await adminClient
+      .from('bookings')
+      .select('id, user_id, guest_phone, status')
+      .eq('id', bookingId)
+      .single();
+
+    if (fetchError || !booking) {
+      return { error: 'Booking not found.' };
+    }
+
+    const isAdmin = await isUserAdminAsync(user);
+    const userPhoneDigits = user.phone ? user.phone.replace(/[^0-9]/g, '') : '';
+    const bookingPhoneDigits = booking.guest_phone ? booking.guest_phone.replace(/[^0-9]/g, '') : '';
+    const isOwner = booking.user_id === user.id || (userPhoneDigits && bookingPhoneDigits && userPhoneDigits.endsWith(bookingPhoneDigits.slice(-10)));
+
+    if (!isOwner && !isAdmin) {
+      return { error: 'You are not authorized to cancel this booking.' };
+    }
+
+    const { error } = await adminClient
+      .from('bookings')
+      .update({ 
+        status: 'cancelled',
+        booking_status: 'cancelled',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', bookingId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/bookings');
+    revalidatePath('/admin');
+    revalidatePath('/admin/calendar');
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error cancelling booking:', err);
+    return { error: err.message || 'Failed to cancel booking' };
   }
-
-  const { data: booking } = await supabase
-    .from('bookings')
-    .select('user_id')
-    .eq('id', bookingId)
-    .single();
-
-  if (!booking) return { error: 'Booking not found' };
-
-  const isAdmin = await isUserAdminAsync(user);
-
-  if (booking.user_id !== user.id && !isAdmin) {
-    return { error: 'Unauthorized' };
-  }
-
-  const { error } = await supabase
-    .from('bookings')
-    .update({ status: 'cancelled' })
-    .eq('id', bookingId);
-
-  if (error) return { error: error.message };
-
-  revalidatePath('/dashboard');
-  revalidatePath('/admin');
-  return { success: true };
 }
