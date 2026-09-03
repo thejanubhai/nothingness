@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { normalizeIdentifier } from '@/lib/auth-utils';
+import { isUserAdminAsync } from '@/lib/auth-utils';
 import { env } from '@/lib/env';
 
 import { getBlockedIntervals } from './calendar';
@@ -73,10 +73,7 @@ export async function cancelBooking(bookingId: string, formData?: FormData): Pro
 
   if (!booking) return { error: 'Booking not found' };
 
-  const adminIdentifier = env.ADMIN ? normalizeIdentifier(env.ADMIN) : null;
-  const userPhone = user.phone ? normalizeIdentifier(user.phone) : null;
-  const isAdmin = (adminIdentifier && userPhone === adminIdentifier) || 
-                  Boolean(user.email && (user.email.includes('admin') || user.email.includes('hudav')));
+  const isAdmin = await isUserAdminAsync(user);
 
   if (booking.user_id !== user.id && !isAdmin) {
     return { error: 'Unauthorized' };

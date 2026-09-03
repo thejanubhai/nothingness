@@ -17,17 +17,18 @@ export default async function AdminCalendarPage() {
     .from('bookings')
     .select(`
       id, space_id, check_in, check_out, status, payment_status, payment_method, total_price, guests, user_id,
-      guest_name, guest_phone, guest_email,
+      guest_name, guest_phone, guest_email, created_at, default_guests, additional_guests_count,
       spaces (id, title, slug),
       booking_guests (
         id,
         name,
+        phone,
         verification_token,
         verification_status,
-        guest_profiles (full_name, phone_number, document_number)
+        guest_profiles (id, full_name, phone_number, document_number, is_verified, photo_url, live_face_url, face_id_vetted, id_front_url)
       )
     `)
-    .order('check_in', { ascending: true });
+    .order('created_at', { ascending: false });
 
   // 3. Fetch all external/internal blocked dates
   const { data: blockedDates } = await supabase

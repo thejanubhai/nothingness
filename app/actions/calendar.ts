@@ -7,15 +7,24 @@ export async function getBlockedIntervals(spaceId: string, iCalUrl?: string | nu
   const supabase = await createClient();
   const intervals: { start: string, end: string }[] = [];
 
-  // 1. Fetch internal bookings
+  // 1. Fetch internal bookings (exclude cancelled and unpaid abandoned checkouts)
   const { data: bookings } = await supabase
     .from('bookings')
-    .select('check_in, check_out')
+    .select('check_in, check_out, status, payment_status, created_at')
     .eq('space_id', spaceId)
     .neq('status', 'cancelled');
 
+  const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
   if (bookings) {
     bookings.forEach(b => {
+      if (b.status === 'pending') {
+        const isPaid = b.payment_status === 'completed';
+        const isRecentCheckout = b.created_at && b.created_at >= thirtyMinsAgo;
+        if (!isPaid && !isRecentCheckout) {
+          return; // Skip abandoned checkout
+        }
+      }
       intervals.push({ start: b.check_in.split('T')[0], end: b.check_out.split('T')[0] });
     });
   }

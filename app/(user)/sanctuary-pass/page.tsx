@@ -16,7 +16,9 @@ import {
   CheckCircle2, 
   AlertCircle,
   Eye,
-  Bot
+  Bot,
+  Camera,
+  Scan
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -26,6 +28,7 @@ import EventConciergeModal from '@/components/events/EventConciergeModal';
 import EventDossierModal from '@/components/events/EventDossierModal';
 import LiveTicketQRModal from '@/components/events/LiveTicketQRModal';
 import IDUploadModal from '@/components/IDUploadModal';
+import FaceIdScanModal from '@/components/FaceIdScanModal';
 
 interface SanctuaryEvent {
   id: string;
@@ -33,8 +36,10 @@ interface SanctuaryEvent {
   tagline: string;
   description: string;
   tier: 'munch' | 'rave' | 'soiree';
-  event_date: string;
-  end_time?: string;
+  event_date: string | null;
+  display_date?: string;
+  end_time?: string | null;
+  display_time?: string;
   dress_code: string;
   consent_marshall_name: string;
   price_couples: number;
@@ -49,6 +54,9 @@ interface SanctuaryEvent {
   secret_location_coordinates?: string;
   secret_location_instructions?: string;
   location_revealed_hours_before?: number;
+  cover_image_url?: string;
+  is_locked?: boolean;
+  requires_munch_vetting?: boolean;
   spaces?: {
     title: string;
     city: string;
@@ -74,6 +82,8 @@ function SanctuaryPassContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isIdVerified, setIsIdVerified] = useState(false);
   const [hasSanctuaryPass, setHasSanctuaryPass] = useState(false);
+  const [isInPersonVetted, setIsInPersonVetted] = useState(false);
+  const [isFaceIdVetted, setIsFaceIdVetted] = useState(false);
   const [passPrice, setPassPrice] = useState(1499);
   const [userAlias, setUserAlias] = useState('Guest');
   
@@ -84,6 +94,7 @@ function SanctuaryPassContent() {
   // Modals
   const [showBuyPassModal, setShowBuyPassModal] = useState(false);
   const [showIdModal, setShowIdModal] = useState(false);
+  const [showFaceIdModal, setShowFaceIdModal] = useState(false);
   const [selectedEventForConcierge, setSelectedEventForConcierge] = useState<SanctuaryEvent | null>(null);
   const [selectedEventForDossier, setSelectedEventForDossier] = useState<SanctuaryEvent | null>(null);
   const [selectedEventForTicket, setSelectedEventForTicket] = useState<{ event: SanctuaryEvent; app: EventApplication } | null>(null);
@@ -97,6 +108,8 @@ function SanctuaryPassContent() {
       setIsLoggedIn(!!data.isLoggedIn);
       setIsIdVerified(data.isIdVerified || false);
       setHasSanctuaryPass(data.hasSanctuaryPass || false);
+      setIsInPersonVetted(data.isInPersonVetted || false);
+      setIsFaceIdVetted(data.isFaceIdVetted || false);
       setPassPrice(data.passPrice || 1499);
       setUserAlias(data.userAlias || 'Guest');
       setEvents(data.events || []);
@@ -252,36 +265,68 @@ function SanctuaryPassContent() {
       )}
 
       {/* GATHERINGS DIRECTORY */}
-      <div className="space-y-6">
+      <div id="gatherings-directory" className="space-y-6">
         {/* The 2-Level Vetting & Munches Architecture */}
         <div className="p-6 rounded-3xl bg-zinc-950/80 border border-zinc-800/90 space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
-              The Vetting Progression
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full self-start">
+              The 2-Level Vetting Progression
             </span>
-            <span className="text-xs font-mono text-zinc-400">
-              Sanctuary Pass Required for Level 1
-            </span>
+            {isLoggedIn && (
+              <div className="flex flex-wrap items-center gap-2">
+                {isInPersonVetted ? (
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono text-xs font-bold flex items-center gap-1.5 self-start">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>✓ Level 2 In-Person Certified</span>
+                  </span>
+                ) : isIdVerified ? (
+                  <span className="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-xs font-bold flex items-center gap-1.5 self-start">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Level 1 ID Passholder • Munch Vetting Pending</span>
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400 font-mono text-xs self-start">
+                    Step 1: ID Verification Required
+                  </span>
+                )}
+
+                {/* 3D Face ID Status Tag */}
+                {isFaceIdVetted ? (
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono text-xs font-bold flex items-center gap-1.5 self-start">
+                    <Scan className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>3D Face ID Vetted ✓</span>
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setShowFaceIdModal(true)}
+                    className="px-3 py-1 rounded-full bg-accent-gold/15 hover:bg-accent-gold/25 border border-accent-gold/40 text-accent-gold font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors self-start"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-accent-gold" />
+                    <span>Complete 3D Face Scan (Priority Access)</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
             <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-[10px]">1</span>
-                <span className="text-white font-bold">Level 1: Munches &amp; Salons</span>
+                <span className="text-white font-bold">Level 1: Munches &amp; Salons (Open for Booking)</span>
               </div>
               <p className="text-zinc-400 text-[11px] leading-relaxed">
-                ID verification &amp; Sanctuary Pass unlocks Tier 1 Munches. Relaxed conversational meetups where phones ARE allowed. A Nothingness representative is present to discreetly observe vibe and mutual etiquette.
+                ID verification &amp; Sanctuary Pass unlocks Tier 1 Munches. Relaxed conversational meetups where phones ARE allowed. A Nothingness representative is present incognito to observe etiquette and certify Level 2 in-person vetting via QR scan.
               </p>
             </div>
 
             <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-[10px]">2</span>
-                <span className="text-white font-bold">Level 2: Masquerades &amp; Soirées</span>
+                <span className="text-white font-bold">Level 2: Masquerades &amp; Soirées (Classified Teasers)</span>
               </div>
               <p className="text-zinc-400 text-[11px] leading-relaxed">
-                In-person Munch vetting unlocks higher tiers confidentially. Phones are stored safely outside the premises before entry—because every attendee is already physically vetted, there is zero suspicion or anxiety.
+                Dates, times, and secret coordinates remain strictly locked until you complete in-person Munch certification. Phones are safely sealed upon entry—because every attendee is already physically vetted, there is zero suspicion or anxiety.
               </p>
             </div>
           </div>
@@ -324,35 +369,51 @@ function SanctuaryPassContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredEvents.map((evt) => {
               const app = applications[evt.id];
-              const eventDateStr = new Date(evt.event_date).toLocaleDateString([], {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              });
+              const eventDateStr = evt.event_date
+                ? new Date(evt.event_date).toLocaleDateString([], {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : evt.display_date || 'Date Classified';
+
+              const imageSrc = evt.cover_image_url || evt.spaces?.images?.[0] || '/images/IMG_9955.jpg';
 
               return (
                 <div
                   key={evt.id}
-                  className="bg-zinc-950 border border-zinc-900 hover:border-amber-500/40 rounded-3xl p-6 sm:p-7 shadow-2xl transition-all flex flex-col justify-between relative overflow-hidden"
+                  className={`bg-zinc-950 border rounded-3xl p-6 sm:p-7 shadow-2xl transition-all flex flex-col justify-between relative overflow-hidden ${
+                    evt.is_locked
+                      ? 'border-zinc-800/80 hover:border-rose-500/30'
+                      : 'border-zinc-900 hover:border-amber-500/40'
+                  }`}
                 >
-                  {/* Visual Space Image Preview if available */}
-                  {evt.spaces?.images?.[0] && (
-                    <div className="relative h-44 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 mb-4 overflow-hidden rounded-t-3xl">
-                      <img
-                        src={evt.spaces.images[0]}
-                        alt={evt.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                        onError={(e: any) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+                  {/* Visual Space Image Preview */}
+                  <div className="relative h-48 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 mb-4 overflow-hidden rounded-t-3xl">
+                    <img
+                      src={imageSrc}
+                      alt={evt.title}
+                      className={`w-full h-full object-cover transition-transform duration-700 ${
+                        evt.is_locked ? 'brightness-75 contrast-125' : 'group-hover:scale-105'
+                      }`}
+                      onError={(e: any) => {
+                        e.target.src = '/images/IMG_9955.jpg';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent" />
+                    
+                    {evt.is_locked ? (
+                      <div className="absolute bottom-3 left-4 px-3 py-1 rounded-full bg-black/85 backdrop-blur-md border border-rose-500/30 text-[10px] font-mono text-rose-300 flex items-center gap-1.5">
+                        <Lock className="w-3 h-3 text-rose-400" />
+                        <span>Location Classified • Unlocks Post-Munch Vetting</span>
+                      </div>
+                    ) : (
                       <div className="absolute bottom-3 left-4 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/15 text-[10px] font-mono text-zinc-300 flex items-center gap-1.5">
                         <MapPin className="w-3 h-3 text-rose-400" />
-                        <span>{evt.spaces.title} • {evt.spaces.city || 'South Delhi'}</span>
+                        <span>{evt.spaces?.title || 'Sanctuary Suite'} • {evt.spaces?.city || 'South Delhi'}</span>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   <div className="space-y-4">
                     {/* Tier and Date Badge */}
@@ -360,17 +421,49 @@ function SanctuaryPassContent() {
                       <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-mono font-bold uppercase tracking-wider">
                         {evt.tier === 'munch' ? 'Tier 1 • Salon & Munch' : evt.tier === 'rave' ? 'Tier 2 • Noir Masquerade' : 'Tier 3 • Intimate Soirée'}
                       </span>
-                      <span className="text-xs font-mono text-zinc-400 flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-rose-400" />
-                        {eventDateStr}
-                      </span>
+                      
+                      {evt.is_locked ? (
+                        <span className="px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-mono font-bold flex items-center gap-1">
+                          <Lock className="w-3 h-3 text-rose-400" />
+                          <span>Level 2 Locked</span>
+                        </span>
+                      ) : (
+                        <span className="text-xs font-mono text-zinc-400 flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-rose-400" />
+                          {eventDateStr}
+                        </span>
+                      )}
                     </div>
 
                     <div>
-                      <h3 className="text-xl font-bold text-white">{evt.title}</h3>
+                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        {evt.title}
+                      </h3>
                       {evt.tagline && <p className="text-xs text-amber-400/80 font-mono mt-0.5">{evt.tagline}</p>}
                       <p className="text-xs text-zinc-300 leading-relaxed mt-2.5 line-clamp-3">{evt.description}</p>
                     </div>
+
+                    {/* Date & Time Row (Strictly Locked for Unvetted!) */}
+                    {evt.is_locked ? (
+                      <div className="p-3 bg-zinc-900/60 border border-rose-500/20 rounded-2xl flex items-center justify-between text-xs font-mono">
+                        <span className="text-zinc-400 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Date &amp; Schedule:</span>
+                        </span>
+                        <span className="text-rose-300 font-bold flex items-center gap-1">
+                          <Lock className="w-3 h-3" />
+                          <span>Classified (Level 2 Vetted Only)</span>
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl flex items-center justify-between text-xs font-mono">
+                        <span className="text-zinc-400 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Schedule:</span>
+                        </span>
+                        <span className="text-white font-bold">{eventDateStr} {evt.end_time ? `• Until ${evt.end_time}` : ''}</span>
+                      </div>
+                    )}
 
                     {/* Meta Specs */}
                     <div className="grid grid-cols-2 gap-2 text-[11px] font-mono p-3 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl">
@@ -378,22 +471,34 @@ function SanctuaryPassContent() {
                         Dress Code: <span className="text-white font-bold">{evt.dress_code || 'Noir Luxury'}</span>
                       </div>
                       <div className="text-zinc-400">
-                        Floor Lead: <span className="text-purple-300 font-bold">{evt.consent_marshall_name || 'Aria'}</span>
+                        Floor Lead:{' '}
+                        {evt.is_locked ? (
+                          <span className="text-zinc-500 font-bold">🔒 Confidential Guild</span>
+                        ) : (
+                          <span className="text-purple-300 font-bold">{evt.consent_marshall_name || 'Aria'}</span>
+                        )}
                       </div>
                     </div>
 
                     {/* Tiered Prices */}
-                    <div className="flex flex-wrap gap-2 text-[11px] font-mono">
-                      <span className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">
-                        Couple: <strong className="text-white">₹{evt.price_couples?.toLocaleString()}</strong>
-                      </span>
-                      <span className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">
-                        Female: <strong className="text-white">₹{evt.price_females?.toLocaleString()}</strong>
-                      </span>
-                      <span className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">
-                        Male: <strong className="text-white">₹{evt.price_males?.toLocaleString()}</strong>
-                      </span>
-                    </div>
+                    {evt.is_locked ? (
+                      <div className="p-2.5 bg-black/50 border border-white/5 rounded-xl flex items-center gap-2 text-[11px] font-mono text-zinc-400">
+                        <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                        <span>Tariffs and passes revealed upon Level 2 in-person certification</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2 text-[11px] font-mono">
+                        <span className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">
+                          Couple: <strong className="text-white">₹{evt.price_couples?.toLocaleString()}</strong>
+                        </span>
+                        <span className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">
+                          Female: <strong className="text-white">₹{evt.price_females?.toLocaleString()}</strong>
+                        </span>
+                        <span className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">
+                          Male: <strong className="text-white">₹{evt.price_males?.toLocaleString()}</strong>
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Dynamic Action Area */}
@@ -407,7 +512,28 @@ function SanctuaryPassContent() {
                       <span>View Gathering Dossier &amp; Lookbook →</span>
                     </button>
 
-                    {!isLoggedIn ? (
+                    {evt.is_locked ? (
+                      <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-950/40 via-zinc-950 to-zinc-900 border border-rose-500/30 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-rose-400 shrink-0" />
+                          <p className="text-xs font-bold text-white tracking-wide">Level 2 Physical Vetting Barrier</p>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 leading-relaxed">
+                          To protect absolute guest discretion and confidentiality, dates, times, and secret coordinates remain restricted until you attend an in-person Munch and receive Level 2 certification.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedTier('munch');
+                            const el = document.getElementById('gatherings-directory');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="w-full py-2.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 hover:text-white font-bold text-xs rounded-xl border border-rose-500/40 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                        >
+                          <span>Attend an In-Person Munch First →</span>
+                        </button>
+                      </div>
+                    ) : !isLoggedIn ? (
                       <Link
                         href="/auth?redirect=/sanctuary-pass"
                         className="w-full py-3.5 bg-gradient-to-r from-amber-600 via-rose-600 to-purple-600 hover:from-amber-500 hover:to-rose-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer"
@@ -496,7 +622,7 @@ function SanctuaryPassContent() {
       <LiveTicketQRModal
         isOpen={!!selectedEventForTicket}
         onClose={() => setSelectedEventForTicket(null)}
-        event={selectedEventForTicket?.event || null}
+        event={selectedEventForTicket?.event ? { ...selectedEventForTicket.event, event_date: selectedEventForTicket.event.event_date || '' } : null}
         application={selectedEventForTicket?.app || null}
         userAlias={userAlias}
         onDropOutSuccess={fetchPortalData}
@@ -529,6 +655,19 @@ function SanctuaryPassContent() {
           setIsIdVerified(true);
           fetchPortalData();
           setShowBuyPassModal(true);
+        }}
+      />
+
+      {/* 3D FACE ID BIOMETRIC SCAN MODAL */}
+      <FaceIdScanModal
+        isOpen={showFaceIdModal}
+        onClose={() => setShowFaceIdModal(false)}
+        onSuccess={() => {
+          setIsFaceIdVetted(true);
+          fetchPortalData();
+          toast.success('3D Face ID Registered!', {
+            description: 'Your physical vetting is complete for Gatekeepers.',
+          });
         }}
       />
     </div>

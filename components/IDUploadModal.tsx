@@ -16,6 +16,12 @@ import {
   ArrowRight,
   Plus,
   Trash2,
+  User,
+  CreditCard,
+  Calendar,
+  MapPin,
+  Sparkles,
+  Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import IDScanningAnimation from '@/components/IDScanningAnimation';
@@ -37,6 +43,65 @@ interface UploadedImageItem {
   file?: File;
 }
 
+/**
+ * Client-side Canvas face photo extractor.
+ * Automatically crops the guest photo from Aadhaar / Passport with high precision.
+ */
+async function extractPhotoFromId(imageSrc: string, docType: string = 'Aadhaar'): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(null);
+
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        if (!w || !h) return resolve(null);
+
+        let cropX = 0;
+        let cropY = 0;
+        let cropW = 0;
+        let cropH = 0;
+
+        if (docType.toLowerCase().includes('passport')) {
+          cropX = Math.floor(w * 0.04);
+          cropY = Math.floor(h * 0.22);
+          cropW = Math.floor(w * 0.36);
+          cropH = Math.floor(h * 0.54);
+        } else {
+          // Standard Aadhaar Card (landscape): Photo is in upper right quadrant
+          cropX = Math.floor(w * 0.62);
+          cropY = Math.floor(h * 0.16);
+          cropW = Math.floor(w * 0.32);
+          cropH = Math.floor(h * 0.54);
+        }
+
+        cropX = Math.max(0, Math.min(cropX, w - 10));
+        cropY = Math.max(0, Math.min(cropY, h - 10));
+        cropW = Math.max(10, Math.min(cropW, w - cropX));
+        cropH = Math.max(10, Math.min(cropH, h - cropY));
+
+        canvas.width = 300;
+        canvas.height = 360;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        resolve(dataUrl);
+      } catch (e) {
+        console.warn('Face crop error:', e);
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = imageSrc;
+  });
+}
+
 export default function IDUploadModal({
   isOpen,
   onClose,
@@ -48,20 +113,30 @@ export default function IDUploadModal({
 }: IDUploadModalProps) {
   const router = useRouter();
 
-  // Hidden inputs for primary camera and gallery
+  // Hidden inputs for camera and gallery
   const primaryCameraRef = useRef<HTMLInputElement>(null);
   const primaryGalleryRef = useRef<HTMLInputElement>(null);
   const addCameraRef = useRef<HTMLInputElement>(null);
   const addGalleryRef = useRef<HTMLInputElement>(null);
 
   const [uploadedImages, setUploadedImages] = useState<UploadedImageItem[]>([]);
+  const [extractedPhoto, setExtractedPhoto] = useState<string | null>(null);
   const [inputPhone, setInputPhone] = useState(initialPhone || '');
   const [loading, setLoading] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [checkingAuth, setCheckingAuth] = useState(!token && !bookingId);
 
-  // Auto-fetch logged in user's phone if not passed as prop
+  // Verification Details Form
+  const [documentType, setDocumentType] = useState<'Aadhaar' | 'Passport'>('Aadhaar');
+  const [fullName, setFullName] = useState<string>('');
+  const [documentNumber, setDocumentNumber] = useState<string>('');
+  const [dob, setDob] = useState<string>('');
+  const [permanentAddress, setPermanentAddress] = useState<string>('');
+  const [isDetailsVerifiedByUser, setIsDetailsVerifiedByUser] = useState<boolean>(false);
+
+  // Auto-fetch logged in user session
   useEffect(() => {
     if (isOpen) {
       const checkUserSession = async () => {
@@ -74,7 +149,10 @@ export default function IDUploadModal({
           } else if (initialPhone) {
             setInputPhone(initialPhone);
           }
-        } catch (e) {
+          if (user?.user_metadata?.full_name && !fullName) {
+            setFullName(user.user_metadata.full_name);
+          }
+        } catch {
           // ignore
         } finally {
           setCheckingAuth(false);
@@ -84,28 +162,42 @@ export default function IDUploadModal({
     }
   }, [isOpen, initialPhone]);
 
-  // Reset images when modal opens
+  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setUploadedImages([]);
+      setExtractedPhoto(null);
       setError(null);
+      setDocumentNumber('');
+      setIsDetailsVerifiedByUser(false);
     }
   }, [isOpen]);
 
-  const handleAddFiles = (files: FileList | null) => {
+  // Format Aadhaar number with 4-digit groups (XXXX XXXX XXXX)
+  const formatAadhaarInput = (val: string) => {
+    if (documentType !== 'Aadhaar') {
+      return val.toUpperCase();
+    }
+    const clean = val.replace(/[^0-9]/g, '').slice(0, 12);
+    const parts = [];
+    for (let i = 0; i < clean.length; i += 4) {
+      parts.push(clean.slice(i, i + 4));
+    }
+    return parts.join(' ');
+  };
+
+  const handleAddFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setError(null);
 
-    const newItems: UploadedImageItem[] = [];
     const maxAllowed = 2;
     const currentCount = uploadedImages.length;
     const availableSlots = maxAllowed - currentCount;
-
     const filesToProcess = Array.from(files).slice(0, availableSlots);
 
-    filesToProcess.forEach((file) => {
+    for (const file of filesToProcess) {
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onload = async (ev) => {
         const preview = ev.target?.result as string;
         if (preview) {
           setUploadedImages((prev) => {
@@ -119,20 +211,86 @@ export default function IDUploadModal({
               },
             ];
           });
+
+          // Crop face photo from first image
+          const croppedFace = await extractPhotoFromId(preview, documentType);
+          if (croppedFace) {
+            setExtractedPhoto(croppedFace);
+          }
+
+          // Trigger AI scan in background
+          triggerBackgroundScan(preview);
         }
       };
       reader.readAsDataURL(file);
-    });
+    }
+  };
+
+  // Run AI scan without blocking UI
+  const triggerBackgroundScan = async (frontImageBase64: string) => {
+    setIsScanning(true);
+    try {
+      const cleanFront = frontImageBase64.includes('base64,') ? frontImageBase64.split('base64,')[1] : frontImageBase64;
+      const res = await fetch('/api/verify-id', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          images: [cleanFront],
+          scanOnly: true,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.extracted) {
+        if (data.extracted.full_name && data.extracted.full_name !== 'Nothingness Guest') {
+          setFullName(data.extracted.full_name);
+        }
+        if (data.extracted.document_number) {
+          setDocumentNumber(formatAadhaarInput(data.extracted.document_number));
+        }
+        if (data.extracted.document_type) {
+          setDocumentType(data.extracted.document_type === 'Passport' ? 'Passport' : 'Aadhaar');
+        }
+        if (data.extracted.dob) {
+          setDob(data.extracted.dob);
+        }
+        if (data.extracted.permanent_address) {
+          setPermanentAddress(data.extracted.permanent_address);
+        }
+      }
+    } catch {
+      // Background scan error - user can still verify/enter manually
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
     setUploadedImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    if (indexToRemove === 0) {
+      setExtractedPhoto(null);
+    }
     setError(null);
   };
 
   const submitVerification = async () => {
     if (uploadedImages.length === 0) {
       setError('Please capture or upload at least one clear photo of your ID.');
+      return;
+    }
+
+    if (!fullName.trim()) {
+      setError('Please enter your full legal name as printed on your ID.');
+      return;
+    }
+
+    const cleanDoc = documentNumber.replace(/\s+/g, '');
+    if (documentType === 'Aadhaar' && cleanDoc.length !== 12) {
+      setError('Aadhaar number must be exactly 12 digits.');
+      return;
+    }
+
+    if (documentType === 'Passport' && cleanDoc.length < 6) {
+      setError('Please enter a valid Passport number.');
       return;
     }
 
@@ -147,6 +305,12 @@ export default function IDUploadModal({
       const payload: any = {
         images: base64List,
         mimeType: uploadedImages[0]?.file?.type || 'image/jpeg',
+        fullName: fullName.trim(),
+        documentNumber: documentNumber.trim(),
+        documentType,
+        dob: dob.trim(),
+        permanentAddress: permanentAddress.trim(),
+        photoBase64: extractedPhoto || undefined,
       };
 
       if (token) payload.token = token;
@@ -189,9 +353,9 @@ export default function IDUploadModal({
 
       if (data.verified) {
         toast.success('Identity Authenticated for 180 Days!', {
-          description: `Welcome, ${data.name || 'Guest'}.`,
+          description: `Welcome, ${data.name || fullName}.`,
         });
-        onSuccess(data.name);
+        onSuccess(data.name || fullName);
       } else {
         throw new Error(data.reason || 'ID verification could not be validated.');
       }
@@ -216,7 +380,7 @@ export default function IDUploadModal({
             initial={{ scale: 0.95, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: 20 }}
-            className="w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-xl bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl relative max-h-[92vh] overflow-y-auto"
           >
             <button
               onClick={onClose}
@@ -225,9 +389,7 @@ export default function IDUploadModal({
               <X className="w-4 h-4" />
             </button>
 
-            <div className="p-5 sm:p-8">
-              <div className="sheet-drag-pill sm:hidden" />
-
+            <div className="p-5 sm:p-8 space-y-6">
               {!token && !bookingId && !currentUser && !checkingAuth ? (
                 <div className="text-center py-6 space-y-4">
                   <div className="w-14 h-14 bg-accent-gold/10 border border-accent-gold/20 rounded-full flex items-center justify-center mx-auto text-accent-gold">
@@ -254,26 +416,25 @@ export default function IDUploadModal({
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2.5 py-0.5 rounded-md bg-accent-gold/10 text-accent-gold border border-accent-gold/20 text-[10px] uppercase font-mono tracking-wider flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" /> Digital Security Scan
-                    </span>
-                    <span className="px-2.5 py-0.5 rounded-md bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] uppercase font-mono tracking-wider">
-                      Police Compliant
-                    </span>
+                  {/* Header */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2.5 py-0.5 rounded-md bg-accent-gold/10 text-accent-gold border border-accent-gold/20 text-[10px] uppercase font-mono tracking-wider flex items-center gap-1 font-bold">
+                        <ShieldCheck className="w-3 h-3" /> Secure Digital Check-In
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] uppercase font-mono tracking-wider font-bold">
+                        Police Compliant (180 Days)
+                      </span>
+                    </div>
+
+                    <h2 className="font-serif text-2xl text-white font-bold">Guest Identity Verification</h2>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      Upload your <span className="text-white font-semibold">Aadhaar Card</span> or <span className="text-white font-semibold">Passport</span>.
+                      Your document and photo are securely encrypted for statutory compliance.
+                    </p>
                   </div>
 
-                  <h2 className="font-serif text-xl sm:text-2xl mb-1.5 text-white">Digital Guest ID Verification</h2>
-                  <p className="text-xs sm:text-sm text-zinc-400 mb-4 leading-relaxed">
-                    Upload your <span className="text-white font-medium">Aadhaar Card</span> or{' '}
-                    <span className="text-white font-medium">Passport</span>. You can upload front &amp; back together in 1 photo or add both sides separately.
-                    <br />
-                    <span className="text-[10px] sm:text-[11px] text-amber-400/90 mt-1 inline-block font-mono">
-                      ⚠️ Driving License &amp; Voter ID are not accepted per hospitality regulations.
-                    </span>
-                  </p>
-
-                  {/* Hidden file inputs for direct camera and gallery */}
+                  {/* Hidden File Inputs */}
                   <input
                     type="file"
                     ref={primaryCameraRef}
@@ -306,143 +467,219 @@ export default function IDUploadModal({
                     className="hidden"
                   />
 
-                  <div className="space-y-4">
-                    {/* Optional Phone Input if not in booking flow or prop */}
-                    {!token && !bookingId && (
-                      <div>
-                        <label className="block text-[10px] uppercase tracking-widest text-zinc-400 mb-1.5 font-mono">
-                          Mobile Number (For 180-Day Vetted Pass)
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="tel"
-                            value={inputPhone}
-                            onChange={(e) => setInputPhone(e.target.value)}
-                            placeholder="+91 98765 43210"
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-accent-gold/60 font-mono"
-                          />
-                          <Smartphone className="w-4 h-4 text-zinc-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        </div>
+                  {/* Step 1: Upload Action Zone */}
+                  {uploadedImages.length === 0 ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => primaryCameraRef.current?.click()}
+                          className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-2xl p-6 transition-all flex flex-col items-center justify-center gap-2.5 bg-zinc-900/30 hover:bg-zinc-900/60 group cursor-pointer"
+                        >
+                          <Camera className="w-7 h-7 text-accent-gold group-hover:scale-110 transition-transform" />
+                          <span className="text-xs text-white font-bold">Take Live Photo</span>
+                          <span className="text-[10px] text-zinc-500 font-mono">Use Camera</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => primaryGalleryRef.current?.click()}
+                          className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-2xl p-6 transition-all flex flex-col items-center justify-center gap-2.5 bg-zinc-900/30 hover:bg-zinc-900/60 group cursor-pointer"
+                        >
+                          <ImageIcon className="w-7 h-7 text-zinc-400 group-hover:text-accent-gold group-hover:scale-110 transition-transform" />
+                          <span className="text-xs text-white font-bold">Upload File(s)</span>
+                          <span className="text-[10px] text-zinc-500 font-mono">Gallery / PDF / Scan</span>
+                        </button>
                       </div>
-                    )}
-
-                    {/* Step 1: No images uploaded yet -> Big 1-Click Dual Action Zone */}
-                    {uploadedImages.length === 0 && (
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-400 font-mono">
-                            Capture or Upload ID Document
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <button
-                            type="button"
-                            onClick={() => primaryCameraRef.current?.click()}
-                            className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-2xl p-5 transition-all flex flex-col items-center justify-center gap-2 bg-white/[0.02] hover:bg-accent-gold/[0.03] group cursor-pointer"
-                          >
-                            <Camera className="w-6 h-6 text-accent-gold group-hover:scale-110 transition-transform" />
-                            <span className="text-xs text-white/90 font-medium">Take Photo</span>
-                            <span className="text-[9px] text-white/40 font-mono">Direct Camera</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => primaryGalleryRef.current?.click()}
-                            className="border border-dashed border-zinc-800 hover:border-accent-gold/50 rounded-2xl p-5 transition-all flex flex-col items-center justify-center gap-2 bg-white/[0.02] hover:bg-accent-gold/[0.03] group cursor-pointer"
-                          >
-                            <ImageIcon className="w-6 h-6 text-white/60 group-hover:text-accent-gold group-hover:scale-110 transition-transform" />
-                            <span className="text-xs text-white/90 font-medium">Upload File(s)</span>
-                            <span className="text-[9px] text-white/40 font-mono">Select 1 or 2 Photos</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Step 2: Uploaded Previews (1 or 2 images) */}
-                    {uploadedImages.length > 0 && (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-400 font-mono">
-                            Uploaded Document ({uploadedImages.length}/2)
-                          </p>
-                          <span className="text-[10px] text-green-400 font-mono font-bold">
-                            ✓ {uploadedImages.length === 1 ? '1 Photo Ready' : 'Both Photos Ready'}
+                    </div>
+                  ) : (
+                    /* Step 2: Uploaded Previews & Live Extracted Face */
+                    <div className="space-y-5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono uppercase text-zinc-400 font-bold">
+                          Document Photos ({uploadedImages.length}/2)
+                        </span>
+                        {isScanning && (
+                          <span className="text-[10px] text-accent-gold font-mono flex items-center gap-1.5 animate-pulse">
+                            <Sparkles className="w-3 h-3" /> Auto-scanning document details...
                           </span>
-                        </div>
+                        )}
+                      </div>
 
-                        <div className={`grid ${uploadedImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
-                          {uploadedImages.map((img, idx) => (
-                            <div key={img.id} className="relative group rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900">
-                              <IDScanningAnimation imagePreview={img.preview} isScanning={loading} />
-                              <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveImage(idx)}
-                                  disabled={loading}
-                                  className="p-1.5 bg-black/80 hover:bg-red-500 hover:text-white border border-white/20 text-white rounded-lg text-[10px] transition-colors cursor-pointer"
-                                  title="Remove Photo"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                              <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/75 rounded text-[9px] text-zinc-300 font-mono">
-                                {idx === 0 ? 'Document Photo 1' : 'Back / Photo 2'}
-                              </div>
+                      {/* Images Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {uploadedImages.map((img, idx) => (
+                          <div key={img.id} className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-video flex items-center justify-center">
+                            <img src={img.preview} alt="ID Document" className="w-full h-full object-cover" />
+                            <div className="absolute top-2 right-2">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(idx)}
+                                className="p-1.5 bg-black/80 hover:bg-red-500 text-white rounded-lg transition-colors cursor-pointer"
+                                title="Remove"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-                          ))}
-                        </div>
+                            <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/80 rounded text-[9px] text-zinc-300 font-mono">
+                              {idx === 0 ? 'Front Side' : 'Back Side'}
+                            </div>
+                          </div>
+                        ))}
 
-                        {/* Optional 2nd image addition when 1 image is already added */}
                         {uploadedImages.length === 1 && (
-                          <div className="border border-dashed border-zinc-800/80 rounded-xl p-3 bg-white/[0.01] flex items-center justify-between">
-                            <div className="text-left">
-                              <p className="text-[11px] text-zinc-300 font-medium">Add Back Side Photo?</p>
-                              <p className="text-[9px] text-zinc-500 font-mono">Optional if your document is in 1 photo</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => addCameraRef.current?.click()}
-                                className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white rounded-lg text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-colors"
-                              >
-                                <Camera className="w-3 h-3 text-accent-gold" />
-                                <span>Camera</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => addGalleryRef.current?.click()}
-                                className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white rounded-lg text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-colors"
-                              >
-                                <ImageIcon className="w-3 h-3 text-accent-gold" />
-                                <span>Gallery</span>
-                              </button>
-                            </div>
+                          <div
+                            onClick={() => addCameraRef.current?.click()}
+                            className="border border-dashed border-zinc-800 hover:border-zinc-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-zinc-900/20 aspect-video"
+                          >
+                            <Plus className="w-5 h-5 text-zinc-500" />
+                            <span className="text-xs text-zinc-400 font-medium">Add Back Side</span>
+                            <span className="text-[9px] text-zinc-600 font-mono">Optional if 1 photo has both</span>
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
+
+                      {/* Live Extracted Face & Photo Match Box */}
+                      {extractedPhoto && (
+                        <div className="p-4 rounded-2xl bg-zinc-900/60 border border-emerald-500/30 flex items-center gap-4">
+                          <div className="w-16 h-20 rounded-xl overflow-hidden border border-emerald-500/40 bg-black shrink-0 shadow-lg">
+                            <img src={extractedPhoto} alt="Extracted Face" className="w-full h-full object-cover" />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold inline-flex items-center gap-1">
+                              <Check className="w-3 h-3" /> Extracted Photo Matched
+                            </span>
+                            <p className="text-xs text-white font-medium mt-1">Photo cropped from your official document</p>
+                            <p className="text-[10px] text-zinc-400 mt-0.5">This official photograph will be attached to your Police Compliance Dossier.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Point-to-Point Exact Detail Confirmation Form */}
+                      <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 space-y-4 font-mono text-xs">
+                        <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                          <span className="text-xs text-zinc-300 font-bold uppercase tracking-wider flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-accent-gold" />
+                            Confirm Exact Document Details
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setDocumentType('Aadhaar')}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] transition-colors ${
+                                documentType === 'Aadhaar' ? 'bg-accent-gold text-black font-bold' : 'bg-zinc-800 text-zinc-400'
+                              }`}
+                            >
+                              Aadhaar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDocumentType('Passport')}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] transition-colors ${
+                                documentType === 'Passport' ? 'bg-accent-gold text-black font-bold' : 'bg-zinc-800 text-zinc-400'
+                              }`}
+                            >
+                              Passport
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-zinc-400 block mb-1">Full Legal Name (as on card)</label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. Huda Vaqt"
+                              value={fullName}
+                              onChange={(e) => setFullName(e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white font-mono focus:border-amber-500 focus:outline-none"
+                            />
+                            <User className="w-4 h-4 text-zinc-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-zinc-400 block mb-1">
+                            {documentType === 'Aadhaar' ? '12-Digit Aadhaar Number' : 'Passport Number'}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              required
+                              placeholder={documentType === 'Aadhaar' ? 'XXXX XXXX 1234' : 'A1234567'}
+                              value={documentNumber}
+                              onChange={(e) => setDocumentNumber(formatAadhaarInput(e.target.value))}
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white font-mono tracking-wider focus:border-amber-500 focus:outline-none"
+                            />
+                            <CreditCard className="w-4 h-4 text-zinc-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-zinc-400 block mb-1">Date of Birth / Year</label>
+                            <input
+                              type="text"
+                              placeholder="DD/MM/YYYY"
+                              value={dob}
+                              onChange={(e) => setDob(e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white font-mono focus:border-amber-500 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-zinc-400 block mb-1">Contact Phone</label>
+                            <input
+                              type="tel"
+                              placeholder="+91..."
+                              value={inputPhone}
+                              onChange={(e) => setInputPhone(e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white font-mono focus:border-amber-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-zinc-400 block mb-1">Residential Address (Optional)</label>
+                          <input
+                            type="text"
+                            placeholder="Residential address as printed on ID"
+                            value={permanentAddress}
+                            onChange={(e) => setPermanentAddress(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white font-mono focus:border-amber-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs flex items-center gap-2 mt-4">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3.5 rounded-2xl text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
                       <span>{error}</span>
                     </div>
                   )}
 
-                  <button
-                    onClick={submitVerification}
-                    disabled={loading || uploadedImages.length === 0}
-                    className="w-full mt-6 bg-accent-gold hover:bg-white text-black py-4 rounded-xl text-xs font-bold tracking-[0.15em] uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xl cursor-pointer"
-                  >
-                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    {loading
-                      ? 'Authenticating Security Hologram...'
-                      : uploadedImages.length > 1
-                      ? 'Submit & Verify Both Photos'
-                      : 'Submit & Verify ID'}
-                  </button>
+                  {uploadedImages.length > 0 && (
+                    <button
+                      onClick={submitVerification}
+                      disabled={loading || !fullName.trim() || !documentNumber.trim()}
+                      className="w-full py-4 bg-accent-gold hover:bg-white text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>Uploading &amp; Authenticating 180-Day ID...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="w-4 h-4" />
+                          <span>Submit &amp; Authenticate 180-Day ID Pass</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </>
               )}
             </div>

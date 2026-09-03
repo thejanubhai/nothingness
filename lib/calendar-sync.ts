@@ -304,6 +304,19 @@ export async function syncCalendars(
     }
   }
 
+  // Prune abandoned checkouts (> 2 hours old without payment) to keep calendar & DB clean
+  try {
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    await supabase
+      .from('bookings')
+      .update({ status: 'cancelled', payment_status: 'failed' })
+      .eq('status', 'pending')
+      .eq('payment_status', 'pending')
+      .lt('created_at', twoHoursAgo);
+  } catch (cleanupErr) {
+    console.warn('[Calendar Sync] Abandoned checkouts cleanup error:', cleanupErr);
+  }
+
   return result;
 }
 

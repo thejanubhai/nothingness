@@ -46,14 +46,18 @@ export default function EventDossierModal({
 
   if (!isOpen || !event) return null;
 
-  const eventDateStr = new Date(event.event_date).toLocaleDateString([], {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const eventDateStr = event.is_locked
+    ? (event.display_date || '🔒 Date Classified • Level 2 Only')
+    : event.event_date
+    ? new Date(event.event_date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : 'Upcoming • Schedule Pending';
 
-  const displayImage = event.spaces?.images?.[0] || '/images/IMG_9955.jpg';
+  const displayImage = event.cover_image_url || event.spaces?.images?.[0] || '/images/IMG_9955.jpg';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-2xl animate-fadeIn">
@@ -142,12 +146,18 @@ export default function EventDossierModal({
                     <MapPin className="w-4 h-4 text-rose-400" />
                     Secret Sanctuary Location
                   </span>
-                  <span className="text-[10px] font-mono text-purple-300 bg-purple-950/60 border border-purple-500/30 px-2 py-0.5 rounded">
-                    Coordinates Revealed 3 Hours Prior
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                    event.is_locked
+                      ? 'text-rose-300 bg-rose-950/60 border border-rose-500/30'
+                      : 'text-purple-300 bg-purple-950/60 border border-purple-500/30'
+                  }`}>
+                    {event.is_locked ? 'Level 2 Vetting Required' : 'Coordinates Revealed 3 Hours Prior'}
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 font-mono">
-                  {event.secret_location_address || 'Private multi-level penthouse residence in South Delhi. Exact GPS pin, discreet parking, and entry directions delivered directly to passholders via dynamic QR portal.'}
+                  {event.is_locked
+                    ? '🔒 Secret Sanctuary Penthouse coordinates and entry floor guidelines are strictly restricted to members who have completed in-person Level 2 vetting at a Munch.'
+                    : (event.secret_location_address || 'Private multi-level penthouse residence in South Delhi. Exact GPS pin, discreet parking, and entry directions delivered directly to passholders via dynamic QR portal.')}
                 </p>
               </div>
 
@@ -345,26 +355,40 @@ export default function EventDossierModal({
         {/* Footer Pricing & CTA Action */}
         <div className="p-5 sm:p-6 bg-zinc-950 border-t border-zinc-800/80 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4">
           
-          {/* Price Breakdown */}
-          <div className="flex items-center gap-3 text-xs font-mono">
-            <div>
-              <span className="text-zinc-400 text-[10px] block uppercase">Couple Pass</span>
-              <span className="text-base font-bold text-white">₹{event.price_couples?.toLocaleString() || '6,999'}</span>
+          {event.is_locked ? (
+            <div className="flex items-center gap-2 text-rose-400 text-xs font-mono font-bold">
+              <Lock className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>Level 2 Vetting Barrier Active</span>
             </div>
-            <span className="text-zinc-700">|</span>
-            <div>
-              <span className="text-zinc-400 text-[10px] block uppercase">Single Female</span>
-              <span className="text-base font-bold text-rose-300">₹{event.price_females?.toLocaleString() || '1,999'}</span>
+          ) : (
+            /* Price Breakdown */
+            <div className="flex items-center gap-3 text-xs font-mono">
+              <div>
+                <span className="text-zinc-400 text-[10px] block uppercase">Couple Pass</span>
+                <span className="text-base font-bold text-white">₹{event.price_couples?.toLocaleString() || '6,999'}</span>
+              </div>
+              <span className="text-zinc-700">|</span>
+              <div>
+                <span className="text-zinc-400 text-[10px] block uppercase">Single Female</span>
+                <span className="text-base font-bold text-rose-300">₹{event.price_females?.toLocaleString() || '1,999'}</span>
+              </div>
+              <span className="text-zinc-700">|</span>
+              <div>
+                <span className="text-zinc-400 text-[10px] block uppercase">Single Male</span>
+                <span className="text-base font-bold text-purple-300">₹{event.price_males?.toLocaleString() || '7,999'}</span>
+              </div>
             </div>
-            <span className="text-zinc-700">|</span>
-            <div>
-              <span className="text-zinc-400 text-[10px] block uppercase">Single Male</span>
-              <span className="text-base font-bold text-purple-300">₹{event.price_males?.toLocaleString() || '7,999'}</span>
-            </div>
-          </div>
+          )}
 
           {/* Action Button */}
-          {!isLoggedIn ? (
+          {event.is_locked ? (
+            <button
+              onClick={onClose}
+              className="w-full sm:w-auto px-6 py-3.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-rose-500/40 shadow-xl flex items-center justify-center gap-2 cursor-pointer transition-all font-mono"
+            >
+              <span>Attend an In-Person Munch First →</span>
+            </button>
+          ) : !isLoggedIn ? (
             <Link
               href="/auth?redirect=/sanctuary-pass"
               className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-amber-600 via-rose-600 to-purple-600 hover:from-amber-500 hover:to-rose-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl flex items-center justify-center gap-2 cursor-pointer transition-all"

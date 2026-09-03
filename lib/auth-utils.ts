@@ -82,11 +82,6 @@ export function isUserAdmin(
     }
   }
 
-  // 6. Direct admin email or identifier match
-  if (user.email && (user.email.toLowerCase().includes('admin') || user.email.toLowerCase().includes('hudav'))) {
-    return true;
-  }
-
   return false;
 }
 

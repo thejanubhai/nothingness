@@ -185,14 +185,25 @@ export async function generateIcalResponse(
     }> = [];
 
     if (space) {
-      // 1. Fetch confirmed / pending internal bookings
+      // 1. Fetch valid internal bookings (exclude cancelled or abandoned checkouts older than 30 mins)
       const { data: bookings } = await supabase
         .from('bookings')
-        .select('id, check_in, check_out, guests, status')
+        .select('id, check_in, check_out, guests, status, payment_status, created_at')
         .eq('space_id', space.id)
         .neq('status', 'cancelled');
 
+      const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
       bookings?.forEach((b) => {
+        // If pending, only block dates if paid or within 30 min checkout window
+        if (b.status === 'pending') {
+          const isPaid = b.payment_status === 'completed';
+          const isRecentCheckout = b.created_at && b.created_at >= thirtyMinsAgo;
+          if (!isPaid && !isRecentCheckout) {
+            return; // Skip abandoned checkout so Airbnb and MMT are not blocked
+          }
+        }
+
         eventsList.push({
           uid: `booking-${b.id}@nothingness.asia`,
           startDate: b.check_in,

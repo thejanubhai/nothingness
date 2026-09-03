@@ -2,8 +2,9 @@
 
 import { useState, use, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ShieldAlert, CheckCircle2, CreditCard, Lock, Calendar, MapPin, Sparkles, AlertCircle } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, CreditCard, Lock, Calendar, MapPin, Sparkles, AlertCircle, Camera, Scan } from 'lucide-react';
 import IDUploadModal from '@/components/IDUploadModal';
+import FaceIdScanModal from '@/components/FaceIdScanModal';
 import { toast } from 'sonner';
 
 export default function GuestPrivateVerification({ params }: { params: Promise<{ token: string }> }) {
@@ -14,6 +15,9 @@ export default function GuestPrivateVerification({ params }: { params: Promise<{
   const [loading, setLoading] = useState(true);
   const [guestData, setGuestData] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [faceIdModalOpen, setFaceIdModalOpen] = useState(false);
+  const [faceIdVetted, setFaceIdVetted] = useState(false);
+  const [liveFaceUrl, setLiveFaceUrl] = useState('');
   const [verified, setVerified] = useState(false);
   const [verifiedName, setVerifiedName] = useState('');
   const [paying, setPaying] = useState(false);
@@ -34,6 +38,8 @@ export default function GuestPrivateVerification({ params }: { params: Promise<{
       if (data.guest.verification_status === 'verified') {
         setVerified(true);
         setVerifiedName(data.guest.name || 'Guest');
+        setFaceIdVetted(Boolean(data.guest?.guest_profiles?.face_id_vetted));
+        setLiveFaceUrl(data.guest?.guest_profiles?.live_face_url || '');
       }
 
       // Check if redirected after payment
@@ -249,6 +255,27 @@ export default function GuestPrivateVerification({ params }: { params: Promise<{
             <p className="text-white/60 text-xs font-mono">
               Thank you, <span className="text-accent-gold font-bold">{verifiedName}</span>. Your verification has been registered.
             </p>
+            
+            {faceIdVetted ? (
+              <div className="pt-2">
+                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-mono font-bold inline-flex items-center gap-1.5">
+                  <Scan className="w-3.5 h-3.5" />
+                  <span>3D Face ID Biometric Verified ✓</span>
+                </span>
+              </div>
+            ) : (
+              <div className="pt-4 border-t border-white/10 space-y-2.5">
+                <p className="text-xs text-zinc-300 font-medium">Want faster gate check-in &amp; priority access to private events?</p>
+                <button
+                  onClick={() => setFaceIdModalOpen(true)}
+                  className="px-6 py-2.5 bg-accent-gold/20 hover:bg-accent-gold/30 border border-accent-gold/40 text-accent-gold rounded-xl text-xs font-bold font-mono uppercase tracking-wider flex items-center justify-center gap-2 mx-auto cursor-pointer transition-colors"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Complete 3D Face Scan (Confidential)</span>
+                </button>
+              </div>
+            )}
+
             <p className="text-[11px] text-white/40 pt-2">
               You will receive door lockbox access codes on your phone prior to check-in.
             </p>
@@ -265,6 +292,20 @@ export default function GuestPrivateVerification({ params }: { params: Promise<{
           setVerified(true);
           setVerifiedName(n);
           toast.success(`Identity verified for ${n}!`);
+          setFaceIdModalOpen(true);
+        }}
+      />
+
+      <FaceIdScanModal
+        isOpen={faceIdModalOpen}
+        onClose={() => setFaceIdModalOpen(false)}
+        guestId={guestData?.guest_profile_id || guestData?.guest_profiles?.id}
+        onSuccess={(url) => {
+          setFaceIdVetted(true);
+          setLiveFaceUrl(url);
+          toast.success('3D Face ID Registered!', {
+            description: 'Your real-life identity is verified for Gatekeeper door entry.',
+          });
         }}
       />
     </main>

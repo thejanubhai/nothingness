@@ -387,6 +387,22 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
       return NextResponse.redirect(`${siteUrl}/dashboard?payment=success`, 303);
     } else {
       const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'Payment failed or was cancelled.');
+      
+      // Auto-cancel booking if payment failed or user cancelled at gateway
+      if (udf1 || txnid) {
+        try {
+          await supabaseAdmin
+            .from('bookings')
+            .update({
+              status: 'cancelled',
+              payment_status: 'failed',
+            })
+            .or(`payment_order_id.eq.${txnid},id.eq.${udf1}`);
+        } catch (cancelErr) {
+          console.warn('[PayU Callback] Failed to auto-cancel booking on payment failure:', cancelErr);
+        }
+      }
+
       if (udf1) {
         return NextResponse.redirect(`${siteUrl}/booking/${udf1}/verify?payment=failed&error=${errorMsg}`, 303);
       }

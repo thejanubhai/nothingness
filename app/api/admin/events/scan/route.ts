@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { isUserAdmin } from '@/lib/auth-utils';
+import { isUserAdminAsync } from '@/lib/auth-utils';
 
 async function checkAdminAuth(supabase: any) {
   const { data: { user } } = await supabase.auth.getUser();
-  return isUserAdmin(user);
+  return user && (await isUserAdminAsync(user));
 }
 
 export async function POST(req: NextRequest) {
@@ -45,13 +45,13 @@ export async function POST(req: NextRequest) {
     // Fetch Guest profile & ID status
     const { data: guestProfile } = await adminClient
       .from('guest_profiles')
-      .select('full_name, phone, is_verified')
+      .select('full_name, phone, is_verified, in_person_vetted, photo_url, live_face_url, face_id_vetted, face_id_vetted_at, id_front_url, document_number, id_document_type')
       .eq('user_id', app.user_id)
       .maybeSingle();
 
     const { data: kinksterProfile } = await adminClient
       .from('kinkster_profiles')
-      .select('alias, avatar_url')
+      .select('alias, avatar_url, in_person_vetted, face_id_vetted, live_face_url')
       .eq('id', app.user_id)
       .maybeSingle();
 
@@ -100,18 +100,28 @@ export async function POST(req: NextRequest) {
         await adminClient
           .from('kinkster_profiles')
           .update({
+            in_person_vetted: true,
+            in_person_vetted_at: new Date().toISOString(),
             is_trusted_host: true,
             updated_at: new Date().toISOString(),
           })
           .eq('id', app.user_id);
+
+        await adminClient
+          .from('guest_profiles')
+          .update({
+            in_person_vetted: true,
+            in_person_vetted_at: new Date().toISOString(),
+          })
+          .eq('user_id', app.user_id);
       }
 
       return NextResponse.json({
         success: true,
         physicallyVetted: true,
         app,
-        guestProfile,
-        kinksterProfile,
+        guestProfile: { ...guestProfile, in_person_vetted: true },
+        kinksterProfile: { ...kinksterProfile, in_person_vetted: true },
       });
     }
 

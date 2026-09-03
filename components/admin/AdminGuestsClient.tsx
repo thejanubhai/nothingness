@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { 
-  Search, UserCheck, UserX, Plus, ShieldCheck, 
+  Search, UserCheck, UserX, User, Plus, ShieldCheck, 
   FileText, Download, Clock, Phone, MapPin, Eye, CheckCircle2, XCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -17,13 +17,18 @@ interface GuestProfile {
   id_document_type: string;
   document_number: string;
   is_verified: boolean;
+  in_person_vetted?: boolean;
+  in_person_vetted_at?: string;
   permanent_address?: string;
   dob?: string;
   is_foreign_national?: boolean;
   verification_timestamp?: string;
-  created_at: string;
   id_front_url?: string;
   id_back_url?: string;
+  photo_url?: string;
+  id_document_url?: string;
+  face_id_vetted?: boolean;
+  live_face_url?: string;
   booking_guests?: Array<{
     bookings?: {
       id: string;
@@ -198,10 +203,24 @@ export default function AdminGuestsClient({ initialGuests }: { initialGuests: Gu
               {filteredGuests.map((guest) => (
                 <tr key={guest.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="px-6 py-4">
-                    <p className="text-white font-medium">{guest.full_name}</p>
-                    {guest.phone_number && (
-                      <p className="text-white/40 text-xs font-mono mt-0.5">{guest.phone_number}</p>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-10 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 shrink-0 flex items-center justify-center relative">
+                        {(guest.live_face_url || guest.photo_url) ? (
+                          <img src={guest.live_face_url || guest.photo_url} alt={guest.full_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-4 h-4 text-zinc-500" />
+                        )}
+                        {guest.face_id_vetted && (
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-black shadow-sm" title="3D Face ID Vetted" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">{guest.full_name}</p>
+                        {guest.phone_number && (
+                          <p className="text-white/40 text-xs font-mono mt-0.5">{guest.phone_number}</p>
+                        )}
+                      </div>
+                    </div>
                   </td>
 
                   <td className="px-6 py-4">
@@ -209,16 +228,34 @@ export default function AdminGuestsClient({ initialGuests }: { initialGuests: Gu
                     <p className="text-white/40 text-[11px] font-mono mt-0.5">{guest.document_number}</p>
                   </td>
 
-                  <td className="px-6 py-4">
-                    {guest.is_verified ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 text-green-400 border border-green-500/20 text-xs font-mono">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> 180-Day Verified
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono">
-                        <Clock className="w-3.5 h-3.5" /> Pending Review
-                      </span>
-                    )}
+                  <td className="px-6 py-4 space-y-1">
+                    <div>
+                      {guest.is_verified ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-green-500/10 text-green-400 border border-green-500/20 text-xs font-mono">
+                          <CheckCircle2 className="w-3 h-3" /> L1: ID Verified
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono">
+                          <Clock className="w-3 h-3" /> L1: Pending ID
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {guest.face_id_vetted && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono font-bold">
+                          ✓ 3D Face ID
+                        </span>
+                      )}
+                      {guest.in_person_vetted ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[10px] font-mono font-bold">
+                          ✓ L2: Munch Vetted
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-white/40 border border-white/5 text-[10px] font-mono">
+                          L2: Pending
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   <td className="px-6 py-4 text-xs text-white/60 font-mono">

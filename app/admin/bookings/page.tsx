@@ -1,24 +1,60 @@
 import { createClient } from "@/lib/supabase/server";
-import AdminBookingsClient from "@/components/admin/AdminBookingsClient";
+import UnifiedCalendarClient from "@/components/admin/UnifiedCalendarClient";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminBookings() {
   const supabase = await createClient();
-  
+
+  // 1. Fetch active spaces
+  const { data: spaces } = await supabase
+    .from('spaces')
+    .select('id, title, slug, nightly_price, featured_image')
+    .order('created_at', { ascending: false });
+
+  // 2. Fetch all bookings with spaces and guests
   const { data: bookings } = await supabase
     .from('bookings')
     .select(`
-      id, space_id, check_in, check_out, total_price, status, payment_status, 
-      guest_name, guest_email, guest_phone, guests, default_guests, 
-      additional_guests_count, additional_guest_payment_mode, additional_guest_total_amount, created_at,
-      spaces (title),
+      id, space_id, check_in, check_out, status, payment_status, payment_method, total_price, guests, user_id,
+      guest_name, guest_phone, guest_email, created_at, default_guests, additional_guests_count,
+      spaces (id, title, slug),
       booking_guests (
-        id, name, phone, verification_status, guest_index, payment_status, payment_amount, paid_at, is_primary,
-        guest_profiles (document_number, full_name, is_verified, phone_number)
+        id,
+        name,
+        phone,
+        verification_token,
+        verification_status,
+        guest_profiles (full_name, phone_number, document_number, is_verified)
       )
     `)
     .order('created_at', { ascending: false });
 
-  return <AdminBookingsClient initialBookings={(bookings as any) || []} />;
+  // 3. Fetch all external/internal blocked dates
+  const { data: blockedDates } = await supabase
+    .from('external_blocked_dates')
+    .select(`
+      id, space_id, start_date, end_date, summary,
+      spaces (id, title, slug)
+    `)
+    .order('start_date', { ascending: true });
+
+  // 4. Fetch all calendar sync sources
+  const { data: syncSources } = await supabase
+    .from('calendar_sync_sources')
+    .select(`
+      id, space_id, platform, inbound_ical_url, is_active, last_synced_at, sync_status, sync_error,
+      spaces (id, title, slug)
+    `)
+    .order('created_at', { ascending: false });
+
+  return (
+    <UnifiedCalendarClient
+      initialSpaces={spaces || []}
+      initialBookings={(bookings as any) || []}
+      initialBlockedDates={(blockedDates as any) || []}
+      initialSyncSources={(syncSources as any) || []}
+      defaultTab="bookings"
+    />
+  );
 }

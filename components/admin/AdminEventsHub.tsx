@@ -6,6 +6,7 @@ import {
   Plus, 
   Calendar, 
   Users, 
+  User,
   CreditCard, 
   Bot, 
   QrCode, 
@@ -787,44 +788,76 @@ export default function AdminEventsHub() {
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
-                {filteredCurationApps.map((app) => (
-                  <div
-                    key={app.id}
-                    className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-                  >
-                    <div className="space-y-2 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-white">
-                          Candidate ID: {app.user_id?.slice(0, 8)}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-white/70 text-[10px] font-mono uppercase">
-                          {app.category}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold">
-                          AI Trust Score: {app.ai_trust_score}/100
-                        </span>
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${
-                          app.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                          app.status === 'approved_payment_pending' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' :
-                          app.status === 'waitlisted' ? 'bg-purple-500/10 text-purple-300 border border-purple-500/20' :
-                          'bg-zinc-800 text-zinc-400'
-                        }`}>
-                          {app.status.toUpperCase()}
-                        </span>
+                {filteredCurationApps.map((app) => {
+                  const gp = app.guest_profile;
+                  const kp = app.kinkster_profile;
+                  const avatarImg = gp?.live_face_url || kp?.live_face_url || gp?.photo_url || kp?.avatar_url;
+                  const isFaceVetted = gp?.face_id_vetted || kp?.face_id_vetted;
+
+                  return (
+                    <div
+                      key={app.id}
+                      className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                    >
+                      <div className="flex items-start gap-4 flex-1">
+                        {/* Biometric Avatar Preview */}
+                        <div className="w-14 h-16 rounded-xl overflow-hidden bg-black border border-zinc-700 shrink-0 flex items-center justify-center relative shadow-md">
+                          {avatarImg ? (
+                            <img src={avatarImg} alt={gp?.full_name || 'Candidate'} className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-6 h-6 text-zinc-600" />
+                          )}
+                          {isFaceVetted && (
+                            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border border-black shadow-sm" title="3D Face ID Vetted" />
+                          )}
+                        </div>
+
+                        <div className="space-y-2 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-mono font-bold text-white">
+                              {gp?.full_name || (kp?.alias ? `@${kp.alias}` : `Candidate ${app.user_id?.slice(0, 8)}`)}
+                            </span>
+                            {kp?.alias && gp?.full_name && (
+                              <span className="text-[10px] text-purple-300 font-mono">(@{kp.alias})</span>
+                            )}
+                            <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-white/70 text-[10px] font-mono uppercase">
+                              {app.category}
+                            </span>
+                            {isFaceVetted ? (
+                              <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold flex items-center gap-1">
+                                ✓ 3D Face ID Vetted
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-400 text-[10px] font-mono">
+                                No 3D Face ID
+                              </span>
+                            )}
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold">
+                              AI Trust: {app.ai_trust_score}/100
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                              app.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                              app.status === 'approved_payment_pending' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' :
+                              app.status === 'waitlisted' ? 'bg-purple-500/10 text-purple-300 border border-purple-500/20' :
+                              'bg-zinc-800 text-zinc-400'
+                            }`}>
+                              {app.status.toUpperCase()}
+                            </span>
+                          </div>
+
+                          {app.ai_evaluation_summary && (
+                            <p className="text-xs text-white/60 italic bg-black/40 p-3 rounded-xl border border-white/5">
+                              "{app.ai_evaluation_summary}"
+                            </p>
+                          )}
+
+                          {app.payment_deadline && app.status === 'approved_payment_pending' && (
+                            <p className="text-[10px] text-amber-400 font-mono">
+                              Payment Deadline: {new Date(app.payment_deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          )}
+                        </div>
                       </div>
-
-                      {app.ai_evaluation_summary && (
-                        <p className="text-xs text-white/60 italic bg-black/40 p-3 rounded-xl border border-white/5">
-                          "{app.ai_evaluation_summary}"
-                        </p>
-                      )}
-
-                      {app.payment_deadline && app.status === 'approved_payment_pending' && (
-                        <p className="text-[10px] text-amber-400 font-mono">
-                          Payment Deadline: {new Date(app.payment_deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      )}
-                    </div>
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap items-center gap-2">
@@ -854,7 +887,8 @@ export default function AdminEventsHub() {
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -919,11 +953,75 @@ export default function AdminEventsHub() {
                 </span>
               </div>
 
+              {/* Side-by-Side Physical Verification: Live 3D Face ID vs Official ID */}
+              <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] uppercase font-mono tracking-widest text-zinc-400 font-bold">
+                    Physical Gatekeeper Match
+                  </span>
+                  {scannedResult.guestProfile?.face_id_vetted ? (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-bold">
+                      ✓ 3D Face ID Vetted
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px] font-mono font-bold">
+                      ⚠ ID Only (No 3D Face ID)
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Real-Life 3D Face ID Scan */}
+                  <div className="space-y-1 text-center">
+                    <div className="aspect-[3/4] max-h-40 rounded-xl overflow-hidden border-2 border-emerald-500/50 bg-black shadow-md flex items-center justify-center">
+                      {(scannedResult.guestProfile?.live_face_url || scannedResult.kinksterProfile?.live_face_url) ? (
+                        <img 
+                          src={scannedResult.guestProfile?.live_face_url || scannedResult.kinksterProfile?.live_face_url} 
+                          alt="Live 3D Face ID" 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <div className="p-3 text-[10px] font-mono text-zinc-500">No 3D Face ID scan recorded</div>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-mono text-emerald-400 font-bold block">
+                      Live 3D Face ID (Real Life)
+                    </span>
+                  </div>
+
+                  {/* Official Government ID Photo */}
+                  <div className="space-y-1 text-center">
+                    <div className="aspect-[3/4] max-h-40 rounded-xl overflow-hidden border border-zinc-700 bg-black shadow-md flex items-center justify-center">
+                      {(scannedResult.guestProfile?.photo_url || scannedResult.guestProfile?.id_front_url) ? (
+                        <img 
+                          src={scannedResult.guestProfile?.photo_url || scannedResult.guestProfile?.id_front_url} 
+                          alt="Official ID Photo" 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <div className="p-3 text-[10px] font-mono text-zinc-500">No official ID photo on file</div>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-mono text-zinc-400 font-bold block">
+                      Official ID Document
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                <div>Guest: <strong className="text-white">{scannedResult.guestProfile?.full_name || 'Guest'}</strong></div>
+                <div>Phone: <strong className="text-zinc-300">{scannedResult.guestProfile?.phone || 'On Record'}</strong></div>
                 <div>Event: <strong className="text-white">{scannedResult.app?.sanctuary_events?.title}</strong></div>
                 <div>Category: <strong className="text-amber-400">{scannedResult.app?.category}</strong></div>
-                <div>Aadhaar Verified: <strong className="text-emerald-400">{scannedResult.guestProfile?.is_verified ? 'YES' : 'NO'}</strong></div>
+                <div>ID Verified (L1): <strong className="text-emerald-400">{scannedResult.guestProfile?.is_verified ? 'YES' : 'NO'}</strong></div>
                 <div>Alias: <strong className="text-purple-300">@{scannedResult.kinksterProfile?.alias || 'Guest'}</strong></div>
+                <div className="col-span-2 pt-1 border-t border-zinc-800 flex items-center justify-between">
+                  <span>Physical Vetting (L2):</span>
+                  <strong className={scannedResult.kinksterProfile?.in_person_vetted || scannedResult.guestProfile?.in_person_vetted || scannedResult.physicallyVetted ? "text-emerald-400" : "text-amber-400"}>
+                    {scannedResult.kinksterProfile?.in_person_vetted || scannedResult.guestProfile?.in_person_vetted || scannedResult.physicallyVetted ? "✓ LEVEL 2 CERTIFIED" : "PENDING (NOT VETTED)"}
+                  </strong>
+                </div>
               </div>
 
               {scannedResult.isCheckedIn || scannedResult.checkedIn ? (
@@ -941,18 +1039,25 @@ export default function AdminEventsHub() {
 
               {/* Physical In-Person Vetting Button for Munch */}
               <div className="pt-2 border-t border-zinc-800">
-                <button
-                  onClick={async () => {
-                    await handleVerifyQR(manualTokenInput, 'certify_physical_vetting' as any);
-                    toast.success('In-Person Vetting Certified!', {
-                      description: 'Guest now holds confidential access to Level 2 Masquerades & Private Soirées.',
-                    });
-                  }}
-                  className="w-full py-2.5 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-purple-200" />
-                  <span>Discreetly Certify In-Person Vetting (Level 2 Unlock)</span>
-                </button>
+                {scannedResult.kinksterProfile?.in_person_vetted || scannedResult.guestProfile?.in_person_vetted || scannedResult.physicallyVetted ? (
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs text-center font-mono font-bold flex items-center justify-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Level 2 Vetting Certified (All Higher Tiers Unlocked)</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      await handleVerifyQR(manualTokenInput, 'certify_physical_vetting' as any);
+                      toast.success('In-Person Vetting Certified!', {
+                        description: 'Guest now holds confidential access to Level 2 Masquerades & Private Soirées.',
+                      });
+                    }}
+                    className="w-full py-2.5 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                    <span>Discreetly Certify In-Person Vetting (Level 2 Unlock)</span>
+                  </button>
+                )}
               </div>
             </div>
           )}

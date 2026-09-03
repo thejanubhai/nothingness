@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { isUserAdminAsync } from '@/lib/auth-utils';
 
 export async function GET(req: NextRequest) {
   try {
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    const isAdmin = user.email?.includes('admin') || user.email?.includes('hudav');
+    const isAdmin = await isUserAdminAsync(user);
 
     if (!isAdmin && !hostProfile?.is_trusted_host) {
       return NextResponse.json(

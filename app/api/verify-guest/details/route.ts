@@ -27,6 +27,15 @@ export async function GET(req: NextRequest) {
         payment_amount,
         paid_at,
         is_primary,
+        guest_profile_id,
+        guest_profiles (
+          id,
+          full_name,
+          face_id_vetted,
+          live_face_url,
+          photo_url,
+          document_number
+        ),
         bookings (
           id,
           check_in,

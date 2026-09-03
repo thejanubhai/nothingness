@@ -16,9 +16,12 @@ import {
   CheckCircle2, 
   Sparkles,
   KeyRound,
-  ExternalLink
+  ExternalLink,
+  Scan,
+  Camera
 } from 'lucide-react';
 import IDUploadModal from '@/components/IDUploadModal';
+import FaceIdScanModal from '@/components/FaceIdScanModal';
 import CancelBookingButton from '@/components/CancelBookingButton';
 import CloudinaryImage from '@/components/CloudinaryImage';
 import { toast } from 'sonner';
@@ -37,6 +40,9 @@ interface UserDashboardClientProps {
     is_verified?: boolean;
     verification_expires_at?: string;
     created_at?: string;
+    face_id_vetted?: boolean;
+    live_face_url?: string;
+    face_id_vetted_at?: string;
   } | null;
   kinksterProfile: {
     alias?: string;
@@ -52,9 +58,12 @@ export default function UserDashboardClient({
   upcomingBookings,
 }: UserDashboardClientProps) {
   const [showIdModal, setShowIdModal] = useState(false);
+  const [showFaceIdModal, setShowFaceIdModal] = useState(false);
   const [isVerified, setIsVerified] = useState(profile?.is_verified ?? false);
   const [verifiedName, setVerifiedName] = useState(profile?.full_name || '');
   const [docType, setDocType] = useState(profile?.id_document_type || '');
+  const [isFaceIdVetted, setIsFaceIdVetted] = useState(Boolean(profile?.face_id_vetted));
+  const [liveFaceUrl, setLiveFaceUrl] = useState(profile?.live_face_url || '');
 
   // Calculate Days Left for 180-day ID validity
   let daysLeft = 0;
@@ -184,6 +193,65 @@ export default function UserDashboardClient({
             </div>
           )}
         </div>
+      </div>
+
+      {/* 3D FACE ID BIOMETRIC VETTING (INTERNAL GATEKEEPER PASS) */}
+      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${
+              isFaceIdVetted 
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                : 'bg-accent-gold/10 border-accent-gold/30 text-accent-gold'
+            }`}>
+              <Scan className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold text-white font-serif">3D Face ID Biometric Vetting</h2>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider ${
+                  isFaceIdVetted 
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                    : 'bg-accent-gold/20 text-accent-gold border border-accent-gold/30'
+                }`}>
+                  {isFaceIdVetted ? 'Face ID Vetted ✓' : 'Higher Event Priority'}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Internal Gatekeeper protocol. Outdated ID photos cause delays; your 3D Face ID verifies your real-life presence at event gates.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowFaceIdModal(true)}
+            className={`px-6 py-3 font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              isFaceIdVetted
+                ? 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700'
+                : 'bg-gradient-to-r from-amber-500 to-accent-gold hover:from-amber-400 hover:to-white text-black'
+            }`}
+          >
+            <Camera className="w-4 h-4" />
+            {isFaceIdVetted ? 'Update 3D Face Scan' : 'Complete 3D Face Scan'}
+          </button>
+        </div>
+
+        {isFaceIdVetted && liveFaceUrl && (
+          <div className="mt-6 pt-6 border-t border-zinc-900 flex items-center gap-4">
+            <div className="w-16 h-20 rounded-2xl overflow-hidden border border-emerald-500/40 bg-black shrink-0 shadow-md">
+              <img src={liveFaceUrl} alt="Live Face ID" className="w-full h-full object-cover" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                Physical Appearance Match Archived
+              </p>
+              <p className="text-[11px] text-zinc-400 font-mono">
+                Gatekeepers will match this 3D scan at door entry. Confidential — strictly for internal physical verification.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* LEVEL 2: CHOOSE YOUR JOURNEY PATHWAY */}
@@ -386,6 +454,19 @@ export default function UserDashboardClient({
           setVerifiedName(name);
           toast.success('Level 1 Vetting Complete', {
             description: `Welcome, ${name}. You can now book any Nothingness sanctuary.`
+          });
+        }}
+      />
+
+      {/* 3D FACE ID BIOMETRIC SCAN MODAL */}
+      <FaceIdScanModal
+        isOpen={showFaceIdModal}
+        onClose={() => setShowFaceIdModal(false)}
+        onSuccess={(url) => {
+          setIsFaceIdVetted(true);
+          setLiveFaceUrl(url);
+          toast.success('3D Face ID Registered!', {
+            description: 'Your real-life identity is verified for Gatekeeper door entry.',
           });
         }}
       />

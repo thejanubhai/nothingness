@@ -58,8 +58,7 @@ export default async function AdminLayout({
       title: 'Core Operations',
       items: [
         { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-        { name: 'Master Calendar', href: '/admin/calendar', icon: CalendarDays },
-        { name: 'All Bookings', href: '/admin/bookings', icon: Clock },
+        { name: 'Calendar & Bookings', href: '/admin/calendar', icon: CalendarDays },
       ],
     },
     {

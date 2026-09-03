@@ -23,7 +23,7 @@ interface LiveTicketQRModalProps {
   event: {
     id: string;
     title: string;
-    event_date: string;
+    event_date: string | null;
     tier: string;
     dress_code?: string;
     consent_marshall_name?: string;
@@ -87,7 +87,8 @@ export default function LiveTicketQRModal({
 
   if (!isOpen || !event || !application) return null;
 
-  const eventTime = new Date(event.event_date).getTime();
+  const eventDateStr = event.event_date;
+  const eventTime = eventDateStr ? new Date(eventDateStr).getTime() : Date.now();
   const now = Date.now();
   const hoursUntilEvent = (eventTime - now) / (1000 * 60 * 60);
   const revealHours = event.location_revealed_hours_before || 3;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { normalizeIdentifier } from '@/lib/auth-utils';
+import { isUserAdminAsync } from '@/lib/auth-utils';
 import { env } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
@@ -8,12 +8,7 @@ export const dynamic = 'force-dynamic';
 async function checkAdmin(supabase: any) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
-  
-  const adminIdentifier = normalizeIdentifier(env.ADMIN || '');
-  const userPhone = user.phone ? normalizeIdentifier(user.phone) : null;
-  const isAdmin = (adminIdentifier && userPhone === adminIdentifier) || 
-                  Boolean(user.email && (user.email.includes('admin') || user.email.includes('hudav')));
-  return isAdmin;
+  return await isUserAdminAsync(user);
 }
 
 export async function GET() {

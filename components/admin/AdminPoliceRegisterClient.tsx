@@ -22,6 +22,9 @@ interface GuestRecord {
   visa_number?: string;
   is_verified?: boolean;
   verification_timestamp?: string;
+  photo_url?: string;
+  id_front_url?: string;
+  id_document_url?: string;
   created_at: string;
   booking_guests?: any[];
 }
@@ -276,8 +279,19 @@ export default function AdminPoliceRegisterClient({ initialGuests }: { initialGu
               {filteredGuests.map((guest) => (
                 <tr key={guest.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="px-6 py-4">
-                    <p className="text-white font-semibold">{guest.full_name}</p>
-                    {guest.dob && <p className="text-white/40 text-[10px] mt-0.5 font-mono">DOB: {guest.dob}</p>}
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-10 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 shrink-0 flex items-center justify-center">
+                        {guest.photo_url ? (
+                          <img src={guest.photo_url} alt={guest.full_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <UserCheck className="w-4 h-4 text-zinc-500" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold">{guest.full_name}</p>
+                        {guest.dob && <p className="text-white/40 text-[10px] mt-0.5 font-mono">DOB: {guest.dob}</p>}
+                      </div>
+                    </div>
                   </td>
 
                   <td className="px-6 py-4 font-mono">

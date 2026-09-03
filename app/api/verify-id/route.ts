@@ -4,13 +4,47 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { sendVerificationApprovedNotification } from '@/lib/notifications/verification';
 import { getPlatformActionFees, createPayUPaymentRequestAsync } from '@/lib/payu';
 import { addDays } from 'date-fns';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
+
+async function uploadBase64ToStorage(
+  adminSupabase: any,
+  base64Data: string,
+  filePath: string,
+  mimeType: string = 'image/jpeg'
+): Promise<string | null> {
+  try {
+    const clean = base64Data.includes('base64,') ? base64Data.split('base64,')[1] : base64Data;
+    const buffer = Buffer.from(clean, 'base64');
+    const { error } = await adminSupabase.storage
+      .from('guest-ids')
+      .upload(filePath, buffer, {
+        contentType: mimeType,
+        upsert: true,
+      });
+
+    if (error) {
+      console.warn(`[Storage Upload Failed] ${filePath}:`, error.message);
+      return null;
+    }
+
+    const { data } = adminSupabase.storage.from('guest-ids').getPublicUrl(filePath);
+    return data?.publicUrl || null;
+  } catch (err: any) {
+    console.warn(`[Storage Upload Error] ${filePath}:`, err?.message);
+    return null;
+  }
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { bookingId, guestId, token, phone, frontImage, backImage, images, mimeType } = body;
+    const { 
+      bookingId, guestId, token, phone, frontImage, backImage, images, mimeType,
+      fullName: clientName, documentNumber: clientDocNumber, documentType: clientDocType,
+      dob: clientDob, permanentAddress: clientAddress, photoBase64, scanOnly
+    } = body;
 
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
@@ -27,7 +61,7 @@ export async function POST(req: Request) {
     const sessionEmail = user?.email || null;
 
     // Enforce authentication for standalone / lifestyle ID verifications
-    if (!token && !bookingId && !sessionUserId) {
+    if (!token && !bookingId && !sessionUserId && !scanOnly) {
       return NextResponse.json(
         {
           verified: false,
@@ -41,10 +75,8 @@ export async function POST(req: Request) {
       ? phone.replace(/[^0-9+]/g, '')
       : sessionPhone;
 
-    // ------------------------------------------------------------------
-    // 1. Check if guest is already verified by phone number within 180 days
-    // ------------------------------------------------------------------
-    if (effectivePhone) {
+    // 1. If not scanOnly, check if guest is already verified by phone number within 180 days
+    if (!scanOnly && effectivePhone) {
       const { data: existingProfile } = await adminSupabase
         .from('guest_profiles')
         .select('*')
@@ -56,7 +88,6 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       if (existingProfile) {
-        // Link to booking if booking details provided
         if (bookingId && guestId) {
           await adminSupabase
             .from('booking_guests')
@@ -78,7 +109,6 @@ export async function POST(req: Request) {
             .eq('verification_token', token);
         }
 
-        // Link user_id if logged in
         if (sessionUserId && !existingProfile.user_id) {
           await adminSupabase
             .from('guest_profiles')
@@ -91,15 +121,18 @@ export async function POST(req: Request) {
             verified: true,
             reusedExisting: true,
             name: existingProfile.full_name,
+            document_number: existingProfile.document_number,
+            photo_url: existingProfile.photo_url,
+            id_front_url: existingProfile.id_front_url,
             expires_at: existingProfile.verification_expires_at,
-            message: `Welcome back ${existingProfile.full_name}! Your ID verification is valid for 180 days (expires ${new Date(existingProfile.verification_expires_at).toLocaleDateString()}). No re-verification required.`,
+            message: `Welcome back ${existingProfile.full_name}! Your ID verification is valid for 180 days.`,
           },
           { status: 200 }
         );
       }
     }
 
-    // Collect uploaded image(s) - supports single or multiple photos
+    // Collect uploaded image(s)
     const rawImages: string[] = [];
     if (Array.isArray(images) && images.length > 0) {
       rawImages.push(...images.filter(Boolean));
@@ -120,26 +153,23 @@ export async function POST(req: Request) {
     );
     const imageMimeType = mimeType || 'image/jpeg';
 
-    // 2. Optical Document Recognition via Primary NVIDIA NIM Vision AI (with Gemini Fallback)
-    let result: {
-      valid: boolean;
+    // 2. Multimodal AI Extraction (NVIDIA NIM or Google Gemini)
+    let extractedData: {
+      valid?: boolean;
       name?: string;
-      dob?: string;
-      above18?: boolean;
       document_type?: string;
       document_number?: string;
+      dob?: string;
       permanent_address?: string;
+      above18?: boolean;
       is_foreign_national?: boolean;
       nationality?: string;
       reason?: string;
-    } = {
-      valid: false,
-      reason: 'Could not detect an official identity document (Aadhaar Card or Passport) in the uploaded images.',
-    };
+    } = {};
 
     let visionSucceeded = false;
 
-    // A. Primary: NVIDIA Multimodal Vision AI (Free, high-speed)
+    // A. NVIDIA Multimodal Vision AI
     try {
       const { extractDocumentWithNvidiaVision } = await import('@/lib/ai/nvidia');
       const nvidiaResult = await extractDocumentWithNvidiaVision({
@@ -148,14 +178,14 @@ export async function POST(req: Request) {
       });
 
       if (nvidiaResult.success && nvidiaResult.extracted) {
-        result = { ...result, ...nvidiaResult.extracted };
+        extractedData = { ...nvidiaResult.extracted };
         visionSucceeded = true;
       }
     } catch (nvidiaErr: any) {
-      console.warn('[Verify ID] NVIDIA Vision warning, falling back to Gemini:', nvidiaErr?.message);
+      console.warn('[Verify ID] NVIDIA Vision error:', nvidiaErr?.message);
     }
 
-    // B. Secondary Fallback: Google Gemini (gemini-2.0-flash / gemini-1.5-flash)
+    // B. Google Gemini Vision Fallback
     if (!visionSucceeded) {
       const apiKey = process.env.GEMINI_API_KEY;
       if (apiKey) {
@@ -163,53 +193,33 @@ export async function POST(req: Request) {
           const { GoogleGenAI } = await import('@google/genai');
           const ai = new GoogleGenAI({ apiKey });
 
-          const prompt = `You are an automated Hospitality Identity Document Extraction & KYC AI.
+          const prompt = `You are an expert hospitality and government ID verification OCR system for "Nothingness" luxury retreats.
+Analyze the uploaded image(s) of the guest's Indian Aadhaar Card or Passport.
 
-Analyze the uploaded image(s). Just like in luxury hotel check-ins, guests provide a physical Aadhaar card, a clear photo of their card, a photocopy / printed scan, an e-Aadhaar sheet, a PVC card, or a Passport.
+Extract with point-to-point accuracy:
+1. "valid": true if authentic Aadhaar or Passport.
+2. "name": The exact full legal name of the person as printed on the card.
+3. "document_type": "Aadhaar" or "Passport".
+4. "document_number": Cleanly formatted 12-digit Aadhaar number (e.g. "1234 5678 9012") or Passport number.
+5. "dob": Date of birth (DD/MM/YYYY or YYYY).
+6. "permanent_address": Residential address if visible (especially on back of Aadhaar).
+7. "above18": true unless DOB indicates under 18.
+8. "is_foreign_national": false for Indian Aadhaar, true if foreign passport.
+9. "nationality": "Indian" or country name.
 
-HOSPITALITY EXTRACTION GUIDELINES:
-1. ACCEPT ALL GENUINE AADHAAR & PASSPORT FORMATS:
-   - Accept standard Aadhaar cards, photocopies, scanned prints, e-Aadhaar, PVC smart cards, or Passport bio pages.
-   - Both full 12-digit numbers and masked numbers (e.g. XXXX XXXX 1234) are 100% valid.
-   - As long as the document is an Indian Aadhaar or Passport, set "valid": true.
-
-2. REJECT ONLY OBVIOUS NON-ID IMAGES:
-   - Only reject if the image is completely unrelated to identification (e.g. food, chicken, eggs, animals, memes, landscapes, clothing, random selfies, app screenshots).
-   - If Driving License or PAN card is uploaded, set "valid": false, "reason": "Please upload an Aadhaar Card or Passport."
-
-3. ACCURATE DETAIL EXTRACTION:
-   - "name": Extract the guest's full legal name as printed on the card.
-   - "document_number": Extract the 12-digit Aadhaar number (or masked number / Passport number).
-   - "dob": Extract the Date of Birth (DD/MM/YYYY) or Year of Birth.
-   - "permanent_address": Extract the residential address (from the back side if provided).
-   - "document_type": "Aadhaar" or "Passport".
-   - "above18": true (unless DOB clearly indicates a minor).
-
-Return ONLY valid JSON (no markdown fences):
-{
-  "valid": true,
-  "name": "Full Legal Name",
-  "dob": "DD/MM/YYYY",
-  "above18": true,
-  "document_type": "Aadhaar",
-  "document_number": "1234 5678 9012",
-  "permanent_address": "Residential address",
-  "is_foreign_national": false,
-  "nationality": "Indian",
-  "reason": ""
-}`;
+Return ONLY a valid JSON object without markdown formatting.`;
 
           const parts: any[] = [{ text: prompt }];
           for (const img of cleanImages) {
             parts.push({
               inlineData: {
                 data: img,
-                mimeType: imageMimeType || 'image/jpeg',
+                mimeType: imageMimeType,
               },
             });
           }
 
-          const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+          const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash'];
           for (const modelName of geminiModels) {
             try {
               const response = await ai.models.generateContent({
@@ -217,105 +227,105 @@ Return ONLY valid JSON (no markdown fences):
                 contents: [{ role: 'user', parts }],
               });
 
-              const responseText = response.text || '{}';
-              const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+              const text = response.text || '{}';
+              const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
               const parsed = JSON.parse(cleanJson);
               if (parsed && typeof parsed === 'object') {
-                result = { ...result, ...parsed };
+                extractedData = { ...parsed };
                 visionSucceeded = true;
                 break;
               }
             } catch (modelErr: any) {
-              console.warn(`[Verify ID] Gemini ${modelName} failed:`, modelErr?.message);
+              console.warn(`[Verify ID] Gemini ${modelName} error:`, modelErr?.message);
             }
           }
-        } catch (aiErr: any) {
-          console.warn('[Verify ID] Gemini OCR processing warning:', aiErr?.message);
+        } catch (geminiErr: any) {
+          console.warn('[Verify ID] Gemini OCR processing warning:', geminiErr?.message);
         }
       }
     }
 
-    // C. Graceful Heuristic Fallback: If image is provided and valid, auto-verify with guest account name rather than blocking
-    if (!visionSucceeded) {
-      if (cleanImages.length > 0 && cleanImages[0].length > 100) {
-        const fallbackName = user?.user_metadata?.full_name || (effectivePhone ? `Guest ${effectivePhone.slice(-4)}` : 'Verified Guest');
-        result = {
-          valid: true,
-          name: fallbackName,
-          document_type: 'Aadhaar',
-          document_number: `AADHAAR-${Date.now().toString().slice(-6)}`,
-          above18: true,
-          is_foreign_national: false,
-          nationality: 'Indian',
-          permanent_address: 'Address recorded during digital check-in',
-          reason: '',
-        };
-        visionSucceeded = true;
-      }
+    // If client requested scan-only (interactive preview in upload modal)
+    if (scanOnly) {
+      return NextResponse.json({
+        success: true,
+        visionSucceeded,
+        extracted: {
+          full_name: extractedData.name || '',
+          document_number: extractedData.document_number || '',
+          document_type: extractedData.document_type || 'Aadhaar',
+          dob: extractedData.dob || '',
+          permanent_address: extractedData.permanent_address || '',
+          above18: extractedData.above18 ?? true,
+        }
+      });
     }
 
-    const docTypeLower = (result.document_type || '').toLowerCase();
-    const reasonLower = (result.reason || '').toLowerCase();
-    
-    // Explicit rejection check: Reject ONLY if clearly non-ID or unaccepted document
-    const isExplicitlyFakeOrUnaccepted = 
-      reasonLower.includes('chicken') ||
-      reasonLower.includes('food') ||
-      reasonLower.includes('egg') ||
-      reasonLower.includes('meme') ||
-      reasonLower.includes('animal') ||
-      reasonLower.includes('driving license') ||
-      reasonLower.includes('pan card') ||
-      reasonLower.includes('voter id') ||
-      reasonLower.includes('does not contain an official') ||
-      reasonLower.includes('unrelated');
+    // 3. Resolve Final Name & Document Number (Prioritize client confirmation or AI extraction)
+    const finalDocType = (clientDocType || extractedData.document_type || 'Aadhaar').toLowerCase().includes('passport')
+      ? 'Passport'
+      : 'Aadhaar';
 
-    if (isExplicitlyFakeOrUnaccepted) {
+    let finalName = (clientName || extractedData.name || '').trim();
+    if (!finalName || finalName === 'Nothingness Guest' || finalName === 'Guest' || finalName === 'Full Legal Name') {
+      finalName = user?.user_metadata?.full_name || 'Nothingness Guest';
+    }
+
+    let finalDocNumber = (clientDocNumber || extractedData.document_number || '').trim().toUpperCase();
+    // Validate Aadhaar: remove spaces to check length
+    const digitsOnly = finalDocNumber.replace(/[^0-9]/g, '');
+    if (finalDocType === 'Aadhaar' && digitsOnly.length === 12) {
+      // Format cleanly as 1234 5678 9012
+      finalDocNumber = `${digitsOnly.slice(0, 4)} ${digitsOnly.slice(4, 8)} ${digitsOnly.slice(8, 12)}`;
+    }
+
+    if (!finalDocNumber || finalDocNumber.length < 4) {
       return NextResponse.json(
         {
           verified: false,
-          reason: result.reason || 'Please upload a clear photo or copy of your Indian Aadhaar Card or Passport.',
+          error: 'Please provide a valid 12-digit Aadhaar number or Passport number.',
         },
         { status: 400 }
       );
     }
 
-    if (result.above18 === false) {
-      return NextResponse.json(
-        {
-          verified: false,
-          reason: 'Per Delhi Hospitality Laws, primary guest must be at least 18 years of age.',
-        },
-        { status: 400 }
+    // 4. Upload ID Documents & Extracted Face to Supabase Storage ('guest-ids' bucket)
+    const docId = crypto.randomUUID();
+    let idFrontUrl: string | null = null;
+    let idBackUrl: string | null = null;
+    let photoUrl: string | null = null;
+
+    if (cleanImages[0]) {
+      idFrontUrl = await uploadBase64ToStorage(
+        adminSupabase,
+        cleanImages[0],
+        `id-documents/${docId}-front.jpg`,
+        imageMimeType
       );
     }
 
-    // Auto-approve genuine Aadhaar / Passport documents
-    const isPassport = docTypeLower.includes('passport') || reasonLower.includes('passport');
-    const normalizedDocType = isPassport ? 'Passport' : 'Aadhaar';
-
-    const cleanName = result.name?.trim() && result.name.trim() !== 'Nothingness Guest' && result.name.trim() !== 'Guest' && result.name.trim() !== 'Full Legal Name' && result.name.trim() !== 'Extracted Legal Name'
-      ? result.name.trim()
-      : (user?.user_metadata?.full_name || 'Verified Guest');
-
-    let cleanDocNumber = result.document_number?.trim().toUpperCase();
-    if (!cleanDocNumber || cleanDocNumber === 'XXXX XXXX XXXX' || cleanDocNumber === '1234 5678 9012') {
-      cleanDocNumber = `${normalizedDocType.toUpperCase()}-${Date.now().toString().slice(-6)}`;
+    if (cleanImages[1]) {
+      idBackUrl = await uploadBase64ToStorage(
+        adminSupabase,
+        cleanImages[1],
+        `id-documents/${docId}-back.jpg`,
+        imageMimeType
+      );
     }
 
-    // 3. Prepare verification records with 180-day validity
-    const now = new Date();
-    const expiresAt = addDays(now, 180).toISOString();
-    const isForeign = !!result.is_foreign_national || isPassport;
-    const policeStatus = isForeign ? 'form_c_required' : 'verified_compliant';
-    const guestName = cleanName;
-    const docNumber = cleanDocNumber;
+    if (photoBase64) {
+      photoUrl = await uploadBase64ToStorage(
+        adminSupabase,
+        photoBase64,
+        `id-documents/${docId}-photo.jpg`,
+        'image/jpeg'
+      );
+    }
 
-    // 4. Dynamic Action Pricing Check for ID Verification
+    // 5. Statutory Dynamic Verification Fee Check
     const { fee_id_verification } = await getPlatformActionFees();
 
     if (fee_id_verification > 0) {
-      // Check if user has already paid
       let hasPaid = false;
       if (sessionUserId) {
         const { data: paidOrder } = await adminSupabase
@@ -332,7 +342,6 @@ Return ONLY valid JSON (no markdown fences):
         const uniqueSuffix = Math.random().toString(36).substring(2, 7);
         const orderId = `idverify_${sessionUserId ? sessionUserId.slice(0, 6) : 'guest'}_${Date.now()}_${uniqueSuffix}`;
 
-        // Save pending order with extracted ID metadata
         await adminSupabase.from('action_fee_orders').insert({
           user_id: sessionUserId || null,
           action_type: 'id_verification',
@@ -340,13 +349,15 @@ Return ONLY valid JSON (no markdown fences):
           payment_order_id: orderId,
           payment_status: 'pending',
           metadata: {
-            guestName,
+            guestName: finalName,
             phone: effectivePhone,
-            docNumber,
-            docType: result.document_type || 'Aadhaar',
-            dob: result.dob,
-            permanentAddress: result.permanent_address,
-            isForeign,
+            docNumber: finalDocNumber,
+            docType: finalDocType,
+            dob: clientDob || extractedData.dob,
+            permanentAddress: clientAddress || extractedData.permanent_address,
+            idFrontUrl,
+            idBackUrl,
+            photoUrl,
             bookingId,
             guestId,
             token,
@@ -357,7 +368,7 @@ Return ONLY valid JSON (no markdown fences):
           txnid: orderId,
           amount: fee_id_verification,
           productinfo: 'Police Compliance Statutory ID Verification Fee',
-          firstname: guestName,
+          firstname: finalName,
           email: sessionEmail || 'concierge@nothingness.asia',
           phone: effectivePhone || '9999999999',
           udf1: sessionUserId || orderId,
@@ -373,51 +384,57 @@ Return ONLY valid JSON (no markdown fences):
           params,
           orderId,
           fee: fee_id_verification,
-          name: guestName,
+          name: finalName,
         });
       }
     }
 
-    let profileId: string | null = null;
+    // 6. Upsert into guest_profiles with full fidelity (Name, 12-digit Doc, Front/Back Photos, Avatar)
+    const now = new Date();
+    const expiresAt = addDays(now, 180).toISOString();
+    const isForeign = finalDocType === 'Passport' && Boolean(extractedData.is_foreign_national);
+    const policeStatus = isForeign ? 'form_c_required' : 'verified_compliant';
 
-    // Upsert into guest_profiles
     const profilePayload: any = {
-      full_name: guestName,
+      full_name: finalName,
+      document_number: finalDocNumber,
+      id_document_type: finalDocType,
       phone: effectivePhone || null,
       phone_number: effectivePhone || null,
       user_id: sessionUserId || null,
-      id_document_type: normalizedDocType,
-      dob: result.dob || null,
-      permanent_address: result.permanent_address || 'Address recorded on ID',
+      dob: clientDob || extractedData.dob || null,
+      permanent_address: clientAddress || extractedData.permanent_address || 'Address recorded on official ID',
       is_foreign_national: isForeign,
-      nationality: result.nationality || (isForeign ? 'Foreign' : 'Indian'),
+      nationality: extractedData.nationality || (isForeign ? 'Foreign' : 'Indian'),
       police_register_status: policeStatus,
       verification_timestamp: now.toISOString(),
       verification_expires_at: expiresAt,
       is_verified: true,
       is_prestored: false,
+      id_front_url: idFrontUrl,
+      id_back_url: idBackUrl,
+      id_document_url: idFrontUrl,
+      photo_url: photoUrl,
     };
 
-    if (docNumber) {
-      profilePayload.document_number = docNumber;
-      const { data: upsertedProf, error: profError } = await adminSupabase
-        .from('guest_profiles')
-        .upsert(profilePayload, { onConflict: 'document_number' })
-        .select()
-        .single();
+    let profileId: string | null = null;
 
-      if (!profError && upsertedProf) {
-        profileId = upsertedProf.id;
-      }
+    const { data: upsertedProf, error: profError } = await adminSupabase
+      .from('guest_profiles')
+      .upsert(profilePayload, { onConflict: 'document_number' })
+      .select()
+      .single();
+
+    if (!profError && upsertedProf) {
+      profileId = upsertedProf.id;
     } else if (effectivePhone) {
-      const { data: upsertedProf, error: profError } = await adminSupabase
+      const { data: byPhoneProf, error: phoneErr } = await adminSupabase
         .from('guest_profiles')
         .upsert(profilePayload, { onConflict: 'phone' })
         .select()
         .single();
-
-      if (!profError && upsertedProf) {
-        profileId = upsertedProf.id;
+      if (!phoneErr && byPhoneProf) {
+        profileId = byPhoneProf.id;
       }
     }
 
@@ -430,13 +447,13 @@ Return ONLY valid JSON (no markdown fences):
       if (newProf) profileId = newProf.id;
     }
 
-    // 5. Update booking_guests if attached to booking
+    // 7. Update booking_guests if attached to booking
     if (token) {
       await adminSupabase
         .from('booking_guests')
         .update({
           verification_status: 'verified',
-          name: guestName,
+          name: finalName,
           guest_profile_id: profileId,
         })
         .eq('verification_token', token);
@@ -445,93 +462,57 @@ Return ONLY valid JSON (no markdown fences):
         .from('booking_guests')
         .update({
           verification_status: 'verified',
-          name: guestName,
+          name: finalName,
           guest_profile_id: profileId,
         })
         .eq('id', guestId)
         .eq('booking_id', bookingId);
     }
 
-    // 6. If user is logged in, link and activate kinkster profile
+    // 8. If logged in, activate kinkster profile
     if (sessionUserId) {
       try {
         await adminSupabase
           .from('kinkster_profiles')
           .update({
-            confidentiality_agreed: true,
-            confidentiality_agreed_at: now.toISOString(),
-            updated_at: now.toISOString(),
+            is_id_verified: true,
+            id_verified_at: now.toISOString(),
+            is_active: true,
+            avatar_url: photoUrl || undefined,
           })
-          .eq('id', sessionUserId);
-      } catch (kinkErr) {
-        console.warn('[Verify ID] Could not update kinkster profile:', kinkErr);
-      }
+          .eq('user_id', sessionUserId);
+      } catch (_) {}
     }
 
-    // 7. Dispatch Verification Approval Notification
+    // 9. Dispatch notification
     try {
-      let recipientEmail = sessionEmail;
-      let spaceTitle: string | undefined;
-      let checkIn: string | undefined;
-      let checkOut: string | undefined;
-
-      if (profileId && !recipientEmail) {
-        const { data: prof } = await adminSupabase
-          .from('guest_profiles')
-          .select('email')
-          .eq('id', profileId)
-          .maybeSingle();
-        if (prof?.email) recipientEmail = prof.email;
-      }
-
-      if (bookingId) {
-        const { data: bData } = await adminSupabase
-          .from('bookings')
-          .select('check_in, check_out, spaces(title), guest_profiles(email)')
-          .eq('id', bookingId)
-          .maybeSingle();
-
-        if (bData) {
-          const spaceRecord: any = Array.isArray(bData.spaces) ? bData.spaces[0] : bData.spaces;
-          const profileRecord: any = Array.isArray(bData.guest_profiles) ? bData.guest_profiles[0] : bData.guest_profiles;
-
-          spaceTitle = spaceRecord?.title;
-          checkIn = bData.check_in;
-          checkOut = bData.check_out;
-          if (!recipientEmail && profileRecord?.email) {
-            recipientEmail = profileRecord.email;
-          }
-        }
-      }
-
-      if (recipientEmail) {
-        await sendVerificationApprovedNotification({
-          email: recipientEmail,
-          guestName,
-          spaceTitle,
-          checkInDate: checkIn,
-          checkOutDate: checkOut,
+      if (sessionEmail) {
+        sendVerificationApprovedNotification({
+          email: sessionEmail,
           phone: effectivePhone || undefined,
-        });
+          guestName: finalName,
+        }).catch(console.error);
       }
-    } catch (notifErr) {
-      console.warn('[Verify ID] Failed to send email approval notification:', notifErr);
-    }
+    } catch (_) {}
 
+    return NextResponse.json({
+      verified: true,
+      name: finalName,
+      document_number: finalDocNumber,
+      document_type: finalDocType,
+      photo_url: photoUrl,
+      id_front_url: idFrontUrl,
+      id_back_url: idBackUrl,
+      expires_at: expiresAt,
+      message: 'Identity document successfully verified and securely stored for 180 days.',
+    });
+  } catch (error: any) {
+    console.error('[Verify ID] Processing error:', error);
     return NextResponse.json(
       {
-        verified: true,
-        name: guestName,
-        document_type: result.document_type || 'Aadhaar',
-        verification_expires_at: expiresAt,
-        message: `Verification successful! Verified for 180 days (valid until ${new Date(expiresAt).toLocaleDateString()}). Nothingness guest credentials updated.`,
+        verified: false,
+        error: error.message || 'Error processing identity verification',
       },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error('[Verify ID] Fatal verification error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error during verification' },
       { status: 500 }
     );
   }

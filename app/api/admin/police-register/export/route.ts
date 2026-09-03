@@ -30,7 +30,23 @@ export async function GET(req: Request) {
     }
 
     // Generate CSV Header & Rows for Police Compliance Hospitality Register Format
-    const headers = ['S.No', 'Full Name', 'DOB', 'ID Document Type', 'Document Number', 'Permanent Residential Address', 'Nationality', 'Is Foreign National', 'Visa Number', 'Verification Timestamp'];
+    const headers = [
+      'S.No',
+      'Full Name',
+      'DOB',
+      'ID Document Type',
+      'Document Number',
+      'Permanent Residential Address',
+      'Nationality',
+      'Is Foreign National',
+      'Visa Number',
+      'Verification Timestamp',
+      '3D Face ID Vetted',
+      'Extracted Photo URL',
+      'Live 3D Face URL',
+      'ID Front Document URL',
+      'ID Back Document URL'
+    ];
     
     const rows = (guests || []).map((g, idx) => [
       idx + 1,
@@ -42,7 +58,12 @@ export async function GET(req: Request) {
       `"${g.nationality || 'Indian'}"`,
       g.is_foreign_national ? 'Yes' : 'No',
       `"${g.visa_number || ''}"`,
-      `"${g.verification_timestamp || g.created_at || ''}"`
+      `"${g.verification_timestamp || g.created_at || ''}"`,
+      g.face_id_vetted ? 'Yes' : 'No',
+      `"${g.photo_url || ''}"`,
+      `"${g.live_face_url || ''}"`,
+      `"${g.id_front_url || ''}"`,
+      `"${g.id_back_url || ''}"`
     ]);
 
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');

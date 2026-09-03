@@ -37,6 +37,30 @@ export async function GET(req: NextRequest) {
       .from('sanctuary_event_applications')
       .select('*');
 
+    // Attach user profile information (3D Face ID, Avatar, ID verification status)
+    if (apps && apps.length > 0) {
+      const userIds = Array.from(new Set(apps.map((a: any) => a.user_id).filter(Boolean)));
+      if (userIds.length > 0) {
+        const { data: guestProfiles } = await adminClient
+          .from('guest_profiles')
+          .select('id, user_id, full_name, phone, is_verified, face_id_vetted, live_face_url, photo_url, id_document_type, document_number')
+          .in('user_id', userIds);
+
+        const { data: kinksterProfiles } = await adminClient
+          .from('kinkster_profiles')
+          .select('id, alias, avatar_url, face_id_vetted, live_face_url, in_person_vetted')
+          .in('id', userIds);
+
+        const guestMap = new Map((guestProfiles || []).map((g: any) => [g.user_id, g]));
+        const kinksterMap = new Map((kinksterProfiles || []).map((k: any) => [k.id, k]));
+
+        apps.forEach((app: any) => {
+          app.guest_profile = guestMap.get(app.user_id) || null;
+          app.kinkster_profile = kinksterMap.get(app.user_id) || null;
+        });
+      }
+    }
+
     // Fetch all passes
     const { data: passes } = await adminClient
       .from('sanctuary_passes')
