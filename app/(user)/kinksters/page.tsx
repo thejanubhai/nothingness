@@ -16,7 +16,10 @@ import {
   CheckCircle2,
   Compass,
   Flame,
-  Globe
+  Globe,
+  Send,
+  X,
+  BookmarkCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -52,12 +55,107 @@ function KinkstersContent() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeView, setActiveView] = useState<'feed' | 'manifesto'>('feed');
+  const [feedCategory, setFeedCategory] = useState<'all' | 'dynamics' | 'stories' | 'gatherings'>('all');
 
-  // Modals
   const [showActivationModal, setShowActivationModal] = useState<boolean>(false);
   const [showCreatePostModal, setShowCreatePostModal] = useState<boolean>(false);
   const [showIdModal, setShowIdModal] = useState<boolean>(false);
   const [showStayModal, setShowStayModal] = useState<boolean>(false);
+
+  // Interactive Feed State
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
+  const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
+  const [commentDraft, setCommentDraft] = useState<string>('');
+  const [postComments, setPostComments] = useState<Record<string, Array<{ id: string; alias: string; text: string; time: string }>>>({});
+
+  const filteredPosts = posts.filter((p) => {
+    if (feedCategory === 'all') return true;
+    const text = (p.caption || '').toLowerCase();
+    if (feedCategory === 'dynamics') return text.includes('art') || text.includes('dynamic') || text.includes('mood') || !text.includes('party');
+    if (feedCategory === 'stories') return text.includes('story') || text.includes('confession') || text.includes('thought') || text.includes('reflection');
+    if (feedCategory === 'gatherings') return text.includes('munch') || text.includes('soiree') || text.includes('event') || text.includes('gathering');
+    return true;
+  });
+
+  const handleToggleLike = (postId: string) => {
+    if (!isLoggedIn) {
+      handleRequireAuth('like posts');
+      return;
+    }
+    try {
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(10);
+      }
+    } catch {}
+
+    setLikedPosts((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) {
+        next.delete(postId);
+      } else {
+        next.add(postId);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSave = (postId: string) => {
+    if (!isLoggedIn) {
+      handleRequireAuth('save posts');
+      return;
+    }
+    setSavedPosts((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) {
+        next.delete(postId);
+        toast.info('Removed from your Vault');
+      } else {
+        next.add(postId);
+        toast.success('Saved to your Private Vault');
+      }
+      return next;
+    });
+  };
+
+  const handleSharePost = async (post: Post) => {
+    const postUrl = typeof window !== 'undefined' ? `${window.location.origin}/kinksters#${post.id}` : '';
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Nothingness Lifestyle • @${post.kinkster_profiles?.alias || 'member'}`,
+          text: post.caption || 'Discreet lifestyle reflection on Nothingness.',
+          url: postUrl,
+        });
+        return;
+      } catch {}
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(postUrl);
+      toast.success('Discreet post link copied to clipboard!');
+    }
+  };
+
+  const handleAddComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentDraft.trim() || !activeCommentPost) return;
+
+    const newComment = {
+      id: Math.random().toString(36).substring(2, 9),
+      alias: userAlias || 'anonymous',
+      text: commentDraft.trim(),
+      time: 'Just now',
+    };
+
+    setPostComments((prev) => ({
+      ...prev,
+      [activeCommentPost.id]: [...(prev[activeCommentPost.id] || []), newComment],
+    }));
+
+    setCommentDraft('');
+    toast.success('Reflection shared under your @alias');
+  };
 
   const handleRequireAuth = (actionName: string) => {
     toast.info('Sign In Required', {
@@ -384,21 +482,49 @@ function KinkstersContent() {
 
           {/* Tab 1: Member Feed */}
           {activeView === 'feed' && (
-            <div className="space-y-8 max-w-xl mx-auto">
-              {posts.length === 0 ? (
+            <div className="space-y-6 max-w-xl mx-auto">
+              {/* Category Filter Pills */}
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 pt-1 whitespace-nowrap">
+                {[
+                  { id: 'all', label: 'All Reflections' },
+                  { id: 'dynamics', label: 'Art & Dynamics' },
+                  { id: 'stories', label: 'Stories & Whispers' },
+                  { id: 'gatherings', label: 'Secret Soirées' },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setFeedCategory(cat.id as any)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      feedCategory === cat.id
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold shadow-sm'
+                        : 'bg-zinc-900/80 text-zinc-400 hover:text-white border border-zinc-800'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              {filteredPosts.length === 0 ? (
                 <div className="text-center py-16 bg-zinc-950 border border-zinc-900 rounded-2xl p-8 shadow-2xl">
                   <Sparkles className="w-10 h-10 text-rose-400 mx-auto mb-3 opacity-60" />
-                  <h3 className="text-base font-bold text-white">No Posts Yet</h3>
-                  <p className="text-xs text-zinc-500 mt-1 mb-4">Be the first vetted member to share a discreet photo or video reel!</p>
+                  <h3 className="text-base font-bold text-white">
+                    {posts.length === 0 ? 'No Posts Yet' : 'No Posts in this Category'}
+                  </h3>
+                  <p className="text-xs text-zinc-500 mt-1 mb-4">
+                    {posts.length === 0
+                      ? 'Be the first vetted member to share a discreet photo or video reel!'
+                      : 'Try selecting "All Reflections" or share a post under this category.'}
+                  </p>
                   <button
                     onClick={() => setShowCreatePostModal(true)}
                     className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition-all"
                   >
-                    Create First Post
+                    Create Post
                   </button>
                 </div>
               ) : (
-                posts.map((post) => (
+                filteredPosts.map((post) => (
                   <div
                     key={post.id}
                     className="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-2xl transition-all hover:border-zinc-800"
@@ -439,18 +565,44 @@ function KinkstersContent() {
                     <div className="p-4 space-y-3">
                       <div className="flex items-center justify-between text-zinc-400">
                         <div className="flex items-center gap-4">
-                          <button className="hover:text-rose-500 transition-colors">
-                            <Heart className="w-5 h-5" />
+                          <button
+                            onClick={() => handleToggleLike(post.id)}
+                            className={`flex items-center gap-1.5 transition-all active:scale-90 cursor-pointer ${
+                              likedPosts.has(post.id) ? 'text-rose-500' : 'hover:text-rose-500'
+                            }`}
+                            aria-label="Like post"
+                          >
+                            <Heart className={`w-5 h-5 ${likedPosts.has(post.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
+                            <span className="text-xs font-mono">
+                              {(post.likes_count || 0) + (likedPosts.has(post.id) ? 1 : 0)}
+                            </span>
                           </button>
-                          <button className="hover:text-white transition-colors">
+                          <button
+                            onClick={() => setActiveCommentPost(post)}
+                            className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+                            aria-label="Open reflections"
+                          >
                             <MessageSquare className="w-5 h-5" />
+                            <span className="text-xs font-mono">
+                              {(postComments[post.id]?.length || 0)}
+                            </span>
                           </button>
-                          <button className="hover:text-white transition-colors">
+                          <button
+                            onClick={() => handleSharePost(post)}
+                            className="hover:text-white transition-colors cursor-pointer active:scale-90"
+                            aria-label="Share post"
+                          >
                             <Share2 className="w-5 h-5" />
                           </button>
                         </div>
-                        <button className="hover:text-amber-400 transition-colors">
-                          <Bookmark className="w-5 h-5" />
+                        <button
+                          onClick={() => handleToggleSave(post.id)}
+                          className={`transition-all active:scale-90 cursor-pointer ${
+                            savedPosts.has(post.id) ? 'text-amber-400' : 'hover:text-amber-400'
+                          }`}
+                          aria-label="Save to vault"
+                        >
+                          <Bookmark className={`w-5 h-5 ${savedPosts.has(post.id) ? 'fill-amber-400 text-amber-400' : ''}`} />
                         </button>
                       </div>
 
@@ -461,6 +613,16 @@ function KinkstersContent() {
                           </span>
                           {post.caption}
                         </p>
+                      )}
+
+                      {/* Comment preview indicator */}
+                      {postComments[post.id] && postComments[post.id].length > 0 && (
+                        <button
+                          onClick={() => setActiveCommentPost(post)}
+                          className="text-[11px] text-zinc-500 hover:text-zinc-400 font-mono transition-colors block text-left pt-1 cursor-pointer"
+                        >
+                          View all {postComments[post.id].length} reflection{postComments[post.id].length > 1 ? 's' : ''}...
+                        </button>
                       )}
                     </div>
                   </div>
@@ -486,8 +648,36 @@ function KinkstersContent() {
 
       {/* Loading Skeleton */}
       {loading && (
-        <div className="text-center py-32 text-xs font-mono text-zinc-500 animate-pulse">
-          Authenticating Discreet Sanctuary Vault...
+        <div className="space-y-8 max-w-xl mx-auto py-8 px-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden shadow-2xl animate-pulse">
+              <div className="flex items-center justify-between p-4 border-b border-zinc-900">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-zinc-800" />
+                  <div className="space-y-1.5">
+                    <div className="w-24 h-3 rounded bg-zinc-800" />
+                    <div className="w-36 h-2 rounded bg-zinc-900" />
+                  </div>
+                </div>
+                <div className="w-12 h-2.5 rounded bg-zinc-800" />
+              </div>
+              <div className="aspect-square bg-gradient-to-b from-zinc-900 via-zinc-900/60 to-zinc-950 flex items-center justify-center">
+                <Sparkles className="w-8 h-8 text-zinc-800 opacity-40" />
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-5 h-5 rounded-full bg-zinc-800" />
+                    <div className="w-5 h-5 rounded-full bg-zinc-800" />
+                    <div className="w-5 h-5 rounded-full bg-zinc-800" />
+                  </div>
+                  <div className="w-5 h-5 rounded bg-zinc-800" />
+                </div>
+                <div className="w-3/4 h-3 rounded bg-zinc-800" />
+                <div className="w-1/2 h-2.5 rounded bg-zinc-900" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -537,6 +727,88 @@ function KinkstersContent() {
           setShowActivationModal(true);
         }}
       />
+
+      {/* Discreet Reflections / Comments Bottom Sheet Modal */}
+      {activeCommentPost && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="w-full sm:max-w-lg bg-zinc-950 border border-zinc-800 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-zinc-800/80">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-rose-400" />
+                <h3 className="text-sm font-bold text-white font-mono">Discreet Reflections</h3>
+                <span className="text-[10px] font-mono text-zinc-500">
+                  • @{activeCommentPost.kinkster_profiles?.alias || 'member'}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setActiveCommentPost(null);
+                  setCommentDraft('');
+                }}
+                className="p-1.5 rounded-full hover:bg-zinc-900 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Post Context Bar */}
+            <div className="p-3.5 bg-zinc-900/60 border-b border-zinc-900 flex items-center gap-3">
+              <img
+                src={activeCommentPost.media_type === 'image' ? activeCommentPost.media_url : activeCommentPost.kinkster_profiles?.avatar_url || '/images/IMG_9955.jpg'}
+                alt="Post Thumbnail"
+                className="w-10 h-10 rounded-lg object-cover border border-zinc-800 shrink-0"
+              />
+              <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed">
+                <span className="font-bold text-white font-mono mr-1.5">
+                  @{activeCommentPost.kinkster_profiles?.alias}
+                </span>
+                {activeCommentPost.caption || 'Shared a discreet lifestyle reflection.'}
+              </p>
+            </div>
+
+            {/* Comments List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 divide-y divide-zinc-900">
+              {(!postComments[activeCommentPost.id] || postComments[activeCommentPost.id].length === 0) ? (
+                <div className="text-center py-10 text-xs font-mono text-zinc-500">
+                  No reflections yet. Share the first whisper under your @alias.
+                </div>
+              ) : (
+                postComments[activeCommentPost.id].map((c) => (
+                  <div key={c.id} className="pt-3 first:pt-0 flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-rose-300 font-mono">@{c.alias}</span>
+                        <span className="text-[10px] text-zinc-600 font-mono">• {c.time}</span>
+                      </div>
+                      <p className="text-xs text-zinc-300 leading-relaxed">{c.text}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Comment Input */}
+            <form onSubmit={handleAddComment} className="p-3.5 border-t border-zinc-900 bg-zinc-950 flex items-center gap-2">
+              <input
+                type="text"
+                placeholder={isLoggedIn ? `Whisper as @${userAlias || 'alias'}...` : 'Sign in to reflect...'}
+                value={commentDraft}
+                onChange={(e) => setCommentDraft(e.target.value)}
+                disabled={!isLoggedIn}
+                className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500/60 transition-colors font-mono"
+              />
+              <button
+                type="submit"
+                disabled={!commentDraft.trim() || !isLoggedIn}
+                className="px-3.5 py-2.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

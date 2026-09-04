@@ -118,7 +118,7 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${playfair.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-grain selection:bg-accent-gold/20 selection:text-accent-muted pb-16 md:pb-0">
+      <body className="min-h-full flex flex-col bg-grain selection:bg-accent-gold/20 selection:text-accent-muted pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 overscroll-none">
         <NextTopLoader
           color="#D4AF37"
           initialPosition={0.08}

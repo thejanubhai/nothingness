@@ -25,6 +25,7 @@ function LoginContent() {
   const [step, setStep] = useState<'identifier' | 'verify-phone'>('identifier');
   const [otpToken, setOtpToken] = useState('');
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
@@ -42,6 +43,15 @@ function LoginContent() {
       }
     };
   }, []);
+
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const interval = setInterval(() => {
+      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [countdown]);
 
   // WebOTP API: Auto-read incoming SMS on Android & Mobile Chrome
   useEffect(() => {
@@ -72,6 +82,13 @@ function LoginContent() {
       if (ac) ac.abort();
     };
   }, [step]);
+
+  // Auto-submit when all 6 digits are entered
+  useEffect(() => {
+    if (step === 'verify-phone' && otpToken.length === 6 && confirmationResult && !loading) {
+      executeVerification(otpToken);
+    }
+  }, [otpToken, step, confirmationResult]);
 
   const getRecaptchaVerifier = () => {
     if (typeof window === 'undefined') return null;
@@ -121,6 +138,7 @@ function LoginContent() {
       const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
       setConfirmationResult(confirmation);
       setStep('verify-phone');
+      setCountdown(30);
       toast.success(`SMS verification code sent to ${formattedPhone}`);
     } catch (err: any) {
       console.error('[Auth] Firebase Phone Auth client error:', err);
@@ -154,14 +172,13 @@ function LoginContent() {
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpToken || otpToken.length < 6 || !confirmationResult) return;
+  const executeVerification = async (token: string) => {
+    if (!token || token.length < 6 || !confirmationResult) return;
     setLoading(true);
     setErrorMsg('');
 
     try {
-      const userCredential = await confirmationResult.confirm(otpToken);
+      const userCredential = await confirmationResult.confirm(token);
       const idToken = await userCredential.user.getIdToken();
       const result = await loginWithFirebasePhone(idToken);
 
@@ -187,6 +204,11 @@ function LoginContent() {
       setErrorMsg(userFriendlyError);
       setLoading(false);
     }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeVerification(otpToken);
   };
 
   const handlePasskeyLogin = async () => {
@@ -439,10 +461,10 @@ function LoginContent() {
             <button
               type="button"
               onClick={handleSendOtp}
-              disabled={loading}
+              disabled={loading || countdown > 0}
               className="w-full bg-transparent text-zinc-400 hover:text-white py-2.5 rounded-xl text-[11px] font-mono tracking-wider uppercase transition-colors disabled:opacity-50 cursor-pointer"
             >
-              Resend OTP Code
+              {countdown > 0 ? `Resend Code in ${countdown}s` : 'Resend OTP Code'}
             </button>
           </form>
         )}

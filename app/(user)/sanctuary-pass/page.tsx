@@ -175,6 +175,70 @@ function SanctuaryPassContent() {
     return e.tier === selectedTier;
   });
 
+  const getCountdownBadge = (eventDate: string | null) => {
+    if (!eventDate) return null;
+    const target = new Date(eventDate).getTime();
+    if (isNaN(target)) return null;
+    const now = Date.now();
+    const diffMs = target - now;
+    if (diffMs <= 0) {
+      if (diffMs > -86400000) {
+        return { label: 'Tonight / In Session', urgent: true };
+      }
+      return null;
+    }
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffHours < 24) {
+      return { label: `In ${diffHours}h`, urgent: true };
+    } else if (diffDays === 1) {
+      return { label: 'Tomorrow', urgent: true };
+    }
+    return { label: `In ${diffDays}d`, urgent: false };
+  };
+
+  const downloadEventIcs = (evt: SanctuaryEvent) => {
+    if (!evt.event_date) {
+      toast.info('Event Date is classified until Level 2 certification.');
+      return;
+    }
+    try {
+      const startDate = new Date(evt.event_date);
+      const endDate = new Date(startDate.getTime() + 4 * 60 * 60 * 1000);
+      const formatIcsDate = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+      const icsData = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Nothingness//Sanctuary Events//EN',
+        'BEGIN:VEVENT',
+        `UID:gathering-${evt.id}@nothingness.club`,
+        `DTSTAMP:${formatIcsDate(new Date())}`,
+        `DTSTART:${formatIcsDate(startDate)}`,
+        `DTEND:${formatIcsDate(endDate)}`,
+        `SUMMARY:Nothingness: ${evt.title}`,
+        `DESCRIPTION:${(evt.description || '').replace(/\n/g, ' ')}\\nDress Code: ${evt.dress_code || 'Noir Luxury'}`,
+        `LOCATION:${evt.spaces?.title || 'Sanctuary Suite'}, ${evt.spaces?.city || 'Delhi'}`,
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\r\n');
+
+      const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${evt.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast.success('Gathering added to Calendar (.ics downloaded)');
+    } catch {
+      toast.error('Failed to create calendar file');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white pt-24 pb-24 px-4 sm:px-6 max-w-6xl mx-auto">
       {/* Lockscreen Push Subscription Banner */}
@@ -219,8 +283,16 @@ function SanctuaryPassContent() {
         )}
       </div>
 
-      {/* GATE 1 & 2: UNACTIVATED USER SHOWCASE */}
-      {!hasSanctuaryPass && !loading && (
+      {/* GATE 1 & 2: UNACTIVATED USER SHOWCASE OR LOADING SKELETON */}
+      {loading ? (
+        <div className="rounded-3xl bg-zinc-950 border border-zinc-900 p-6 sm:p-10 shadow-2xl mb-12 animate-pulse">
+          <div className="w-36 h-4 rounded-full bg-zinc-800 mb-4" />
+          <div className="w-3/4 max-w-md h-8 rounded bg-zinc-800 mb-3" />
+          <div className="w-full max-w-xl h-4 rounded bg-zinc-900 mb-2" />
+          <div className="w-2/3 max-w-lg h-4 rounded bg-zinc-900 mb-6" />
+          <div className="w-48 h-12 rounded-xl bg-zinc-800" />
+        </div>
+      ) : !hasSanctuaryPass ? (
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-950 via-zinc-900 to-amber-950/30 border border-amber-500/30 p-6 sm:p-10 shadow-2xl mb-12">
           <div className="max-w-2xl space-y-5 relative z-10">
             <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[10px] font-mono uppercase tracking-widest">
@@ -262,7 +334,7 @@ function SanctuaryPassContent() {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* GATHERINGS DIRECTORY */}
       <div id="gatherings-directory" className="space-y-6">
@@ -356,8 +428,31 @@ function SanctuaryPassContent() {
 
         {/* Event Cards Grid */}
         {loading ? (
-          <div className="text-center py-24 font-mono text-xs text-zinc-500 animate-pulse">
-            Loading Sanctuary Gatherings...
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 sm:p-7 shadow-2xl flex flex-col justify-between animate-pulse">
+                <div>
+                  <div className="h-48 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 mb-4 bg-zinc-900 rounded-t-3xl" />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="w-32 h-5 rounded-full bg-zinc-800" />
+                      <div className="w-24 h-4 rounded-full bg-zinc-900" />
+                    </div>
+                    <div className="w-3/4 h-6 rounded bg-zinc-800" />
+                    <div className="w-1/2 h-3.5 rounded bg-zinc-900" />
+                    <div className="w-full h-12 rounded-2xl bg-zinc-900/60" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="h-8 rounded-xl bg-zinc-900/60" />
+                      <div className="h-8 rounded-xl bg-zinc-900/60" />
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-6 mt-4 border-t border-zinc-900 space-y-2">
+                  <div className="w-full h-10 rounded-xl bg-zinc-900" />
+                  <div className="w-full h-12 rounded-xl bg-zinc-800" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredEvents.length === 0 ? (
           <div className="text-center py-20 bg-zinc-950 border border-zinc-900 rounded-3xl p-8">
@@ -369,6 +464,7 @@ function SanctuaryPassContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredEvents.map((evt) => {
               const app = applications[evt.id];
+              const countdown = !evt.is_locked ? getCountdownBadge(evt.event_date) : null;
               const eventDateStr = evt.event_date
                 ? new Date(evt.event_date).toLocaleDateString([], {
                     month: 'short',
@@ -428,10 +524,21 @@ function SanctuaryPassContent() {
                           <span>Level 2 Locked</span>
                         </span>
                       ) : (
-                        <span className="text-xs font-mono text-zinc-400 flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-rose-400" />
-                          {eventDateStr}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono text-zinc-400 flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 text-rose-400" />
+                            {eventDateStr}
+                          </span>
+                          {countdown && (
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                              countdown.urgent
+                                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse'
+                                : 'bg-zinc-800 text-zinc-300 border border-zinc-700'
+                            }`}>
+                              {countdown.label}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
 
@@ -561,13 +668,23 @@ function SanctuaryPassContent() {
                         <span>Request Discretion Pass (Concierge)</span>
                       </button>
                     ) : app.status === 'confirmed' ? (
-                      <button
-                        onClick={() => setSelectedEventForTicket({ event: evt, app })}
-                        className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all"
-                      >
-                        <Ticket className="w-4 h-4" />
-                        <span>View Live Dynamic QR &amp; Coordinates</span>
-                      </button>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => setSelectedEventForTicket({ event: evt, app })}
+                          className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all"
+                        >
+                          <Ticket className="w-4 h-4" />
+                          <span>View Live Dynamic QR &amp; Coordinates</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadEventIcs(evt)}
+                          className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white font-mono text-[11px] rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Add to Calendar (.ics)</span>
+                        </button>
+                      </div>
                     ) : app.status === 'approved_payment_pending' ? (
                       <button
                         onClick={() => handlePayTicket(evt, app)}

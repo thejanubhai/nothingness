@@ -28,7 +28,7 @@ export default function CookieBanner() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="fixed bottom-4 left-4 right-4 md:bottom-8 md:left-8 md:right-auto md:max-w-md z-[100]"
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] left-4 right-4 md:bottom-8 md:left-8 md:right-auto md:max-w-md z-[100]"
         >
           <div className="bg-[#0a0a0a] border border-white/10 p-6 rounded-2xl shadow-2xl backdrop-blur-xl">
             <h3 className="font-serif text-lg text-white mb-2">Respecting Your Privacy</h3>

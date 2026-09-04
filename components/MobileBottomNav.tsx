@@ -138,10 +138,10 @@ export default function MobileBottomNav() {
         isActive: (p) => p === '/dashboard',
       },
       {
-        name: 'Spaces',
-        href: '/spaces',
-        icon: Building2,
-        isActive: (p) => p.startsWith('/spaces'),
+        name: 'My Stays',
+        href: '/dashboard/bookings',
+        icon: KeyRound,
+        isActive: (p) => p.startsWith('/dashboard/bookings'),
       },
       {
         name: 'Events',
@@ -156,6 +156,12 @@ export default function MobileBottomNav() {
         icon: Flame,
         badge: '🔥',
         isActive: (p) => p.startsWith('/kinksters'),
+      },
+      {
+        name: 'Spaces',
+        href: '/spaces',
+        icon: Building2,
+        isActive: (p) => p.startsWith('/spaces'),
       },
     ];
   } else {
