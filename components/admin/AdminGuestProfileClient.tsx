@@ -434,7 +434,9 @@ export default function AdminGuestProfileClient({
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-16">
-      
+      {/* Screen-only dashboard — hidden when printing */}
+      <div className="print:hidden">
+
       {/* Back & Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -445,10 +447,10 @@ export default function AdminGuestProfileClient({
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-serif text-3xl md:text-4xl text-white font-bold">{guest.full_name}</h1>
               {guest.is_verified && (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1 shrink-0 whitespace-nowrap">
                   <ShieldCheck className="w-3 h-3" /> 180-Day Verified
                 </span>
               )}
@@ -457,7 +459,7 @@ export default function AdminGuestProfileClient({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 print:hidden">
+        <div className="flex items-center gap-2 print:hidden flex-wrap">
           <button
             onClick={handlePrintIdDossier}
             className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white text-xs font-mono font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md"
@@ -500,7 +502,7 @@ export default function AdminGuestProfileClient({
           
           {/* Physical Biometric Verification Card */}
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-bold block">
                 Physical Identity &amp; Biometrics
               </span>
@@ -588,7 +590,7 @@ export default function AdminGuestProfileClient({
                       <ExternalLink className="w-4 h-4" /> View Full Image
                     </a>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <a
                       href={frontDocUrl}
                       target="_blank"
@@ -628,7 +630,7 @@ export default function AdminGuestProfileClient({
                     <ExternalLink className="w-4 h-4" /> View Full Image
                   </a>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <a
                     href={backDocUrl}
                     target="_blank"
@@ -661,9 +663,9 @@ export default function AdminGuestProfileClient({
               </div>
               <div className="flex items-center gap-3 text-zinc-300">
                 <Mail className="w-4 h-4 text-zinc-500 shrink-0" />
-                <span className="select-all">{guest.email || 'No email on file'}</span>
+                <span className="select-all break-all">{guest.email || 'No email on file'}</span>
               </div>
-              <div className="flex items-center gap-3 text-zinc-300">
+              <div className="flex items-start gap-3 text-zinc-300">
                 <MapPin className="w-4 h-4 text-zinc-500 shrink-0" />
                 <span>{guest.permanent_address || 'Address recorded on ID'}</span>
               </div>
@@ -694,15 +696,15 @@ export default function AdminGuestProfileClient({
           <div className="bg-zinc-950 border border-amber-500/30 rounded-3xl p-6 md:p-7 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
                   <Ticket className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-lg font-serif font-bold text-white">Sanctuary Pass Access Control</h2>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase ${
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase shrink-0 whitespace-nowrap ${
                       sanctuaryPass?.status === 'active'
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                         : sanctuaryPass?.status
@@ -759,7 +761,7 @@ export default function AdminGuestProfileClient({
             {/* Pass Body Content */}
             {sanctuaryPass ? (
               <div className="mt-5 space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
                   <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800">
                     <p className="text-[10px] text-zinc-500 uppercase font-mono tracking-wider mb-1">Pass Tier</p>
                     <p className="text-accent-gold font-serif font-bold text-sm">{sanctuaryPass.pass_tier || 'Noir Luminary'}</p>
@@ -800,7 +802,7 @@ export default function AdminGuestProfileClient({
                 </div>
                 <button
                   onClick={() => setIsPassModalOpen(true)}
-                  className="px-4 py-2 bg-accent-gold/10 hover:bg-accent-gold/20 text-accent-gold border border-accent-gold/30 rounded-xl font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-accent-gold/10 hover:bg-accent-gold/20 text-accent-gold border border-accent-gold/30 rounded-xl font-bold uppercase tracking-wider transition-colors cursor-pointer shrink-0 whitespace-nowrap"
                 >
                   + Issue Pass Now
                 </button>
@@ -814,15 +816,15 @@ export default function AdminGuestProfileClient({
           <div className="bg-zinc-950 border border-rose-500/30 rounded-3xl p-6 md:p-7 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
                   <Flame className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-lg font-serif font-bold text-white">Kinkster Lifestyle Profile &amp; Vetting</h2>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 whitespace-nowrap ${
                       kinksterProfile?.is_activated
                         ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                         : kinksterProfile
@@ -869,7 +871,7 @@ export default function AdminGuestProfileClient({
               <div className="mt-5 space-y-5">
                 
                 {/* 6 Interactive Live Toggles */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                   
                   {/* Toggle 1: is_activated */}
                   <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
@@ -1034,13 +1036,13 @@ export default function AdminGuestProfileClient({
               Sanctuary Stay History
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-mono">
+              <table className="w-full text-left text-xs font-mono min-w-[480px]">
                 <thead className="bg-zinc-900/50 border-b border-zinc-800 text-[10px] uppercase tracking-widest text-zinc-500">
                   <tr>
-                    <th className="px-6 py-4 font-medium">Space</th>
-                    <th className="px-6 py-4 font-medium">Check In</th>
-                    <th className="px-6 py-4 font-medium">Check Out</th>
-                    <th className="px-6 py-4 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Space</th>
+                    <th className="px-4 py-3 font-medium">Check In</th>
+                    <th className="px-4 py-3 font-medium">Check Out</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/60">
@@ -1049,17 +1051,17 @@ export default function AdminGuestProfileClient({
                     if (!booking) return null;
                     return (
                       <tr key={idx} className="hover:bg-zinc-900/40 transition-colors">
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <p className="text-white font-bold text-xs">{booking.spaces?.title || 'Sanctuary'}</p>
                         </td>
-                        <td className="px-6 py-4 text-zinc-300">
+                        <td className="px-4 py-3 text-zinc-300 whitespace-nowrap">
                           {format(new Date(booking.check_in), 'MMM dd, yyyy')}
                         </td>
-                        <td className="px-6 py-4 text-zinc-300">
+                        <td className="px-4 py-3 text-zinc-300 whitespace-nowrap">
                           {format(new Date(booking.check_out), 'MMM dd, yyyy')}
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold border ${
+                        <td className="px-4 py-3">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold border whitespace-nowrap ${
                             booking.status === 'confirmed' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' :
                             booking.status === 'checked_in' ? 'text-blue-400 bg-blue-500/10 border-blue-500/30' :
                             'text-zinc-400 bg-zinc-900 border-zinc-700'
@@ -1073,7 +1075,7 @@ export default function AdminGuestProfileClient({
                   
                   {stays.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-zinc-500">
+                      <td colSpan={4} className="px-4 py-8 text-center text-zinc-500">
                         No previous stays found.
                       </td>
                     </tr>
@@ -1090,7 +1092,7 @@ export default function AdminGuestProfileClient({
               <span className="text-[10px] text-emerald-400 font-normal">Section 40 (Delhi Police Act)</span>
             </h2>
             <div className="p-6 space-y-3 font-mono text-xs text-zinc-300">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <span className="text-zinc-500 text-[10px] block">POLICE REGISTER STATUS:</span>
                   <span className="text-emerald-400 font-bold">{guest.police_register_status || 'verified_compliant'}</span>
@@ -1286,7 +1288,7 @@ export default function AdminGuestProfileClient({
       {/* ======================================================== */}
       {isPassModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-zinc-950 border border-amber-500/30 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+          <div className="bg-zinc-950 border border-amber-500/30 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
               <div className="flex items-center gap-2">
                 <Ticket className="w-5 h-5 text-accent-gold" />
@@ -1303,7 +1305,7 @@ export default function AdminGuestProfileClient({
             </div>
 
             <form onSubmit={handleSavePassForm} className="space-y-4 text-xs font-mono">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-zinc-400 block mb-1">Pass Status</label>
                   <select
@@ -1331,7 +1333,7 @@ export default function AdminGuestProfileClient({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-zinc-400 block mb-1">Tariff / Amount Paid (₹)</label>
                   <input
@@ -1385,7 +1387,7 @@ export default function AdminGuestProfileClient({
                 <button
                   type="submit"
                   disabled={isSavingPass}
-                  className="px-5 py-2 bg-accent-gold text-black font-bold uppercase rounded-xl hover:bg-white transition-colors"
+                  className="px-5 py-2 bg-accent-gold text-black font-bold uppercase rounded-xl hover:bg-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSavingPass ? 'Saving...' : sanctuaryPass ? 'Update Pass' : 'Issue Pass'}
                 </button>
@@ -1552,6 +1554,8 @@ export default function AdminGuestProfileClient({
           </div>
         </div>
       )}
+
+      </div>{/* End print:hidden wrapper */}
 
       {/* ======================================================== */}
       {/* PRINT-ONLY OFFICIAL POLICE COMPLIANCE DOSSIER            */}

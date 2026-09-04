@@ -23,6 +23,7 @@ import {
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Magnetic from "./Magnetic";
+import AppSwitcher from "./AppSwitcher";
 import { createClient } from "@/lib/supabase/client";
 import { signOut } from "@/app/actions/auth";
 import { isUserAdmin } from "@/lib/auth-utils";
@@ -95,22 +96,41 @@ export default function Header() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex justify-between items-center">
-          <Link
-            href="/"
-            className="flex items-center justify-center transition-transform hover:scale-105 duration-300"
-          >
-            <Image 
-              src="/images/logo.png" 
-              alt="Nothingness Logo" 
-              width={80} 
-              height={32} 
-              className="object-contain drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]" 
-              priority
-            />
-          </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/"
+              className="flex items-center justify-center transition-transform hover:scale-105 duration-300"
+            >
+              <Image 
+                src="/images/logo.png" 
+                alt="Nothingness Logo" 
+                width={80} 
+                height={32} 
+                className="object-contain drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]" 
+                priority
+              />
+            </Link>
+
+            {/* Contextual App Pill on mobile for native app identity */}
+            {pathname?.startsWith('/kinksters') && (
+              <span className="sm:hidden px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-mono font-bold tracking-wider">
+                Lifestyle 🔥
+              </span>
+            )}
+            {pathname?.startsWith('/sanctuary-pass') && (
+              <span className="sm:hidden px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-mono font-bold tracking-wider">
+                Events ✨
+              </span>
+            )}
+            {pathname?.startsWith('/dashboard') && (
+              <span className="sm:hidden px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold tracking-wider">
+                Portal 🗝️
+              </span>
+            )}
+          </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8">
             <Link href="/spaces" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
               Spaces
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
@@ -132,6 +152,9 @@ export default function Header() {
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
             </Link>
             
+            {/* Desktop Ecosystem Switcher */}
+            <AppSwitcher user={user} />
+
             <Magnetic>
               {user ? (
                 <Link
@@ -153,12 +176,14 @@ export default function Header() {
             </Magnetic>
           </nav>
 
-          {/* Mobile Right Controls (Quick Login + Menu Toggle) */}
+          {/* Mobile Right Controls: Native App Switcher + Quick Portal + Menu Toggle */}
           <div className="flex md:hidden items-center gap-2">
+            <AppSwitcher user={user} />
+
             {user ? (
               <Link
                 href={isAdmin ? "/admin" : "/dashboard"}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-gold/15 border border-accent-gold/30 text-accent-gold text-[11px] font-mono font-bold"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-gold/15 border border-accent-gold/30 text-accent-gold text-[11px] font-mono font-bold touch-manipulation"
               >
                 <User className="w-3.5 h-3.5" />
                 <span>{isAdmin ? "Admin" : "Portal"}</span>
@@ -166,7 +191,7 @@ export default function Header() {
             ) : (
               <Link
                 href="/auth"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold text-[11px] uppercase tracking-wider shadow-md active:scale-95 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold text-[11px] uppercase tracking-wider shadow-md active:scale-95 transition-all touch-manipulation"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In</span>
@@ -175,10 +200,10 @@ export default function Header() {
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="w-10 h-10 flex items-center justify-center text-white rounded-full bg-white/5 border border-white/10 active:scale-95 transition-all cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center text-white rounded-full bg-white/5 border border-white/10 active:scale-95 transition-all cursor-pointer touch-manipulation"
               aria-label="Toggle menu"
             >
-              {mobileOpen ? <X className="w-5 h-5 text-accent-gold" /> : <Menu className="w-5 h-5" />}
+              {mobileOpen ? <X className="w-4 h-4 text-accent-gold" /> : <Menu className="w-4 h-4" />}
             </button>
           </div>
         </div>

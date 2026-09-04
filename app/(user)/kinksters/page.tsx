@@ -110,6 +110,23 @@ function KinkstersContent() {
   };
 
   useEffect(() => {
+    const handleOpenCreatePost = () => {
+      if (!isLoggedIn) {
+        handleRequireAuth('create a post');
+        return;
+      }
+      if (!isActivated) {
+        setShowActivationModal(true);
+        return;
+      }
+      setShowCreatePostModal(true);
+    };
+
+    window.addEventListener('open-create-post', handleOpenCreatePost);
+    return () => window.removeEventListener('open-create-post', handleOpenCreatePost);
+  }, [isLoggedIn, isActivated]);
+
+  useEffect(() => {
     const activation = searchParams?.get('activation');
     if (activation === 'success') {
       toast.success('Kinkster Mode Activated via PayU!', {
@@ -309,28 +326,28 @@ function KinkstersContent() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0 shrink-0">
               <Link
                 href="/kinksters/discover"
-                className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all"
+                className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 touch-manipulation"
               >
                 <Compass className="w-4 h-4 text-purple-400" />
                 Discover
               </Link>
               <Link
                 href="/sanctuary-pass"
-                className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all"
+                className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 touch-manipulation"
               >
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 Sanctuary Pass
               </Link>
-              <span className="text-xs font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 px-3 py-2 rounded-xl flex items-center gap-1.5">
+              <span className="text-xs font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 px-3 py-2 rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0">
                 <AtSign className="w-3.5 h-3.5 text-rose-400" />
                 {userAlias}
               </span>
               <button
                 onClick={() => setShowCreatePostModal(true)}
-                className="px-4 py-2 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg flex items-center gap-2"
+                className="px-4 py-2 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer touch-manipulation"
               >
                 <PlusCircle className="w-4 h-4" />
                 New Post
@@ -449,9 +466,6 @@ function KinkstersContent() {
                   </div>
                 ))
               )}
-
-              {/* Discreet VIP Host Cross-Promotion */}
-              <FranchiseCrossPromoCard />
             </div>
           )}
 

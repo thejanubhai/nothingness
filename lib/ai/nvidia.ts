@@ -45,8 +45,9 @@ export async function callNvidiaChat(options: {
   temperature?: number;
   maxTokens?: number;
   jsonMode?: boolean;
+  apiKey?: string;
 }): Promise<{ success: boolean; content: string; error?: string }> {
-  const apiKey = getNvidiaApiKey();
+  const apiKey = options.apiKey || getNvidiaApiKey();
   if (!apiKey) {
     return { success: false, content: '', error: 'NVIDIA API Key is not configured.' };
   }
@@ -107,6 +108,7 @@ export async function extractDocumentWithNvidiaVision(params: {
   backBase64?: string | null;
   images?: string[];
   mimeType?: string;
+  apiKey?: string;
 }): Promise<{
   success: boolean;
   extracted?: {
@@ -123,7 +125,7 @@ export async function extractDocumentWithNvidiaVision(params: {
   };
   error?: string;
 }> {
-  const { frontBase64, backBase64, images = [], mimeType = 'image/jpeg' } = params;
+  const { frontBase64, backBase64, images = [], mimeType = 'image/jpeg', apiKey } = params;
 
   const imageList: string[] = [];
   if (images.length > 0) {
@@ -193,6 +195,7 @@ Return ONLY valid JSON (no markdown fences):
     ],
     temperature: 0.1,
     maxTokens: 2048,
+    apiKey,
   });
 
   if (!result.success || !result.content) {

@@ -103,7 +103,7 @@ export default async function AdminLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-black text-foreground selection:bg-accent-gold/30 w-full relative">
+    <div className="min-h-screen bg-black text-foreground selection:bg-accent-gold/30 w-full relative flex flex-col">
       <MobileNav />
       {/* Sidebar - Fixed on desktop */}
       <aside className="hidden md:flex w-64 bg-white/[0.02] border-r border-white/5 flex-col fixed inset-y-0 left-0 z-30 h-screen">
@@ -167,7 +167,7 @@ export default async function AdminLayout({
       {/* Main Content Area - Naturally scrolls on desktop & mobile */}
       <main className="md:pl-64 min-h-screen bg-black relative w-full flex-1">
         <div className="fixed inset-0 bg-grain opacity-[0.02] pointer-events-none z-0" />
-        <div className="min-h-full p-4 sm:p-8 md:p-12 max-w-7xl mx-auto relative z-10 pb-28 md:pb-20">
+        <div className="min-h-full p-4 sm:p-8 md:p-12 max-w-7xl mx-auto relative z-10 pb-16 md:pb-20">
           {children}
         </div>
       </main>

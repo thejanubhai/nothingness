@@ -26,6 +26,7 @@ import {
 import { toast } from 'sonner';
 import IDScanningAnimation from '@/components/IDScanningAnimation';
 import { createClient } from '@/lib/supabase/client';
+import { parseAadhaarQrData, formatAadhaarNumber, compressIdImageForOcr } from '@/lib/id-utils';
 
 interface IDUploadModalProps {
   isOpen: boolean;
@@ -136,6 +137,17 @@ export default function IDUploadModal({
   const [permanentAddress, setPermanentAddress] = useState<string>('');
   const [isDetailsVerifiedByUser, setIsDetailsVerifiedByUser] = useState<boolean>(false);
 
+  // Lock body scroll on mobile when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isOpen]);
+
   // Auto-fetch logged in user session
   useEffect(() => {
     if (isOpen) {
@@ -162,6 +174,8 @@ export default function IDUploadModal({
     }
   }, [isOpen, initialPhone]);
 
+  const [scanSuccess, setScanSuccess] = useState<boolean>(false);
+
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -170,6 +184,7 @@ export default function IDUploadModal({
       setError(null);
       setDocumentNumber('');
       setIsDetailsVerifiedByUser(false);
+      setScanSuccess(false);
     }
   }, [isOpen]);
 
@@ -178,12 +193,7 @@ export default function IDUploadModal({
     if (documentType !== 'Aadhaar') {
       return val.toUpperCase();
     }
-    const clean = val.replace(/[^0-9]/g, '').slice(0, 12);
-    const parts = [];
-    for (let i = 0; i < clean.length; i += 4) {
-      parts.push(clean.slice(i, i + 4));
-    }
-    return parts.join(' ');
+    return formatAadhaarNumber(val);
   };
 
   const handleAddFiles = async (files: FileList | null) => {
@@ -193,81 +203,169 @@ export default function IDUploadModal({
     const maxAllowed = 2;
     const currentCount = uploadedImages.length;
     const availableSlots = maxAllowed - currentCount;
+    if (availableSlots <= 0) {
+      toast.info('Maximum 2 photos allowed (Front & Back).');
+      return;
+    }
+
     const filesToProcess = Array.from(files).slice(0, availableSlots);
 
-    for (const file of filesToProcess) {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const preview = ev.target?.result as string;
-        if (preview) {
-          setUploadedImages((prev) => {
-            if (prev.length >= maxAllowed) return prev;
-            return [
-              ...prev,
-              {
-                id: Math.random().toString(36).substring(2, 9),
-                preview,
-                file,
-              },
-            ];
-          });
+    // Read & compress files asynchronously for high-speed upload and Vercel compatibility
+    const readPromises = filesToProcess.map(async (file) => {
+      try {
+        const compressed = await compressIdImageForOcr(file);
+        return {
+          id: Math.random().toString(36).substring(2, 9),
+          preview: compressed,
+          file,
+        };
+      } catch {
+        return new Promise<UploadedImageItem>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const preview = (ev.target?.result as string) || '';
+            resolve({
+              id: Math.random().toString(36).substring(2, 9),
+              preview,
+              file,
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+    });
 
-          // Crop face photo from first image
-          const croppedFace = await extractPhotoFromId(preview, documentType);
-          if (croppedFace) {
-            setExtractedPhoto(croppedFace);
-          }
+    const newItems = await Promise.all(readPromises);
+    const validItems = newItems.filter((item) => item.preview);
+    if (validItems.length === 0) return;
 
-          // Trigger AI scan in background
-          triggerBackgroundScan(preview);
-        }
-      };
-      reader.readAsDataURL(file);
+    const allImages = [...uploadedImages, ...validItems];
+    setUploadedImages(allImages);
+
+    // Auto-crop face from the first document image
+    if (!extractedPhoto && allImages[0]?.preview) {
+      extractPhotoFromId(allImages[0].preview, documentType).then((cropped) => {
+        if (cropped) setExtractedPhoto(cropped);
+      });
     }
+
+    // Trigger scanning with all available images (front + back together)
+    triggerDocumentScan(allImages.map((img) => img.preview));
   };
 
-  // Run AI scan without blocking UI
-  const triggerBackgroundScan = async (frontImageBase64: string) => {
+  // Run multi-tier scan (Client QR -> Server NVIDIA/Gemini/Local OCR)
+  const triggerDocumentScan = async (previews: string[]) => {
+    if (!previews || previews.length === 0) return;
     setIsScanning(true);
+    setScanSuccess(false);
+
+    // 1. Instant Client-Side QR Detection (supported in modern Chrome, Edge, and Android browsers)
     try {
-      const cleanFront = frontImageBase64.includes('base64,') ? frontImageBase64.split('base64,')[1] : frontImageBase64;
+      if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+        const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+        for (const imgUrl of previews) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = imgUrl;
+          await new Promise((res) => {
+            img.onload = res;
+            img.onerror = res;
+          });
+
+          if (img.width > 0 && img.height > 0) {
+            const barcodes = await detector.detect(img);
+            for (const barcode of barcodes) {
+              const parsed = parseAadhaarQrData(barcode.rawValue);
+              if (parsed && (parsed.name || parsed.document_number)) {
+                if (parsed.name) setFullName(parsed.name);
+                if (parsed.document_number) setDocumentNumber(parsed.document_number);
+                if (parsed.dob) setDob(parsed.dob);
+                if (parsed.permanent_address) setPermanentAddress(parsed.permanent_address);
+                setDocumentType('Aadhaar');
+                setScanSuccess(true);
+                toast.success('Document details detected via Aadhaar QR Code!');
+                setIsScanning(false);
+                return;
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // Continue to server-side AI/OCR
+    }
+
+    // 2. Server-Side Multi-Tier Vision & OCR Scan
+    try {
+      const cleanImages = previews.map((p) =>
+        p.includes('base64,') ? p.split('base64,')[1] : p
+      );
+
       const res = await fetch('/api/verify-id', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          images: [cleanFront],
+          images: cleanImages,
           scanOnly: true,
+          documentType,
         }),
       });
+
       const data = await res.json();
-      if (data.success && data.extracted) {
-        if (data.extracted.full_name && data.extracted.full_name !== 'Nothingness Guest') {
+      if (data.success && data.visionSucceeded && data.extracted) {
+        let filledCount = 0;
+        if (
+          data.extracted.full_name &&
+          data.extracted.full_name !== 'Nothingness Guest' &&
+          data.extracted.full_name !== 'Guest'
+        ) {
           setFullName(data.extracted.full_name);
+          filledCount++;
         }
         if (data.extracted.document_number) {
           setDocumentNumber(formatAadhaarInput(data.extracted.document_number));
+          filledCount++;
         }
         if (data.extracted.document_type) {
           setDocumentType(data.extracted.document_type === 'Passport' ? 'Passport' : 'Aadhaar');
         }
         if (data.extracted.dob) {
           setDob(data.extracted.dob);
+          filledCount++;
         }
         if (data.extracted.permanent_address) {
           setPermanentAddress(data.extracted.permanent_address);
+          filledCount++;
         }
+
+        if (filledCount > 0) {
+          setScanSuccess(true);
+          toast.success('Document details detected & autofilled! Please verify accuracy.');
+        } else {
+          toast.info('Could not auto-read text from ID. Please enter details manually.');
+        }
+      } else {
+        toast.info('Could not auto-read text from ID. Please enter details manually.');
       }
-    } catch {
-      // Background scan error - user can still verify/enter manually
+    } catch (err: any) {
+      console.warn('[ID Scan] Error during scan:', err?.message);
+      toast.info('Document scan offline. Please enter details manually.');
     } finally {
       setIsScanning(false);
     }
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
-    setUploadedImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    const remaining = uploadedImages.filter((_, idx) => idx !== indexToRemove);
+    setUploadedImages(remaining);
     if (indexToRemove === 0) {
-      setExtractedPhoto(null);
+      if (remaining.length > 0) {
+        extractPhotoFromId(remaining[0].preview, documentType).then((cropped) => {
+          if (cropped) setExtractedPhoto(cropped);
+        });
+      } else {
+        setExtractedPhoto(null);
+      }
     }
     setError(null);
   };
@@ -374,17 +472,19 @@ export default function IDUploadModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-xl overflow-y-auto overscroll-contain"
         >
           <motion.div
-            initial={{ scale: 0.95, y: 20 }}
+            initial={{ scale: 0.96, y: 15 }}
             animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.95, y: 20 }}
-            className="w-full max-w-xl bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl relative max-h-[92vh] overflow-y-auto"
+            exit={{ scale: 0.96, y: 15 }}
+            transition={{ duration: 0.2 }}
+            className="w-full max-w-xl bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl relative my-auto max-h-[calc(100dvh-2rem)] sm:max-h-[90dvh] flex flex-col"
           >
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full transition-colors z-10 cursor-pointer"
+              aria-label="Close modal"
+              className="absolute top-3.5 right-3.5 p-2 text-zinc-400 hover:text-white bg-zinc-900/80 hover:bg-zinc-800 rounded-full transition-colors z-30 cursor-pointer touch-manipulation"
             >
               <X className="w-4 h-4" />
             </button>
@@ -552,6 +652,41 @@ export default function IDUploadModal({
                             <p className="text-xs text-white font-medium mt-1">Photo cropped from your official document</p>
                             <p className="text-[10px] text-zinc-400 mt-0.5">This official photograph will be attached to your Police Compliance Dossier.</p>
                           </div>
+                        </div>
+                      )}
+
+                      {/* Scanning Status Banner */}
+                      {isScanning && (
+                        <div className="p-3.5 rounded-2xl bg-accent-gold/10 border border-accent-gold/20 flex items-center gap-3 text-accent-gold text-xs animate-pulse">
+                          <Sparkles className="w-4 h-4 text-accent-gold animate-spin shrink-0" />
+                          <div>
+                            <p className="font-semibold">Scanning ID document...</p>
+                            <p className="text-[11px] text-zinc-400 font-sans mt-0.5">
+                              Extracting Name, Document Number, Date of Birth, and Address.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Scan Success Banner */}
+                      {scanSuccess && !isScanning && (
+                        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between gap-3 text-emerald-400 text-xs">
+                          <div className="flex items-center gap-2.5">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <div>
+                              <p className="font-semibold">ID Details Autofilled</p>
+                              <p className="text-[11px] text-emerald-300/70 font-sans mt-0.5">
+                                Please verify the fields below for accuracy before submitting.
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => triggerDocumentScan(uploadedImages.map((img) => img.preview))}
+                            className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg text-[10px] font-mono transition-colors shrink-0"
+                          >
+                            Rescan
+                          </button>
                         </div>
                       )}
 

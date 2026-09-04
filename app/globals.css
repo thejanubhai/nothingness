@@ -281,15 +281,17 @@ button,
   will-change: transform;
 }
 
-button:not(:disabled):hover,
-[role="button"]:not(:disabled):hover {
-  transform: scale(1.02);
-}
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):hover,
+  [role="button"]:not(:disabled):hover {
+    transform: scale(1.02);
+  }
 
-button:not(:disabled):active,
-[role="button"]:not(:disabled):active {
-  transform: scale(0.98);
-  transition-duration: var(--duration-fast);
+  button:not(:disabled):active,
+  [role="button"]:not(:disabled):active {
+    transform: scale(0.98);
+    transition-duration: var(--duration-fast);
+  }
 }
 
 /* Disabled state */
@@ -320,8 +322,12 @@ button:disabled,
   to   { opacity: 1; }
 }
 
-/* Apply to main content wrapper */
-main,
+/* Apply to main content wrapper — use fade-in (no transform) to avoid
+   creating a CSS containing block that breaks position:fixed modals */
+main {
+  animation: fade-in var(--duration-slower) var(--ease-out-expo) both;
+}
+
 [data-animate="fade-in"] {
   animation: fade-in-up var(--duration-slower) var(--ease-out-expo) both;
 }

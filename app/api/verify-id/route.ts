@@ -7,6 +7,7 @@ import { addDays } from 'date-fns';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 async function uploadBase64ToStorage(
   adminSupabase: any,
@@ -153,7 +154,7 @@ export async function POST(req: Request) {
     );
     const imageMimeType = mimeType || 'image/jpeg';
 
-    // 2. Multimodal AI Extraction (NVIDIA NIM or Google Gemini)
+    // 2. Multimodal AI Extraction (NVIDIA NIM, Google Gemini, or Local OCR Fallback)
     let extractedData: {
       valid?: boolean;
       name?: string;
@@ -169,31 +170,58 @@ export async function POST(req: Request) {
 
     let visionSucceeded = false;
 
-    // A. NVIDIA Multimodal Vision AI
-    try {
-      const { extractDocumentWithNvidiaVision } = await import('@/lib/ai/nvidia');
-      const nvidiaResult = await extractDocumentWithNvidiaVision({
-        images: cleanImages,
-        mimeType: imageMimeType,
-      });
+    // Load keys from environment or Supabase platform_settings
+    let nvidiaKey = process.env.NVIDIA_API_KEY || process.env.nVidia_AI_API_Key || process.env.NVIDIA_AI_API_KEY || null;
+    let geminiKey = process.env.GEMINI_API_KEY || null;
 
-      if (nvidiaResult.success && nvidiaResult.extracted) {
-        extractedData = { ...nvidiaResult.extracted };
-        visionSucceeded = true;
+    if (!nvidiaKey || !geminiKey) {
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/admin');
+        const adminClient = createAdminClient();
+        const { data: settings } = await adminClient
+          .from('platform_settings')
+          .select('nvidia_api_key, gemini_api_key')
+          .maybeSingle();
+
+        if (settings) {
+          if (!nvidiaKey && settings.nvidia_api_key && settings.nvidia_api_key.trim()) {
+            nvidiaKey = settings.nvidia_api_key.trim();
+          }
+          if (!geminiKey && settings.gemini_api_key && settings.gemini_api_key.trim()) {
+            geminiKey = settings.gemini_api_key.trim();
+          }
+        }
+      } catch (err: any) {
+        console.warn('[Verify ID] Could not fetch keys from platform_settings:', err?.message);
       }
-    } catch (nvidiaErr: any) {
-      console.warn('[Verify ID] NVIDIA Vision error:', nvidiaErr?.message);
+    }
+
+    // A. NVIDIA Multimodal Vision AI
+    if (nvidiaKey) {
+      try {
+        const { extractDocumentWithNvidiaVision } = await import('@/lib/ai/nvidia');
+        const nvidiaResult = await extractDocumentWithNvidiaVision({
+          images: cleanImages,
+          mimeType: imageMimeType,
+          apiKey: nvidiaKey,
+        });
+
+        if (nvidiaResult.success && nvidiaResult.extracted) {
+          extractedData = { ...nvidiaResult.extracted };
+          visionSucceeded = true;
+        }
+      } catch (nvidiaErr: any) {
+        console.warn('[Verify ID] NVIDIA Vision error:', nvidiaErr?.message);
+      }
     }
 
     // B. Google Gemini Vision Fallback
-    if (!visionSucceeded) {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (apiKey) {
-        try {
-          const { GoogleGenAI } = await import('@google/genai');
-          const ai = new GoogleGenAI({ apiKey });
+    if (!visionSucceeded && geminiKey) {
+      try {
+        const { GoogleGenAI } = await import('@google/genai');
+        const ai = new GoogleGenAI({ apiKey: geminiKey });
 
-          const prompt = `You are an expert hospitality and government ID verification OCR system for "Nothingness" luxury retreats.
+        const prompt = `You are an expert hospitality and government ID verification OCR system for "Nothingness" luxury retreats.
 Analyze the uploaded image(s) of the guest's Indian Aadhaar Card or Passport.
 
 Extract with point-to-point accuracy:
@@ -209,39 +237,60 @@ Extract with point-to-point accuracy:
 
 Return ONLY a valid JSON object without markdown formatting.`;
 
-          const parts: any[] = [{ text: prompt }];
-          for (const img of cleanImages) {
-            parts.push({
-              inlineData: {
-                data: img,
-                mimeType: imageMimeType,
-              },
-            });
-          }
-
-          const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash'];
-          for (const modelName of geminiModels) {
-            try {
-              const response = await ai.models.generateContent({
-                model: modelName,
-                contents: [{ role: 'user', parts }],
-              });
-
-              const text = response.text || '{}';
-              const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-              const parsed = JSON.parse(cleanJson);
-              if (parsed && typeof parsed === 'object') {
-                extractedData = { ...parsed };
-                visionSucceeded = true;
-                break;
-              }
-            } catch (modelErr: any) {
-              console.warn(`[Verify ID] Gemini ${modelName} error:`, modelErr?.message);
-            }
-          }
-        } catch (geminiErr: any) {
-          console.warn('[Verify ID] Gemini OCR processing warning:', geminiErr?.message);
+        const parts: any[] = [{ text: prompt }];
+        for (const img of cleanImages) {
+          parts.push({
+            inlineData: {
+              data: img,
+              mimeType: imageMimeType,
+            },
+          });
         }
+
+        const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+        for (const modelName of geminiModels) {
+          try {
+            const response = await ai.models.generateContent({
+              model: modelName,
+              contents: [{ role: 'user', parts }],
+            });
+
+            const text = response.text || '{}';
+            const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(cleanJson);
+            if (parsed && typeof parsed === 'object') {
+              extractedData = { ...parsed };
+              visionSucceeded = true;
+              break;
+            }
+          } catch (modelErr: any) {
+            console.warn(`[Verify ID] Gemini ${modelName} error:`, modelErr?.message);
+          }
+        }
+      } catch (geminiErr: any) {
+        console.warn('[Verify ID] Gemini OCR processing warning:', geminiErr?.message);
+      }
+    }
+
+    // C. Local Tesseract OCR & Regex Fallback (Offline / Zero-Key guarantee)
+    if (!visionSucceeded) {
+      try {
+        const { extractDocumentWithLocalOcr } = await import('@/lib/ai/ocr-fallback');
+        const ocrResult = await extractDocumentWithLocalOcr(cleanImages);
+        if (ocrResult.success && ocrResult.extracted) {
+          extractedData = {
+            name: ocrResult.extracted.name,
+            document_number: ocrResult.extracted.document_number,
+            document_type: ocrResult.extracted.document_type,
+            dob: ocrResult.extracted.dob,
+            permanent_address: ocrResult.extracted.permanent_address,
+            above18: ocrResult.extracted.above18,
+            valid: ocrResult.extracted.valid,
+          };
+          visionSucceeded = true;
+        }
+      } catch (ocrErr: any) {
+        console.warn('[Verify ID] Local OCR fallback warning:', ocrErr?.message);
       }
     }
 

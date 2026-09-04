@@ -300,6 +300,7 @@ export default function GuestPrivateVerification({ params }: { params: Promise<{
         isOpen={faceIdModalOpen}
         onClose={() => setFaceIdModalOpen(false)}
         guestId={guestData?.guest_profile_id || guestData?.guest_profiles?.id}
+        token={token}
         onSuccess={(url) => {
           setFaceIdVetted(true);
           setLiveFaceUrl(url);

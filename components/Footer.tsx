@@ -3,16 +3,41 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import Tooltip from "./Tooltip";
 import FooterBrandStrips from "./FooterBrandStrips";
 import { Mail, ShieldCheck } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function Footer() {
   const pathname = usePathname();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) setIsLoggedIn(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setIsLoggedIn(!!session?.user);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   const linkClass = "relative group text-white/60 hover:text-white text-xs sm:text-[13px] transition-colors duration-300 py-1 inline-block";
   const underlineClass = "absolute -bottom-0.5 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300";
 
-  if (pathname?.startsWith('/admin')) {
+  // Hide on admin and dedicated native app routes (Lifestyle, Events, Portal, Verification)
+  const isAppRoute = 
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/kinksters') ||
+    pathname?.startsWith('/sanctuary-pass') ||
+    pathname?.startsWith('/dashboard') ||
+    pathname?.startsWith('/verify') ||
+    pathname?.startsWith('/booking');
+
+  // Do not render website marketing footer on app routes or post-login sessions
+  if (isAppRoute || isLoggedIn) {
     return null;
   }
 

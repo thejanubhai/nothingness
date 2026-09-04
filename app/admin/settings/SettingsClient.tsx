@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { 
   Settings2, Save, Clock, Percent, 
-  Bot, Megaphone, Flame, ArrowUpRight, CheckCircle2
+  Bot, Megaphone, Flame, ArrowUpRight, CheckCircle2,
+  Key, Eye, EyeOff, ExternalLink, Sparkles
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -22,6 +23,8 @@ type SettingsType = {
   base_tax_rate_percent: number;
   default_security_deposit: number;
   ai_system_prompt: string | null;
+  gemini_api_key?: string | null;
+  nvidia_api_key?: string | null;
   frontend_banner_text: string | null;
   frontend_banner_active: boolean;
   fee_id_verification?: number;
@@ -33,6 +36,8 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'kinksters' | 'policies' | 'financials' | 'ai'>('general');
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [showNvidiaKey, setShowNvidiaKey] = useState(false);
   
   // Initialize with empty/default values if null
   const [formData, setFormData] = useState<SettingsType>(initialSettings || {
@@ -50,6 +55,8 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
     fee_kinkster_activation: 0,
     fee_partner_onboarding: 300000,
     ai_system_prompt: '',
+    gemini_api_key: '',
+    nvidia_api_key: '',
     frontend_banner_text: '',
     frontend_banner_active: false,
   });
@@ -527,8 +534,109 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
             <div>
               <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4">
                 <Bot className="w-5 h-5 text-accent-gold" />
-                <h2 className="font-serif text-xl text-white">AI Agent Configuration</h2>
+                <h2 className="font-serif text-xl text-white">Multimodal Vision &amp; AI Engine Credentials</h2>
               </div>
+
+              {/* Vision AI API Keys Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {/* Google Gemini */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">Google Gemini API</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                      Recommended OCR
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-white/50 leading-relaxed">
+                    Powers automatic ID autofill (Aadhaar &amp; Passport extraction), event vetting, and smart chatbot responses.
+                  </p>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-1.5 block">API Key</label>
+                    <div className="relative">
+                      <input
+                        type={showGeminiKey ? "text" : "password"}
+                        value={formData.gemini_api_key || ''}
+                        onChange={(e) => setFormData({ ...formData, gemini_api_key: e.target.value })}
+                        placeholder="AIzaSy..."
+                        className="w-full bg-black/40 border border-white/10 rounded-lg p-3 pr-10 text-sm text-white font-mono focus:outline-none focus:border-accent-gold/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGeminiKey(!showGeminiKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors cursor-pointer"
+                        title={showGeminiKey ? "Hide key" : "Show key"}
+                      >
+                        {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-white/40 pt-1">
+                    <span>Free tier: up to 15 requests/min</span>
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent-gold hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>Get Free Gemini Key</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* NVIDIA NIM */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Key className="w-4 h-4 text-accent-gold" />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">NVIDIA NIM API</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-accent-gold/10 text-accent-gold border border-accent-gold/20 font-bold">
+                      Vision OCR &amp; Editorial
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-white/50 leading-relaxed">
+                    Powers zero-cost Foundation Model OCR (Llama 3.2 Vision) and high-authority editorial article generation.
+                  </p>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-1.5 block">API Key</label>
+                    <div className="relative">
+                      <input
+                        type={showNvidiaKey ? "text" : "password"}
+                        value={formData.nvidia_api_key || ''}
+                        onChange={(e) => setFormData({ ...formData, nvidia_api_key: e.target.value })}
+                        placeholder="nvapi-..."
+                        className="w-full bg-black/40 border border-white/10 rounded-lg p-3 pr-10 text-sm text-white font-mono focus:outline-none focus:border-accent-gold/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNvidiaKey(!showNvidiaKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors cursor-pointer"
+                        title={showNvidiaKey ? "Hide key" : "Show key"}
+                      >
+                        {showNvidiaKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-white/40 pt-1">
+                    <span>1,000 free inference credits included</span>
+                    <a
+                      href="https://build.nvidia.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent-gold hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>Get NVIDIA Key</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Master System Prompt */}
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block">Master System Prompt</label>
                 <textarea 

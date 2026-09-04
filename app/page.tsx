@@ -4,6 +4,7 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import Link from 'next/link';
 import { ShieldCheck, Key, Sparkles, Building2, Smartphone, Calendar, Award, Flame } from 'lucide-react';
 import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import JsonLd, { generateWebSiteSchema } from '@/components/JsonLd';
 import { createClient } from '@/lib/supabase/server';
 
@@ -25,6 +26,13 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // If user is logged in, guide them straight to their Member Portal / App Hub
+  if (user) {
+    redirect('/dashboard');
+  }
+
   const { data: cmsBlocks } = await supabase
     .from('cms_content_blocks')
     .select('block_key, title, subtitle, body, is_active');

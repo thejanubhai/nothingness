@@ -12,6 +12,7 @@ interface FaceIdScanModalProps {
   isOpen: boolean;
   onClose: () => void;
   guestId?: string;
+  token?: string;
   onSuccess: (liveFaceUrl: string) => void;
 }
 
@@ -19,12 +20,15 @@ export default function FaceIdScanModal({
   isOpen,
   onClose,
   guestId,
+  token,
   onSuccess,
 }: FaceIdScanModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [cameraLoading, setCameraLoading] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [step, setStep] = useState<'instructions' | 'front' | 'angle' | 'review' | 'submitting' | 'success'>('instructions');
 
@@ -32,46 +36,123 @@ export default function FaceIdScanModal({
   const [angleCapturedImage, setAngleCapturedImage] = useState<string | null>(null);
   const [isScanningActive, setIsScanningActive] = useState(false);
 
-  // Start Camera Stream
-  const startCamera = useCallback(async () => {
-    setCameraError(null);
-    try {
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-      }
-
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      });
-
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        await videoRef.current.play().catch(() => {});
-      }
-    } catch (err: any) {
-      console.warn('Camera stream error:', err);
-      setCameraError('Camera access denied or unavailable. Please enable camera permissions in your browser or device settings.');
-    }
-  }, [stream]);
-
-  // Stop Camera Stream
+  // Stop Camera Stream (stable reference with no stream state dependency)
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch (_) {}
+      });
+      streamRef.current = null;
     }
+    setStream(null);
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-  }, [stream]);
+  }, []);
 
-  // Handle modal open/close
+  // Start Camera Stream with mobile / PWA fallbacks
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    setCameraLoading(true);
+
+    // Stop any active stream first
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => {
+        try {
+          t.stop();
+        } catch (_) {}
+      });
+      streamRef.current = null;
+    }
+
+    if (typeof window === 'undefined' || !navigator?.mediaDevices?.getUserMedia) {
+      setCameraLoading(false);
+      setCameraError('Camera access is not supported on this browser or requires a secure HTTPS connection.');
+      return;
+    }
+
+    let mediaStream: MediaStream | null = null;
+    let lastError: any = null;
+
+    // Progressive constraints: portrait-friendly square -> generic user front -> any video device
+    const constraintSets: MediaStreamConstraints[] = [
+      {
+        video: {
+          facingMode: 'user',
+          width: { ideal: 720 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      },
+      {
+        video: { facingMode: 'user' },
+        audio: false,
+      },
+      {
+        video: true,
+        audio: false,
+      },
+    ];
+
+    for (const constraints of constraintSets) {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (mediaStream) break;
+      } catch (err: any) {
+        lastError = err;
+        console.warn('getUserMedia attempt failed with constraints:', constraints, err?.name || err);
+      }
+    }
+
+    setCameraLoading(false);
+
+    if (!mediaStream) {
+      console.error('Camera stream error:', lastError);
+      if (lastError?.name === 'NotAllowedError' || lastError?.name === 'PermissionDeniedError') {
+        setCameraError('Camera permission was denied. Please allow camera permissions in your browser or device settings to complete 3D verification.');
+      } else if (lastError?.name === 'NotFoundError' || lastError?.name === 'DevicesNotFoundError') {
+        setCameraError('No camera sensor found on this device.');
+      } else {
+        setCameraError('Unable to activate camera sensor. Please check device permissions or close other camera apps and retry.');
+      }
+      return;
+    }
+
+    streamRef.current = mediaStream;
+    setStream(mediaStream);
+
+    // If video element is already mounted, attach immediately
+    if (videoRef.current) {
+      const video = videoRef.current;
+      video.srcObject = mediaStream;
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+      video.muted = true;
+      video.play().catch((err) => {
+        console.warn('Video auto-play caught:', err);
+      });
+    }
+  }, []);
+
+  // Connect active stream to video element when step mounts or stream arrives
+  useEffect(() => {
+    if (videoRef.current && stream && (step === 'front' || step === 'angle')) {
+      const video = videoRef.current;
+      if (video.srcObject !== stream) {
+        video.srcObject = stream;
+      }
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+      video.muted = true;
+      video.play().catch((err) => {
+        console.warn('Video play caught:', err);
+      });
+    }
+  }, [stream, step]);
+
+  // Handle modal open/close and lock background scroll
   useEffect(() => {
     if (isOpen) {
       setStep('instructions');
@@ -79,21 +160,29 @@ export default function FaceIdScanModal({
       setAngleCapturedImage(null);
       setCameraError(null);
       setIsScanningActive(false);
+
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        stopCamera();
+        document.body.style.overflow = previousOverflow;
+      };
     } else {
       stopCamera();
     }
-    return () => {
-      stopCamera();
-    };
   }, [isOpen, stopCamera]);
 
   // Capture Frame from Video
   const captureFrame = (): string | null => {
     if (!videoRef.current) return null;
     const video = videoRef.current;
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+
     const canvas = canvasRef.current || document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
@@ -117,7 +206,7 @@ export default function FaceIdScanModal({
         toast.info('Front profile captured! Now turn your head slightly for 3D depth verification.');
       } else {
         setIsScanningActive(false);
-        toast.error('Failed to capture frame. Please try again.');
+        toast.error('Failed to capture frame. Please ensure your face is clearly in frame and try again.');
       }
     }, 600);
   };
@@ -135,7 +224,7 @@ export default function FaceIdScanModal({
         toast.success('3D Biometric scan complete! Review your frames below.');
       } else {
         setIsScanningActive(false);
-        toast.error('Failed to capture frame. Please try again.');
+        toast.error('Failed to capture frame. Please hold steady and try again.');
       }
     }, 600);
   };
@@ -153,6 +242,7 @@ export default function FaceIdScanModal({
           frontImage: frontCapturedImage,
           angleImage: angleCapturedImage || undefined,
           guestId: guestId || undefined,
+          token: token || undefined,
         }),
       });
 
@@ -182,17 +272,20 @@ export default function FaceIdScanModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-xl"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-xl overflow-y-auto overscroll-contain"
         >
           <motion.div
-            initial={{ scale: 0.95, y: 20 }}
+            initial={{ scale: 0.96, y: 15 }}
             animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.95, y: 20 }}
-            className="w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl relative max-h-[92vh] overflow-y-auto"
+            exit={{ scale: 0.96, y: 15 }}
+            transition={{ duration: 0.2 }}
+            className="w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl relative my-auto max-h-[calc(100dvh-2rem)] sm:max-h-[90dvh] flex flex-col"
           >
+            {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full transition-colors z-20 cursor-pointer"
+              aria-label="Close modal"
+              className="absolute top-3.5 right-3.5 p-2 text-zinc-400 hover:text-white bg-zinc-900/80 hover:bg-zinc-800 rounded-full transition-colors z-30 cursor-pointer touch-manipulation"
             >
               <X className="w-4 h-4" />
             </button>
@@ -200,19 +293,19 @@ export default function FaceIdScanModal({
             {/* Hidden canvas for frame extraction */}
             <canvas ref={canvasRef} className="hidden" />
 
-            <div className="p-6 sm:p-8 space-y-6 text-center">
+            <div className="p-5 sm:p-7 overflow-y-auto space-y-5 text-center">
               
               {/* ========================================================= */}
               {/* STEP 1: INSTRUCTIONS & PROTOCOL                           */}
               {/* ========================================================= */}
               {step === 'instructions' && (
-                <div className="space-y-6">
-                  <div className="w-16 h-16 rounded-full bg-accent-gold/10 border border-accent-gold/30 text-accent-gold flex items-center justify-center mx-auto">
-                    <Scan className="w-8 h-8 animate-pulse" />
+                <div className="space-y-5">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-accent-gold/10 border border-accent-gold/30 text-accent-gold flex items-center justify-center mx-auto">
+                    <Scan className="w-7 h-7 sm:w-8 sm:h-8 animate-pulse" />
                   </div>
 
                   <div>
-                    <span className="px-3 py-1 rounded-full bg-accent-gold/10 text-accent-gold border border-accent-gold/30 text-[10px] uppercase font-mono tracking-widest font-bold">
+                    <span className="px-3 py-1 rounded-full bg-accent-gold/10 text-accent-gold border border-accent-gold/30 text-[10px] uppercase font-mono tracking-widest font-bold inline-block">
                       Internal Nothingness Gatekeeper Protocol
                     </span>
                     <h2 className="font-serif text-2xl sm:text-3xl text-white font-bold mt-2">
@@ -243,7 +336,7 @@ export default function FaceIdScanModal({
                       setStep('front');
                       startCamera();
                     }}
-                    className="w-full py-4 bg-accent-gold hover:bg-white text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3.5 sm:py-4 bg-accent-gold hover:bg-white text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation min-h-[48px]"
                   >
                     <Camera className="w-4 h-4" />
                     <span>Begin 3D Biometric Scan</span>
@@ -260,7 +353,7 @@ export default function FaceIdScanModal({
                     <span className="px-2.5 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold border border-accent-gold/30 text-[10px] uppercase font-mono font-bold">
                       {step === 'front' ? 'Step 1 of 2: Frontal Biometric Scan' : 'Step 2 of 2: 3D Depth Confirmation'}
                     </span>
-                    <h3 className="font-serif text-xl text-white font-bold mt-1">
+                    <h3 className="font-serif text-xl sm:text-2xl text-white font-bold mt-1">
                       {step === 'front' ? 'Look Directly into Camera' : 'Turn Head Slightly (Left or Right)'}
                     </h3>
                     <p className="text-xs text-zinc-400 font-mono mt-0.5">
@@ -268,31 +361,38 @@ export default function FaceIdScanModal({
                     </p>
                   </div>
 
-                  {cameraError ? (
-                    <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-mono space-y-3">
+                  {cameraLoading ? (
+                    <div className="w-full aspect-square max-w-[260px] sm:max-w-[320px] mx-auto rounded-3xl bg-zinc-950 border border-zinc-800 shadow-2xl flex flex-col items-center justify-center p-6 space-y-3">
+                      <RefreshCw className="w-8 h-8 text-accent-gold animate-spin" />
+                      <p className="text-xs font-mono text-zinc-300">Activating camera sensor...</p>
+                      <p className="text-[11px] text-zinc-500 font-mono">Please grant camera permission if prompted.</p>
+                    </div>
+                  ) : cameraError ? (
+                    <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-mono space-y-3 max-w-[320px] mx-auto">
                       <AlertCircle className="w-8 h-8 text-rose-400 mx-auto" />
-                      <p>{cameraError}</p>
+                      <p className="leading-relaxed">{cameraError}</p>
                       <button
                         onClick={startCamera}
-                        className="px-4 py-2 bg-zinc-900 border border-zinc-700 text-white rounded-xl text-xs"
+                        className="px-4 py-2.5 bg-zinc-900 border border-zinc-700 text-white rounded-xl text-xs font-mono uppercase tracking-wider hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation"
                       >
-                        Retry Camera Permission
+                        Retry Camera Access
                       </button>
                     </div>
                   ) : (
                     /* Biometric Oval HUD Viewport */
-                    <div className="relative w-full aspect-square max-w-[320px] mx-auto rounded-3xl overflow-hidden bg-black border border-zinc-800 shadow-2xl flex items-center justify-center">
+                    <div className="relative w-full aspect-square max-w-[260px] sm:max-w-[320px] mx-auto rounded-3xl overflow-hidden bg-black border border-zinc-800 shadow-2xl flex items-center justify-center">
                       <video
                         ref={videoRef}
                         autoPlay
                         playsInline
                         muted
+                        {...({ 'webkit-playsinline': 'true' } as any)}
                         className="w-full h-full object-cover scale-x-[-1]"
                       />
 
                       {/* Apple-style Biometric Oval Frame Overlay */}
-                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-4">
-                        <div className={`w-[220px] h-[280px] rounded-[110px] border-2 transition-all duration-500 relative ${
+                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-3 sm:p-4">
+                        <div className={`w-[170px] sm:w-[210px] h-[220px] sm:h-[270px] rounded-[85px] sm:rounded-[105px] border-2 transition-all duration-500 relative ${
                           isScanningActive
                             ? 'border-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.5)] scale-98'
                             : 'border-accent-gold/70 shadow-[0_0_20px_rgba(217,119,6,0.3)] animate-pulse'
@@ -311,10 +411,10 @@ export default function FaceIdScanModal({
                       </div>
 
                       {/* Status HUD tag */}
-                      <div className="absolute bottom-3 inset-x-0 flex justify-center">
+                      <div className="absolute bottom-3 inset-x-0 flex justify-center pointer-events-none">
                         <span className="px-3 py-1 rounded-full bg-black/80 backdrop-blur-md text-[10px] font-mono text-zinc-300 border border-white/10 flex items-center gap-1.5">
                           <span className={`w-2 h-2 rounded-full ${isScanningActive ? 'bg-emerald-400 animate-ping' : 'bg-accent-gold animate-pulse'}`} />
-                          {isScanningActive ? 'Analyzing 3D Topology...' : step === 'front' ? 'Face Detected' : 'Turn Head Slightly'}
+                          {isScanningActive ? 'Analyzing 3D Topology...' : step === 'front' ? 'Face Positioned' : 'Turn Head Slightly'}
                         </span>
                       </div>
                     </div>
@@ -323,8 +423,8 @@ export default function FaceIdScanModal({
                   <div className="pt-2">
                     <button
                       onClick={step === 'front' ? handleCaptureFront : handleCaptureAngle}
-                      disabled={isScanningActive || !!cameraError}
-                      className="w-full py-4 bg-accent-gold hover:bg-white text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      disabled={isScanningActive || !!cameraError || cameraLoading}
+                      className="w-full py-3.5 sm:py-4 bg-accent-gold hover:bg-white text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 touch-manipulation min-h-[48px]"
                     >
                       {isScanningActive ? (
                         <>
@@ -357,7 +457,7 @@ export default function FaceIdScanModal({
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
+                  <div className="grid grid-cols-2 gap-3 max-w-xs sm:max-w-sm mx-auto">
                     {frontCapturedImage && (
                       <div className="space-y-1">
                         <div className="rounded-2xl overflow-hidden border border-emerald-500/40 bg-black aspect-[3/4] shadow-lg">
@@ -380,10 +480,10 @@ export default function FaceIdScanModal({
                   <div className="flex gap-3 pt-2">
                     <button
                       onClick={handleSubmitBiometrics}
-                      className="flex-1 py-4 bg-accent-gold hover:bg-white text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="flex-1 py-3.5 sm:py-4 bg-accent-gold hover:bg-white text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation min-h-[48px]"
                     >
                       <ShieldCheck className="w-4 h-4" />
-                      <span>Confirm &amp; Register Face ID</span>
+                      <span>Confirm &amp; Register</span>
                     </button>
 
                     <button
@@ -393,7 +493,7 @@ export default function FaceIdScanModal({
                         setAngleCapturedImage(null);
                         startCamera();
                       }}
-                      className="px-4 py-4 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-mono rounded-xl cursor-pointer"
+                      className="px-4 py-3.5 sm:py-4 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-mono rounded-xl cursor-pointer touch-manipulation min-h-[48px]"
                     >
                       Retake
                     </button>

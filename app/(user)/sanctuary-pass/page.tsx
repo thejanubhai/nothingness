@@ -333,7 +333,7 @@ function SanctuaryPassContent() {
         </div>
 
         {/* Tier Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-900 pb-4">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 border-b border-zinc-900 whitespace-nowrap">
           {[
             { id: 'all', label: 'All Gatherings' },
             { id: 'munch', label: 'Tier 1: Salons & Munches' },
@@ -343,7 +343,7 @@ function SanctuaryPassContent() {
             <button
               key={tab.id}
               onClick={() => setSelectedTier(tab.id as any)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation ${
                 selectedTier === tab.id
                   ? 'bg-gradient-to-r from-amber-600 to-rose-600 text-white shadow-lg'
                   : 'bg-zinc-900/70 text-zinc-400 hover:text-white border border-zinc-800'

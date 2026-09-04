@@ -68,20 +68,41 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required to register 3D Face ID' }, { status: 401 });
-    }
-
     const body = await req.json();
-    const { frontImage, angleImage, guestId } = body;
+    const { frontImage, angleImage, guestId, token } = body;
+
+    if (!user && !guestId && !token) {
+      return NextResponse.json({ error: 'Authentication or valid guest verification token required to register 3D Face ID' }, { status: 401 });
+    }
 
     if (!frontImage) {
       return NextResponse.json({ error: 'No live front face capture provided' }, { status: 400 });
     }
 
     const adminClient = createAdminClient();
+    let resolvedGuestId = guestId || null;
+    let resolvedUserId = user?.id || null;
+
+    if (token) {
+      const { data: guestRow } = await adminClient
+        .from('guests')
+        .select('id, guest_profile_id, user_id')
+        .eq('verification_token', token)
+        .maybeSingle();
+
+      if (guestRow) {
+        if (!resolvedGuestId) {
+          resolvedGuestId = guestRow.guest_profile_id || guestRow.id;
+        }
+        if (!resolvedUserId && guestRow.user_id) {
+          resolvedUserId = guestRow.user_id;
+        }
+      }
+    }
+
     const timestamp = Date.now();
-    const fileId = `${user.id.slice(0, 8)}_${timestamp}`;
+    const idPrefix = (resolvedUserId || resolvedGuestId || 'guest').slice(0, 8);
+    const fileId = `${idPrefix}_${timestamp}`;
 
     // 1. Upload Front Live Face Frame to Supabase Storage
     const frontUrl = await uploadBase64ToStorage(
@@ -115,7 +136,7 @@ export async function POST(req: NextRequest) {
 
     // 3. Update guest_profiles record
     let profileTargetQuery = adminClient.from('guest_profiles');
-    if (guestId) {
+    if (resolvedGuestId) {
       await profileTargetQuery
         .update({
           face_id_vetted: true,
@@ -124,8 +145,8 @@ export async function POST(req: NextRequest) {
           live_face_angles: faceAngles,
           face_id_score: 100,
         })
-        .eq('id', guestId);
-    } else {
+        .eq('id', resolvedGuestId);
+    } else if (user) {
       // Look up by user_id or phone
       const { data: existingProfile } = await adminClient
         .from('guest_profiles')
@@ -164,15 +185,17 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Update kinkster_profiles record for enhanced trust & high event acceptance
-    try {
-      await adminClient
-        .from('kinkster_profiles')
-        .update({
-          face_id_vetted: true,
-          live_face_url: frontUrl,
-        })
-        .eq('id', user.id);
-    } catch (_) {}
+    if (resolvedUserId) {
+      try {
+        await adminClient
+          .from('kinkster_profiles')
+          .update({
+            face_id_vetted: true,
+            live_face_url: frontUrl,
+          })
+          .eq('id', resolvedUserId);
+      } catch (_) {}
+    }
 
     return NextResponse.json({
       success: true,
