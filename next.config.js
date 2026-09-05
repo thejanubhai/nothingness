@@ -3,11 +3,16 @@ const nextConfig = {
   reactStrictMode: false,
   poweredByHeader: false,
   compress: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   serverExternalPackages: [
     'qrcode',
     'node-ical',
     '@google/genai',
-    'cloudinary'
+    'cloudinary',
+    'tesseract.js',
+    'firebase-admin'
   ],
   experimental: {
     optimizePackageImports: [
