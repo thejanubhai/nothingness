@@ -171,8 +171,20 @@ export async function POST(req: Request) {
     let visionSucceeded = false;
 
     // Load keys from environment or Supabase platform_settings
-    let nvidiaKey = process.env.NVIDIA_API_KEY || process.env.nVidia_AI_API_Key || process.env.NVIDIA_AI_API_KEY || null;
-    let geminiKey = process.env.GEMINI_API_KEY || null;
+    let nvidiaKey =
+      process.env.NVIDIA_API_KEY ||
+      process.env.nVidia_AI_API_Key ||
+      process.env.NVIDIA_AI_API_KEY ||
+      process.env.NV_API_KEY ||
+      null;
+
+    let geminiKey =
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY ||
+      process.env.GOOGLE_AI_API_KEY ||
+      process.env.GOOGLE_GENAI_API_KEY ||
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+      null;
 
     if (!nvidiaKey || !geminiKey) {
       try {
@@ -180,21 +192,40 @@ export async function POST(req: Request) {
         const adminClient = createAdminClient();
         const { data: settings } = await adminClient
           .from('platform_settings')
-          .select('nvidia_api_key, gemini_api_key')
+          .select('*')
           .maybeSingle();
 
         if (settings) {
-          if (!nvidiaKey && settings.nvidia_api_key && settings.nvidia_api_key.trim()) {
-            nvidiaKey = settings.nvidia_api_key.trim();
+          if (!nvidiaKey && (settings.nvidia_api_key || (settings as any).nvidia_key)) {
+            nvidiaKey = (settings.nvidia_api_key || (settings as any).nvidia_key).trim();
           }
-          if (!geminiKey && settings.gemini_api_key && settings.gemini_api_key.trim()) {
-            geminiKey = settings.gemini_api_key.trim();
+          if (!geminiKey && (settings.gemini_api_key || (settings as any).google_api_key || (settings as any).gemini_key)) {
+            geminiKey = (settings.gemini_api_key || (settings as any).google_api_key || (settings as any).gemini_key).trim();
           }
         }
       } catch (err: any) {
         console.warn('[Verify ID] Could not fetch keys from platform_settings:', err?.message);
       }
     }
+
+    // Helper to extract JSON from raw model text (with or without markdown fences)
+    const extractJsonFromText = (text: string): any => {
+      if (!text) return null;
+      const clean = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+      try {
+        return JSON.parse(clean);
+      } catch {}
+
+      const firstBrace = text.indexOf('{');
+      const lastBrace = text.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        try {
+          const candidate = text.slice(firstBrace, lastBrace + 1);
+          return JSON.parse(candidate);
+        } catch {}
+      }
+      return null;
+    };
 
     // A. NVIDIA Multimodal Vision AI
     if (nvidiaKey) {
@@ -247,7 +278,7 @@ Return ONLY a valid JSON object without markdown formatting.`;
           });
         }
 
-        const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+        const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
         for (const modelName of geminiModels) {
           try {
             const response = await ai.models.generateContent({
@@ -255,9 +286,8 @@ Return ONLY a valid JSON object without markdown formatting.`;
               contents: [{ role: 'user', parts }],
             });
 
-            const text = response.text || '{}';
-            const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(cleanJson);
+            const text = response.text || '';
+            const parsed = extractJsonFromText(text);
             if (parsed && typeof parsed === 'object') {
               extractedData = { ...parsed };
               visionSucceeded = true;
@@ -294,33 +324,73 @@ Return ONLY a valid JSON object without markdown formatting.`;
       }
     }
 
+    // Normalize extracted fields across all possible AI / OCR key naming conventions
+    const normalizedName = (
+      extractedData.name ||
+      (extractedData as any).full_name ||
+      (extractedData as any).fullName ||
+      ''
+    ).trim();
+
+    const normalizedDocNumber = (
+      extractedData.document_number ||
+      (extractedData as any).id_number ||
+      (extractedData as any).aadhaar_number ||
+      (extractedData as any).passport_number ||
+      (extractedData as any).documentNumber ||
+      ''
+    ).trim();
+
+    const normalizedDocType = (
+      extractedData.document_type ||
+      (extractedData as any).id_document_type ||
+      (extractedData as any).documentType ||
+      'Aadhaar'
+    ).trim();
+
+    const normalizedDob = (
+      extractedData.dob ||
+      (extractedData as any).date_of_birth ||
+      (extractedData as any).dateOfBirth ||
+      (extractedData as any).birth_date ||
+      ''
+    ).trim();
+
+    const normalizedAddress = (
+      extractedData.permanent_address ||
+      (extractedData as any).address ||
+      (extractedData as any).residential_address ||
+      ''
+    ).trim();
+
     // If client requested scan-only (interactive preview in upload modal)
     if (scanOnly) {
       return NextResponse.json({
         success: true,
         visionSucceeded,
         extracted: {
-          full_name: extractedData.name || '',
-          document_number: extractedData.document_number || '',
-          document_type: extractedData.document_type || 'Aadhaar',
-          dob: extractedData.dob || '',
-          permanent_address: extractedData.permanent_address || '',
+          full_name: normalizedName,
+          name: normalizedName,
+          document_number: normalizedDocNumber,
+          document_type: normalizedDocType,
+          dob: normalizedDob,
+          permanent_address: normalizedAddress,
           above18: extractedData.above18 ?? true,
         }
       });
     }
 
     // 3. Resolve Final Name & Document Number (Prioritize client confirmation or AI extraction)
-    const finalDocType = (clientDocType || extractedData.document_type || 'Aadhaar').toLowerCase().includes('passport')
+    const finalDocType = (clientDocType || normalizedDocType || 'Aadhaar').toLowerCase().includes('passport')
       ? 'Passport'
       : 'Aadhaar';
 
-    let finalName = (clientName || extractedData.name || '').trim();
+    let finalName = (clientName || normalizedName || '').trim();
     if (!finalName || finalName === 'Nothingness Guest' || finalName === 'Guest' || finalName === 'Full Legal Name') {
       finalName = user?.user_metadata?.full_name || 'Nothingness Guest';
     }
 
-    let finalDocNumber = (clientDocNumber || extractedData.document_number || '').trim().toUpperCase();
+    let finalDocNumber = (clientDocNumber || normalizedDocNumber || '').trim().toUpperCase();
     // Validate Aadhaar: remove spaces to check length
     const digitsOnly = finalDocNumber.replace(/[^0-9]/g, '');
     if (finalDocType === 'Aadhaar' && digitsOnly.length === 12) {

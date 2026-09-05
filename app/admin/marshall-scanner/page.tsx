@@ -365,22 +365,41 @@ export default function MarshallScannerPage() {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between pt-1 border-t border-zinc-800/80">
-                <div>
-                  <h3 className="text-base font-bold text-white font-mono">
+              <div className="flex items-center gap-3 pt-1 border-t border-zinc-800/80">
+                {lastScannedResult.facePhotoUrl ? (
+                  <div className="w-12 h-14 rounded-xl overflow-hidden border border-emerald-500/40 bg-black shrink-0 shadow-lg">
+                    <img
+                      src={lastScannedResult.facePhotoUrl}
+                      alt="Verified Face"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-12 h-14 rounded-xl border border-zinc-800 bg-zinc-900 flex items-center justify-center shrink-0 text-zinc-600 font-mono text-[10px]">
+                    No Face
+                  </div>
+                )}
+
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-bold text-white font-mono truncate">
                     @{lastScannedResult.userAlias}
                   </h3>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                  <p className="text-[11px] text-zinc-400 mt-0.5 truncate">
                     {lastScannedResult.eventTitle || 'Sanctuary Gathering'}
                   </p>
+                  {lastScannedResult.isFaceIdVetted && (
+                    <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1 mt-0.5">
+                      ✓ 3D Face ID Matched
+                    </span>
+                  )}
                 </div>
 
-                <div className="text-right space-y-1">
+                <div className="text-right space-y-1 shrink-0">
                   <span className="inline-block px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold rounded-md">
                     Level 2 Certified ✓
                   </span>
                   <p className="text-[10px] font-mono text-zinc-500">
-                    ID Checked: {lastScannedResult.isIdVerified ? 'Yes (Aadhaar)' : 'Pending'}
+                    ID: {lastScannedResult.isIdVerified ? 'Verified' : 'Pending'}
                   </p>
                 </div>
               </div>

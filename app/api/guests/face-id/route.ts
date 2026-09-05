@@ -85,17 +85,25 @@ export async function POST(req: NextRequest) {
 
     if (token) {
       const { data: guestRow } = await adminClient
-        .from('guests')
-        .select('id, guest_profile_id, user_id')
-        .eq('verification_token', token)
+        .from('booking_guests')
+        .select('id, guest_profile_id')
+        .or(`verification_token.eq.${token},id.eq.${token}`)
         .maybeSingle();
 
       if (guestRow) {
         if (!resolvedGuestId) {
           resolvedGuestId = guestRow.guest_profile_id || guestRow.id;
         }
-        if (!resolvedUserId && guestRow.user_id) {
-          resolvedUserId = guestRow.user_id;
+      } else {
+        // Fallback: Check sanctuary_event_applications for Sanctuary Pass tokens
+        const { data: appRow } = await adminClient
+          .from('sanctuary_event_applications')
+          .select('id, user_id')
+          .or(`qr_secret_token.eq.${token},id.eq.${token}`)
+          .maybeSingle();
+
+        if (appRow?.user_id && !resolvedUserId) {
+          resolvedUserId = appRow.user_id;
         }
       }
     }
@@ -185,6 +193,19 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Update kinkster_profiles record for enhanced trust & high event acceptance
+    if (!resolvedUserId && resolvedGuestId) {
+      try {
+        const { data: gp } = await adminClient
+          .from('guest_profiles')
+          .select('user_id')
+          .eq('id', resolvedGuestId)
+          .maybeSingle();
+        if (gp?.user_id) {
+          resolvedUserId = gp.user_id;
+        }
+      } catch (_) {}
+    }
+
     if (resolvedUserId) {
       try {
         await adminClient

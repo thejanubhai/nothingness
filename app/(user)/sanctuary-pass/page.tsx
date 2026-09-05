@@ -780,7 +780,11 @@ function SanctuaryPassContent() {
           setShowIdModal(false);
           setIsIdVerified(true);
           fetchPortalData();
-          setShowBuyPassModal(true);
+          if (!isFaceIdVetted) {
+            setShowFaceIdModal(true);
+          } else {
+            setShowBuyPassModal(true);
+          }
         }}
       />
 
@@ -791,6 +795,7 @@ function SanctuaryPassContent() {
         onSuccess={() => {
           setIsFaceIdVetted(true);
           fetchPortalData();
+          setShowBuyPassModal(true);
           toast.success('3D Face ID Registered!', {
             description: 'Your physical vetting is complete for Gatekeepers.',
           });

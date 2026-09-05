@@ -183,22 +183,24 @@ export async function POST(req: NextRequest) {
     if (isTargetUuid) {
       const { data: kp } = await adminClient
         .from('kinkster_profiles')
-        .select('id, alias, in_person_vetted, is_in_person_vetted, is_id_verified')
+        .select('id, alias, in_person_vetted, is_in_person_vetted, is_id_verified, avatar_url, face_id_vetted, live_face_url')
         .eq('id', targetUserId)
         .maybeSingle();
       kinksterProfile = kp;
 
       const { data: gp } = await adminClient
         .from('guest_profiles')
-        .select('id, full_name, is_verified, in_person_vetted, is_in_person_vetted')
+        .select('id, full_name, is_verified, in_person_vetted, is_in_person_vetted, face_id_vetted, live_face_url, photo_url')
         .or(`user_id.eq.${targetUserId},id.eq.${targetUserId}`)
         .limit(1)
         .maybeSingle();
       guestProfile = gp;
     }
 
-    // Verify Level 1 Govt ID status
+    // Verify Level 1 Govt ID status & 3D Face ID status
     const isIdVerified = Boolean(guestProfile?.is_verified || kinksterProfile?.is_id_verified);
+    const isFaceIdVetted = Boolean(guestProfile?.face_id_vetted || kinksterProfile?.face_id_vetted);
+    const facePhotoUrl = guestProfile?.live_face_url || kinksterProfile?.live_face_url || guestProfile?.photo_url || kinksterProfile?.avatar_url || null;
     const userAlias = kinksterProfile?.alias || guestProfile?.full_name || `member_${targetUserId.slice(0, 6)}`;
 
     // Update guest_profiles & kinkster_profiles to certified in_person_vetted = true and is_in_person_vetted = true
@@ -266,6 +268,8 @@ export async function POST(req: NextRequest) {
       userId: targetUserId,
       eventTitle,
       isIdVerified,
+      isFaceIdVetted,
+      facePhotoUrl,
       isInPersonVetted: true,
       checkedInAt: now,
       certifiedBy: marshallAlias,

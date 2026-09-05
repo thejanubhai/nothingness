@@ -579,6 +579,9 @@ export default function UserDashboardClient({
           toast.success('Level 1 Vetting Complete', {
             description: `Welcome, ${name}. You can now book any Nothingness sanctuary.`
           });
+          if (!isFaceIdVetted) {
+            setShowFaceIdModal(true);
+          }
         }}
       />
 

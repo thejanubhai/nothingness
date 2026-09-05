@@ -26,7 +26,7 @@ import {
 import { toast } from 'sonner';
 import IDScanningAnimation from '@/components/IDScanningAnimation';
 import { createClient } from '@/lib/supabase/client';
-import { parseAadhaarQrData, formatAadhaarNumber, compressIdImageForOcr } from '@/lib/id-utils';
+import { parseAadhaarQrData, formatAadhaarNumber, compressIdImageForOcr, detectAndDecodeQrClient } from '@/lib/id-utils';
 
 interface IDUploadModalProps {
   isOpen: boolean;
@@ -259,40 +259,24 @@ export default function IDUploadModal({
     setIsScanning(true);
     setScanSuccess(false);
 
-    // 1. Instant Client-Side QR Detection (supported in modern Chrome, Edge, and Android browsers)
-    try {
-      if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
-        const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
-        for (const imgUrl of previews) {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.src = imgUrl;
-          await new Promise((res) => {
-            img.onload = res;
-            img.onerror = res;
-          });
-
-          if (img.width > 0 && img.height > 0) {
-            const barcodes = await detector.detect(img);
-            for (const barcode of barcodes) {
-              const parsed = parseAadhaarQrData(barcode.rawValue);
-              if (parsed && (parsed.name || parsed.document_number)) {
-                if (parsed.name) setFullName(parsed.name);
-                if (parsed.document_number) setDocumentNumber(parsed.document_number);
-                if (parsed.dob) setDob(parsed.dob);
-                if (parsed.permanent_address) setPermanentAddress(parsed.permanent_address);
-                setDocumentType('Aadhaar');
-                setScanSuccess(true);
-                toast.success('Document details detected via Aadhaar QR Code!');
-                setIsScanning(false);
-                return;
-              }
-            }
-          }
+    // 1. Instant Client-Side QR Detection (Universal: native BarcodeDetector on Chrome/Android + jsQR on iOS Safari/PWA)
+    for (const imgUrl of previews) {
+      try {
+        const parsed = await detectAndDecodeQrClient(imgUrl);
+        if (parsed && (parsed.name || parsed.document_number)) {
+          if (parsed.name) setFullName(parsed.name);
+          if (parsed.document_number) setDocumentNumber(formatAadhaarInput(parsed.document_number));
+          if (parsed.dob) setDob(parsed.dob);
+          if (parsed.permanent_address) setPermanentAddress(parsed.permanent_address);
+          setDocumentType('Aadhaar');
+          setScanSuccess(true);
+          toast.success('Document details detected via Aadhaar QR Code!');
+          setIsScanning(false);
+          return;
         }
+      } catch (err) {
+        console.warn('Client QR detection check:', err);
       }
-    } catch {
-      // Continue to server-side AI/OCR
     }
 
     // 2. Server-Side Multi-Tier Vision & OCR Scan
@@ -489,7 +473,7 @@ export default function IDUploadModal({
               <X className="w-4 h-4" />
             </button>
 
-            <div className="p-5 sm:p-8 space-y-6">
+            <div className="p-5 sm:p-8 space-y-6 overflow-y-auto flex-1 overscroll-contain min-h-0 pb-safe">
               {!token && !bookingId && !currentUser && !checkingAuth ? (
                 <div className="text-center py-6 space-y-4">
                   <div className="w-14 h-14 bg-accent-gold/10 border border-accent-gold/20 rounded-full flex items-center justify-center mx-auto text-accent-gold">

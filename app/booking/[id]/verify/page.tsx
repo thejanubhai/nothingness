@@ -4,6 +4,7 @@ import { useState, use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, CheckCircle2, Copy, Link as LinkIcon, Share2 } from 'lucide-react';
 import IDUploadModal from '@/components/IDUploadModal';
+import FaceIdScanModal from '@/components/FaceIdScanModal';
 import { toast } from 'sonner';
 
 interface Guest {
@@ -23,6 +24,8 @@ export default function VerificationDashboard({ params }: { params: Promise<{ id
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
+  const [faceIdModalOpen, setFaceIdModalOpen] = useState(false);
+  const [faceGuest, setFaceGuest] = useState<Guest | null>(null);
 
   useEffect(() => {
     fetchGuests();
@@ -161,9 +164,31 @@ export default function VerificationDashboard({ params }: { params: Promise<{ id
           bookingId={resolvedParams.id}
           guestId={activeGuest.id}
           onSuccess={(name) => {
+            const guestJustVerified = activeGuest;
             fetchGuests();
             setModalOpen(false);
             setActiveGuest(null);
+            if (guestJustVerified) {
+              setFaceGuest(guestJustVerified);
+              setFaceIdModalOpen(true);
+            }
+          }}
+        />
+      )}
+
+      {faceGuest && (
+        <FaceIdScanModal
+          isOpen={faceIdModalOpen}
+          onClose={() => { setFaceIdModalOpen(false); setFaceGuest(null); }}
+          guestId={faceGuest.id}
+          token={faceGuest.verification_token}
+          onSuccess={(url) => {
+            setFaceIdModalOpen(false);
+            setFaceGuest(null);
+            fetchGuests();
+            toast.success('3D Face ID Registered!', {
+              description: 'Gatekeeper priority check-in is now active.',
+            });
           }}
         />
       )}

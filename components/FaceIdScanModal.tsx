@@ -23,9 +23,11 @@ export default function FaceIdScanModal({
   token,
   onSuccess,
 }: FaceIdScanModalProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const prevIsOpenRef = useRef(false);
+  const selfieInputRef = useRef<HTMLInputElement | null>(null);
 
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraLoading, setCameraLoading] = useState(false);
@@ -52,6 +54,30 @@ export default function FaceIdScanModal({
     }
   }, []);
 
+  // Helper to reliably attach a stream to the video element
+  const attachStreamToVideo = useCallback((mediaStream: MediaStream) => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+      if (video.srcObject !== mediaStream) {
+        video.srcObject = mediaStream;
+      }
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+      video.muted = true;
+      video.play().catch((err) => {
+        console.warn('Video auto-play caught:', err);
+      });
+    }
+  }, []);
+
+  // Video Ref callback: Immediately connects active stream the instant video mounts
+  const handleVideoRef = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && streamRef.current) {
+      attachStreamToVideo(streamRef.current);
+    }
+  }, [attachStreamToVideo]);
+
   // Start Camera Stream with mobile / PWA fallbacks
   const startCamera = useCallback(async () => {
     setCameraError(null);
@@ -76,12 +102,12 @@ export default function FaceIdScanModal({
     let mediaStream: MediaStream | null = null;
     let lastError: any = null;
 
-    // Progressive constraints: portrait-friendly square -> generic user front -> any video device
+    // Progressive constraints: standard mobile 1280x720 -> generic user front -> any video device
     const constraintSets: MediaStreamConstraints[] = [
       {
         video: {
           facingMode: 'user',
-          width: { ideal: 720 },
+          width: { ideal: 1280 },
           height: { ideal: 720 },
         },
         audio: false,
@@ -111,55 +137,39 @@ export default function FaceIdScanModal({
     if (!mediaStream) {
       console.error('Camera stream error:', lastError);
       if (lastError?.name === 'NotAllowedError' || lastError?.name === 'PermissionDeniedError') {
-        setCameraError('Camera permission was denied. Please allow camera permissions in your browser or device settings to complete 3D verification.');
+        setCameraError('Camera permission was denied. Please allow camera permissions in your browser or device settings, or use the selfie photo upload option below.');
       } else if (lastError?.name === 'NotFoundError' || lastError?.name === 'DevicesNotFoundError') {
         setCameraError('No camera sensor found on this device.');
       } else {
-        setCameraError('Unable to activate camera sensor. Please check device permissions or close other camera apps and retry.');
+        setCameraError('Unable to activate camera sensor. Please check device permissions or use the selfie photo option below.');
       }
       return;
     }
 
     streamRef.current = mediaStream;
     setStream(mediaStream);
+    attachStreamToVideo(mediaStream);
+  }, [attachStreamToVideo]);
 
-    // If video element is already mounted, attach immediately
-    if (videoRef.current) {
-      const video = videoRef.current;
-      video.srcObject = mediaStream;
-      video.setAttribute('playsinline', 'true');
-      video.setAttribute('webkit-playsinline', 'true');
-      video.muted = true;
-      video.play().catch((err) => {
-        console.warn('Video auto-play caught:', err);
-      });
-    }
-  }, []);
-
-  // Connect active stream to video element when step mounts or stream arrives
+  // Connect active stream to video element when step changes or stream arrives
   useEffect(() => {
-    if (videoRef.current && stream && (step === 'front' || step === 'angle')) {
-      const video = videoRef.current;
-      if (video.srcObject !== stream) {
-        video.srcObject = stream;
-      }
-      video.setAttribute('playsinline', 'true');
-      video.setAttribute('webkit-playsinline', 'true');
-      video.muted = true;
-      video.play().catch((err) => {
-        console.warn('Video play caught:', err);
-      });
+    if (stream && (step === 'front' || step === 'angle')) {
+      attachStreamToVideo(stream);
     }
-  }, [stream, step]);
+  }, [stream, step, attachStreamToVideo]);
 
   // Handle modal open/close and lock background scroll
   useEffect(() => {
     if (isOpen) {
-      setStep('instructions');
-      setFrontCapturedImage(null);
-      setAngleCapturedImage(null);
-      setCameraError(null);
-      setIsScanningActive(false);
+      if (!prevIsOpenRef.current) {
+        // Only reset flow state on initial open transition
+        setStep('instructions');
+        setFrontCapturedImage(null);
+        setAngleCapturedImage(null);
+        setCameraError(null);
+        setIsScanningActive(false);
+      }
+      prevIsOpenRef.current = true;
 
       const previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
@@ -169,9 +179,36 @@ export default function FaceIdScanModal({
         document.body.style.overflow = previousOverflow;
       };
     } else {
+      prevIsOpenRef.current = false;
       stopCamera();
     }
   }, [isOpen, stopCamera]);
+
+  // Fallback selfie file upload handler
+  const handleSelfieUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      if (!dataUrl) return;
+
+      if (step === 'front' || !frontCapturedImage) {
+        setFrontCapturedImage(dataUrl);
+        setStep('angle');
+        toast.info('Front selfie captured! Now capture an angled photo or continue to review.');
+      } else {
+        setAngleCapturedImage(dataUrl);
+        setStep('review');
+        stopCamera();
+        toast.success('3D Biometric photos loaded! Review below.');
+      }
+    };
+    reader.readAsDataURL(file);
+    // Reset file input value so same photo can be reselected if needed
+    e.target.value = '';
+  };
 
   // Capture Frame from Video
   const captureFrame = (): string | null => {
@@ -293,7 +330,17 @@ export default function FaceIdScanModal({
             {/* Hidden canvas for frame extraction */}
             <canvas ref={canvasRef} className="hidden" />
 
-            <div className="p-5 sm:p-7 overflow-y-auto space-y-5 text-center">
+            {/* Hidden file input for native camera / selfie upload fallback */}
+            <input
+              type="file"
+              ref={selfieInputRef}
+              accept="image/*"
+              capture="user"
+              onChange={handleSelfieUpload}
+              className="hidden"
+            />
+
+            <div className="p-5 sm:p-7 overflow-y-auto space-y-5 text-center flex-1 overscroll-contain min-h-0 pb-safe">
               
               {/* ========================================================= */}
               {/* STEP 1: INSTRUCTIONS & PROTOCOL                           */}
@@ -341,6 +388,15 @@ export default function FaceIdScanModal({
                     <Camera className="w-4 h-4" />
                     <span>Begin 3D Biometric Scan</span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => selfieInputRef.current?.click()}
+                    className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800 rounded-xl text-xs font-mono transition-colors flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-accent-gold" />
+                    <span>Or Upload / Take Selfie Photo</span>
+                  </button>
                 </div>
               )}
 
@@ -361,37 +417,29 @@ export default function FaceIdScanModal({
                     </p>
                   </div>
 
-                  {cameraLoading ? (
-                    <div className="w-full aspect-square max-w-[260px] sm:max-w-[320px] mx-auto rounded-3xl bg-zinc-950 border border-zinc-800 shadow-2xl flex flex-col items-center justify-center p-6 space-y-3">
-                      <RefreshCw className="w-8 h-8 text-accent-gold animate-spin" />
-                      <p className="text-xs font-mono text-zinc-300">Activating camera sensor...</p>
-                      <p className="text-[11px] text-zinc-500 font-mono">Please grant camera permission if prompted.</p>
-                    </div>
-                  ) : cameraError ? (
-                    <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-mono space-y-3 max-w-[320px] mx-auto">
-                      <AlertCircle className="w-8 h-8 text-rose-400 mx-auto" />
-                      <p className="leading-relaxed">{cameraError}</p>
-                      <button
-                        onClick={startCamera}
-                        className="px-4 py-2.5 bg-zinc-900 border border-zinc-700 text-white rounded-xl text-xs font-mono uppercase tracking-wider hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation"
-                      >
-                        Retry Camera Access
-                      </button>
-                    </div>
-                  ) : (
-                    /* Biometric Oval HUD Viewport */
-                    <div className="relative w-full aspect-square max-w-[260px] sm:max-w-[320px] mx-auto rounded-3xl overflow-hidden bg-black border border-zinc-800 shadow-2xl flex items-center justify-center">
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        {...({ 'webkit-playsinline': 'true' } as any)}
-                        className="w-full h-full object-cover scale-x-[-1]"
-                      />
+                  {/* Biometric Oval HUD Viewport with persistent video mounting */}
+                  <div className="relative w-full aspect-square max-w-[260px] sm:max-w-[320px] mx-auto rounded-3xl overflow-hidden bg-black border border-zinc-800 shadow-2xl flex items-center justify-center">
+                    <video
+                      ref={handleVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      {...({ 'webkit-playsinline': 'true' } as any)}
+                      className="w-full h-full object-cover scale-x-[-1]"
+                    />
 
-                      {/* Apple-style Biometric Oval Frame Overlay */}
-                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-3 sm:p-4">
+                    {/* Camera Loading Overlay */}
+                    {cameraLoading && (
+                      <div className="absolute inset-0 bg-zinc-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 space-y-3 z-20">
+                        <RefreshCw className="w-8 h-8 text-accent-gold animate-spin" />
+                        <p className="text-xs font-mono text-zinc-200 font-bold">Activating camera sensor...</p>
+                        <p className="text-[11px] text-zinc-400 font-mono text-center">Please allow camera access when prompted.</p>
+                      </div>
+                    )}
+
+                    {/* Apple-style Biometric Oval Frame Overlay */}
+                    {!cameraLoading && !cameraError && (
+                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-3 sm:p-4 z-10">
                         <div className={`w-[170px] sm:w-[210px] h-[220px] sm:h-[270px] rounded-[85px] sm:rounded-[105px] border-2 transition-all duration-500 relative ${
                           isScanningActive
                             ? 'border-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.5)] scale-98'
@@ -409,18 +457,44 @@ export default function FaceIdScanModal({
                           )}
                         </div>
                       </div>
+                    )}
 
-                      {/* Status HUD tag */}
-                      <div className="absolute bottom-3 inset-x-0 flex justify-center pointer-events-none">
+                    {/* Status HUD tag */}
+                    {!cameraLoading && !cameraError && (
+                      <div className="absolute bottom-3 inset-x-0 flex justify-center pointer-events-none z-10">
                         <span className="px-3 py-1 rounded-full bg-black/80 backdrop-blur-md text-[10px] font-mono text-zinc-300 border border-white/10 flex items-center gap-1.5">
                           <span className={`w-2 h-2 rounded-full ${isScanningActive ? 'bg-emerald-400 animate-ping' : 'bg-accent-gold animate-pulse'}`} />
                           {isScanningActive ? 'Analyzing 3D Topology...' : step === 'front' ? 'Face Positioned' : 'Turn Head Slightly'}
                         </span>
                       </div>
+                    )}
+                  </div>
+
+                  {/* Camera Error Message with Action Buttons */}
+                  {cameraError && (
+                    <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-mono space-y-3 max-w-sm mx-auto">
+                      <AlertCircle className="w-6 h-6 text-rose-400 mx-auto" />
+                      <p className="leading-relaxed text-[11px]">{cameraError}</p>
+                      <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={startCamera}
+                          className="px-3.5 py-2 bg-zinc-900 border border-zinc-700 text-white rounded-xl text-xs font-mono uppercase tracking-wider hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation"
+                        >
+                          Retry Camera
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => selfieInputRef.current?.click()}
+                          className="px-3.5 py-2 bg-accent-gold text-black rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-white transition-colors cursor-pointer touch-manipulation"
+                        >
+                          Upload Selfie Photo
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  <div className="pt-2">
+                  <div className="pt-2 space-y-2">
                     <button
                       onClick={step === 'front' ? handleCaptureFront : handleCaptureAngle}
                       disabled={isScanningActive || !!cameraError || cameraLoading}
@@ -437,6 +511,16 @@ export default function FaceIdScanModal({
                           <span>{step === 'front' ? 'Capture Front Face' : 'Capture 3D Angle Depth'}</span>
                         </>
                       )}
+                    </button>
+
+                    {/* Secondary Selfie Upload Trigger */}
+                    <button
+                      type="button"
+                      onClick={() => selfieInputRef.current?.click()}
+                      className="w-full py-2.5 bg-zinc-900/60 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800 rounded-xl text-[11px] font-mono transition-colors flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-accent-gold" />
+                      <span>{step === 'front' ? 'Take Front Selfie via Camera App' : 'Take Angled Selfie via Camera App'}</span>
                     </button>
                   </div>
                 </div>
