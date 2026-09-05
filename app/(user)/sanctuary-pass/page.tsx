@@ -379,6 +379,15 @@ function SanctuaryPassContent() {
                 )}
               </div>
             )}
+            <div className="pt-1 flex items-center justify-end">
+              <Link
+                href="/admin/marshall-scanner"
+                className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 hover:text-amber-400 transition-colors"
+              >
+                <Scan className="w-3.5 h-3.5 text-amber-400" />
+                <span>Consent Marshall On-Floor Scanner →</span>
+              </Link>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">

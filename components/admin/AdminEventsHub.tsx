@@ -27,6 +27,7 @@ import {
   Camera
 } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 export default function AdminEventsHub() {
   const [activeTab, setActiveTab] = useState<'overview' | 'editor' | 'curation' | 'scanner' | 'settings'>('overview');
@@ -291,6 +292,14 @@ export default function AdminEventsHub() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <Link
+            href="/admin/marshall-scanner"
+            className="px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2"
+          >
+            <Camera className="w-4 h-4 text-amber-400" />
+            <span>Marshall Live Scanner</span>
+          </Link>
+
           <button
             onClick={() => {
               setEditingEventId(null);
@@ -901,14 +910,23 @@ export default function AdminEventsHub() {
       {activeTab === 'scanner' && (
         <div className="max-w-xl mx-auto space-y-6">
           <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-                <QrCode className="w-5 h-5" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">On-Ground Door Gatekeeper</h3>
+                  <p className="text-xs text-white/40">Scan or paste dynamic QR token for instant verification.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-white">On-Ground Door Gatekeeper</h3>
-                <p className="text-xs text-white/40">Scan or paste dynamic QR token for instant verification.</p>
-              </div>
+              <Link
+                href="/admin/marshall-scanner"
+                className="px-3.5 py-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs rounded-xl transition-all flex items-center gap-2 shrink-0 w-fit"
+              >
+                <Camera className="w-4 h-4 text-amber-400" />
+                <span>Launch Camera Scanner →</span>
+              </Link>
             </div>
 
             <div className="space-y-2">

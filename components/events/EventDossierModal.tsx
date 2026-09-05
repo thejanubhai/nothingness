@@ -18,7 +18,8 @@ import {
   EyeOff,
   Wine,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  QrCode
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -278,11 +279,20 @@ export default function EventDossierModal({
           {/* TAB 3: ETIQUETTE & MARSHALLS */}
           {activeTab === 'etiquette' && (
             <div className="space-y-4 animate-fadeIn">
-              <div className="p-4 bg-zinc-900/80 border border-zinc-800 rounded-2xl space-y-2">
-                <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  Floor Lead &amp; Consent Marshall: {event.consent_marshall_name || 'Aria & Kael'}
-                </span>
+              <div className="p-4 bg-zinc-900/80 border border-zinc-800 rounded-2xl space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    Floor Lead &amp; Consent Marshall: {event.consent_marshall_name || 'Aria & Kael'}
+                  </span>
+                  <Link
+                    href="/admin/marshall-scanner"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[11px] font-mono font-bold transition-all w-fit"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>Launch Marshall Scanner</span>
+                  </Link>
+                </div>
                 <p className="text-xs text-zinc-300 leading-relaxed">
                   Dedicated, identifiable floor marshalls are present throughout the gathering. If at any moment you feel uncomfortable or need assistance, they are your sovereign advocates.
                 </p>

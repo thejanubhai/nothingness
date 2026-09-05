@@ -11,6 +11,7 @@ import { Toaster } from "sonner";
 import Script from "next/script";
 
 import MobileBottomNav from "@/components/MobileBottomNav";
+import StealthPrivacyShield from "@/components/StealthPrivacyShield";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -150,6 +151,7 @@ export default function RootLayout({
           <MobileBottomNav />
         </SmoothScroll>
         <CookieBanner />
+        <StealthPrivacyShield />
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <script
           id="global-org-schema"

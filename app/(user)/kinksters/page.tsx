@@ -19,7 +19,8 @@ import {
   Globe,
   Send,
   X,
-  BookmarkCheck
+  BookmarkCheck,
+  Scan
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -29,6 +30,9 @@ import CreatePostModal from '@/components/kinkster/CreatePostModal';
 import IDUploadModal from '@/components/IDUploadModal';
 import StayProofUploadModal from '@/components/kinkster/StayProofUploadModal';
 import FranchiseCrossPromoCard from '@/components/kinkster/FranchiseCrossPromoCard';
+import PullToRefresh from '@/components/PullToRefresh';
+import DesireResonanceModal from '@/components/kinkster/DesireResonanceModal';
+import EphemeralChatModal from '@/components/kinkster/EphemeralChatModal';
 
 interface Post {
   id: string;
@@ -68,6 +72,21 @@ function KinkstersContent() {
   const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
   const [commentDraft, setCommentDraft] = useState<string>('');
   const [postComments, setPostComments] = useState<Record<string, Array<{ id: string; alias: string; text: string; time: string }>>>({});
+
+  // Dual-Blind Resonance & Ephemeral Chat State
+  const [activeResonanceTarget, setActiveResonanceTarget] = useState<{ alias: string; avatar?: string } | null>(null);
+  const [activeChamber, setActiveChamber] = useState<{ token: string; targetAlias: string; targetAvatar?: string } | null>(null);
+  const [mutualMatches, setMutualMatches] = useState<any[]>([]);
+
+  const fetchResonances = async () => {
+    try {
+      const res = await fetch('/api/kinkster/resonance');
+      const data = await res.json();
+      if (data.success && data.mutualMatches) {
+        setMutualMatches(data.mutualMatches);
+      }
+    } catch {}
+  };
 
   const filteredPosts = posts.filter((p) => {
     if (feedCategory === 'all') return true;
@@ -194,8 +213,9 @@ function KinkstersContent() {
         setUserAlias(profileData.profile.alias);
       }
 
-      // If activated, fetch feed posts
+      // If activated, fetch feed posts and mutual resonances
       if (profileData.is_activated) {
+        fetchResonances();
         const postsRes = await fetch('/api/kinkster/posts');
         const postsData = await postsRes.json();
         setPosts(postsData.posts || []);
@@ -425,6 +445,30 @@ function KinkstersContent() {
             </div>
 
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0 shrink-0">
+              {mutualMatches.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const first = mutualMatches[0];
+                    setActiveChamber({
+                      token: first.chamberToken,
+                      targetAlias: first.otherAlias,
+                      targetAvatar: first.otherAvatar,
+                    });
+                  }}
+                  className="px-3.5 py-2 bg-gradient-to-r from-rose-600 to-purple-600 border border-rose-400/40 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 shadow-lg cursor-pointer animate-pulse"
+                >
+                  <Flame className="w-4 h-4 text-amber-300" />
+                  <span>{mutualMatches.length} Mutual Match{mutualMatches.length > 1 ? 'es' : ''}</span>
+                </button>
+              )}
+              <Link
+                href="/admin/marshall-scanner"
+                className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 touch-manipulation"
+              >
+                <Scan className="w-4 h-4 text-amber-400" />
+                Scanner
+              </Link>
               <Link
                 href="/kinksters/discover"
                 className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 touch-manipulation"
@@ -482,7 +526,8 @@ function KinkstersContent() {
 
           {/* Tab 1: Member Feed */}
           {activeView === 'feed' && (
-            <div className="space-y-6 max-w-xl mx-auto">
+            <PullToRefresh onRefresh={fetchProfileAndPosts}>
+              <div className="space-y-6 max-w-xl mx-auto">
               {/* Category Filter Pills */}
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 pt-1 whitespace-nowrap">
                 {[
@@ -547,9 +592,29 @@ function KinkstersContent() {
                           <span className="text-[10px] text-zinc-500">ID Vetted • Verified Stay Guest</span>
                         </div>
                       </div>
-                      <span className="text-[11px] text-zinc-600 font-mono">
-                        {new Date(post.created_at).toLocaleDateString()}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isLoggedIn) {
+                              handleRequireAuth('resonate with member');
+                              return;
+                            }
+                            setActiveResonanceTarget({
+                              alias: post.kinkster_profiles?.alias || 'anonymous',
+                              avatar: post.kinkster_profiles?.avatar_url,
+                            });
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[10px] font-mono font-bold transition-all active:scale-95 cursor-pointer"
+                          title="Drop Confidential Desire Resonance"
+                        >
+                          <Flame className="w-3 h-3 text-rose-400" />
+                          <span>Resonate</span>
+                        </button>
+                        <span className="text-[11px] text-zinc-600 font-mono">
+                          {new Date(post.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Media Content */}
@@ -628,7 +693,8 @@ function KinkstersContent() {
                   </div>
                 ))
               )}
-            </div>
+              </div>
+            </PullToRefresh>
           )}
 
           {/* Tab 2: Sanctuary Manifesto & Feature Showcase */}
@@ -808,6 +874,34 @@ function KinkstersContent() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Dual-Blind Desire Resonance Modal */}
+      {activeResonanceTarget && (
+        <DesireResonanceModal
+          isOpen={!!activeResonanceTarget}
+          onClose={() => setActiveResonanceTarget(null)}
+          targetAlias={activeResonanceTarget.alias}
+          targetAvatar={activeResonanceTarget.avatar}
+          onMatched={(chamberToken, targetAlias) => {
+            setActiveChamber({
+              token: chamberToken,
+              targetAlias,
+              targetAvatar: activeResonanceTarget.avatar,
+            });
+          }}
+        />
+      )}
+
+      {/* Ephemeral Confidential Chat Chamber */}
+      {activeChamber && (
+        <EphemeralChatModal
+          isOpen={!!activeChamber}
+          onClose={() => setActiveChamber(null)}
+          chamberToken={activeChamber.token}
+          targetAlias={activeChamber.targetAlias}
+          targetAvatar={activeChamber.targetAvatar}
+        />
       )}
     </div>
   );

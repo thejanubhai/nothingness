@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Menu, 
@@ -33,6 +33,49 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const pathname = usePathname();
+
+  // Crest logo double-tap & double-click panic camouflage trigger
+  const lastLogoTapRef = useRef<number>(0);
+  const lastLogoClickRef = useRef<number>(0);
+
+  const dispatchPanicMode = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('trigger-panic-mode'));
+    }
+  };
+
+  const handleLogoTouchStart = (e: React.TouchEvent) => {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastLogoTapRef.current;
+    if (timeSinceLastTap > 0 && timeSinceLastTap < 350) {
+      e.preventDefault();
+      e.stopPropagation();
+      lastLogoTapRef.current = 0;
+      dispatchPanicMode();
+    } else {
+      lastLogoTapRef.current = now;
+    }
+  };
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    const now = Date.now();
+    const timeSinceLastClick = now - lastLogoClickRef.current;
+    if (timeSinceLastClick > 0 && timeSinceLastClick < 350) {
+      e.preventDefault();
+      e.stopPropagation();
+      lastLogoClickRef.current = 0;
+      dispatchPanicMode();
+      return;
+    }
+    lastLogoClickRef.current = now;
+  };
+
+  const handleLogoDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    lastLogoClickRef.current = 0;
+    dispatchPanicMode();
+  };
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 40);
@@ -99,14 +142,20 @@ export default function Header() {
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/"
-              className="flex items-center justify-center transition-transform hover:scale-105 duration-300"
+              id="header-crest-logo"
+              data-testid="header-crest-logo"
+              onTouchStart={handleLogoTouchStart}
+              onClick={handleLogoClick}
+              onDoubleClick={handleLogoDoubleClick}
+              className="flex items-center justify-center transition-transform hover:scale-105 duration-300 select-none cursor-pointer"
+              title="Nothingness • Double-tap for stealth mode"
             >
               <Image 
                 src="/images/logo.png" 
                 alt="Nothingness Logo" 
                 width={80} 
                 height={32} 
-                className="object-contain drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]" 
+                className="object-contain drop-shadow-[0_0_15px_rgba(220,38,38,0.5)] pointer-events-none" 
                 priority
               />
             </Link>
@@ -221,13 +270,32 @@ export default function Header() {
           >
             {/* Top Navigation Row in Drawer */}
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
-              <Link href="/" onClick={() => setMobileOpen(false)}>
+              <Link 
+                href="/" 
+                id="drawer-crest-logo"
+                data-testid="drawer-crest-logo"
+                onTouchStart={(e) => {
+                  handleLogoTouchStart(e);
+                  if (lastLogoTapRef.current === 0) {
+                    setMobileOpen(false);
+                  }
+                }}
+                onClick={(e) => {
+                  handleLogoClick(e);
+                  setMobileOpen(false);
+                }}
+                onDoubleClick={(e) => {
+                  handleLogoDoubleClick(e);
+                  setMobileOpen(false);
+                }}
+                className="cursor-pointer select-none"
+              >
                 <Image 
                   src="/images/logo.png" 
                   alt="Nothingness" 
                   width={75} 
                   height={30} 
-                  className="object-contain drop-shadow-[0_0_12px_rgba(220,38,38,0.5)]" 
+                  className="object-contain drop-shadow-[0_0_12px_rgba(220,38,38,0.5)] pointer-events-none" 
                 />
               </Link>
               <button

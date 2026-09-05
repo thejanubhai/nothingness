@@ -1,0 +1,448 @@
+{
+  "total": 29,
+  "passed": 27,
+  "failed": 2,
+  "results": [
+    {
+      "category": "PIN Authorization",
+      "name": "1.1 Valid default PIN (1991) with valid alias",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (2652ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:30:50.900Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "PIN Authorization",
+      "name": "1.2 Invalid PIN (0000)",
+      "passed": true,
+      "status": 401,
+      "expectedStatus": 401,
+      "details": "OK (1ms)",
+      "responseBody": {
+        "error": "Unauthorized. Invalid Marshall Security PIN or Admin session."
+      }
+    },
+    {
+      "category": "PIN Authorization",
+      "name": "1.3 Missing PIN field",
+      "passed": true,
+      "status": 401,
+      "expectedStatus": 401,
+      "details": "OK (0ms)",
+      "responseBody": {
+        "error": "Unauthorized. Invalid Marshall Security PIN or Admin session."
+      }
+    },
+    {
+      "category": "PIN Authorization",
+      "name": "1.4 Empty string PIN (\"\")",
+      "passed": true,
+      "status": 401,
+      "expectedStatus": 401,
+      "details": "OK (1ms)",
+      "responseBody": {
+        "error": "Unauthorized. Invalid Marshall Security PIN or Admin session."
+      }
+    },
+    {
+      "category": "PIN Authorization",
+      "name": "1.5 Whitespace padded PIN (\"  1991  \")",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (1962ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:30:53.271Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "PIN Authorization",
+      "name": "1.6 Numeric type PIN (1991 as number)",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (2082ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:30:55.290Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "PIN Authorization",
+      "name": "1.7 PIN SQL injection payload (\"1991' OR '1'='1\")",
+      "passed": true,
+      "status": 401,
+      "expectedStatus": 401,
+      "details": "OK (0ms)",
+      "responseBody": {
+        "error": "Unauthorized. Invalid Marshall Security PIN or Admin session."
+      }
+    },
+    {
+      "category": "Malformed Payloads",
+      "name": "2.1 Missing token property in body",
+      "passed": true,
+      "status": 400,
+      "expectedStatus": 400,
+      "details": "OK (1ms)",
+      "responseBody": {
+        "error": "Verification token is required."
+      }
+    },
+    {
+      "category": "Malformed Payloads",
+      "name": "2.2 Token is null",
+      "passed": true,
+      "status": 400,
+      "expectedStatus": 400,
+      "details": "OK (1ms)",
+      "responseBody": {
+        "error": "Verification token is required."
+      }
+    },
+    {
+      "category": "Malformed Payloads",
+      "name": "2.3 Token is empty string (\"\")",
+      "passed": true,
+      "status": 400,
+      "expectedStatus": 400,
+      "details": "OK (1ms)",
+      "responseBody": {
+        "error": "Verification token is required."
+      }
+    },
+    {
+      "category": "Malformed Payloads",
+      "name": "2.4 Token is whitespace only (\"    \")",
+      "passed": true,
+      "status": 404,
+      "expectedStatus": [
+        400,
+        404
+      ],
+      "details": "OK (1090ms)",
+      "responseBody": {
+        "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
+      }
+    },
+    {
+      "category": "Malformed Payloads",
+      "name": "2.5 Malformed JSON body syntax",
+      "passed": true,
+      "status": 500,
+      "expectedStatus": [
+        400,
+        500
+      ],
+      "details": "OK (7ms)",
+      "responseBody": {
+        "error": "Expected double-quoted property name in JSON at position 41 (line 1 column 42)"
+      }
+    },
+    {
+      "category": "Alias Resolution",
+      "name": "3.1 Plain non-UUID alias (\"lucifer\")",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (1927ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:30:58.529Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "Alias Resolution",
+      "name": "3.2 Alias with leading @ (\"@lucifer\")",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (2689ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:31:00.409Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "Alias Resolution",
+      "name": "3.3 Case-insensitive alias match (\"LUCIFER\")",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (2985ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:31:03.451Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "Alias Resolution",
+      "name": "3.4 Alias with surrounding whitespace (\"  @lucifer   \")",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (2977ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:31:05.926Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "Alias Resolution",
+      "name": "3.5 Non-existent alias (\"@ghost\")",
+      "passed": true,
+      "status": 404,
+      "expectedStatus": 404,
+      "details": "OK (1825ms)",
+      "responseBody": {
+        "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
+      }
+    },
+    {
+      "category": "Alias Resolution",
+      "name": "3.6 SQL injection attempt in alias (\"lucifer' OR '1'='1\")",
+      "passed": true,
+      "status": 404,
+      "expectedStatus": 404,
+      "details": "OK (1546ms)",
+      "responseBody": {
+        "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
+      }
+    },
+    {
+      "category": "Alias Resolution",
+      "name": "3.7 Special characters in token (\"!@#$%^&*()_+\")",
+      "passed": true,
+      "status": 404,
+      "expectedStatus": 404,
+      "details": "OK (1027ms)",
+      "responseBody": {
+        "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
+      }
+    },
+    {
+      "category": "Alias Resolution",
+      "name": "3.8 PostgREST filter injection attempt (\"lucifer,id.neq.00000000-0000-0000-0000-000000000000\")",
+      "passed": false,
+      "status": 200,
+      "expectedStatus": [
+        400,
+        404
+      ],
+      "details": "FAILED: Status 200 (expected [400,404])",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:31:13.483Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "JSON QR Payload",
+      "name": "4.1 JSON payload with \"token\" property: {\"token\": \"lucifer\"}",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (2099ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:31:15.573Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "JSON QR Payload",
+      "name": "4.2 JSON payload with \"qr_secret_token\" property",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (1876ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:31:17.420Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "JSON QR Payload",
+      "name": "4.3 JSON payload with \"userId\" property (UUID)",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (1702ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:31:19.172Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "JSON QR Payload",
+      "name": "4.4 JSON payload with unclosed curly brace: {\"token\": \"lucifer\"",
+      "passed": true,
+      "status": 404,
+      "expectedStatus": 404,
+      "details": "OK (1108ms)",
+      "responseBody": {
+        "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
+      }
+    },
+    {
+      "category": "JSON QR Payload",
+      "name": "4.5 JSON payload with non-string token: {\"token\": 99999}",
+      "passed": false,
+      "status": 500,
+      "expectedStatus": [
+        400,
+        404,
+        500
+      ],
+      "details": "FAILED: Status 500 (expected [400,404,500]) - CRASHED with 500! cleanToken type confusion bug detected!",
+      "responseBody": {
+        "error": "cleanToken.startsWith is not a function"
+      }
+    },
+    {
+      "category": "Double Check-In",
+      "name": "5.1 First scan of attendee",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (2132ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:31:22.604Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "Double Check-In",
+      "name": "5.2 Second scan of identical attendee (idempotency)",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (2127ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:31:24.729Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "Audit Table Verification",
+      "name": "6.1 gathering_vettings records audit row on scan",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (2011ms)",
+      "responseBody": {
+        "success": true,
+        "userAlias": "lucifer",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-04T19:31:27.133Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "Concurrency Stress",
+      "name": "7.1 Rapid concurrent check-in requests (5x parallel)",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "All 5 requests resolved in 3517ms with 200 OK"
+    }
+  ]
+}
