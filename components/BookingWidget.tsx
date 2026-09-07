@@ -1,97 +1,176 @@
 'use client';
+
 import { useState } from 'react';
-import { Calendar, Users, MapPin, ChevronRight, Check } from 'lucide-react';
+import { Calendar, Users, Building2, ChevronDown, Check, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { triggerHaptic } from '@/lib/haptics';
 
-export default function BookingWidget({ spaces = [] }: { spaces?: any[] }) {
+interface BookingWidgetProps {
+  spaces?: any[];
+  initialSlug?: string;
+  floating?: boolean;
+  className?: string;
+  onComplete?: () => void;
+}
+
+export default function BookingWidget({
+  spaces = [],
+  initialSlug,
+  floating = false,
+  className = '',
+  onComplete,
+}: BookingWidgetProps) {
   const router = useRouter();
-  const [selected, setSelected] = useState(spaces[0]?.slug || '');
+  const [selected, setSelected] = useState(initialSlug || spaces[0]?.slug || '');
   const [isOpen, setIsOpen] = useState(false);
 
-  const selectedTitle = spaces.find(p => p.slug === selected)?.title || 'Select Space';
+  const today = new Date().toISOString().split('T')[0];
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [guests, setGuests] = useState('2');
+
+  const selectedTitle = spaces.find((p) => p.slug === selected)?.title || 'Select Sanctuary';
 
   const handleCheck = () => {
+    triggerHaptic('medium');
     if (selected) {
-      router.push(`/spaces/${selected}`);
+      const params = new URLSearchParams();
+      if (checkIn) params.append('checkIn', checkIn);
+      if (checkOut) params.append('checkOut', checkOut);
+      if (guests) params.append('guests', guests);
+
+      const queryString = params.toString();
+      const targetUrl = `/spaces/${selected}${queryString ? `?${queryString}` : ''}`;
+      
+      if (onComplete) onComplete();
+      router.push(targetUrl);
     }
   };
 
+  const containerClasses = floating
+    ? `absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-4xl ${className}`
+    : `w-full ${className}`;
+
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 30 }}
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 2, ease: [0.16, 1, 0.3, 1] }}
-      className="absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-4xl"
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className={containerClasses}
     >
-      <div className="bg-black/40 backdrop-blur-2xl border border-white/8 rounded-2xl md:rounded-full p-4 md:py-3 md:px-5 shadow-[0_8px_40px_rgba(0,0,0,0.5)] flex flex-col md:flex-row gap-4 md:gap-0 items-center">
+      <div className="bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl md:rounded-3xl p-4 sm:p-5 shadow-[0_12px_50px_rgba(0,0,0,0.6)] flex flex-col gap-4">
         
-        {/* Property Selector */}
-        <div className="flex-1 w-full md:w-auto md:border-r md:border-white/10 md:pr-5">
-          <label className="block text-[10px] uppercase tracking-[0.25em] text-white/40 mb-1 md:mb-0.5 px-1">Property</label>
-          <div className="relative">
-            <button 
-              onClick={() => setIsOpen(!isOpen)}
-              aria-label="Select Property"
-              aria-expanded={isOpen}
-              className="w-full flex items-center justify-between text-white text-[15px] font-light tracking-wide py-1 px-1 hover:text-accent-gold transition-colors"
-            >
-              <span>{selectedTitle}</span>
-              <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {isOpen && spaces.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute top-full left-0 w-full mt-2 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl"
+        {/* Grid for Inputs */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Property Selector */}
+          <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col justify-center">
+            <label className="text-[10px] uppercase tracking-[0.25em] text-white/40 mb-1 font-mono flex items-center gap-1.5">
+              <Building2 className="w-3 h-3 text-accent-gold" /> Sanctuary
+            </label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label="Select Sanctuary"
+                aria-expanded={isOpen}
+                className="w-full flex items-center justify-between text-white text-sm font-medium tracking-wide py-0.5 hover:text-accent-gold transition-colors text-left"
               >
-                {spaces.map(p => (
-                  <button
-                    key={p.slug}
-                    aria-label={`Select ${p.title}`}
-                    onClick={() => { setSelected(p.slug); setIsOpen(false); }}
-                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
-                      p.slug === selected ? 'text-accent-gold bg-white/5' : 'text-white/80 hover:text-white hover:bg-white/5'
-                    }`}
+                <span className="truncate">{selectedTitle}</span>
+                <ChevronDown
+                  className={`w-4 h-4 text-white/40 transition-transform duration-200 shrink-0 ml-1 ${
+                    isOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {isOpen && spaces.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="absolute top-full left-0 w-full mt-2 bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden z-50 shadow-2xl max-h-56 overflow-y-auto"
                   >
-                    {p.title}
-                  </button>
-                ))}
-              </motion.div>
-            )}
+                    {spaces.map((p) => (
+                      <button
+                        key={p.slug}
+                        type="button"
+                        onClick={() => {
+                          setSelected(p.slug);
+                          setIsOpen(false);
+                          triggerHaptic('light');
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                          p.slug === selected
+                            ? 'text-accent-gold bg-accent-gold/10 font-bold'
+                            : 'text-zinc-300 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        <span className="truncate">{p.title}</span>
+                        {p.slug === selected && <Check className="w-3.5 h-3.5 text-accent-gold shrink-0 ml-2" />}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Dates Selection */}
+          <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col justify-center">
+            <label className="text-[10px] uppercase tracking-[0.25em] text-white/40 mb-1 font-mono flex items-center gap-1.5">
+              <Calendar className="w-3 h-3 text-accent-gold" /> Dates
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                min={today}
+                value={checkIn}
+                onChange={(e) => setCheckIn(e.target.value)}
+                aria-label="Check-in date"
+                className="w-1/2 bg-transparent text-white text-xs font-mono focus:outline-none cursor-pointer [color-scheme:dark]"
+              />
+              <span className="text-zinc-600 text-xs font-mono">→</span>
+              <input
+                type="date"
+                min={checkIn || today}
+                value={checkOut}
+                onChange={(e) => setCheckOut(e.target.value)}
+                aria-label="Check-out date"
+                className="w-1/2 bg-transparent text-white text-xs font-mono focus:outline-none cursor-pointer [color-scheme:dark]"
+              />
+            </div>
+          </div>
+
+          {/* Guests Selection */}
+          <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col justify-center">
+            <label className="text-[10px] uppercase tracking-[0.25em] text-white/40 mb-1 font-mono flex items-center gap-1.5">
+              <Users className="w-3 h-3 text-accent-gold" /> Guests
+            </label>
+            <select
+              value={guests}
+              onChange={(e) => setGuests(e.target.value)}
+              aria-label="Select guest count"
+              className="w-full bg-transparent text-white text-xs font-medium focus:outline-none appearance-none cursor-pointer"
+            >
+              <option value="1" className="bg-zinc-950 text-white">1 Private Guest</option>
+              <option value="2" className="bg-zinc-950 text-white">2 Guests (Couple / Pair)</option>
+              <option value="3" className="bg-zinc-950 text-white">3 Guests (Private Salon)</option>
+              <option value="4" className="bg-zinc-950 text-white">4+ Guests (Intimate Gathering)</option>
+            </select>
           </div>
         </div>
 
-        {/* Dates */}
-        <div className="flex-1 w-full md:w-auto md:border-r md:border-white/10 md:px-5">
-          <label className="block text-[10px] uppercase tracking-[0.25em] text-white/40 mb-1 md:mb-0.5 px-1">Dates</label>
-          <input 
-            type="text" 
-            placeholder="Select dates" 
-            className="w-full bg-transparent text-white text-[15px] font-light tracking-wide focus:outline-none py-1 px-1 placeholder:text-white/30 cursor-pointer" 
-            readOnly 
-          />
-        </div>
-
-        {/* Guests */}
-        <div className="flex-1 w-full md:w-auto md:px-5">
-          <label className="block text-[10px] uppercase tracking-[0.25em] text-white/40 mb-1 md:mb-0.5 px-1">Guests</label>
-          <select className="w-full bg-transparent text-white text-[15px] font-light tracking-wide focus:outline-none py-1 px-1 appearance-none cursor-pointer">
-            <option className="bg-black text-white">2 Guests</option>
-            <option className="bg-black text-white">1 Guest</option>
-          </select>
-        </div>
-
-        {/* CTA */}
-        <div className="w-full md:w-auto md:ml-3">
-          <button 
-            onClick={handleCheck}
-            className="w-full md:w-auto bg-accent-gold text-black px-8 py-3.5 rounded-full text-[13px] font-semibold tracking-[0.15em] uppercase hover:bg-white transition-all duration-300 active:scale-95"
-          >
-            Check Availability
-          </button>
-        </div>
+        {/* CTA Button */}
+        <button
+          type="button"
+          onClick={handleCheck}
+          className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black py-3.5 px-6 rounded-xl font-bold text-xs tracking-[0.15em] uppercase transition-all duration-200 shadow-xl flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+        >
+          <span>Check Availability &amp; Reserve</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
     </motion.div>
   );

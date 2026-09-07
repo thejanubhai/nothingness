@@ -13,36 +13,112 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const receiverAlias = searchParams.get('alias');
 
-    if (!receiverAlias) {
-      return NextResponse.json({ error: 'Target alias is required.' }, { status: 400 });
+    // If alias is provided: return conversation thread for that recipient
+    if (receiverAlias) {
+      const { data: receiverProfile } = await supabase
+        .from('kinkster_profiles')
+        .select('id, alias, avatar_url')
+        .eq('alias', receiverAlias.toLowerCase())
+        .single();
+
+      if (!receiverProfile) {
+        return NextResponse.json({ error: 'Recipient alias not found.' }, { status: 404 });
+      }
+
+      const { data: messages, error } = await supabase
+        .from('kinkster_direct_messages')
+        .select('*')
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${receiverProfile.id}),and(sender_id.eq.${receiverProfile.id},receiver_id.eq.${user.id})`)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        receiver: receiverProfile,
+        messages: messages || []
+      });
     }
 
-    // Lookup target user profile by alias
-    const { data: receiverProfile } = await supabase
-      .from('kinkster_profiles')
-      .select('id, alias, avatar_url')
-      .eq('alias', receiverAlias.toLowerCase())
-      .single();
-
-    if (!receiverProfile) {
-      return NextResponse.json({ error: 'Recipient alias not found.' }, { status: 404 });
-    }
-
-    // Fetch conversation thread between logged-in user and receiver
-    const { data: messages, error } = await supabase
+    // If alias is NOT provided: return list of active conversations/inbox threads
+    const { data: allMessages, error: msgsError } = await supabase
       .from('kinkster_direct_messages')
-      .select('*')
-      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${receiverProfile.id}),and(sender_id.eq.${receiverProfile.id},receiver_id.eq.${user.id})`)
-      .order('created_at', { ascending: true });
+      .select('id, sender_id, receiver_id, message, media_url, is_read, created_at')
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .order('created_at', { ascending: false });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (msgsError) {
+      return NextResponse.json({ error: msgsError.message }, { status: 500 });
     }
 
-    return NextResponse.json({
-      receiver: receiverProfile,
-      messages: messages || []
-    });
+    const otherUserIds = new Set<string>();
+    const threadMap: Record<string, { lastMessage: any; unreadCount: number }> = {};
+
+    for (const msg of allMessages || []) {
+      const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+      otherUserIds.add(otherId);
+
+      if (!threadMap[otherId]) {
+        threadMap[otherId] = {
+          lastMessage: msg,
+          unreadCount: 0,
+        };
+      }
+      if (msg.receiver_id === user.id && !msg.is_read) {
+        threadMap[otherId].unreadCount += 1;
+      }
+    }
+
+    // Also include mutual spice matches so conversations can start instantly
+    const { data: spiceAccepted } = await supabase
+      .from('kinkster_spice_requests')
+      .select('sender_id, receiver_id')
+      .eq('status', 'accepted')
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+    for (const sp of spiceAccepted || []) {
+      const otherId = sp.sender_id === user.id ? sp.receiver_id : sp.sender_id;
+      otherUserIds.add(otherId);
+      if (!threadMap[otherId]) {
+        threadMap[otherId] = {
+          lastMessage: {
+            message: 'Mutual Spice 🔥 Say hello!',
+            created_at: new Date().toISOString(),
+            is_read: true,
+          },
+          unreadCount: 0,
+        };
+      }
+    }
+
+    let conversations: any[] = [];
+    if (otherUserIds.size > 0) {
+      const { data: profiles } = await supabase
+        .from('kinkster_profiles')
+        .select('id, alias, avatar_url, bio')
+        .in('id', Array.from(otherUserIds));
+
+      const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+      conversations = Array.from(otherUserIds).map(id => {
+        const prof = profileMap.get(id);
+        const thread = threadMap[id];
+        return {
+          id,
+          alias: prof?.alias || 'anonymous',
+          avatar_url: prof?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+          bio: prof?.bio || '',
+          last_message: thread?.lastMessage?.message || '',
+          last_message_time: thread?.lastMessage?.created_at,
+          unread_count: thread?.unreadCount || 0,
+        };
+      });
+
+      conversations.sort((a, b) => new Date(b.last_message_time || 0).getTime() - new Date(a.last_message_time || 0).getTime());
+    }
+
+    return NextResponse.json({ conversations });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }

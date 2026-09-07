@@ -37,7 +37,25 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
   const cleanDigits = phone.replace(/[^0-9]/g, '');
   let syntheticEmail = `${cleanDigits}@auth.nothingness.asia`;
 
-  // 1. Synchronize user in Supabase auth system via atomic Security Definer RPC
+  // 1. Ensure user is registered in Supabase GoTrue
+  // Calling signUp first creates the user record cleanly in Supabase Auth (auth.users & auth.identities)
+  // according to GoTrue's internal engine.
+  try {
+    const { error: signUpError } = await supabase.auth.signUp({
+      email: syntheticEmail,
+      password: deterministicPassword,
+      options: {
+        data: { phone },
+      },
+    });
+    if (signUpError && !signUpError.message?.toLowerCase().includes('already registered')) {
+      console.warn('[Auth Bridge] signUp note:', signUpError.message);
+    }
+  } catch (signUpErr: any) {
+    console.warn('[Auth Bridge] signUp notice:', signUpErr?.message || signUpErr);
+  }
+
+  // 2. Synchronize user in Supabase auth system via atomic Security Definer RPC
   try {
     const { data: rpcData, error: rpcError } = await supabase.rpc('sync_phone_auth_user', {
       p_phone: phone,
@@ -75,7 +93,7 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
     console.warn('[Auth Bridge] User sync notice:', syncErr?.message || syncErr);
   }
 
-  // 2. Execute signInWithPassword on Next.js Server Client (@supabase/ssr)
+  // 3. Execute signInWithPassword on Next.js Server Client (@supabase/ssr)
   // to set native Supabase HTTP-only session cookies
   let signInData: any = null;
   let signInError: any = null;
@@ -104,9 +122,14 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
 
   if (signInError || !signInData?.user) {
     console.error('[Auth Bridge] Failed to sign in with password in Supabase SSR client:', signInError);
+    const rawMsg = signInError?.message || '';
+    const userError =
+      rawMsg && rawMsg !== '{}' && rawMsg.trim() !== ''
+        ? rawMsg
+        : 'Authentication session could not be established. Please try again.';
     return {
       success: false,
-      error: signInError?.message || 'Authentication session could not be established. Please try again.',
+      error: userError,
     };
   }
 

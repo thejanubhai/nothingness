@@ -187,7 +187,11 @@ function LoginContent() {
         const targetUrl = redirectParam || result.redirectUrl || '/dashboard';
         window.location.href = targetUrl;
       } else {
-        setErrorMsg(result.error || 'Authentication session failed. Please try again.');
+        const errorText =
+          result.error && result.error !== '{}' && result.error.trim() !== ''
+            ? result.error
+            : 'Authentication session failed. Please try again.';
+        setErrorMsg(errorText);
         setLoading(false);
       }
     } catch (firebaseVerifyErr: any) {
@@ -198,7 +202,7 @@ function LoginContent() {
         userFriendlyError = 'The 6-digit verification code is incorrect. Please re-check the SMS.';
       } else if (fbCode === 'auth/code-expired' || fbCode === 'auth/session-expired') {
         userFriendlyError = 'The verification code has expired. Please click "Resend OTP Code".';
-      } else if (firebaseVerifyErr?.message) {
+      } else if (firebaseVerifyErr?.message && firebaseVerifyErr.message !== '{}') {
         userFriendlyError = firebaseVerifyErr.message;
       }
       setErrorMsg(userFriendlyError);

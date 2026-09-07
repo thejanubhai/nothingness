@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, MapPin, Sparkles, Key, Star, CheckCircle2, S
 import Link from 'next/link';
 import BookingWidget from '@/components/BookingWidget';
 import CloudinaryImage from '@/components/CloudinaryImage';
+import GestureBottomSheet from '@/components/ui/GestureBottomSheet';
 
 interface Space {
   id: string;
@@ -251,20 +252,26 @@ export default function PropertySwipeDeck() {
         </button>
       </div>
 
-      {/* Instant Booking Widget Modal */}
-      {showBookingWidget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-          <div className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl p-6 shadow-2xl">
-            <button
-              onClick={() => setShowBookingWidget(false)}
-              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full z-10"
-            >
-              ✕
-            </button>
-            <BookingWidget spaces={spaces} />
-          </div>
+      {/* Instant Booking Widget Bottom Sheet */}
+      <GestureBottomSheet
+        isOpen={showBookingWidget}
+        onClose={() => setShowBookingWidget(false)}
+        title={
+          <span className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-accent-gold">
+            <Key className="w-3.5 h-3.5" />
+            Instant Reserve • {currentSpace?.title || 'Sanctuary'}
+          </span>
+        }
+      >
+        <div className="pt-2">
+          <BookingWidget
+            spaces={spaces}
+            initialSlug={currentSpace?.slug}
+            floating={false}
+            onComplete={() => setShowBookingWidget(false)}
+          />
         </div>
-      )}
+      </GestureBottomSheet>
     </div>
   );
 }

@@ -37,13 +37,13 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
     const udf4 = body.udf4 || '';
     const udf5 = body.udf5 || '';
     const siteUrl = req.nextUrl.origin || process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
+    const failureReason = body.error_Message || body.unmappedstatus || body.field9 || 'Payment failed or was cancelled.';
 
     console.log(`[PayU Callback] Received ${isGet ? 'GET' : 'POST'} for txnid: ${txnid}, status: ${status}, type: ${paymentType}`);
 
     const isHashValid = verifyPayUResponseHash(body);
     if (!isHashValid && txnid) {
       console.warn('[PayU Callback] Hash check failed or missing. Verifying via PayU S2S API:', txnid);
-      // Double check directly with PayU S2S server
       const s2sResult = await verifyPaymentWithPayUS2S(txnid);
       if (s2sResult.success) {
         console.log('[PayU Callback] PayU S2S confirmed payment success for txnid:', txnid);
@@ -54,7 +54,6 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
     }
 
     const supabaseAdmin = createAdminClient();
-
 
     // ------------------------------------------------------------------
     // 0. ONE-TIME SANCTUARY PASS LIFETIME MEMBERSHIP
@@ -79,17 +78,21 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
             );
 
           // Dispatch WebPush
-          const { sendPushNotificationToUser } = await import('@/lib/webpush');
-          await sendPushNotificationToUser(targetUserId, {
-            title: '✨ Sanctuary Pass Activated',
-            body: 'Your Lifetime Sanctuary Pass is active. The private gatherings portal is now unlocked.',
-            url: '/sanctuary-pass',
-          }).catch(console.error);
+          try {
+            const { sendPushNotificationToUser } = await import('@/lib/webpush');
+            await sendPushNotificationToUser(targetUserId, {
+              title: '✨ Sanctuary Pass Activated',
+              body: 'Your Lifetime Sanctuary Pass is active. The private gatherings portal is now unlocked.',
+              url: '/sanctuary-pass',
+            });
+          } catch (pushErr) {
+            console.warn('[PayU Callback] Sanctuary pass WebPush warning:', pushErr);
+          }
         }
 
         return NextResponse.redirect(`${siteUrl}/sanctuary-pass?pass_purchased=true`, 303);
       } else {
-        const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'Sanctuary Pass payment failed.');
+        const errorMsg = encodeURIComponent(failureReason);
         return NextResponse.redirect(`${siteUrl}/sanctuary-pass?payment=failed&error=${errorMsg}`, 303);
       }
     }
@@ -119,24 +122,32 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
 
           // Re-balance waitlist if slot was filled
           if (eventId) {
-            const { checkAndPromoteWaitlistedCandidates } = await import('@/lib/events/ratio-balancer');
-            await checkAndPromoteWaitlistedCandidates(eventId).catch(console.error);
+            try {
+              const { checkAndPromoteWaitlistedCandidates } = await import('@/lib/events/ratio-balancer');
+              await checkAndPromoteWaitlistedCandidates(eventId);
+            } catch (ratioErr) {
+              console.warn('[PayU Callback] Ratio balance warning:', ratioErr);
+            }
           }
 
           // Dispatch WebPush
           if (targetUserId) {
-            const { sendPushNotificationToUser } = await import('@/lib/webpush');
-            await sendPushNotificationToUser(targetUserId, {
-              title: '🎟️ Gathering Pass Confirmed',
-              body: `Your ticket for "${updatedApp?.sanctuary_events?.title || 'Sanctuary Gathering'}" is confirmed. Entry QR is ready.`,
-              url: `/sanctuary-pass?eventId=${eventId}`,
-            }).catch(console.error);
+            try {
+              const { sendPushNotificationToUser } = await import('@/lib/webpush');
+              await sendPushNotificationToUser(targetUserId, {
+                title: '🎟️ Gathering Pass Confirmed',
+                body: `Your ticket for "${updatedApp?.sanctuary_events?.title || 'Sanctuary Gathering'}" is confirmed. Entry QR is ready.`,
+                url: `/sanctuary-pass?eventId=${eventId}`,
+              });
+            } catch (pushErr) {
+              console.warn('[PayU Callback] Event ticket WebPush warning:', pushErr);
+            }
           }
         }
 
         return NextResponse.redirect(`${siteUrl}/sanctuary-pass?eventId=${eventId}&ticket_confirmed=true`, 303);
       } else {
-        const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'Ticket payment failed.');
+        const errorMsg = encodeURIComponent(failureReason);
         return NextResponse.redirect(`${siteUrl}/sanctuary-pass?eventId=${eventId}&payment=failed&error=${errorMsg}`, 303);
       }
     }
@@ -194,7 +205,15 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
 
         return NextResponse.redirect(`${siteUrl}/partner/onboarding?step=2&payment=success`, 303);
       } else {
-        const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'Partner setup payment failed.');
+        await supabaseAdmin
+          .from('action_fee_orders')
+          .update({
+            payment_status: 'failed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('payment_order_id', txnid);
+
+        const errorMsg = encodeURIComponent(failureReason);
         return NextResponse.redirect(`${siteUrl}/partner/onboarding?payment=failed&error=${errorMsg}`, 303);
       }
     }
@@ -238,7 +257,15 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
 
         return NextResponse.redirect(`${siteUrl}/kinksters?activation=success`, 303);
       } else {
-        const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'Kinkster activation payment failed.');
+        await supabaseAdmin
+          .from('action_fee_orders')
+          .update({
+            payment_status: 'failed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('payment_order_id', txnid);
+
+        const errorMsg = encodeURIComponent(failureReason);
         return NextResponse.redirect(`${siteUrl}/kinksters?activation=failed&error=${errorMsg}`, 303);
       }
     }
@@ -247,6 +274,10 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
     // 3. STATUTORY ID VERIFICATION FEE
     // ------------------------------------------------------------------
     if (paymentType === 'id_verification_fee' || txnid.startsWith('idverify_')) {
+      const originContext = udf4 || ''; // token or bookingId or empty
+      const isBookingId = /^[0-9a-fA-F-]{36}$/.test(originContext);
+      const isGuestToken = Boolean(originContext && !isBookingId);
+
       if (status === 'success') {
         const { data: order } = await supabaseAdmin
           .from('action_fee_orders')
@@ -283,9 +314,27 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
             });
         }
 
+        if (isBookingId) {
+          return NextResponse.redirect(`${siteUrl}/booking/${originContext}/verify?id_verified=true&payment=success`, 303);
+        } else if (isGuestToken) {
+          return NextResponse.redirect(`${siteUrl}/verify-guest/${originContext}?id_verified=true&payment=success`, 303);
+        }
         return NextResponse.redirect(`${siteUrl}/dashboard?id_verified=true&payment=success`, 303);
       } else {
-        const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'ID verification payment failed.');
+        await supabaseAdmin
+          .from('action_fee_orders')
+          .update({
+            payment_status: 'failed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('payment_order_id', txnid);
+
+        const errorMsg = encodeURIComponent(failureReason);
+        if (isBookingId) {
+          return NextResponse.redirect(`${siteUrl}/booking/${originContext}/verify?id_verified=failed&error=${errorMsg}`, 303);
+        } else if (isGuestToken) {
+          return NextResponse.redirect(`${siteUrl}/verify-guest/${originContext}?id_verified=failed&error=${errorMsg}`, 303);
+        }
         return NextResponse.redirect(`${siteUrl}/dashboard?id_verified=failed&error=${errorMsg}`, 303);
       }
     }
@@ -310,7 +359,14 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
 
         return NextResponse.redirect(redirectTarget, 303);
       } else {
-        const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'Payment could not be completed.');
+        await supabaseAdmin
+          .from('booking_guests')
+          .update({
+            payment_status: 'failed',
+          })
+          .or(`payment_order_id.eq.${txnid},id.eq.${udf1}`);
+
+        const errorMsg = encodeURIComponent(failureReason);
         const redirectTarget = udf3
           ? `${siteUrl}/verify-guest/${udf3}?payment=failed&error=${errorMsg}`
           : `${siteUrl}/dashboard?payment=failed`;
@@ -322,13 +378,13 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
     // ------------------------------------------------------------------
     // 5. PRIMARY SANCTUARY BOOKING STAY
     // ------------------------------------------------------------------
-    if (status === 'success') {
-      const { data: existingBooking } = await supabaseAdmin
-        .from('bookings')
-        .select('id, payment_status, check_in, check_out, guest_name, spaces(title), booking_guests(id, name, phone, email, verification_token, is_primary, payment_status, payment_amount)')
-        .or(`payment_order_id.eq.${txnid},id.eq.${udf1}`)
-        .maybeSingle();
+    const { data: existingBooking } = await supabaseAdmin
+      .from('bookings')
+      .select('id, payment_status, check_in, check_out, guest_name, spaces(title), booking_guests(id, name, phone, email, verification_token, is_primary, payment_status, payment_amount)')
+      .or(`payment_order_id.eq.${txnid},id.eq.${udf1}`)
+      .maybeSingle();
 
+    if (status === 'success') {
       if (existingBooking) {
         if (existingBooking.payment_status !== 'paid') {
           await supabaseAdmin
@@ -386,27 +442,26 @@ async function handlePayUCallback(req: NextRequest, isGet = false) {
 
       return NextResponse.redirect(`${siteUrl}/dashboard?payment=success`, 303);
     } else {
-      const errorMsg = encodeURIComponent(body.error_Message || body.unmappedstatus || 'Payment failed or was cancelled.');
+      const errorMsg = encodeURIComponent(failureReason);
       
-      // Auto-cancel booking if payment failed or user cancelled at gateway
-      if (udf1 || txnid) {
+      // Record payment failure while retaining booking ID for immediate retry
+      const bookingTargetId = existingBooking?.id || udf1;
+      if (bookingTargetId) {
         try {
           await supabaseAdmin
             .from('bookings')
             .update({
-              status: 'cancelled',
               payment_status: 'failed',
             })
-            .or(`payment_order_id.eq.${txnid},id.eq.${udf1}`);
-        } catch (cancelErr) {
-          console.warn('[PayU Callback] Failed to auto-cancel booking on payment failure:', cancelErr);
+            .eq('id', bookingTargetId);
+        } catch (updateErr) {
+          console.warn('[PayU Callback] Failed to record booking payment failure:', updateErr);
         }
+
+        return NextResponse.redirect(`${siteUrl}/booking/${bookingTargetId}/verify?payment=failed&error=${errorMsg}`, 303);
       }
 
-      if (udf1) {
-        return NextResponse.redirect(`${siteUrl}/booking/${udf1}/verify?payment=failed&error=${errorMsg}`, 303);
-      }
-      return NextResponse.redirect(`${siteUrl}/spaces?payment=failed`, 303);
+      return NextResponse.redirect(`${siteUrl}/spaces?payment=failed&error=${errorMsg}`, 303);
     }
   } catch (error: any) {
     console.error('[PayU Callback] Unexpected error processing callback:', error);

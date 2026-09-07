@@ -50,19 +50,39 @@ export default function JointBookingModal({ isOpen, onClose, targetAlias }: Join
 
     setLoading(true);
     try {
+      const selectedSpace = spaces.find(s => s.id === selectedSpaceId);
+      const spaceTitle = selectedSpace ? selectedSpace.title : 'Sanctuary Suite';
+
+      // 1. Create co-stay invite record
+      try {
+        await fetch('/api/kinkster/co-stays', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            space_id: selectedSpaceId || null,
+            title: `Joint Stay with @${targetAlias}`,
+            description: `Exclusive sanctuary stay at ${spaceTitle} (${checkIn} to ${checkOut}).`,
+            preferred_dates_description: `${checkIn} to ${checkOut}`
+          })
+        });
+      } catch (e) {
+        console.warn('Co-stay invite record note:', e);
+      }
+
+      // 2. Dispatch in-app chat confirmation
       const res = await fetch('/api/kinkster/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           receiver_alias: targetAlias,
-          message: `🔑 Joint Sanctuary Booking Reserved! Dates: ${checkIn} to ${checkOut}. Check-in lockbox instructions will be dispatched to both our accounts.`
+          message: `🔑 Joint Sanctuary Booking Reserved for ${spaceTitle}! Dates: ${checkIn} to ${checkOut}. Key codes & arrival details will be dispatched to both our accounts.`
         })
       });
 
       if (!res.ok) throw new Error('Failed to dispatch joint reservation message');
 
       toast.success(`Joint Sanctuary Stay Reserved with @${targetAlias}!`, {
-        description: 'Both accounts will receive digital check-in codes.'
+        description: `Reserved at ${spaceTitle} (${checkIn} to ${checkOut}). Digital check-in keys prepared.`
       });
       onClose();
     } catch (err: any) {

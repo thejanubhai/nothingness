@@ -35,17 +35,23 @@ export default function HealthReportUploadModal({ isOpen, onClose, onSuccess, on
 
     setLoading(true);
     try {
-      const res = await fetch('/api/kinkster/health-report', {
+      const res = await fetch('/api/kinkster/verify-health', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file_data: filePreview })
+        body: JSON.stringify({ 
+          report_image_url: filePreview,
+          file_data: filePreview
+        })
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to process lab report');
 
+      const returnedBadges = data.badges || data.health_badges || [];
+      const badgeTitles = returnedBadges.map((b: any) => b.title).join(', ');
+
       toast.success('Health Badges Updated Successfully!', {
-        description: `Verified badges: ${data.health_badges.map((b: any) => b.title).join(', ')}`
+        description: badgeTitles ? `Verified badges: ${badgeTitles}` : 'Health parameters updated on your profile.'
       });
 
       if (onSuccess) onSuccess();

@@ -34,7 +34,11 @@ export default function StealthPrivacyShield() {
     };
 
     const handleBlur = () => {
-      setIsAppHidden(true);
+      // Only blur-blank on touch/mobile devices where window blur indicates OS app switcher
+      const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+      if (isTouch) {
+        setIsAppHidden(true);
+      }
     };
 
     const handleFocus = () => {

@@ -13,7 +13,8 @@ import {
   Ticket, 
   Headphones, 
   KeyRound,
-  ShieldCheck
+  ShieldCheck,
+  MessageSquare
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -30,8 +31,8 @@ interface NavItem {
 export default function MobileBottomNav() {
   const pathname = usePathname() || '';
 
-  // Hide on admin routes
-  if (pathname.startsWith('/admin')) {
+  // Hide on admin routes and single space checkout views where the dedicated reservation drawer floats
+  if (pathname.startsWith('/admin') || (pathname.startsWith('/spaces/') && pathname !== '/spaces')) {
     return null;
   }
 
@@ -53,7 +54,7 @@ export default function MobileBottomNav() {
   let items: NavItem[] = [];
 
   if (isLifestyleMode) {
-    // Purposeful Lifestyle App Navigation
+    // Purposeful Lifestyle App Navigation (5 Pillars)
     items = [
       {
         name: 'Feed',
@@ -80,17 +81,17 @@ export default function MobileBottomNav() {
         isActive: () => false,
       },
       {
-        name: 'Events',
+        name: 'Whispers',
+        href: '/kinksters?tab=chats',
+        icon: MessageSquare,
+        isActive: () => false,
+      },
+      {
+        name: 'Soirées',
         href: '/kinksters/events',
         icon: Sparkles,
         badge: '✨',
         isActive: (p) => p.startsWith('/kinksters/events'),
-      },
-      {
-        name: 'Portal',
-        href: '/dashboard',
-        icon: UserCheck,
-        isActive: (p) => p.startsWith('/dashboard'),
       },
     ];
   } else if (isEventsMode) {
@@ -174,6 +175,12 @@ export default function MobileBottomNav() {
         isActive: (p) => p === '/' || p.startsWith('/spaces'),
       },
       {
+        name: 'Check-In',
+        href: '/onboarding',
+        icon: ShieldCheck,
+        isActive: (p) => p.startsWith('/onboarding'),
+      },
+      {
         name: 'Events',
         href: '/sanctuary-pass',
         icon: Sparkles,
@@ -208,18 +215,32 @@ export default function MobileBottomNav() {
 
           if (item.isSpecialAction) {
             return (
-              <button
+              <label
                 key={item.name}
-                onClick={item.onClick}
+                onClick={triggerHaptic}
                 className="relative flex flex-col items-center justify-center py-1 px-3 -mt-4 active:scale-90 transition-all duration-200 cursor-pointer touch-manipulation"
               >
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic,image/gif,image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && typeof window !== 'undefined') {
+                      window.dispatchEvent(
+                        new CustomEvent('open-create-post-with-file', { detail: { file } })
+                      );
+                    }
+                    e.target.value = '';
+                  }}
+                />
                 <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-600 via-amber-500 to-rose-500 text-white flex items-center justify-center shadow-[0_0_20px_rgba(244,63,94,0.5)] border-2 border-black">
                   <Icon className="w-6 h-6" />
                 </div>
                 <span className="text-[10px] font-bold text-rose-300 mt-1 tracking-wider">
                   {item.name}
                 </span>
-              </button>
+              </label>
             );
           }
 

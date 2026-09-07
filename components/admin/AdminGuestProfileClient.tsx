@@ -449,6 +449,20 @@ export default function AdminGuestProfileClient({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-serif text-3xl md:text-4xl text-white font-bold">{guest.full_name}</h1>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold flex items-center gap-1 shrink-0 whitespace-nowrap border ${
+                guest.is_verified && guest.face_id_vetted
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
+                  : guest.is_verified
+                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+                  : 'bg-zinc-800 text-zinc-300 border-zinc-700'
+              }`}>
+                <Sparkles className="w-3 h-3 text-accent-gold" />
+                {guest.is_verified && guest.face_id_vetted
+                  ? 'Tier III: Sovereign Luminary'
+                  : guest.is_verified
+                  ? 'Tier II: Statutory Compliant'
+                  : 'Tier I: Onboarding Member'}
+              </span>
               {guest.is_verified && (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1 shrink-0 whitespace-nowrap">
                   <ShieldCheck className="w-3 h-3" /> 180-Day Verified

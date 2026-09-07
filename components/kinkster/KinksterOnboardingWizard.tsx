@@ -89,18 +89,6 @@ export default function KinksterOnboardingWizard({
   };
 
   const handleNextStepFromStep1 = () => {
-    if (!isIdVerified) {
-      toast.error('Identity Verification Required (Aadhaar or Passport).');
-      if (onOpenIdVerification) onOpenIdVerification();
-      return;
-    }
-
-    if (!isStayVerified) {
-      toast.error('Previous Stay Verification Required. Link your Airbnb/MMT reservation or booking confirmation.');
-      if (onOpenStayVerification) onOpenStayVerification();
-      return;
-    }
-
     if (!alias.trim() || alias.trim().length < 3) {
       toast.error('Please choose a valid unique moniker (at least 3 characters).');
       return;
@@ -113,12 +101,6 @@ export default function KinksterOnboardingWizard({
     if (!isIdVerified) {
       toast.error('Identity Verification Required before completing onboarding.');
       if (onOpenIdVerification) onOpenIdVerification();
-      return;
-    }
-
-    if (!isStayVerified) {
-      toast.error('Previous Stay Verification Required before completing onboarding.');
-      if (onOpenStayVerification) onOpenStayVerification();
       return;
     }
 
@@ -461,6 +443,26 @@ export default function KinksterOnboardingWizard({
                 </span>
               </label>
             </div>
+
+            {!isIdVerified && (
+              <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-2">
+                <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5 font-mono">
+                  <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  Prerequisite to finalize membership:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {onOpenIdVerification && (
+                    <button
+                      type="button"
+                      onClick={onOpenIdVerification}
+                      className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-[11px] font-mono font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Verify Govt ID (1-Click) →
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -485,7 +487,7 @@ export default function KinksterOnboardingWizard({
           ) : (
             <button
               onClick={handleFinish}
-              disabled={loading || !confidentialityAgreed || !isIdVerified || !isStayVerified}
+              disabled={loading || !confidentialityAgreed || !isIdVerified}
               className="px-6 py-3.5 bg-gradient-to-r from-rose-600 via-rose-500 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl transition-all disabled:opacity-50 cursor-pointer"
             >
               {loading ? (

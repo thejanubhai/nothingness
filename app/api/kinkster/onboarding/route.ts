@@ -62,46 +62,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Check Stay Verification Status (Mandatory at least 1 previous stay)
-    let isStayVerified = false;
-    const { data: existingKinksterProf } = await adminSupabase
-      .from('kinkster_profiles')
-      .select('stay_verified')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (existingKinksterProf?.stay_verified) {
-      isStayVerified = true;
-    } else {
-      // Check existing bookings in DB
-      const { data: userBookings } = await adminSupabase
-        .from('bookings')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('status', 'confirmed')
-        .limit(1);
-
-      if (userBookings && userBookings.length > 0) {
-        isStayVerified = true;
-      } else if (cleanPhone) {
-        const { data: phoneBookings } = await adminSupabase
-          .from('bookings')
-          .select('id')
-          .eq('guest_phone', cleanPhone)
-          .eq('status', 'confirmed')
-          .limit(1);
-        if (phoneBookings && phoneBookings.length > 0) isStayVerified = true;
-      }
-    }
-
-    if (!isStayVerified) {
-      return NextResponse.json(
-        { error: 'Previous Stay Verification Required. You must have had at least one stay with Nothingness. Please upload your Airbnb/MMT reservation or WhatsApp booking chat screenshot.' },
-        { status: 403 }
-      );
-    }
-
-    // 3. Check alias uniqueness
+    // 2. Check alias uniqueness
     const { data: existingAlias } = await adminSupabase
       .from('kinkster_profiles')
       .select('id')

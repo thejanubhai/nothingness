@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +14,9 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const aliasParam = searchParams.get('alias');
 
-    let query = supabase
+    const adminSupabase = createAdminClient();
+
+    let query = adminSupabase
       .from('kinkster_posts')
       .select(`
         *,
@@ -35,7 +38,37 @@ export async function GET(req: NextRequest) {
       console.error('Error fetching kinkster posts:', error);
     }
 
-    let finalPosts = posts || [];
+    // Get user likes set
+    let likedPostIds = new Set<string>();
+    try {
+      const { data: userLikes } = await adminSupabase
+        .from('kinkster_post_likes')
+        .select('post_id')
+        .eq('kinkster_id', user.id);
+      if (userLikes) {
+        userLikes.forEach((l: any) => likedPostIds.add(l.post_id));
+      }
+    } catch (_) {}
+
+    // Get comment counts
+    let commentCountsMap: Record<string, number> = {};
+    try {
+      const { data: comments } = await adminSupabase
+        .from('kinkster_post_comments')
+        .select('post_id');
+      if (comments) {
+        comments.forEach((c: any) => {
+          commentCountsMap[c.post_id] = (commentCountsMap[c.post_id] || 0) + 1;
+        });
+      }
+    } catch (_) {}
+
+    let finalPosts = (posts || []).map((p: any) => ({
+      ...p,
+      is_liked: likedPostIds.has(p.id),
+      likes_count: p.likes_count || 0,
+      comments_count: commentCountsMap[p.id] || 0
+    }));
     if (finalPosts.length === 0 && !aliasParam) {
       finalPosts = [
         {
@@ -43,6 +76,9 @@ export async function GET(req: NextRequest) {
           media_type: 'image',
           media_url: '/images/IMG_9955.jpg',
           caption: 'Late night light test inside The Void suite. The acoustics in this concrete chamber are unmatched for sensory focus.',
+          likes_count: 42,
+          comments_count: 7,
+          is_liked: likedPostIds.has('post-curated-1'),
           created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
           kinkster_profiles: {
             alias: 'velvet_nocturne',
@@ -55,6 +91,9 @@ export async function GET(req: NextRequest) {
           media_type: 'image',
           media_url: '/images/The Void (1).png',
           caption: 'Floor rope patterns & grounded breathing. Ready for the upcoming Velvet Masquerade this weekend.',
+          likes_count: 29,
+          comments_count: 4,
+          is_liked: likedPostIds.has('post-curated-2'),
           created_at: new Date(Date.now() - 14 * 3600 * 1000).toISOString(),
           kinkster_profiles: {
             alias: 'aria_shibari',
@@ -67,6 +106,9 @@ export async function GET(req: NextRequest) {
           media_type: 'image',
           media_url: '/images/IMG_4446.jpeg',
           caption: 'Jacuzzi soaks by candlelight. Sometimes the best aftercare is hot water, quiet vinyl, and zero outside distractions.',
+          likes_count: 51,
+          comments_count: 12,
+          is_liked: likedPostIds.has('post-curated-3'),
           created_at: new Date(Date.now() - 36 * 3600 * 1000).toISOString(),
           kinkster_profiles: {
             alias: 'obsidian_silk_duo',

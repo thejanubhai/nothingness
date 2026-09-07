@@ -125,5 +125,51 @@ export async function getRedirectPath(user: { email?: string; phone?: string; us
   if (isAdmin) {
     return '/admin';
   }
+
+  if (user?.id) {
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin');
+      const adminClient = createAdminClient();
+
+      // 1. Check if user has any existing bookings
+      const { count: bookingCount } = await adminClient
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (bookingCount && bookingCount > 0) {
+        return '/dashboard';
+      }
+
+      // 2. Check if user already has an active verified guest profile
+      const rawPhone =
+        user.phone ||
+        user.user_metadata?.phone ||
+        (user.email?.includes('@auth.nothingness') ? user.email.split('@')[0] : null);
+      const cleanPhone = rawPhone ? rawPhone.replace(/[^0-9]/g, '') : null;
+
+      if (cleanPhone && cleanPhone.length >= 10) {
+        const last10 = cleanPhone.slice(-10);
+        const { data: profile } = await adminClient
+          .from('guest_profiles')
+          .select('id, is_verified')
+          .or(`phone.ilike.%${last10}%,phone_number.ilike.%${last10}%`)
+          .eq('is_verified', true)
+          .limit(1)
+          .maybeSingle();
+
+        if (profile?.is_verified) {
+          return '/dashboard';
+        }
+      }
+
+      // 3. Brand new user without bookings or verified ID -> Direct to Onboarding gateway
+      return '/onboarding';
+    } catch (err) {
+      console.warn('[getRedirectPath] Notice determining onboarding status:', err);
+    }
+  }
+
   return '/dashboard';
 }
+

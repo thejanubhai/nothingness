@@ -38,12 +38,12 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8 max-w-4xl">
-      <div>
-        <h1 className="font-serif text-3xl md:text-4xl text-white mb-2 flex items-center gap-3">
+      <div className="border-b border-zinc-800 pb-5">
+        <h1 className="font-serif text-3xl md:text-4xl text-white mb-1 flex items-center gap-3">
           <Settings className="w-8 h-8 text-accent-gold" />
-          Account Settings
+          Security &amp; Passkeys
         </h1>
-        <p className="text-white/50 text-sm">Manage your communication preferences and security.</p>
+        <p className="text-white/50 text-xs sm:text-sm">Manage your biometric passkeys, communication preferences, and sovereign credentials.</p>
       </div>
 
       <div className="space-y-6">

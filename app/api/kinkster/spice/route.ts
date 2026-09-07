@@ -79,7 +79,29 @@ export async function POST(req: NextRequest) {
         .update({ status: 'accepted', updated_at: new Date().toISOString() })
         .eq('id', reverseRequest.id);
 
-      return NextResponse.json({ success: true, is_mutual: true, message: "It's a Mutual Spice Up! In-app chat unlocked." });
+      const chamberToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const now = new Date().toISOString();
+
+      // Sync into kinkster_resonances so both Ephemeral Chamber and Direct Messaging are unlocked
+      try {
+        await supabase
+          .from('kinkster_resonances')
+          .upsert({
+            sender_id: user.id,
+            target_id: receiverProfile.id,
+            is_mutual: true,
+            chamber_token: chamberToken,
+            matched_at: now,
+            tags: ['Chemistry Match', 'Spice Up']
+          }, { onConflict: 'sender_id,target_id' });
+      } catch (_) {}
+
+      return NextResponse.json({ 
+        success: true, 
+        is_mutual: true, 
+        chamber_token: chamberToken,
+        message: "It's a Mutual Spice Up! In-app chat & confidential chamber unlocked." 
+      });
     }
 
     // Upsert Spice Up request
@@ -121,20 +143,41 @@ export async function PATCH(req: NextRequest) {
 
     const newStatus = action === 'accept' ? 'accepted' : 'rejected';
 
-    const { error: updateError } = await supabase
+    const { data: updatedReq, error: updateError } = await supabase
       .from('kinkster_spice_requests')
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq('id', request_id)
-      .eq('receiver_id', user.id);
+      .eq('receiver_id', user.id)
+      .select('sender_id')
+      .maybeSingle();
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
+    let chamberToken: string | null = null;
+    if (action === 'accept' && updatedReq?.sender_id) {
+      chamberToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const now = new Date().toISOString();
+      try {
+        await supabase
+          .from('kinkster_resonances')
+          .upsert({
+            sender_id: user.id,
+            target_id: updatedReq.sender_id,
+            is_mutual: true,
+            chamber_token: chamberToken,
+            matched_at: now,
+            tags: ['Chemistry Match', 'Mutual Spice']
+          }, { onConflict: 'sender_id,target_id' });
+      } catch (_) {}
+    }
+
     return NextResponse.json({
       success: true,
       status: newStatus,
-      message: action === 'accept' ? "Spice Up Back confirmed! Chat unlocked." : "Request discretely dismissed."
+      chamber_token: chamberToken,
+      message: action === 'accept' ? "Spice Up Back confirmed! Chat & confidential chamber unlocked." : "Request discretely dismissed."
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });

@@ -224,7 +224,7 @@ export default function MarshallScannerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-20 px-4 sm:px-6 max-w-xl mx-auto">
+    <div className="w-full text-white max-w-xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-6">
         <div className="flex items-center gap-3">

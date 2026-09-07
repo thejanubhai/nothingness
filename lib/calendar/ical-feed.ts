@@ -165,11 +165,10 @@ export async function generateIcalResponse(
         const needsSync = sources && sources.some(s => !s.last_synced_at || new Date(s.last_synced_at).getTime() < tenMinsAgo);
 
         if (needsSync) {
-          // Perform fresh sync with a safety timeout so response is never hung
-          await Promise.race([
-            syncCalendars(supabase, space.id),
-            new Promise(resolve => setTimeout(resolve, 4000))
-          ]);
+          // Trigger sync in background so iCal response returns instantly (< 100ms) for OTAs like Agoda/Airbnb
+          syncCalendars(supabase, space.id).catch((err) => {
+            console.warn('Background calendar sync error:', err);
+          });
         }
       } catch (syncErr) {
         console.warn('Auto-sync check error in iCal feed generation:', syncErr);

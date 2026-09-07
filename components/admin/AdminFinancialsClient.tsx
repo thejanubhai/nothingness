@@ -39,7 +39,7 @@ interface SpaceStat {
 export default function AdminFinancialsClient({ initialBookings }: { initialBookings: Booking[] }) {
   const [bookings] = useState<Booking[]>(initialBookings);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending' | 'failed'>('all');
 
   // Compute Overall Totals
   const { grossRevenue, pendingRevenue, gstCollected, netRevenue, totalBookingsCount } = useMemo(() => {
@@ -109,9 +109,11 @@ export default function AdminFinancialsClient({ initialBookings }: { initialBook
   const filteredBookings = useMemo(() => {
     return bookings.filter(b => {
       const isPaid = b.payment_status === 'paid' || b.status === 'confirmed' || b.status === 'completed';
+      const isFailed = b.payment_status === 'failed';
       const matchesFilter = statusFilter === 'all' 
         || (statusFilter === 'paid' && isPaid)
-        || (statusFilter === 'pending' && !isPaid);
+        || (statusFilter === 'failed' && isFailed)
+        || (statusFilter === 'pending' && !isPaid && !isFailed);
 
       const space = (b.spaces?.title || '').toLowerCase();
       const guest = (b.guest_profiles?.full_name || b.guest_name || '').toLowerCase();
@@ -285,15 +287,39 @@ export default function AdminFinancialsClient({ initialBookings }: { initialBook
             <p className="text-xs text-white/40 mt-0.5">Direct matching with your PayU and bank settlements.</p>
           </div>
 
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search reference, space, guest..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-accent-gold/50"
-            />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-1.5 p-1 bg-white/5 rounded-xl border border-white/10 font-mono text-[11px]">
+              {(['all', 'paid', 'pending', 'failed'] as const).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setStatusFilter(filter)}
+                  className={`px-3 py-1.5 rounded-lg font-bold uppercase transition-colors cursor-pointer ${
+                    statusFilter === filter
+                      ? filter === 'failed'
+                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                        : filter === 'paid'
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : filter === 'pending'
+                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        : 'bg-accent-gold text-black'
+                      : 'text-white/40 hover:text-white'
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search reference, space, guest..."
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-accent-gold/50 font-mono"
+              />
+            </div>
           </div>
         </div>
 
@@ -347,6 +373,10 @@ export default function AdminFinancialsClient({ initialBookings }: { initialBook
                       {isPaid ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] uppercase tracking-wider">
                           <CheckCircle2 className="w-3 h-3" /> Settled / Paid
+                        </span>
+                      ) : booking.payment_status === 'failed' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] uppercase tracking-wider">
+                          <Clock className="w-3 h-3" /> Payment Failed
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] uppercase tracking-wider">

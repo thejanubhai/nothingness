@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { triggerHaptic } from '@/lib/haptics';
+import { processSultryNoirVoice } from '@/lib/audio/pitchShift';
 
 interface Message {
   id: string;
@@ -157,8 +158,15 @@ export default function EphemeralChatModal({
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      mediaRecorderRef.current.onstop = async () => {
+        let audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        if (pitchShiftEnabled) {
+          try {
+            audioBlob = await processSultryNoirVoice(audioBlob);
+          } catch (e) {
+            console.warn('Voice pitch shift fallback:', e);
+          }
+        }
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = () => {

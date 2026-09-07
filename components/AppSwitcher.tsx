@@ -80,6 +80,18 @@ const apps: AppItem[] = [
     bgGlow: 'bg-accent-gold/10',
     isActive: (path) => path.startsWith('/dashboard') || path.startsWith('/verify'),
   },
+  {
+    id: 'onboarding',
+    name: 'Check-In & Onboard',
+    badge: 'Check-In 🏨',
+    subtitle: 'Verify Airbnb, MMT & Agoda stays, invite co-guests',
+    href: '/onboarding',
+    icon: ShieldCheck,
+    accentColor: 'text-emerald-400',
+    borderColor: 'border-emerald-500/30',
+    bgGlow: 'bg-emerald-500/10',
+    isActive: (path) => path.startsWith('/onboarding'),
+  },
 ];
 
 export default function AppSwitcher({ user }: { user?: any }) {
@@ -97,19 +109,19 @@ export default function AppSwitcher({ user }: { user?: any }) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Open App Switcher"
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-300 border active:scale-95 cursor-pointer touch-manipulation ${
+        className={`flex items-center justify-center transition-all duration-300 border active:scale-95 cursor-pointer touch-manipulation relative ${
           isOpen
-            ? 'bg-accent-gold text-black border-accent-gold font-bold shadow-[0_0_20px_rgba(212,175,55,0.4)]'
-            : 'bg-zinc-900/80 hover:bg-zinc-800 text-white border-zinc-700/80 hover:border-zinc-500'
-        }`}
+            ? 'bg-accent-gold text-black border-accent-gold font-bold shadow-[0_0_15px_rgba(212,175,55,0.4)]'
+            : 'bg-white/[0.04] hover:bg-white/[0.08] text-white border-white/10 hover:border-white/20'
+        } w-9 h-9 sm:w-auto sm:px-3.5 sm:py-1.5 sm:gap-2 rounded-full`}
       >
-        <LayoutGrid className="w-4 h-4" />
+        <LayoutGrid className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-zinc-200" />
         <span className="text-xs font-mono font-semibold tracking-wider hidden sm:inline">
           {currentApp ? currentApp.name : 'Ecosystem'}
         </span>
-        <span className="text-[10px] sm:hidden font-mono font-bold uppercase tracking-wider">
-          Apps
-        </span>
+        {currentApp && (
+          <span className="sm:hidden absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent-gold shadow-[0_0_6px_rgba(212,175,55,0.8)]" />
+        )}
       </button>
 
       {/* Glassmorphic App Switcher Overlay / Sheet */}
@@ -210,14 +222,25 @@ export default function AppSwitcher({ user }: { user?: any }) {
 
               {/* Bottom Quick Utilities */}
               <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-[11px] font-mono text-zinc-400">
-                <Link
-                  href="/accessibility"
-                  onClick={() => setIsOpen(false)}
-                  className="hover:text-white flex items-center gap-1.5 transition-colors"
-                >
-                  <Headphones className="w-3.5 h-3.5 text-accent-gold" />
-                  <span>Concierge Help</span>
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/onboarding"
+                    onClick={() => setIsOpen(false)}
+                    className="hover:text-amber-400 flex items-center gap-1.5 transition-colors"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-accent-gold" />
+                    <span>Check-In</span>
+                  </Link>
+
+                  <Link
+                    href="/accessibility"
+                    onClick={() => setIsOpen(false)}
+                    className="hover:text-white flex items-center gap-1.5 transition-colors"
+                  >
+                    <Headphones className="w-3.5 h-3.5 text-accent-gold" />
+                    <span>Concierge</span>
+                  </Link>
+                </div>
 
                 {user ? (
                   <Link

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import SingleSpaceClient from "./SingleSpaceClient";
 import SpaceCarousel from "@/components/SpaceCarousel";
 import { createClient } from "@/lib/supabase/server";
@@ -159,13 +160,13 @@ export default async function SpacePage({ params }: { params: Promise<{ slug: st
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-zinc-800 text-xs font-mono">
                 <span className="text-zinc-400">Curious about our private lifestyle circle?</span>
-                <a
+                <Link
                   href="/kinksters"
                   className="text-rose-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors"
                 >
                   <span>Explore Kinkster Mode &amp; Member Vault</span>
                   <span>→</span>
-                </a>
+                </Link>
               </div>
             </div>
 

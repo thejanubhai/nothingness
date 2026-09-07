@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ShieldCheck,
@@ -19,8 +19,11 @@ import {
   Globe,
   Send,
   X,
-  BookmarkCheck,
-  Scan
+  UserCheck,
+  RefreshCw,
+  Eye,
+  SlidersHorizontal,
+  Flag
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -28,11 +31,10 @@ import KinksterLandingPage from '@/components/kinkster/KinksterLandingPage';
 import KinksterOnboardingWizard from '@/components/kinkster/KinksterOnboardingWizard';
 import CreatePostModal from '@/components/kinkster/CreatePostModal';
 import IDUploadModal from '@/components/IDUploadModal';
-import StayProofUploadModal from '@/components/kinkster/StayProofUploadModal';
-import FranchiseCrossPromoCard from '@/components/kinkster/FranchiseCrossPromoCard';
 import PullToRefresh from '@/components/PullToRefresh';
 import DesireResonanceModal from '@/components/kinkster/DesireResonanceModal';
 import EphemeralChatModal from '@/components/kinkster/EphemeralChatModal';
+import KinksterInboxDrawer from '@/components/kinkster/KinksterInboxDrawer';
 
 interface Post {
   id: string;
@@ -40,6 +42,8 @@ interface Post {
   media_url: string;
   caption: string;
   likes_count: number;
+  comments_count?: number;
+  is_liked?: boolean;
   created_at: string;
   kinkster_profiles: {
     alias: string;
@@ -47,36 +51,117 @@ interface Post {
   };
 }
 
+interface ConversationThread {
+  id: string;
+  alias: string;
+  avatar_url: string;
+  bio: string;
+  last_message: string;
+  last_message_time: string;
+  unread_count: number;
+}
+
 function KinkstersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
   const [isIdVerified, setIsIdVerified] = useState<boolean>(false);
-  const [isStayVerified, setIsStayVerified] = useState<boolean>(false);
   const [userAlias, setUserAlias] = useState<string>('');
   const [entryFee, setEntryFee] = useState<number>(0);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [activeView, setActiveView] = useState<'feed' | 'manifesto'>('feed');
+
+  // 5-Pillar Cohesive Views
+  const [activeView, setActiveView] = useState<'feed' | 'chats' | 'manifesto'>('feed');
   const [feedCategory, setFeedCategory] = useState<'all' | 'dynamics' | 'stories' | 'gatherings'>('all');
 
+  // Modals & Drawers
   const [showActivationModal, setShowActivationModal] = useState<boolean>(false);
   const [showCreatePostModal, setShowCreatePostModal] = useState<boolean>(false);
+  const [selectedInitialFile, setSelectedInitialFile] = useState<File | null>(null);
+  const [userAvatar, setUserAvatar] = useState<string>('');
   const [showIdModal, setShowIdModal] = useState<boolean>(false);
-  const [showStayModal, setShowStayModal] = useState<boolean>(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  // Interactive Feed State
+  // Interactive Feed State (Likes, Saves, Double-tap heart pop)
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
+  const [doubleTapHeartPostId, setDoubleTapHeartPostId] = useState<string | null>(null);
+  const lastTapRef = useRef<Record<string, number>>({});
+
+  // Reflections / Comments Modal State
   const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
   const [commentDraft, setCommentDraft] = useState<string>('');
   const [postComments, setPostComments] = useState<Record<string, Array<{ id: string; alias: string; text: string; time: string }>>>({});
+  const [loadingComments, setLoadingComments] = useState<boolean>(false);
 
-  // Dual-Blind Resonance & Ephemeral Chat State
+  // Direct Whispers & Ephemeral Chambers
+  const [conversations, setConversations] = useState<ConversationThread[]>([]);
+  const [loadingConversations, setLoadingConversations] = useState<boolean>(false);
+  const [selectedChatAlias, setSelectedChatAlias] = useState<string | null>(null);
+
+  // Dual-Blind Resonance & Ephemeral Chat
   const [activeResonanceTarget, setActiveResonanceTarget] = useState<{ alias: string; avatar?: string } | null>(null);
   const [activeChamber, setActiveChamber] = useState<{ token: string; targetAlias: string; targetAvatar?: string } | null>(null);
   const [mutualMatches, setMutualMatches] = useState<any[]>([]);
+
+  // Post Reporting & Safety Moderation State
+  const [reportedPostIds, setReportedPostIds] = useState<Set<string>>(new Set());
+  const [reportingPost, setReportingPost] = useState<Post | null>(null);
+  const [reportReason, setReportReason] = useState<string>('non_consensual');
+  const [reportDetails, setReportDetails] = useState<string>('');
+  const [submittingReport, setSubmittingReport] = useState<boolean>(false);
+
+  // Load Saved Vault Posts and Reported Posts from localStorage on mount
+  useEffect(() => {
+    try {
+      const storedVault = localStorage.getItem('kinkster_saved_vault');
+      if (storedVault) {
+        setSavedPosts(new Set(JSON.parse(storedVault)));
+      }
+    } catch {}
+
+    try {
+      const storedReported = localStorage.getItem('kinkster_reported_posts');
+      if (storedReported) {
+        setReportedPostIds(new Set(JSON.parse(storedReported)));
+      }
+    } catch {}
+  }, []);
+
+  // Listen to URL search param ?tab= and ?activation=
+  useEffect(() => {
+    const tab = searchParams?.get('tab');
+    if (tab === 'chats' || tab === 'whispers') {
+      setActiveView('chats');
+    } else if (tab === 'manifesto') {
+      setActiveView('manifesto');
+    } else if (tab === 'feed') {
+      setActiveView('feed');
+    } else if (tab === 'discover') {
+      router.push('/kinksters/discover');
+    } else if (tab === 'events' || tab === 'soirees') {
+      router.push('/kinksters/events');
+    }
+
+    const activation = searchParams?.get('activation');
+    const errorMsg = searchParams?.get('error');
+
+    if (activation === 'success') {
+      toast.success('Kinkster Mode Activated! ✨', {
+        description: 'Your lifetime membership has been confirmed. Welcome to the sanctuary circle.',
+      });
+      fetchProfileAndPosts();
+    } else if (activation === 'failed') {
+      const decodedError = errorMsg ? decodeURIComponent(errorMsg) : 'Transaction was cancelled or declined at gateway.';
+      toast.error('Activation Payment Incomplete', {
+        description: decodedError,
+      });
+      setShowActivationModal(true);
+    }
+  }, [searchParams, router]);
 
   const fetchResonances = async () => {
     try {
@@ -88,37 +173,235 @@ function KinkstersContent() {
     } catch {}
   };
 
-  const filteredPosts = posts.filter((p) => {
-    if (feedCategory === 'all') return true;
-    const text = (p.caption || '').toLowerCase();
-    if (feedCategory === 'dynamics') return text.includes('art') || text.includes('dynamic') || text.includes('mood') || !text.includes('party');
-    if (feedCategory === 'stories') return text.includes('story') || text.includes('confession') || text.includes('thought') || text.includes('reflection');
-    if (feedCategory === 'gatherings') return text.includes('munch') || text.includes('soiree') || text.includes('event') || text.includes('gathering');
-    return true;
-  });
+  const fetchConversations = async () => {
+    setLoadingConversations(true);
+    try {
+      const res = await fetch('/api/kinkster/chat');
+      const data = await res.json();
+      if (res.ok && data.conversations) {
+        setConversations(data.conversations);
+      }
+    } catch (err) {
+      console.error('Failed to load conversations:', err);
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
 
-  const handleToggleLike = (postId: string) => {
+  const fetchProfileAndPosts = async () => {
+    setLoading(true);
+    try {
+      const profileRes = await fetch('/api/kinkster/profile');
+      if (profileRes.status === 401) {
+        setIsLoggedIn(false);
+        setIsActivated(false);
+        // Fetch public info for live entry fee
+        fetch('/api/kinkster/info')
+          .then((r) => r.json())
+          .then((inf) => {
+            if (inf?.entry_fee !== undefined) setEntryFee(Number(inf.entry_fee));
+          })
+          .catch(() => {});
+        setLoading(false);
+        return;
+      }
+
+      setIsLoggedIn(true);
+      const profileData = await profileRes.json();
+
+      setIsIdVerified(profileData.is_id_verified ?? false);
+      setIsActivated(profileData.is_activated ?? false);
+      if (profileData.entry_fee !== undefined) {
+        setEntryFee(Number(profileData.entry_fee));
+      }
+      if (profileData.profile?.alias) {
+        setUserAlias(profileData.profile.alias);
+      }
+      if (profileData.profile?.avatar_url) {
+        setUserAvatar(profileData.profile.avatar_url);
+      }
+
+      // If activated, fetch feed posts, mutual resonances, and whispers
+      if (profileData.is_activated) {
+        fetchResonances();
+        fetchConversations();
+        const postsRes = await fetch('/api/kinkster/posts');
+        const postsData = await postsRes.json();
+        const loadedPosts: Post[] = postsData.posts || [];
+        setPosts(loadedPosts);
+
+        // Pre-populate liked posts set
+        const liked = new Set<string>();
+        loadedPosts.forEach((p) => {
+          if (p.is_liked) liked.add(p.id);
+        });
+        setLikedPosts(liked);
+      }
+    } catch (err) {
+      console.error('Failed to load kinkster feed:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleOpenWithFile = (e: any) => {
+      if (!isLoggedIn) {
+        handleRequireAuth('create a post');
+        return;
+      }
+      if (!isActivated) {
+        setShowActivationModal(true);
+        return;
+      }
+      const file = e.detail?.file || null;
+      if (file) {
+        setSelectedInitialFile(file);
+        setShowCreatePostModal(true);
+      }
+    };
+
+    const handleOpenCreatePost = () => {
+      if (!isLoggedIn) {
+        handleRequireAuth('create a post');
+        return;
+      }
+      if (!isActivated) {
+        setShowActivationModal(true);
+        return;
+      }
+      // Directly trigger native gallery/file picker like Instagram
+      galleryInputRef.current?.click();
+    };
+
+    window.addEventListener('open-create-post-with-file', handleOpenWithFile);
+    window.addEventListener('open-create-post', handleOpenCreatePost);
+    return () => {
+      window.removeEventListener('open-create-post-with-file', handleOpenWithFile);
+      window.removeEventListener('open-create-post', handleOpenCreatePost);
+    };
+  }, [isLoggedIn, isActivated]);
+
+  useEffect(() => {
+    const activation = searchParams?.get('activation');
+    if (activation === 'success') {
+      toast.success('Kinkster Mode Activated via PayU!', {
+        description: 'Your lifetime membership payment has been confirmed.',
+      });
+    } else if (activation === 'failed') {
+      const errorMsg = searchParams?.get('error') || 'Payment failed.';
+      toast.error('Activation Payment Failed', { description: decodeURIComponent(errorMsg) });
+    }
+    fetchProfileAndPosts();
+  }, [searchParams]);
+
+  const handleRequireAuth = (actionName: string) => {
+    toast.info('Sign In Required', {
+      description: `Please sign in with Mobile OTP to ${actionName}.`,
+    });
+    router.push('/auth?redirect=/kinksters');
+  };
+
+  // Double-tap & single-tap like handler
+  const handleToggleLike = async (postId: string) => {
     if (!isLoggedIn) {
       handleRequireAuth('like posts');
       return;
     }
+
     try {
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
-        navigator.vibrate(10);
+        navigator.vibrate(15);
       }
     } catch {}
 
+    const wasLiked = likedPosts.has(postId);
+
+    // Optimistic state update
     setLikedPosts((prev) => {
       const next = new Set(prev);
-      if (next.has(postId)) {
-        next.delete(postId);
-      } else {
-        next.add(postId);
-      }
+      if (wasLiked) next.delete(postId);
+      else next.add(postId);
       return next;
     });
+
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              likes_count: Math.max(0, (p.likes_count || 0) + (wasLiked ? -1 : 1)),
+              is_liked: !wasLiked,
+            }
+          : p
+      )
+    );
+
+    try {
+      const res = await fetch('/api/kinkster/posts/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_id: postId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update like');
+
+      if (typeof data.is_liked === 'boolean') {
+        setLikedPosts((prev) => {
+          const next = new Set(prev);
+          if (data.is_liked) next.add(postId);
+          else next.delete(postId);
+          return next;
+        });
+      }
+      if (typeof data.likes_count === 'number') {
+        setPosts((prev) =>
+          prev.map((p) => (p.id === postId ? { ...p, likes_count: data.likes_count } : p))
+        );
+      }
+    } catch (err) {
+      // Rollback optimistic update
+      setLikedPosts((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) next.add(postId);
+        else next.delete(postId);
+        return next;
+      });
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                likes_count: Math.max(0, (p.likes_count || 0) + (wasLiked ? 1 : -1)),
+                is_liked: wasLiked,
+              }
+            : p
+        )
+      );
+    }
   };
 
+  const handleMediaTap = (postId: string) => {
+    const now = Date.now();
+    const lastTap = lastTapRef.current[postId] || 0;
+    if (now - lastTap < 320) {
+      // Double tap triggered
+      setDoubleTapHeartPostId(postId);
+      setTimeout(() => setDoubleTapHeartPostId(null), 800);
+      if (!likedPosts.has(postId)) {
+        handleToggleLike(postId);
+      } else {
+        try {
+          if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+            navigator.vibrate([15, 60, 15]);
+          }
+        } catch {}
+      }
+    }
+    lastTapRef.current[postId] = now;
+  };
+
+  // Toggle Save to Private Vault
   const handleToggleSave = (postId: string) => {
     if (!isLoggedIn) {
       handleRequireAuth('save posts');
@@ -133,10 +416,14 @@ function KinkstersContent() {
         next.add(postId);
         toast.success('Saved to your Private Vault');
       }
+      try {
+        localStorage.setItem('kinkster_saved_vault', JSON.stringify(Array.from(next)));
+      } catch {}
       return next;
     });
   };
 
+  // Discreet Share Post
   const handleSharePost = async (post: Post) => {
     const postUrl = typeof window !== 'undefined' ? `${window.location.origin}/kinksters#${post.id}` : '';
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -156,112 +443,152 @@ function KinkstersContent() {
     }
   };
 
-  const handleAddComment = (e: React.FormEvent) => {
+  // Open Confidential Report Modal
+  const handleOpenReportModal = (post: Post) => {
+    if (!isLoggedIn) {
+      handleRequireAuth('report content');
+      return;
+    }
+    setReportingPost(post);
+    setReportReason('non_consensual');
+    setReportDetails('');
+  };
+
+  // Submit Confidential Report to Moderation API
+  const handleSubmitReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reportingPost) return;
+
+    setSubmittingReport(true);
+    try {
+      const reasonLabels: Record<string, string> = {
+        non_consensual: 'Non-consensual media / leak of identity',
+        underage: 'Underage or authenticity concern',
+        harassment: 'Harassment, threat or coercion',
+        spam: 'Commercial spam or solicitation',
+        guidelines: 'Sanctuary guideline breach',
+      };
+
+      await fetch('/api/kinkster/posts/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          post_id: reportingPost.id,
+          reason: reasonLabels[reportReason] || reportReason,
+          details: reportDetails.trim(),
+        }),
+      });
+
+      // Optimistically hide from local feed
+      const nextReported = new Set(reportedPostIds);
+      nextReported.add(reportingPost.id);
+      setReportedPostIds(nextReported);
+      try {
+        localStorage.setItem('kinkster_reported_posts', JSON.stringify(Array.from(nextReported)));
+      } catch {}
+
+      toast.success('Post Reported & Hidden', {
+        description: 'The post has been removed from your feed. Our safety team is reviewing it.',
+      });
+      setReportingPost(null);
+    } catch (err: any) {
+      toast.error('Could not submit report. Please try again.');
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
+  // Open reflections & load comments from API
+  const handleOpenReflections = async (post: Post) => {
+    setActiveCommentPost(post);
+    setLoadingComments(true);
+    try {
+      const res = await fetch(`/api/kinkster/posts/comments?post_id=${encodeURIComponent(post.id)}`);
+      const data = await res.json();
+      if (res.ok && data.comments) {
+        setPostComments((prev) => ({
+          ...prev,
+          [post.id]: data.comments.map((c: any) => ({
+            id: c.id,
+            alias: c.kinkster_profiles?.alias || 'anonymous',
+            text: c.comment,
+            time: new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          })),
+        }));
+      }
+    } catch {} finally {
+      setLoadingComments(false);
+    }
+  };
+
+  // Submit new reflection to API
+  const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentDraft.trim() || !activeCommentPost) return;
+    if (!isLoggedIn) {
+      handleRequireAuth('reflect on posts');
+      return;
+    }
 
-    const newComment = {
-      id: Math.random().toString(36).substring(2, 9),
-      alias: userAlias || 'anonymous',
-      text: commentDraft.trim(),
-      time: 'Just now',
-    };
-
-    setPostComments((prev) => ({
-      ...prev,
-      [activeCommentPost.id]: [...(prev[activeCommentPost.id] || []), newComment],
-    }));
-
+    const postId = activeCommentPost.id;
+    const commentText = commentDraft.trim();
     setCommentDraft('');
-    toast.success('Reflection shared under your @alias');
-  };
 
-  const handleRequireAuth = (actionName: string) => {
-    toast.info('Sign In Required', {
-      description: `Please sign in with Mobile OTP to ${actionName}.`,
-    });
-    router.push('/auth?redirect=/kinksters');
-  };
-
-  const fetchProfileAndPosts = async () => {
-    setLoading(true);
     try {
-      const profileRes = await fetch('/api/kinkster/profile');
-      if (profileRes.status === 401) {
-        setIsLoggedIn(false);
-        setIsActivated(false);
-        // Fetch public info for live entry fee
-        fetch('/api/kinkster/info')
-          .then(r => r.json())
-          .then(inf => {
-            if (inf?.entry_fee !== undefined) setEntryFee(Number(inf.entry_fee));
-          })
-          .catch(() => {});
-        setLoading(false);
-        return;
-      }
-      setIsLoggedIn(true);
-      const profileData = await profileRes.json();
+      const res = await fetch('/api/kinkster/posts/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_id: postId, comment: commentText }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to post reflection');
 
-      setIsIdVerified(profileData.is_id_verified ?? false);
-      setIsStayVerified(profileData.is_stay_verified ?? false);
-      setIsActivated(profileData.is_activated ?? false);
-      if (profileData.entry_fee !== undefined) {
-        setEntryFee(Number(profileData.entry_fee));
-      }
-      if (profileData.profile?.alias) {
-        setUserAlias(profileData.profile.alias);
-      }
+      const newComment = {
+        id: data.comment?.id || Math.random().toString(36).substring(2, 9),
+        alias: userAlias || 'anonymous',
+        text: commentText,
+        time: 'Just now',
+      };
 
-      // If activated, fetch feed posts and mutual resonances
-      if (profileData.is_activated) {
-        fetchResonances();
-        const postsRes = await fetch('/api/kinkster/posts');
-        const postsData = await postsRes.json();
-        setPosts(postsData.posts || []);
-      }
-    } catch (err) {
-      console.error('Failed to load kinkster feed:', err);
-    } finally {
-      setLoading(false);
+      setPostComments((prev) => ({
+        ...prev,
+        [postId]: [...(prev[postId] || []), newComment],
+      }));
+
+      // Increment comments count on the post
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? { ...p, comments_count: (p.comments_count || 0) + 1 }
+            : p
+        )
+      );
+
+      toast.success('Reflection shared under your @alias');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not post reflection');
+      setCommentDraft(commentText);
     }
   };
 
-  useEffect(() => {
-    const handleOpenCreatePost = () => {
-      if (!isLoggedIn) {
-        handleRequireAuth('create a post');
-        return;
-      }
-      if (!isActivated) {
-        setShowActivationModal(true);
-        return;
-      }
-      setShowCreatePostModal(true);
-    };
-
-    window.addEventListener('open-create-post', handleOpenCreatePost);
-    return () => window.removeEventListener('open-create-post', handleOpenCreatePost);
-  }, [isLoggedIn, isActivated]);
-
-  useEffect(() => {
-    const activation = searchParams?.get('activation');
-    if (activation === 'success') {
-      toast.success('Kinkster Mode Activated via PayU!', {
-        description: 'Your lifetime membership payment has been confirmed.',
-      });
-    } else if (activation === 'failed') {
-      const errorMsg = searchParams?.get('error') || 'Payment failed.';
-      toast.error('Activation Payment Failed', { description: decodeURIComponent(errorMsg) });
-    }
-    fetchProfileAndPosts();
-  }, [searchParams]);
+  const filteredPosts = posts.filter((p) => {
+    // Hide reported posts immediately
+    if (reportedPostIds.has(p.id)) return false;
+    if (feedCategory === 'all') return true;
+    const text = (p.caption || '').toLowerCase();
+    if (feedCategory === 'dynamics')
+      return text.includes('art') || text.includes('dynamic') || text.includes('mood') || !text.includes('party');
+    if (feedCategory === 'stories')
+      return text.includes('story') || text.includes('confession') || text.includes('thought') || text.includes('reflection');
+    if (feedCategory === 'gatherings')
+      return text.includes('munch') || text.includes('soiree') || text.includes('event') || text.includes('gathering');
+    return true;
+  });
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-20">
-      
+    <div className="min-h-screen bg-black text-white pt-28 sm:pt-32 pb-24">
       {/* ------------------------------------------------------------- */}
-      {/* CASE A: UNACTIVATED USER -> SHOWCASE MESMERIZING LANDING PAGE */}
+      {/* CASE A: UNACTIVATED USER -> SHOWCASE MESMERIZING VIP PORTAL   */}
       {/* ------------------------------------------------------------- */}
       {!isActivated && !loading && (
         <>
@@ -295,8 +622,8 @@ function KinkstersContent() {
                     </button>
                   </div>
 
-                  {/* 3 Step Progress Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
+                  {/* 2 Step Progress Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                     {/* Step 1: ID Vetting */}
                     <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-2.5">
                       <div className="flex items-center justify-between">
@@ -329,42 +656,10 @@ function KinkstersContent() {
                       )}
                     </div>
 
-                    {/* Step 2: Stay Certification */}
+                    {/* Step 2: @Alias & Lifetime Pass */}
                     <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">Step 2</span>
-                        {isStayVerified ? (
-                          <span className="px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-mono flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Certified
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[10px] font-mono">
-                            Pending
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-white">Sanctuary Stay Check</p>
-                        <p className="text-[10px] text-zinc-400 mt-0.5 leading-relaxed">
-                          {isStayVerified
-                            ? 'Confirmed sanctuary stay booking linked.'
-                            : 'Link your Airbnb, MMT, or direct booking.'}
-                        </p>
-                      </div>
-                      {!isStayVerified && (
-                        <button
-                          onClick={() => setShowStayModal(true)}
-                          className="w-full py-2 bg-white/5 hover:bg-purple-500/20 border border-white/10 text-purple-300 text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
-                        >
-                          Verify Stay →
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Step 3: @Alias & Lifetime Pass */}
-                    <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">Step 3</span>
                         <span className="px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[10px] font-mono">
                           {entryFee > 0 ? `₹${entryFee.toLocaleString('en-IN')}` : 'Lifetime Pass'}
                         </span>
@@ -391,7 +686,7 @@ function KinkstersContent() {
           <KinksterLandingPage
             isActivated={isActivated}
             isIdVerified={isIdVerified}
-            isStayVerified={isStayVerified}
+            isStayVerified={true}
             entryFee={entryFee}
             onOpenActivation={() => {
               if (!isLoggedIn) {
@@ -407,40 +702,34 @@ function KinkstersContent() {
                 setShowIdModal(true);
               }
             }}
-            onOpenStayVerification={() => {
-              if (!isLoggedIn) {
-                handleRequireAuth('verify your sanctuary stay');
-              } else {
-                setShowStayModal(true);
-              }
-            }}
+            onOpenStayVerification={() => {}}
           />
         </>
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* CASE B: ACTIVATED USER -> PRIVATE MEMBER FEED & NAVIGATION    */}
+      {/* CASE B: ACTIVATED USER -> PRIVATE 5-PILLAR MEMBER HUB         */}
       {/* ------------------------------------------------------------- */}
       {isActivated && (
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          {/* Member Header & View Switcher */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800 pb-6 mb-8">
+          {/* Member Header & Actions */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-900 pb-5 mb-6">
             <div>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-rose-400 via-purple-400 to-amber-300 bg-clip-text text-transparent">
                   Nothingness Lifestyle
                 </h1>
-                <span className="px-2.5 py-1 bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-bold rounded-full flex items-center gap-1 font-mono">
+                <span className="px-2.5 py-0.5 bg-rose-500/10 border border-rose-500/25 text-rose-300 text-[11px] font-bold rounded-full flex items-center gap-1 font-mono">
                   <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
                   ID Vetted
                 </span>
-                <span className="px-2.5 py-1 bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-bold rounded-full flex items-center gap-1 font-mono">
-                  <Building2 className="w-3.5 h-3.5 text-purple-400" />
-                  Stay Certified
+                <span className="px-2.5 py-0.5 bg-purple-500/10 border border-purple-500/25 text-purple-300 text-[11px] font-bold rounded-full flex items-center gap-1 font-mono">
+                  <Lock className="w-3.5 h-3.5 text-purple-400" />
+                  Discretion Vetted
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-                Private member feed under unique @aliases. Real names remain 100% confidential.
+              <p className="text-xs text-zinc-400 mt-1">
+                Encrypted lifestyle network. Real identities remain 100% confidential.
               </p>
             </div>
 
@@ -462,251 +751,502 @@ function KinkstersContent() {
                   <span>{mutualMatches.length} Mutual Match{mutualMatches.length > 1 ? 'es' : ''}</span>
                 </button>
               )}
+
               <Link
-                href="/admin/marshall-scanner"
-                className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 touch-manipulation"
+                href={`/kinksters/${userAlias || 'profile'}`}
+                className="text-xs font-mono text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-3 py-2 rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors"
               >
-                <Scan className="w-4 h-4 text-amber-400" />
-                Scanner
-              </Link>
-              <Link
-                href="/kinksters/discover"
-                className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 touch-manipulation"
-              >
-                <Compass className="w-4 h-4 text-purple-400" />
-                Discover
-              </Link>
-              <Link
-                href="/sanctuary-pass"
-                className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 touch-manipulation"
-              >
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                Sanctuary Pass
-              </Link>
-              <span className="text-xs font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 px-3 py-2 rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0">
                 <AtSign className="w-3.5 h-3.5 text-rose-400" />
-                {userAlias}
-              </span>
+                {userAlias || 'My Moniker'}
+              </Link>
+
               <button
-                onClick={() => setShowCreatePostModal(true)}
-                className="px-4 py-2 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer touch-manipulation"
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    handleRequireAuth('create a post');
+                    return;
+                  }
+                  if (!isActivated) {
+                    setShowActivationModal(true);
+                    return;
+                  }
+                  galleryInputRef.current?.click();
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer touch-manipulation"
               >
                 <PlusCircle className="w-4 h-4" />
-                New Post
+                <span>Post</span>
               </button>
             </div>
           </div>
 
-          {/* Member Sub-Navigation Tabs */}
-          <div className="flex items-center gap-2 mb-8 border-b border-zinc-900 pb-3">
+          {/* 5-Pillar Cohesive View Switcher (Desktop sub-nav, mobile handled via native bottom nav) */}
+          <div className="hidden md:flex items-center gap-2 mb-6 overflow-x-auto no-scrollbar border-b border-zinc-900 pb-3">
             <button
               onClick={() => setActiveView('feed')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
                 activeView === 'feed'
                   ? 'bg-rose-600 text-white shadow-lg'
-                  : 'text-zinc-400 hover:text-white bg-zinc-900/60'
+                  : 'text-zinc-400 hover:text-white bg-zinc-900/70 border border-zinc-800'
               }`}
             >
-              <Flame className="w-4 h-4" />
-              Member Feed
+              <Flame className="w-4 h-4 text-rose-400" />
+              Feed
             </button>
+
+            <Link
+              href="/kinksters/discover"
+              className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 text-zinc-400 hover:text-white bg-zinc-900/70 border border-zinc-800"
+            >
+              <Compass className="w-4 h-4 text-purple-400" />
+              Discover Members
+            </Link>
+
+            <button
+              onClick={() => {
+                setActiveView('chats');
+                fetchConversations();
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+                activeView === 'chats'
+                  ? 'bg-rose-600 text-white shadow-lg'
+                  : 'text-zinc-400 hover:text-white bg-zinc-900/70 border border-zinc-800'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4 text-rose-300" />
+              <span>Whispers</span>
+              {conversations.some((c) => c.unread_count > 0) && (
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+              )}
+            </button>
+
+            <Link
+              href="/kinksters/events"
+              className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 text-zinc-400 hover:text-white bg-zinc-900/70 border border-zinc-800"
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              Secret Soirées
+            </Link>
 
             <button
               onClick={() => setActiveView('manifesto')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
                 activeView === 'manifesto'
                   ? 'bg-rose-600 text-white shadow-lg'
-                  : 'text-zinc-400 hover:text-white bg-zinc-900/60'
+                  : 'text-zinc-400 hover:text-white bg-zinc-900/70 border border-zinc-800'
               }`}
             >
-              <Globe className="w-4 h-4" />
-              Sanctuary Showcase &amp; Manifesto
+              <Globe className="w-4 h-4 text-zinc-400" />
+              Sanctuary Manifesto
             </button>
           </div>
 
-          {/* Tab 1: Member Feed */}
+          {/* ========================================================= */}
+          {/* PILLAR 1: MEMBER FEED                                     */}
+          {/* ========================================================= */}
           {activeView === 'feed' && (
             <PullToRefresh onRefresh={fetchProfileAndPosts}>
               <div className="space-y-6 max-w-xl mx-auto">
-              {/* Category Filter Pills */}
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 pt-1 whitespace-nowrap">
-                {[
-                  { id: 'all', label: 'All Reflections' },
-                  { id: 'dynamics', label: 'Art & Dynamics' },
-                  { id: 'stories', label: 'Stories & Whispers' },
-                  { id: 'gatherings', label: 'Secret Soirées' },
-                ].map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setFeedCategory(cat.id as any)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                      feedCategory === cat.id
-                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold shadow-sm'
-                        : 'bg-zinc-900/80 text-zinc-400 hover:text-white border border-zinc-800'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-
-              {filteredPosts.length === 0 ? (
-                <div className="text-center py-16 bg-zinc-950 border border-zinc-900 rounded-2xl p-8 shadow-2xl">
-                  <Sparkles className="w-10 h-10 text-rose-400 mx-auto mb-3 opacity-60" />
-                  <h3 className="text-base font-bold text-white">
-                    {posts.length === 0 ? 'No Posts Yet' : 'No Posts in this Category'}
-                  </h3>
-                  <p className="text-xs text-zinc-500 mt-1 mb-4">
-                    {posts.length === 0
-                      ? 'Be the first vetted member to share a discreet photo or video reel!'
-                      : 'Try selecting "All Reflections" or share a post under this category.'}
-                  </p>
-                  <button
-                    onClick={() => setShowCreatePostModal(true)}
-                    className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition-all"
-                  >
-                    Create Post
-                  </button>
-                </div>
-              ) : (
-                filteredPosts.map((post) => (
-                  <div
-                    key={post.id}
-                    className="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-2xl transition-all hover:border-zinc-800"
-                  >
-                    {/* Instagram Post Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-zinc-900">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={post.kinkster_profiles?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'}
-                          alt="Avatar"
-                          className="w-10 h-10 rounded-full object-cover border border-rose-500/40 p-0.5"
-                        />
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-bold text-white font-mono">
-                              @{post.kinkster_profiles?.alias || 'anonymous'}
-                            </span>
-                            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                          </div>
-                          <span className="text-[10px] text-zinc-500">ID Vetted • Verified Stay Guest</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!isLoggedIn) {
-                              handleRequireAuth('resonate with member');
-                              return;
-                            }
-                            setActiveResonanceTarget({
-                              alias: post.kinkster_profiles?.alias || 'anonymous',
-                              avatar: post.kinkster_profiles?.avatar_url,
-                            });
-                          }}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[10px] font-mono font-bold transition-all active:scale-95 cursor-pointer"
-                          title="Drop Confidential Desire Resonance"
-                        >
-                          <Flame className="w-3 h-3 text-rose-400" />
-                          <span>Resonate</span>
-                        </button>
-                        <span className="text-[11px] text-zinc-600 font-mono">
-                          {new Date(post.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Media Content */}
-                    <div className="relative aspect-square bg-zinc-900">
-                      {post.media_type === 'image' ? (
-                        <img src={post.media_url} alt="Post" className="w-full h-full object-cover" />
-                      ) : (
-                        <video src={post.media_url} controls className="w-full h-full object-cover" />
-                      )}
-                    </div>
-
-                    {/* Interaction Footer */}
-                    <div className="p-4 space-y-3">
-                      <div className="flex items-center justify-between text-zinc-400">
-                        <div className="flex items-center gap-4">
-                          <button
-                            onClick={() => handleToggleLike(post.id)}
-                            className={`flex items-center gap-1.5 transition-all active:scale-90 cursor-pointer ${
-                              likedPosts.has(post.id) ? 'text-rose-500' : 'hover:text-rose-500'
-                            }`}
-                            aria-label="Like post"
-                          >
-                            <Heart className={`w-5 h-5 ${likedPosts.has(post.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
-                            <span className="text-xs font-mono">
-                              {(post.likes_count || 0) + (likedPosts.has(post.id) ? 1 : 0)}
-                            </span>
-                          </button>
-                          <button
-                            onClick={() => setActiveCommentPost(post)}
-                            className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
-                            aria-label="Open reflections"
-                          >
-                            <MessageSquare className="w-5 h-5" />
-                            <span className="text-xs font-mono">
-                              {(postComments[post.id]?.length || 0)}
-                            </span>
-                          </button>
-                          <button
-                            onClick={() => handleSharePost(post)}
-                            className="hover:text-white transition-colors cursor-pointer active:scale-90"
-                            aria-label="Share post"
-                          >
-                            <Share2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => handleToggleSave(post.id)}
-                          className={`transition-all active:scale-90 cursor-pointer ${
-                            savedPosts.has(post.id) ? 'text-amber-400' : 'hover:text-amber-400'
-                          }`}
-                          aria-label="Save to vault"
-                        >
-                          <Bookmark className={`w-5 h-5 ${savedPosts.has(post.id) ? 'fill-amber-400 text-amber-400' : ''}`} />
-                        </button>
-                      </div>
-
-                      {post.caption && (
-                        <p className="text-xs text-zinc-300 leading-relaxed">
-                          <span className="font-bold text-white font-mono mr-2">
-                            @{post.kinkster_profiles?.alias}
-                          </span>
-                          {post.caption}
-                        </p>
-                      )}
-
-                      {/* Comment preview indicator */}
-                      {postComments[post.id] && postComments[post.id].length > 0 && (
-                        <button
-                          onClick={() => setActiveCommentPost(post)}
-                          className="text-[11px] text-zinc-500 hover:text-zinc-400 font-mono transition-colors block text-left pt-1 cursor-pointer"
-                        >
-                          View all {postComments[post.id].length} reflection{postComments[post.id].length > 1 ? 's' : ''}...
-                        </button>
-                      )}
-                    </div>
+                {/* Category Filter Pills in Unified Glassmorphic Segmented Container */}
+                <div className="w-full overflow-x-auto no-scrollbar pb-1">
+                  <div className="flex items-center gap-2 p-1.5 bg-zinc-950/90 border border-zinc-800/80 rounded-2xl backdrop-blur-xl w-max">
+                    {[
+                      { id: 'all', label: 'All Reflections' },
+                      { id: 'dynamics', label: 'Art & Dynamics' },
+                      { id: 'stories', label: 'Stories & Whispers' },
+                      { id: 'gatherings', label: 'Secret Soirées' },
+                    ].map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setFeedCategory(cat.id as any)}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                          feedCategory === cat.id
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold shadow-sm'
+                            : 'text-zinc-400 hover:text-white hover:bg-zinc-900/50'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
                   </div>
-                ))
-              )}
+                </div>
+
+                {filteredPosts.length === 0 ? (
+                  <div className="text-center py-16 bg-zinc-950 border border-zinc-900 rounded-2xl p-8 shadow-2xl">
+                    <Sparkles className="w-10 h-10 text-rose-400 mx-auto mb-3 opacity-60" />
+                    <h3 className="text-base font-bold text-white">
+                      {posts.length === 0 ? 'No Posts Yet' : 'No Posts in this Category'}
+                    </h3>
+                    <p className="text-xs text-zinc-500 mt-1 mb-4">
+                      {posts.length === 0
+                        ? 'Be the first vetted member to share a discreet photo reflection!'
+                        : 'Try selecting "All Reflections" or share a post under this category.'}
+                    </p>
+                    <button
+                      onClick={() => {
+                        if (!isLoggedIn) {
+                          handleRequireAuth('create a post');
+                          return;
+                        }
+                        if (!isActivated) {
+                          setShowActivationModal(true);
+                          return;
+                        }
+                        galleryInputRef.current?.click();
+                      }}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+                    >
+                      Create First Post
+                    </button>
+                  </div>
+                ) : (
+                  filteredPosts.map((post) => (
+                    <div
+                      key={post.id}
+                      className="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-2xl transition-all hover:border-zinc-800 relative"
+                    >
+                      {/* Post Author Bar */}
+                      <div className="flex items-center justify-between p-4 border-b border-zinc-900">
+                        <div className="flex items-center gap-3">
+                          <Link href={`/kinksters/${post.kinkster_profiles?.alias || 'anonymous'}`}>
+                            <img
+                              src={
+                                post.kinkster_profiles?.avatar_url ||
+                                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'
+                              }
+                              alt="Avatar"
+                              className="w-10 h-10 rounded-full object-cover border border-rose-500/40 p-0.5 hover:scale-105 transition-transform"
+                            />
+                          </Link>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <Link
+                                href={`/kinksters/${post.kinkster_profiles?.alias || 'anonymous'}`}
+                                className="text-sm font-bold text-white font-mono hover:text-rose-400 transition-colors"
+                              >
+                                @{post.kinkster_profiles?.alias || 'anonymous'}
+                              </Link>
+                              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                            </div>
+                            <span className="text-[10px] text-zinc-500">ID Vetted • Confidential Member</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!isLoggedIn) {
+                                handleRequireAuth('resonate with member');
+                                return;
+                              }
+                              setActiveResonanceTarget({
+                                alias: post.kinkster_profiles?.alias || 'anonymous',
+                                avatar: post.kinkster_profiles?.avatar_url,
+                              });
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[10px] font-mono font-bold transition-all active:scale-95 cursor-pointer"
+                            title="Drop Confidential Desire Resonance"
+                          >
+                            <Flame className="w-3 h-3 text-rose-400" />
+                            <span>Resonate</span>
+                          </button>
+                          <span className="text-[11px] text-zinc-600 font-mono">
+                            {new Date(post.created_at).toLocaleDateString()}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenReportModal(post)}
+                            className="p-1 text-zinc-600 hover:text-rose-400 transition-colors cursor-pointer rounded-lg hover:bg-zinc-900"
+                            title="Report post"
+                            aria-label="Report post"
+                          >
+                            <Flag className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Media Container with Double-Tap Heart Animation & Anti-Leak Watermark */}
+                      <div
+                        className="relative aspect-square bg-zinc-900 select-none cursor-pointer overflow-hidden"
+                        onClick={() => handleMediaTap(post.id)}
+                      >
+                        {post.media_type === 'image' ? (
+                          <img
+                            src={post.media_url}
+                            alt="Post"
+                            className="w-full h-full object-cover pointer-events-none"
+                          />
+                        ) : (
+                          <video
+                            src={post.media_url}
+                            controls
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+
+                        {/* Dynamic Anti-Leak Viewer Watermark */}
+                        <div 
+                          className="absolute inset-0 pointer-events-none select-none z-10 flex flex-col justify-between p-3 opacity-25 overflow-hidden mix-blend-screen"
+                          aria-hidden="true"
+                        >
+                          <div className="flex justify-between items-start text-[10px] font-mono font-bold tracking-widest text-white/80 drop-shadow rotate-[-8deg] origin-top-left">
+                            <span>@{userAlias || 'confidential'} • PROTECTED</span>
+                            <span>{userAlias ? `@${userAlias}` : 'CONFIDENTIAL'}</span>
+                          </div>
+                          <div className="flex justify-center items-center text-xs font-mono font-extrabold tracking-widest text-white/70 rotate-[-25deg]">
+                            <span>NOTHINGNESS VAULT • @{userAlias || 'confidential'}</span>
+                          </div>
+                          <div className="flex justify-between items-end text-[10px] font-mono font-bold tracking-widest text-white/80 drop-shadow rotate-[-8deg] origin-bottom-right">
+                            <span>@{userAlias || 'confidential'}</span>
+                            <span>DO NOT REDISTRIBUTE</span>
+                          </div>
+                        </div>
+
+                        {/* Floating Double Tap Heart Pop */}
+                        {doubleTapHeartPostId === post.id && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 animate-ping">
+                            <Heart className="w-24 h-24 fill-rose-500 text-rose-500 drop-shadow-[0_0_25px_rgba(244,63,94,0.9)]" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Interaction Footer */}
+                      <div className="p-4 space-y-3">
+                        <div className="flex items-center justify-between text-zinc-400">
+                          <div className="flex items-center gap-4">
+                            <button
+                              onClick={() => handleToggleLike(post.id)}
+                              className={`flex items-center gap-1.5 transition-all active:scale-90 cursor-pointer ${
+                                likedPosts.has(post.id) ? 'text-rose-500' : 'hover:text-rose-500'
+                              }`}
+                              aria-label="Like post"
+                            >
+                              <Heart
+                                className={`w-5 h-5 transition-transform active:scale-125 ${
+                                  likedPosts.has(post.id) ? 'fill-rose-500 text-rose-500' : ''
+                                }`}
+                              />
+                              <span className="text-xs font-mono font-bold">
+                                {post.likes_count || 0}
+                              </span>
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenReflections(post)}
+                              className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+                              aria-label="Open reflections"
+                            >
+                              <MessageSquare className="w-5 h-5" />
+                              <span className="text-xs font-mono font-bold">
+                                {post.comments_count || (postComments[post.id]?.length || 0)}
+                              </span>
+                            </button>
+
+                            <button
+                              onClick={() => handleSharePost(post)}
+                              className="hover:text-white transition-colors cursor-pointer active:scale-90"
+                              aria-label="Share post"
+                            >
+                              <Share2 className="w-5 h-5" />
+                            </button>
+                          </div>
+
+                          <button
+                            onClick={() => handleToggleSave(post.id)}
+                            className={`transition-all active:scale-90 cursor-pointer ${
+                              savedPosts.has(post.id) ? 'text-amber-400' : 'hover:text-amber-400'
+                            }`}
+                            aria-label="Save to vault"
+                          >
+                            <Bookmark
+                              className={`w-5 h-5 ${
+                                savedPosts.has(post.id) ? 'fill-amber-400 text-amber-400' : ''
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {post.caption && (
+                          <p className="text-xs text-zinc-300 leading-relaxed">
+                            <span className="font-bold text-white font-mono mr-2">
+                              @{post.kinkster_profiles?.alias}
+                            </span>
+                            {post.caption}
+                          </p>
+                        )}
+
+                        {/* Reflections Preview Link */}
+                        {(post.comments_count || 0) > 0 && (
+                          <button
+                            onClick={() => handleOpenReflections(post)}
+                            className="text-[11px] text-zinc-500 hover:text-zinc-400 font-mono transition-colors block text-left pt-1 cursor-pointer"
+                          >
+                            View all {post.comments_count || postComments[post.id]?.length} reflection
+                            {(post.comments_count || 0) > 1 ? 's' : ''}...
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </PullToRefresh>
           )}
 
-          {/* Tab 2: Sanctuary Manifesto & Feature Showcase */}
+          {/* ========================================================= */}
+          {/* PILLAR 2: WHISPERS & DIRECT ENCRYPTED CHATS              */}
+          {/* ========================================================= */}
+          {activeView === 'chats' && (
+            <div className="max-w-2xl mx-auto space-y-6">
+              {/* Mutual Resonance Ephemeral Chambers Banner */}
+              {mutualMatches.length > 0 && (
+                <div className="bg-gradient-to-r from-rose-950/40 via-purple-950/40 to-zinc-950 border border-rose-500/40 rounded-2xl p-4 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-rose-600/20 border border-rose-500/40 flex items-center justify-center">
+                        <Flame className="w-5 h-5 text-rose-400 animate-pulse" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-white">
+                          {mutualMatches.length} Ephemeral Resonance Chamber{mutualMatches.length > 1 ? 's' : ''}
+                        </h3>
+                        <p className="text-[11px] text-zinc-400">
+                          Dual-blind desire matches. Burn-on-read photos &amp; voice whispers.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const first = mutualMatches[0];
+                        setActiveChamber({
+                          token: first.chamberToken,
+                          targetAlias: first.otherAlias,
+                          targetAvatar: first.otherAvatar,
+                        });
+                      }}
+                      className="px-3.5 py-2 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs shadow-lg transition-all cursor-pointer"
+                    >
+                      Enter Chamber
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Conversations Header */}
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-rose-400" />
+                  <h2 className="text-base font-bold text-white font-mono">Discreet Whispers</h2>
+                  <span className="text-xs font-mono text-zinc-500">
+                    ({conversations.length} active)
+                  </span>
+                </div>
+                <button
+                  onClick={fetchConversations}
+                  className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  title="Refresh Whispers"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingConversations ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              {loadingConversations ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex items-center gap-3 animate-pulse"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-zinc-800" />
+                      <div className="flex-1 space-y-2">
+                        <div className="w-24 h-3 rounded bg-zinc-800" />
+                        <div className="w-48 h-2 rounded bg-zinc-900" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : conversations.length === 0 ? (
+                <div className="text-center py-16 bg-zinc-950 border border-zinc-900 rounded-2xl p-8 shadow-2xl space-y-4">
+                  <Lock className="w-10 h-10 text-rose-400/60 mx-auto" />
+                  <div>
+                    <h3 className="text-base font-bold text-white">No Whispers Yet</h3>
+                    <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1">
+                      Spark members in Discover or drop a resonance on any post. When chemistry aligns, direct encrypted chats unlock automatically.
+                    </p>
+                  </div>
+                  <Link
+                    href="/kinksters/discover"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 text-white font-bold text-xs rounded-xl shadow-lg hover:opacity-95 transition-all"
+                  >
+                    <Compass className="w-4 h-4" />
+                    <span>Explore Discover Members</span>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {conversations.map((thread) => (
+                    <div
+                      key={thread.id}
+                      onClick={() => setSelectedChatAlias(thread.alias)}
+                      className="p-4 bg-zinc-950 hover:bg-zinc-900/80 border border-zinc-900 hover:border-rose-500/30 rounded-2xl flex items-center justify-between gap-3 transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="relative">
+                          <img
+                            src={thread.avatar_url}
+                            alt={thread.alias}
+                            className="w-12 h-12 rounded-full object-cover border border-rose-500/30 group-hover:scale-105 transition-transform"
+                          />
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-black rounded-full" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-bold font-mono text-white group-hover:text-rose-400 transition-colors">
+                              @{thread.alias}
+                            </span>
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          </div>
+                          <p className="text-xs text-zinc-400 truncate mt-0.5 max-w-xs sm:max-w-md">
+                            {thread.last_message || 'Start conversation...'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        {thread.last_message_time && (
+                          <span className="text-[10px] font-mono text-zinc-500">
+                            {new Date(thread.last_message_time).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        )}
+                        {thread.unread_count > 0 && (
+                          <span className="px-2 py-0.5 bg-rose-600 text-white text-[10px] font-bold rounded-full">
+                            {thread.unread_count}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* PILLAR 3: SANCTUARY MANIFESTO & SHOWCASE                 */}
+          {/* ========================================================= */}
           {activeView === 'manifesto' && (
             <KinksterLandingPage
               isActivated={isActivated}
               isIdVerified={isIdVerified}
-              isStayVerified={isStayVerified}
+              isStayVerified={true}
               entryFee={entryFee}
               onOpenActivation={() => setShowActivationModal(true)}
               onOpenIdVerification={() => setShowIdModal(true)}
-              onOpenStayVerification={() => setShowStayModal(true)}
+              onOpenStayVerification={() => {}}
             />
           )}
         </div>
@@ -716,7 +1256,10 @@ function KinkstersContent() {
       {loading && (
         <div className="space-y-8 max-w-xl mx-auto py-8 px-4">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden shadow-2xl animate-pulse">
+            <div
+              key={i}
+              className="bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden shadow-2xl animate-pulse"
+            >
               <div className="flex items-center justify-between p-4 border-b border-zinc-900">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-zinc-800" />
@@ -748,29 +1291,47 @@ function KinkstersContent() {
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* MODALS: Onboarding, ID Upload, Stay Proof Upload, Create Post */}
+      {/* MODALS: Onboarding, ID Upload, Create Post                    */}
       {/* ------------------------------------------------------------- */}
       <KinksterOnboardingWizard
         isOpen={showActivationModal}
         onClose={() => setShowActivationModal(false)}
         isIdVerified={isIdVerified}
-        isStayVerified={isStayVerified}
+        isStayVerified={true}
         entryFee={entryFee}
         onCompleted={fetchProfileAndPosts}
         onOpenIdVerification={() => {
           setShowActivationModal(false);
           setShowIdModal(true);
         }}
-        onOpenStayVerification={() => {
-          setShowActivationModal(false);
-          setShowStayModal(true);
+      />
+
+      {/* Native Gallery / Camera Roll hidden file input */}
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/gif,image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            setSelectedInitialFile(file);
+            setShowCreatePostModal(true);
+          }
+          e.target.value = '';
         }}
       />
 
       <CreatePostModal
         isOpen={showCreatePostModal}
-        onClose={() => setShowCreatePostModal(false)}
+        onClose={() => {
+          setShowCreatePostModal(false);
+          setSelectedInitialFile(null);
+        }}
         onPostCreated={fetchProfileAndPosts}
+        initialFile={selectedInitialFile}
+        userAlias={userAlias}
+        userAvatar={userAvatar}
       />
 
       <IDUploadModal
@@ -784,19 +1345,9 @@ function KinkstersContent() {
         }}
       />
 
-      <StayProofUploadModal
-        isOpen={showStayModal}
-        onClose={() => setShowStayModal(false)}
-        onSuccess={() => {
-          setShowStayModal(false);
-          setIsStayVerified(true);
-          setShowActivationModal(true);
-        }}
-      />
-
       {/* Discreet Reflections / Comments Bottom Sheet Modal */}
       {activeCommentPost && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
           <div className="w-full sm:max-w-lg bg-zinc-950 border border-zinc-800 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-zinc-800/80">
@@ -821,7 +1372,11 @@ function KinkstersContent() {
             {/* Post Context Bar */}
             <div className="p-3.5 bg-zinc-900/60 border-b border-zinc-900 flex items-center gap-3">
               <img
-                src={activeCommentPost.media_type === 'image' ? activeCommentPost.media_url : activeCommentPost.kinkster_profiles?.avatar_url || '/images/IMG_9955.jpg'}
+                src={
+                  activeCommentPost.media_type === 'image'
+                    ? activeCommentPost.media_url
+                    : activeCommentPost.kinkster_profiles?.avatar_url || '/images/IMG_9955.jpg'
+                }
                 alt="Post Thumbnail"
                 className="w-10 h-10 rounded-lg object-cover border border-zinc-800 shrink-0"
               />
@@ -835,7 +1390,12 @@ function KinkstersContent() {
 
             {/* Comments List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3.5 divide-y divide-zinc-900">
-              {(!postComments[activeCommentPost.id] || postComments[activeCommentPost.id].length === 0) ? (
+              {loadingComments ? (
+                <div className="text-center py-10 text-xs font-mono text-zinc-500 animate-pulse">
+                  Loading reflections...
+                </div>
+              ) : !postComments[activeCommentPost.id] ||
+                postComments[activeCommentPost.id].length === 0 ? (
                 <div className="text-center py-10 text-xs font-mono text-zinc-500">
                   No reflections yet. Share the first whisper under your @alias.
                 </div>
@@ -855,7 +1415,10 @@ function KinkstersContent() {
             </div>
 
             {/* Comment Input */}
-            <form onSubmit={handleAddComment} className="p-3.5 border-t border-zinc-900 bg-zinc-950 flex items-center gap-2">
+            <form
+              onSubmit={handleAddComment}
+              className="p-3.5 border-t border-zinc-900 bg-zinc-950 flex items-center gap-2"
+            >
               <input
                 type="text"
                 placeholder={isLoggedIn ? `Whisper as @${userAlias || 'alias'}...` : 'Sign in to reflect...'}
@@ -903,13 +1466,130 @@ function KinkstersContent() {
           targetAvatar={activeChamber.targetAvatar}
         />
       )}
+
+      {/* Encrypted In-App Chat Drawer */}
+      <KinksterInboxDrawer
+        isOpen={!!selectedChatAlias}
+        onClose={() => setSelectedChatAlias(null)}
+        targetAlias={selectedChatAlias || ''}
+      />
+
+      {/* Confidential Report Post Modal */}
+      {reportingPost && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 relative">
+            <button
+              onClick={() => setReportingPost(null)}
+              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white rounded-full bg-zinc-900 border border-zinc-800 transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
+                  <Flag className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold text-white">Report Content</h3>
+              </div>
+              <p className="text-xs text-zinc-400">
+                Reporting post by{' '}
+                <span className="font-mono text-rose-400 font-bold">
+                  @{reportingPost.kinkster_profiles?.alias || 'anonymous'}
+                </span>
+                . Reports are 100% confidential.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmitReport} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-mono font-semibold text-zinc-300">
+                  Reason for report:
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { id: 'non_consensual', label: 'Non-consensual media / identity leak' },
+                    { id: 'underage', label: 'Underage or identity authenticity concern' },
+                    { id: 'harassment', label: 'Harassment, coercion or threat' },
+                    { id: 'spam', label: 'Commercial spam or solicitations' },
+                    { id: 'guidelines', label: 'Other sanctuary guideline breach' },
+                  ].map((r) => (
+                    <label
+                      key={r.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl border text-xs cursor-pointer transition-all ${
+                        reportReason === r.id
+                          ? 'bg-rose-500/10 border-rose-500/40 text-white font-medium'
+                          : 'bg-zinc-900/60 border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="reportReason"
+                        value={r.id}
+                        checked={reportReason === r.id}
+                        onChange={(e) => setReportReason(e.target.value)}
+                        className="accent-rose-500"
+                      />
+                      <span>{r.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono text-zinc-400">
+                  Additional details (optional):
+                </label>
+                <textarea
+                  rows={3}
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder="Help our moderation team understand what happened..."
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 transition-colors resize-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setReportingPost(null)}
+                  className="flex-1 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReport}
+                  className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-lg cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  {submittingReport ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <span>Submit & Hide Post</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function KinkstersPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black text-white pt-32 text-center text-xs font-mono text-white/40">Loading Kinkster Network...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-black text-white pt-32 text-center text-xs font-mono text-white/40">
+          Loading Kinkster Network...
+        </div>
+      }
+    >
       <KinkstersContent />
     </Suspense>
   );

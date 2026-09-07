@@ -362,17 +362,34 @@ function PartnerOnboardingContent() {
                 <span>Payment Confirmed</span>
               </div>
             ) : (
-              <button
-                type="button"
-                disabled={paying}
-                onClick={handlePaySetupFee}
-                className="w-full bg-accent-gold hover:bg-white text-black py-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                <CreditCard className="w-4 h-4" />
-                <span>
-                  {paying ? 'Connecting...' : setupFee > 0 ? `Pay ₹${setupFee.toLocaleString('en-IN')} via PayU` : 'Confirm Free Setup'}
-                </span>
-              </button>
+              <div className="space-y-2">
+                {searchParams?.get('payment') === 'failed' && (
+                  <p className="text-[11px] text-rose-400 font-mono text-center">
+                    Transaction incomplete. Click below to retry payment.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={paying}
+                  onClick={handlePaySetupFee}
+                  className={`w-full ${
+                    searchParams?.get('payment') === 'failed'
+                      ? 'bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 text-black'
+                      : 'bg-accent-gold hover:bg-white text-black'
+                  } py-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50`}
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>
+                    {paying
+                      ? 'Connecting...'
+                      : searchParams?.get('payment') === 'failed'
+                      ? `Retry ₹${setupFee.toLocaleString('en-IN')} via PayU`
+                      : setupFee > 0
+                      ? `Pay ₹${setupFee.toLocaleString('en-IN')} via PayU`
+                      : 'Confirm Free Setup'}
+                  </span>
+                </button>
+              </div>
             )}
           </div>
         </div>

@@ -72,17 +72,36 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (existingProfile) {
-      // Link directly to booking
-      await supabase
+      // Link directly to booking (update if pending row already exists, otherwise insert)
+      const { data: existingCoGuest } = await supabase
         .from('booking_guests')
-        .insert({
-          booking_id: bookingId,
-          guest_index: 1,
-          name: existingProfile.full_name,
-          phone: cleanPhone,
-          verification_status: 'verified',
-          guest_profile_id: existingProfile.id
-        });
+        .select('id')
+        .eq('booking_id', bookingId)
+        .eq('guest_index', 1)
+        .maybeSingle();
+
+      if (existingCoGuest) {
+        await supabase
+          .from('booking_guests')
+          .update({
+            name: existingProfile.full_name,
+            phone: cleanPhone,
+            verification_status: 'verified',
+            guest_profile_id: existingProfile.id
+          })
+          .eq('id', existingCoGuest.id);
+      } else {
+        await supabase
+          .from('booking_guests')
+          .insert({
+            booking_id: bookingId,
+            guest_index: 1,
+            name: existingProfile.full_name,
+            phone: cleanPhone,
+            verification_status: 'verified',
+            guest_profile_id: existingProfile.id
+          });
+      }
 
       return NextResponse.json({
         verified: true,
@@ -195,17 +214,36 @@ export async function POST(req: NextRequest) {
       console.error('Guest profile creation error:', profErr);
     }
 
-    // 4. Add to booking_guests
-    await supabase
+    // 4. Add or update booking_guests
+    const { data: existingGuestRecord } = await supabase
       .from('booking_guests')
-      .insert({
-        booking_id: bookingId,
-        guest_index: 1,
-        name: extractedName,
-        phone: cleanPhone,
-        verification_status: 'verified',
-        guest_profile_id: newProfile?.id || null
-      });
+      .select('id')
+      .eq('booking_id', bookingId)
+      .eq('guest_index', 1)
+      .maybeSingle();
+
+    if (existingGuestRecord) {
+      await supabase
+        .from('booking_guests')
+        .update({
+          name: extractedName,
+          phone: cleanPhone,
+          verification_status: 'verified',
+          guest_profile_id: newProfile?.id || null
+        })
+        .eq('id', existingGuestRecord.id);
+    } else {
+      await supabase
+        .from('booking_guests')
+        .insert({
+          booking_id: bookingId,
+          guest_index: 1,
+          name: extractedName,
+          phone: cleanPhone,
+          verification_status: 'verified',
+          guest_profile_id: newProfile?.id || null
+        });
+    }
 
     return NextResponse.json({
       verified: true,

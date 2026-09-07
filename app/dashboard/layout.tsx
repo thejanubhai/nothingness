@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CalendarDays, Settings, LogOut, Building2, Flame, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Settings, LogOut, Building2, Flame, ShieldCheck, Ticket } from 'lucide-react';
 import { signOut } from '@/app/actions/auth';
 import { motion } from 'framer-motion';
 
@@ -14,8 +14,8 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   const navigation = [
-    { name: 'Profile & Level 1', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'My Bookings', href: '/dashboard/bookings', icon: CalendarDays },
+    { name: 'Sovereign Pass', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'My Stays & Bookings', href: '/dashboard/bookings', icon: CalendarDays },
     { name: 'Passkeys & Settings', href: '/dashboard/settings', icon: Settings },
   ];
 
@@ -89,6 +89,13 @@ export default function DashboardLayout({
               >
                 <Building2 className="w-4 h-4 text-amber-400" />
                 <span>Partner Host</span>
+              </Link>
+              <Link
+                href="/sanctuary-pass"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-amber-300 hover:bg-amber-500/10 transition-colors text-xs font-medium"
+              >
+                <Ticket className="w-4 h-4 text-amber-400" />
+                <span>Sanctuary Pass</span>
               </Link>
               <Link
                 href="/kinksters"

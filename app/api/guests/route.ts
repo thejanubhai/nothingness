@@ -12,17 +12,27 @@ export async function GET(req: Request) {
 
     const supabase = await createClient();
     
-    const { data: guests, error } = await supabase
-      .from('booking_guests')
-      .select('*')
-      .eq('booking_id', bookingId)
-      .order('guest_index', { ascending: true });
+    const [guestsRes, bookingRes] = await Promise.all([
+      supabase
+        .from('booking_guests')
+        .select('*')
+        .eq('booking_id', bookingId)
+        .order('guest_index', { ascending: true }),
+      supabase
+        .from('bookings')
+        .select('id, status, payment_status, total_price, check_in, check_out, guest_name, spaces(title)')
+        .eq('id', bookingId)
+        .maybeSingle()
+    ]);
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (guestsRes.error) {
+      return NextResponse.json({ error: guestsRes.error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ guests }, { status: 200 });
+    return NextResponse.json({
+      guests: guestsRes.data,
+      booking: bookingRes.data,
+    }, { status: 200 });
 
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

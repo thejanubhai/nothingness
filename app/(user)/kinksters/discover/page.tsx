@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import KinksterInboxDrawer from '@/components/kinkster/KinksterInboxDrawer';
 import HealthBadgeModal, { HealthBadge } from '@/components/kinkster/HealthBadgeModal';
 import HealthReportUploadModal from '@/components/kinkster/HealthReportUploadModal';
+import DesireResonanceModal from '@/components/kinkster/DesireResonanceModal';
+import EphemeralChatModal from '@/components/kinkster/EphemeralChatModal';
 
 interface MatchedKinkster {
   id: string;
@@ -39,6 +41,8 @@ export default function KinksterDiscoverPage() {
   const [selectedChatAlias, setSelectedChatAlias] = useState<string | null>(null);
   const [selectedHealthBadge, setSelectedHealthBadge] = useState<HealthBadge | null>(null);
   const [showHealthUploadModal, setShowHealthUploadModal] = useState<boolean>(false);
+  const [resonanceTarget, setResonanceTarget] = useState<{ alias: string; avatar?: string } | null>(null);
+  const [activeChamber, setActiveChamber] = useState<{ token: string; alias: string; avatar?: string } | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -110,7 +114,7 @@ export default function KinksterDiscoverPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pt-24 pb-20 px-4 sm:px-6 max-w-6xl mx-auto">
+    <div className="min-h-screen bg-black text-white pt-28 sm:pt-32 pb-24 px-4 sm:px-6 max-w-6xl mx-auto">
       
       {/* Page Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-zinc-800 pb-6 mb-8">
@@ -255,14 +259,23 @@ export default function KinksterDiscoverPage() {
                   </div>
                 </div>
 
-                {/* Spice Up 🔥 Action Button */}
-                <button
-                  onClick={() => handleSendSpice(member.alias)}
-                  className="w-full py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-lg"
-                >
-                  <Flame className="w-4 h-4" />
-                  Spice Up 🔥
-                </button>
+                {/* Action Buttons: Desire Resonance & Spice Up */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setResonanceTarget({ alias: member.alias, avatar: member.avatar_url })}
+                    className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 hover:from-amber-400 hover:to-purple-500 text-black font-extrabold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-lg active:scale-95 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 fill-black" />
+                    Resonate
+                  </button>
+                  <button
+                    onClick={() => handleSendSpice(member.alias)}
+                    className="px-3.5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                    title="Spice Up 🔥"
+                  >
+                    <Flame className="w-3.5 h-3.5 text-rose-500" />
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -344,6 +357,34 @@ export default function KinksterDiscoverPage() {
         onClose={() => setSelectedChatAlias(null)}
         targetAlias={selectedChatAlias || ''}
       />
+
+      {/* Desire Resonance Blind Pairing Modal */}
+      {resonanceTarget && (
+        <DesireResonanceModal
+          isOpen={!!resonanceTarget}
+          onClose={() => setResonanceTarget(null)}
+          targetAlias={resonanceTarget.alias}
+          targetAvatar={resonanceTarget.avatar}
+          onMatched={(chamberToken, targetAlias) => {
+            setActiveChamber({ token: chamberToken, alias: targetAlias, avatar: resonanceTarget.avatar });
+            setResonanceTarget(null);
+          }}
+          onResonated={() => {
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Ephemeral Confidential Chamber Modal */}
+      {activeChamber && (
+        <EphemeralChatModal
+          isOpen={!!activeChamber}
+          onClose={() => setActiveChamber(null)}
+          chamberToken={activeChamber.token}
+          targetAlias={activeChamber.alias}
+          targetAvatar={activeChamber.avatar}
+        />
+      )}
     </div>
   );
 }

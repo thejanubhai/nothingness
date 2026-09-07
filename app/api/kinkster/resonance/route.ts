@@ -123,6 +123,18 @@ export async function POST(req: NextRequest) {
           matched_at: now,
         })
         .eq('id', reverseMatch.id);
+
+      // Sync into kinkster_spice_requests as accepted so both chat modes are open
+      try {
+        await adminClient
+          .from('kinkster_spice_requests')
+          .upsert({
+            sender_id: user.id,
+            receiver_id: targetProfile.id,
+            status: 'accepted',
+            updated_at: now
+          }, { onConflict: 'sender_id,receiver_id' });
+      } catch (_) {}
     }
 
     // 3. Upsert user's outbound resonance record

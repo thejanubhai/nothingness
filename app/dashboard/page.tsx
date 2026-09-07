@@ -34,19 +34,24 @@ export default async function DashboardOverview() {
     ? user.email.split('@')[0].replace(/[^0-9+]/g, '')
     : null;
 
-  // 1. Fetch upcoming bookings
+  // 1. Fetch all user bookings (both upcoming and past) with spaces and booking_guests
   const today = new Date().toISOString().split('T')[0];
-  const { data: upcomingBookings } = await supabase
+  const { data: allBookings } = await supabase
     .from('bookings')
     .select(`
       *,
-      spaces ( title, city, featured_image )
+      spaces ( id, title, city, area, featured_image ),
+      booking_guests ( * )
     `)
     .eq('user_id', user.id)
     .neq('status', 'cancelled')
-    .gte('check_in', today)
-    .order('check_in', { ascending: true })
-    .limit(3);
+    .order('check_in', { ascending: false });
+
+  const bookingsList = allBookings || [];
+  const upcomingBookings = bookingsList
+    .filter((b) => b.check_in >= today)
+    .sort((a, b) => (a.check_in > b.check_in ? 1 : -1));
+  const pastBookings = bookingsList.filter((b) => b.check_in < today);
 
   // 2. Fetch Identity Profile from guest_profiles by phone or user_id
   let profile = null;
@@ -89,6 +94,22 @@ export default async function DashboardOverview() {
     .limit(1)
     .maybeSingle();
 
+  // 5. Compute Smart Profile Sovereign Metrics
+  const totalStays = bookingsList.filter((b) => b.status === 'confirmed').length;
+  const isGovtIdVerified = Boolean(profile?.is_verified);
+  const isFaceIdVetted = Boolean(profile?.face_id_vetted || kinksterProfile?.face_id_vetted);
+  const hasStayHistory = totalStays > 0 || Boolean(kinksterProfile?.stay_verified);
+
+  // Sovereign Tier Calculation:
+  // Tier III = Fully Sovereign (Govt ID + 3D Face ID + Stay History)
+  // Tier II  = Compliant (Govt ID Verified)
+  // Tier I   = Onboarding Member
+  const sovereignTier = (isGovtIdVerified && isFaceIdVetted && hasStayHistory)
+    ? 'Tier III: Sovereign Luminary'
+    : isGovtIdVerified
+    ? 'Tier II: Statutory Compliant'
+    : 'Tier I: Member in Onboarding';
+
   return (
     <UserDashboardClient
       user={{
@@ -100,7 +121,10 @@ export default async function DashboardOverview() {
       profile={profile}
       kinksterProfile={kinksterProfile}
       sanctuaryPass={sanctuaryPass}
-      upcomingBookings={upcomingBookings || []}
+      upcomingBookings={upcomingBookings}
+      pastBookings={pastBookings}
+      totalStays={totalStays}
+      sovereignTier={sovereignTier}
     />
   );
 }

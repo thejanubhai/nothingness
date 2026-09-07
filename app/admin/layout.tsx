@@ -20,7 +20,8 @@ import {
   FileText,
   Ticket,
   ScrollText,
-  PenTool
+  PenTool,
+  Flag
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 
@@ -67,6 +68,7 @@ export default async function AdminLayout({
         { name: 'Gatherings & Munches', href: '/admin/events', icon: Sparkles, badge: 'Gatekeeper' },
         { name: 'Sanctuary Pass', href: '/admin/sanctuary-pass', icon: Ticket },
         { name: 'Guest CRM & Police', href: '/admin/guests', icon: Users, badge: 'ID Vetting' },
+        { name: 'Safety & Moderation', href: '/admin/moderation', icon: Flag, badge: 'Reports' },
       ],
     },
     {

@@ -129,6 +129,9 @@ function SanctuaryPassContent() {
   useEffect(() => {
     const passPurchased = searchParams?.get('pass_purchased');
     const ticketConfirmed = searchParams?.get('ticket_confirmed');
+    const paymentStatus = searchParams?.get('payment');
+    const errorMsg = searchParams?.get('error');
+    const targetEventId = searchParams?.get('eventId');
 
     if (passPurchased === 'true') {
       toast.success('Sanctuary Pass Activated!', {
@@ -138,6 +141,17 @@ function SanctuaryPassContent() {
       toast.success('Gathering Pass Confirmed!', {
         description: 'Your dynamic entry QR code and coordinates are now active.',
       });
+    } else if (paymentStatus === 'failed') {
+      const decodedError = errorMsg ? decodeURIComponent(errorMsg) : 'Transaction was declined or cancelled at the gateway.';
+      if (targetEventId) {
+        toast.error('Gathering Ticket Payment Incomplete', {
+          description: decodedError,
+        });
+      } else {
+        toast.error('Sanctuary Pass Payment Incomplete', {
+          description: decodedError,
+        });
+      }
     }
 
     fetchPortalData();
@@ -240,9 +254,39 @@ function SanctuaryPassContent() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pt-24 pb-24 px-4 sm:px-6 max-w-6xl mx-auto">
+    <div className="min-h-screen bg-black text-white pt-28 sm:pt-32 pb-24 px-4 sm:px-6 max-w-6xl mx-auto">
       {/* Lockscreen Push Subscription Banner */}
       {isLoggedIn && <PushNotificationPrompt />}
+
+      {/* Payment Failure Banner */}
+      {searchParams?.get('payment') === 'failed' && (
+        <div className="mb-8 p-5 bg-rose-950/30 border border-rose-500/40 rounded-3xl backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white tracking-wide">
+                {searchParams.get('eventId') ? 'Gathering Pass Payment Incomplete' : 'Sanctuary Pass Acquisition Incomplete'}
+              </p>
+              <p className="text-xs text-rose-200/80 mt-0.5">
+                {searchParams.get('error') ? decodeURIComponent(searchParams.get('error')!) : 'Transaction was declined or cancelled at the gateway. You can retry at any time.'}
+              </p>
+            </div>
+          </div>
+          {!hasSanctuaryPass && !searchParams.get('eventId') && (
+            <button
+              onClick={() => {
+                if (!isIdVerified) setShowIdModal(true);
+                else setShowBuyPassModal(true);
+              }}
+              className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 text-black font-bold text-xs rounded-xl shadow-md uppercase tracking-wider shrink-0 cursor-pointer hover:from-amber-400 hover:to-rose-400 transition-all"
+            >
+              Retry Pass Checkout →
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-zinc-800/80 pb-6 mb-8">
@@ -697,10 +741,22 @@ function SanctuaryPassContent() {
                     ) : app.status === 'approved_payment_pending' ? (
                       <button
                         onClick={() => handlePayTicket(evt, app)}
-                        className="w-full py-3 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-xl flex items-center justify-center gap-2 cursor-pointer transition-all animate-pulse"
+                        className={`w-full py-3 ${
+                          searchParams?.get('payment') === 'failed' && searchParams?.get('eventId') === evt.id
+                            ? 'bg-gradient-to-r from-rose-600 via-amber-600 to-rose-600 hover:from-rose-500 hover:to-amber-500 text-white shadow-rose-950/50'
+                            : 'bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white'
+                        } font-bold text-xs rounded-xl shadow-xl flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                          searchParams?.get('payment') === 'failed' && searchParams?.get('eventId') === evt.id
+                            ? 'ring-2 ring-rose-500/80 animate-none'
+                            : 'animate-pulse'
+                        }`}
                       >
                         <Flame className="w-4 h-4" />
-                        <span>Pass Approved • Complete Checkout</span>
+                        <span>
+                          {searchParams?.get('payment') === 'failed' && searchParams?.get('eventId') === evt.id
+                            ? 'Payment Declined • Retry Ticket Checkout'
+                            : 'Pass Approved • Complete Checkout'}
+                        </span>
                       </button>
                     ) : app.status === 'waitlisted' ? (
                       <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/30 flex items-center justify-between text-xs">

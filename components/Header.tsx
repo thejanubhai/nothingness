@@ -132,14 +132,15 @@ export default function Header() {
   return (
     <>
       <header
-        className={`fixed top-0 w-full z-50 transition-all duration-500 pt-[env(safe-area-inset-top)] ${
-          isScrolled
-            ? "bg-black/80 backdrop-blur-2xl border-b border-white/5 py-2.5"
+        className={`fixed top-0 w-full z-50 transition-all duration-300 pt-[env(safe-area-inset-top)] ${
+          isScrolled || pathname !== '/'
+            ? "bg-black/85 backdrop-blur-2xl border-b border-white/[0.07] py-2.5 shadow-lg shadow-black/40"
             : "bg-transparent py-3"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex justify-between items-center">
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Left: Brand Crest Logo with proper breathing room */}
+          <div className="flex items-center gap-3">
             <Link
               href="/"
               id="header-crest-logo"
@@ -153,29 +154,12 @@ export default function Header() {
               <Image 
                 src="/images/logo.png" 
                 alt="Nothingness Logo" 
-                width={80} 
+                width={82} 
                 height={32} 
                 className="object-contain drop-shadow-[0_0_15px_rgba(220,38,38,0.5)] pointer-events-none" 
                 priority
               />
             </Link>
-
-            {/* Contextual App Pill on mobile for native app identity */}
-            {pathname?.startsWith('/kinksters') && (
-              <span className="sm:hidden px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-mono font-bold tracking-wider">
-                Lifestyle 🔥
-              </span>
-            )}
-            {pathname?.startsWith('/sanctuary-pass') && (
-              <span className="sm:hidden px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-mono font-bold tracking-wider">
-                Events ✨
-              </span>
-            )}
-            {pathname?.startsWith('/dashboard') && (
-              <span className="sm:hidden px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold tracking-wider">
-                Portal 🗝️
-              </span>
-            )}
           </div>
 
           {/* Desktop Nav */}
@@ -200,6 +184,10 @@ export default function Header() {
               Partner
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
             </Link>
+            <Link href="/onboarding" className="text-[12px] font-medium tracking-[0.2em] uppercase text-accent-gold/90 hover:text-white transition-colors duration-300 relative group py-2 flex items-center gap-1">
+              Check-In
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
+            </Link>
             
             {/* Desktop Ecosystem Switcher */}
             <AppSwitcher user={user} />
@@ -211,7 +199,7 @@ export default function Header() {
                   className="text-[12px] font-bold tracking-[0.15em] uppercase text-black bg-accent-gold hover:bg-white transition-all duration-300 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(212,175,55,0.3)] flex items-center gap-2"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>{isAdmin ? "Command Center" : "Dashboard"}</span>
+                  <span>{isAdmin ? "Command Center" : "Member Portal"}</span>
                 </Link>
               ) : (
                 <Link
@@ -225,31 +213,41 @@ export default function Header() {
             </Magnetic>
           </nav>
 
-          {/* Mobile Right Controls: Native App Switcher + Quick Portal + Menu Toggle */}
+          {/* Mobile Right Controls: Ultra-clean, native 36px circular icon cluster */}
           <div className="flex md:hidden items-center gap-2">
+            {/* App Switcher (compact circular icon button) */}
             <AppSwitcher user={user} />
 
+            {/* User Profile Avatar / Portal Button */}
             {user ? (
               <Link
                 href={isAdmin ? "/admin" : "/dashboard"}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-gold/15 border border-accent-gold/30 text-accent-gold text-[11px] font-mono font-bold touch-manipulation"
+                title={isAdmin ? "Command Center" : "Member Portal"}
+                aria-label={isAdmin ? "Admin Center" : "Member Portal"}
+                className="relative w-9 h-9 flex items-center justify-center rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-accent-gold/40 text-accent-gold active:scale-95 transition-all touch-manipulation shadow-sm group"
               >
-                <User className="w-3.5 h-3.5" />
-                <span>{isAdmin ? "Admin" : "Portal"}</span>
+                {isAdmin ? (
+                  <ShieldCheck className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <User className="w-4 h-4 text-accent-gold group-hover:scale-110 transition-transform" />
+                )}
+                {/* Active live presence status dot */}
+                <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-black shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
               </Link>
             ) : (
               <Link
                 href="/auth"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold text-[11px] uppercase tracking-wider shadow-md active:scale-95 transition-all touch-manipulation"
+                className="h-9 px-3 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-accent-gold text-black font-bold text-[11px] uppercase font-mono tracking-wider shadow-sm active:scale-95 transition-all touch-manipulation"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In</span>
               </Link>
             )}
 
+            {/* Menu Toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="w-9 h-9 flex items-center justify-center text-white rounded-full bg-white/5 border border-white/10 active:scale-95 transition-all cursor-pointer touch-manipulation"
+              className="w-9 h-9 flex items-center justify-center text-white rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 active:scale-95 transition-all cursor-pointer touch-manipulation"
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X className="w-4 h-4 text-accent-gold" /> : <Menu className="w-4 h-4" />}
@@ -333,7 +331,7 @@ export default function Header() {
                       className="py-2.5 px-3 bg-accent-gold hover:bg-white text-black font-bold text-xs uppercase tracking-wider rounded-xl text-center flex items-center justify-center gap-1.5 shadow-md transition-all"
                     >
                       <LayoutDashboard className="w-3.5 h-3.5" />
-                      <span>{isAdmin ? "Admin Center" : "Dashboard"}</span>
+                      <span>{isAdmin ? "Admin Center" : "Member Portal"}</span>
                     </Link>
 
                     <form action={signOut} className="w-full">
@@ -376,6 +374,26 @@ export default function Header() {
                 <span className="text-[10px] uppercase font-mono tracking-widest text-zinc-400 px-1">Experiences &amp; Stays</span>
                 
                 <div className="grid grid-cols-1 gap-2">
+                  <Link
+                    href="/onboarding"
+                    onClick={() => setMobileOpen(false)}
+                    className="p-3 bg-gradient-to-r from-amber-500/15 via-zinc-900 to-zinc-900 border border-amber-500/30 rounded-xl flex items-center justify-between transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-sm font-bold text-white">Guest Check-In &amp; Onboarding</h4>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-amber-500/20 text-amber-300">Fast Pass</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 font-mono">Airbnb / MMT / Agoda / Direct</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-amber-500 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+
                   <Link
                     href="/spaces"
                     onClick={() => setMobileOpen(false)}

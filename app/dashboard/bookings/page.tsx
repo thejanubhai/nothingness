@@ -31,14 +31,41 @@ export default async function BookingsPage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
+  const getStaySource = (booking: any) => {
+    const note = (booking.special_requests || '').toUpperCase();
+    const orderId = (booking.payment_order_id || '').toUpperCase();
+    if (note.includes('AIRBNB') || orderId.startsWith('HM') || orderId.startsWith('AIRBNB')) {
+      return { badge: 'AIRBNB VERIFIED', tagColor: 'bg-rose-500/15 border-rose-500/30 text-rose-400' };
+    }
+    if (note.includes('MAKEMYTRIP') || note.includes('MMT') || orderId.includes('MMT')) {
+      return { badge: 'MMT LINKED', tagColor: 'bg-red-500/15 border-red-500/30 text-red-400' };
+    }
+    if (note.includes('AGODA') || orderId.includes('AGODA')) {
+      return { badge: 'AGODA LINKED', tagColor: 'bg-blue-500/15 border-blue-500/30 text-blue-400' };
+    }
+    if (note.includes('BOOKING.COM') || orderId.includes('BOOKING')) {
+      return { badge: 'BOOKING.COM', tagColor: 'bg-sky-500/15 border-sky-500/30 text-sky-400' };
+    }
+    return { badge: 'DIRECT SANCTUM', tagColor: 'bg-accent-gold/15 border-accent-gold/30 text-accent-gold' };
+  };
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-serif text-3xl md:text-4xl text-white mb-2 flex items-center gap-3">
-          <BookOpen className="w-8 h-8 text-accent-gold" />
-          Booking History
-        </h1>
-        <p className="text-white/50 text-sm">Review your past stays and manage upcoming reservations.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+        <div>
+          <h1 className="font-serif text-3xl md:text-4xl text-white mb-1 flex items-center gap-3">
+            <BookOpen className="w-8 h-8 text-accent-gold" />
+            My Stays &amp; Reservations
+          </h1>
+          <p className="text-white/50 text-xs sm:text-sm">Review your direct stays and reservations linked from Airbnb, MakeMyTrip, Agoda, and Booking.com.</p>
+        </div>
+
+        <Link
+          href="/onboarding"
+          className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-accent-gold hover:from-amber-400 hover:to-white text-black font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shrink-0 flex items-center gap-2"
+        >
+          <span>+ Link Stay via Screenshot</span>
+        </Link>
       </div>
 
       {bookings && bookings.length > 0 ? (
@@ -48,6 +75,7 @@ export default async function BookingsPage() {
             const isCancelled = booking.status === 'cancelled';
             const isConfirmed = booking.status === 'confirmed';
             const isPending = booking.status === 'pending';
+            const source = getStaySource(booking);
 
             return (
               <div 
@@ -75,7 +103,15 @@ export default async function BookingsPage() {
                 <div className="flex-grow w-full space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-serif text-2xl lg:text-3xl text-white font-bold mb-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider border ${source.tagColor}`}>
+                          {source.badge}
+                        </span>
+                        <span className="text-[10px] font-mono text-zinc-500">
+                          Ref: {booking.payment_order_id || booking.id.slice(0, 8).toUpperCase()}
+                        </span>
+                      </div>
+                      <h3 className="font-serif text-2xl lg:text-3xl text-white font-bold mb-0.5">
                         {space?.title || 'Sanctuary Stay'}
                       </h3>
                       <p className="text-zinc-400 text-xs uppercase font-mono tracking-widest">

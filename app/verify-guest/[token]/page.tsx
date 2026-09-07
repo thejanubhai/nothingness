@@ -43,8 +43,20 @@ export default function GuestPrivateVerification({ params }: { params: Promise<{
       }
 
       // Check if redirected after payment
-      const orderId = searchParams.get('order_id');
-      if (orderId && data.guest.payment_status !== 'paid') {
+      const orderId = searchParams?.get('order_id');
+      const paymentStatus = searchParams?.get('payment');
+      const errorMsg = searchParams?.get('error');
+
+      if (paymentStatus === 'success') {
+        toast.success('Your stay fee payment has been confirmed!');
+        setGuestData((prev: any) => ({ ...prev, payment_status: 'paid' }));
+      } else if (paymentStatus === 'failed') {
+        const decodedError = errorMsg ? decodeURIComponent(errorMsg) : 'Your transaction was declined or cancelled.';
+        toast.error('Stay Fee Payment Incomplete', {
+          description: decodedError,
+        });
+        setGuestData((prev: any) => ({ ...prev, payment_status: 'failed' }));
+      } else if (orderId && data.guest.payment_status !== 'paid') {
         verifyPayment(orderId);
       }
     } catch (err: any) {
@@ -134,6 +146,7 @@ export default function GuestPrivateVerification({ params }: { params: Promise<{
 
   const space = Array.isArray(guestData.bookings?.spaces) ? guestData.bookings?.spaces[0] : guestData.bookings?.spaces;
   const isPaymentPending = guestData.payment_status === 'pending';
+  const isPaymentFailed = guestData.payment_status === 'failed';
   const isPaymentPaid = guestData.payment_status === 'paid';
   const isPaymentCovered = guestData.payment_status === 'not_required';
 
@@ -154,19 +167,18 @@ export default function GuestPrivateVerification({ params }: { params: Promise<{
         </p>
       </div>
 
-      {/* Stay Details Card */}
-      {space && (
-        <div className="w-full bg-white/[0.03] border border-white/10 rounded-2xl p-5 mb-6 text-left flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h2 className="text-sm font-semibold text-white">{space.title}</h2>
-            <p className="text-xs text-white/50 flex items-center gap-1.5 font-mono">
-              <MapPin className="w-3.5 h-3.5 text-accent-gold/70" />
-              {space.area}, {space.city}
-            </p>
+      {/* Reservation Summary Card */}
+      {guestData.bookings && (
+        <div className="w-full bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 mb-6 text-left relative overflow-hidden">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs uppercase tracking-[0.2em] text-white/40 font-mono">Stay Reservation</span>
+            <span className="text-xs font-mono text-accent-gold/80 font-bold">
+              Primary: {guestData.bookings.guest_name || 'Host Booker'}
+            </span>
           </div>
-          {guestData.bookings?.check_in && (
-            <div className="text-left sm:text-right font-mono text-xs text-white/70 bg-white/5 px-3 py-2 rounded-lg border border-white/5">
-              <span className="text-white/40 block text-[9px] uppercase">Stay Dates</span>
+          <h2 className="text-xl font-serif text-white mb-1">{space?.title || 'Sanctuary Suite'}</h2>
+          {guestData.bookings.check_in && guestData.bookings.check_out && (
+            <div className="text-xs text-white/50 font-mono mt-2">
               {guestData.bookings.check_in} → {guestData.bookings.check_out}
             </div>
           )}
@@ -190,26 +202,41 @@ export default function GuestPrivateVerification({ params }: { params: Promise<{
               Covered by Primary Booker
             </span>
           )}
-          {isPaymentPending && (
+          {isPaymentFailed && (
+            <span className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[10px] uppercase font-mono rounded-full">
+              Payment Incomplete (₹{guestData.payment_amount})
+            </span>
+          )}
+          {isPaymentPending && !isPaymentFailed && (
             <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[10px] uppercase font-mono rounded-full">
               Pending (₹{guestData.payment_amount})
             </span>
           )}
         </div>
 
-        {isPaymentPending && (
+        {(isPaymentPending || isPaymentFailed) && (
           <div className="space-y-4">
             <p className="text-xs text-white/60 leading-relaxed">
-              The primary booker opted for individual guest contribution. Your additional guest stay tariff is{' '}
-              <strong className="text-accent-gold font-mono font-bold">₹{guestData.payment_amount}</strong> (including all taxes &amp; luxury sanitization fees).
+              {isPaymentFailed
+                ? 'Your previous transaction was declined or interrupted. Please retry your stay fee contribution below.'
+                : 'The primary booker opted for individual guest contribution. Your additional guest stay tariff is '}
+              <strong className="text-accent-gold font-mono font-bold"> ₹{guestData.payment_amount}</strong> (including taxes &amp; luxury sanitization fees).
             </p>
             <button
               onClick={handleSelfPay}
               disabled={paying}
-              className="w-full py-3.5 bg-accent-gold hover:bg-white text-black font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+              className={`w-full py-3.5 ${
+                isPaymentFailed
+                  ? 'bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 text-black'
+                  : 'bg-accent-gold hover:bg-white text-black'
+              } font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer`}
             >
               <Lock className="w-4 h-4" />
-              {paying ? 'Connecting to Payment...' : `Pay ₹${guestData.payment_amount} Now`}
+              {paying
+                ? 'Connecting to Payment...'
+                : isPaymentFailed
+                ? `Retry Payment (₹${guestData.payment_amount})`
+                : `Pay ₹${guestData.payment_amount} Now`}
             </button>
           </div>
         )}

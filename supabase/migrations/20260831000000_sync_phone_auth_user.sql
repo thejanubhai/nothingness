@@ -37,13 +37,14 @@ BEGIN
     SET 
       email = COALESCE(v_user_record.email, v_synthetic_email),
       email_confirmed_at = COALESCE(v_user_record.email_confirmed_at, NOW()),
+      confirmed_at = COALESCE(v_user_record.confirmed_at, NOW()),
       phone = v_clean_digits,
       phone_confirmed_at = COALESCE(phone_confirmed_at, NOW()),
       encrypted_password = v_encrypted_pw,
       updated_at = NOW()
     WHERE id = v_user_id;
 
-    -- Ensure identity exists
+    -- Ensure identity exists and conforms to GoTrue requirements (provider_id = user_id::text)
     IF NOT EXISTS (SELECT 1 FROM auth.identities WHERE user_id = v_user_id AND provider = 'email') THEN
       INSERT INTO auth.identities (
         id,
@@ -56,7 +57,7 @@ BEGIN
         updated_at
       ) VALUES (
         gen_random_uuid(),
-        COALESCE(v_user_record.email, v_synthetic_email),
+        v_user_id::text,
         v_user_id,
         jsonb_build_object('sub', v_user_id::text, 'email', COALESCE(v_user_record.email, v_synthetic_email), 'email_verified', true),
         'email',
@@ -64,6 +65,14 @@ BEGIN
         NOW(),
         NOW()
       );
+    ELSE
+      -- Repair existing identity record if provider_id was corrupted or mismatched
+      UPDATE auth.identities
+      SET 
+        provider_id = v_user_id::text,
+        identity_data = jsonb_build_object('sub', v_user_id::text, 'email', COALESCE(v_user_record.email, v_synthetic_email), 'email_verified', true),
+        updated_at = NOW()
+      WHERE user_id = v_user_id AND provider = 'email' AND provider_id != v_user_id::text;
     END IF;
   ELSE
     v_user_id := gen_random_uuid();
@@ -74,6 +83,7 @@ BEGIN
       role,
       email,
       email_confirmed_at,
+      confirmed_at,
       phone,
       phone_confirmed_at,
       encrypted_password,
@@ -90,6 +100,7 @@ BEGIN
       'authenticated',
       'authenticated',
       v_synthetic_email,
+      NOW(),
       NOW(),
       v_clean_digits,
       NOW(),
@@ -114,7 +125,7 @@ BEGIN
       updated_at
     ) VALUES (
       gen_random_uuid(),
-      v_synthetic_email,
+      v_user_id::text,
       v_user_id,
       jsonb_build_object('sub', v_user_id::text, 'email', v_synthetic_email, 'email_verified', true, 'phone', v_clean_digits),
       'email',

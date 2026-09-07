@@ -81,23 +81,22 @@ export default function PullToRefresh({ onRefresh, children }: PullToRefreshProp
         }}
         className="w-full flex items-center justify-center overflow-hidden transition-[height,opacity] duration-150 ease-out pointer-events-none"
       >
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-950 border border-amber-500/30 text-amber-400 text-xs font-mono shadow-lg">
+        <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-zinc-950/90 backdrop-blur-md border border-amber-500/30 text-amber-400 text-xs font-mono shadow-xl">
+          <img
+            src="/images/logo.png"
+            alt="Nothingness Crest"
+            className={`w-4 h-4 object-contain ${isRefreshing ? 'animate-spin' : ''}`}
+            style={{
+              transform: isRefreshing ? undefined : `rotate(${pullDistance * 4.5}deg)`,
+              transition: isRefreshing ? undefined : 'transform 0.05s linear',
+            }}
+          />
           {isRefreshing ? (
-            <>
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
-              <span className="text-[11px]">Updating Vault Feed...</span>
-            </>
+            <span className="text-[11px] text-amber-300 font-medium tracking-wide">Updating Vault Feed...</span>
           ) : (
-            <>
-              <Sparkles
-                className={`w-3.5 h-3.5 transition-transform ${
-                  pullDistance >= THRESHOLD ? 'scale-125 text-amber-300' : 'text-zinc-400'
-                }`}
-              />
-              <span className="text-[11px]">
-                {pullDistance >= THRESHOLD ? 'Release to Refresh' : 'Pull Down'}
-              </span>
-            </>
+            <span className="text-[11px] tracking-wide">
+              {pullDistance >= THRESHOLD ? 'Release to Refresh' : 'Pull Down to Sync'}
+            </span>
           )}
         </div>
       </div>

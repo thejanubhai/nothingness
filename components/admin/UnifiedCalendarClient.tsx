@@ -554,21 +554,22 @@ export default function UnifiedCalendarClient({
   const handleUpdateBookingStatus = async (bookingId: string, newStatus: string) => {
     setActionLoadingId(bookingId);
     try {
+      const isConfirming = newStatus === 'confirmed';
       const res = await fetch(`/api/admin/bookings/${bookingId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           status: newStatus,
-          payment_status: newStatus === 'confirmed' ? 'completed' : undefined
+          payment_status: isConfirming ? 'paid' : undefined
         }),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(`Booking marked as ${newStatus}!`);
-        setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus, ...(newStatus === 'confirmed' ? { payment_status: 'completed' } : {}) } : b));
+        setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus, ...(isConfirming ? { payment_status: 'paid', payment_method: 'Cash/Offline' } : {}) } : b));
         if (selectedBooking && selectedBooking.id === bookingId) {
-          setSelectedBooking(prev => prev ? { ...prev, status: newStatus, ...(newStatus === 'confirmed' ? { payment_status: 'completed' } : {}) } : null);
+          setSelectedBooking(prev => prev ? { ...prev, status: newStatus, ...(isConfirming ? { payment_status: 'paid', payment_method: 'Cash/Offline' } : {}) } : null);
         }
       } else {
         toast.error(data.error || 'Failed to update status');
@@ -578,6 +579,13 @@ export default function UnifiedCalendarClient({
     } finally {
       setActionLoadingId(null);
     }
+  };
+
+  const copyPaymentRetryLink = (b: Booking) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nothingness.asia';
+    const retryUrl = `${origin}/booking/${b.id}/verify`;
+    navigator.clipboard.writeText(retryUrl);
+    toast.success('Payment & Check-in link copied to clipboard!');
   };
 
   // Permanently Delete Booking
@@ -1358,13 +1366,14 @@ export default function UnifiedCalendarClient({
                 </span>
 
                 <span className={`px-2.5 py-0.5 rounded-md text-[10px] uppercase font-mono font-bold border ${
-                  selectedBooking.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                  selectedBooking.payment_status === 'paid' || selectedBooking.payment_status === 'completed' || selectedBooking.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                  selectedBooking.payment_status === 'failed' ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' :
                   selectedBooking.status === 'checked_in' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
                   selectedBooking.status === 'cancelled' ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' :
                   isBookingAbandoned(selectedBooking) ? 'bg-zinc-900 text-zinc-400 border-zinc-700' :
                   'bg-amber-500/10 text-amber-400 border-amber-500/30'
                 }`}>
-                  {isBookingAbandoned(selectedBooking) ? 'Abandoned (Unpaid)' : selectedBooking.status}
+                  {selectedBooking.payment_status === 'failed' ? 'Payment Failed' : isBookingAbandoned(selectedBooking) ? 'Abandoned (Unpaid)' : selectedBooking.status}
                 </span>
 
                 {isBookingIdVerified(selectedBooking) ? (
@@ -1415,9 +1424,17 @@ export default function UnifiedCalendarClient({
               <div className="flex justify-between">
                 <span className="text-zinc-500">Payment Status:</span>
                 <span className={`font-bold uppercase ${
-                  selectedBooking.payment_status === 'completed' || selectedBooking.payment_status === 'paid' ? 'text-emerald-400' : 'text-amber-400'
+                  selectedBooking.payment_status === 'completed' || selectedBooking.payment_status === 'paid'
+                    ? 'text-emerald-400'
+                    : selectedBooking.payment_status === 'failed'
+                    ? 'text-rose-400'
+                    : 'text-amber-400'
                 }`}>
-                  {selectedBooking.payment_status || 'Pending'} ({selectedBooking.payment_method || 'UPI'})
+                  {selectedBooking.payment_status === 'paid' || selectedBooking.payment_status === 'completed'
+                    ? 'Paid'
+                    : selectedBooking.payment_status === 'failed'
+                    ? 'Payment Failed'
+                    : 'Pending'} ({selectedBooking.payment_method || 'PayU'})
                 </span>
               </div>
               <div className="flex justify-between">
@@ -1520,6 +1537,15 @@ export default function UnifiedCalendarClient({
                   className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-bold font-mono uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <MessageSquare className="w-4 h-4" /> Direct WhatsApp Chat
+                </button>
+              )}
+
+              {(selectedBooking.payment_status === 'pending' || selectedBooking.payment_status === 'failed' || selectedBooking.status === 'pending') && (
+                <button
+                  onClick={() => copyPaymentRetryLink(selectedBooking)}
+                  className="w-full py-2.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 rounded-xl text-xs font-bold font-mono uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Copy className="w-4 h-4" /> Copy Customer Payment &amp; Check-In Link
                 </button>
               )}
             </div>
