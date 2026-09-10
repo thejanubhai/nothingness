@@ -47,37 +47,15 @@ export default function AddBookingPage() {
     }
 
     try {
-      const supabase = createClient();
-      
-      const { data: booking, error: insertError } = await supabase
-        .from('bookings')
-        .insert({
-          space_id: formData.space_id,
-          check_in: formData.check_in,
-          check_out: formData.check_out,
-          guests: formData.guests,
-          total_price: formData.total_price,
-          status: formData.status,
-          payment_method: formData.payment_method,
-          payment_status: 'paid',
-          guest_name: formData.guest_name,
-          guest_email: formData.guest_email,
-          guest_phone: formData.guest_phone,
-        })
-        .select()
-        .single();
+      const res = await fetch('/api/admin/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-      if (insertError) throw insertError;
-      
-      // Add the primary guest to booking_guests
-      if (booking) {
-        await supabase.from('booking_guests').insert({
-          booking_id: booking.id,
-          guest_index: 0,
-          name: formData.guest_name,
-          phone: formData.guest_phone,
-          verification_status: 'pending'
-        });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to create reservation');
       }
 
       toast.success('Reservation registered successfully!');

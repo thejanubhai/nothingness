@@ -438,12 +438,10 @@ export default function UnifiedCalendarClient({
           toast.error(data.error || 'Failed to block dates');
         }
       } else {
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
-        
-        const { data: newBooking, error: bErr } = await supabase
-          .from('bookings')
-          .insert({
+        const res = await fetch('/api/admin/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             space_id: quickSpaceId,
             check_in: quickStartDate,
             check_out: quickEndDate,
@@ -451,29 +449,18 @@ export default function UnifiedCalendarClient({
             guest_phone: quickGuestPhone.trim(),
             total_price: quickTotalPrice,
             payment_method: quickPaymentMethod,
-            payment_status: 'completed',
+            payment_status: 'paid',
             status: 'confirmed',
             guests: 2
           })
-          .select(`
-            id, space_id, check_in, check_out, status, payment_status, payment_method, total_price, guests,
-            guest_name, guest_phone, guest_email, created_at,
-            spaces (id, title, slug)
-          `)
-          .single();
+        });
 
-        if (bErr) throw bErr;
-
-        if (newBooking) {
-          await supabase.from('booking_guests').insert({
-            booking_id: newBooking.id,
-            guest_index: 0,
-            name: quickGuestName.trim(),
-            phone: quickGuestPhone.trim(),
-            verification_status: 'pending'
-          });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to create reservation');
         }
 
+        const newBooking = data.booking;
         toast.success(`Reservation confirmed for ${quickGuestName}!`);
         setBookings(prev => [newBooking as any, ...prev]);
         setShowQuickActionModal(false);
