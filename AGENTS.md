@@ -208,3 +208,24 @@ Skills should only contain essential files. Do NOT create:
 - CHANGELOG.md
 
 The skill should contain only what an AI agent needs to do the job.
+
+---
+
+## Infrastructure, Crons & Supabase Migration Invariants
+
+### 1. External Cron Scheduling via cron-job.org
+- **NEVER** declare `"crons"` inside [`vercel.json`](vercel.json).
+- The project is deployed on Vercel's Hobby plan which enforces a strict 2-job limit and forbids sub-daily intervals.
+- All scheduled tasks (calendar sync, housekeeping dispatch, events engine, chatflows) are invoked externally by **`https://cron-job.org`** targeting public HTTPS endpoints under `/api/cron/*`.
+- All `/api/cron/*` endpoints must:
+  - Export `export const dynamic = 'force-dynamic'`.
+  - Validate the `Authorization: Bearer ${CRON_SECRET}` header before processing.
+  - Support both `GET` and `POST` methods.
+
+### 2. Supabase Migration Versioning & Branching Integrity
+- **NEVER** modify production database schemas directly in Supabase Studio without committing the corresponding SQL migration file to `supabase/migrations/`.
+- Every migration file in `supabase/migrations/` must strictly follow the format:
+  `{YYYYMMDDHHMMSS}_{snake_case_name}.sql`
+- The `{version}` prefix in git must exactly match the `version` column recorded in `supabase_migrations.schema_migrations` on the remote database. Any mismatch causes Supabase Preview CI to fail with `Remote migration versions not found in local migrations directory`.
+- **NEVER** delete or alter version prefixes of existing baseline migrations.
+- Always run `pnpm test` before pushing; `tests/deployment-guardrails.test.ts` validates these invariants automatically.
