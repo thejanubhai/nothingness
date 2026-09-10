@@ -37,15 +37,21 @@ ALTER TABLE public.listings DISABLE ROW LEVEL SECURITY;
 -- 4. bookings
 CREATE TABLE IF NOT EXISTS public.bookings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    listing_id UUID NOT NULL REFERENCES public.listings(id) ON DELETE CASCADE,
-    platform TEXT NOT NULL, -- direct, airbnb, booking.com
-    check_in DATE NOT NULL,
-    check_out DATE NOT NULL,
+    listing_id UUID REFERENCES public.listings(id) ON DELETE CASCADE,
+    platform TEXT DEFAULT 'direct', -- direct, airbnb, booking.com
+    check_in DATE,
+    check_out DATE,
     status TEXT NOT NULL DEFAULT 'confirmed', -- confirmed, blocked, cancelled
     external_ical_id TEXT UNIQUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Ensure listing_id and omnichannel columns exist if bookings was created in an earlier migration
+ALTER TABLE public.bookings
+    ADD COLUMN IF NOT EXISTS listing_id UUID REFERENCES public.listings(id) ON DELETE CASCADE,
+    ADD COLUMN IF NOT EXISTS platform TEXT DEFAULT 'direct',
+    ADD COLUMN IF NOT EXISTS external_ical_id TEXT;
 
 ALTER TABLE public.bookings DISABLE ROW LEVEL SECURITY;
 
