@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendVerificationApprovedNotification } from '@/lib/notifications/verification';
 import { getPlatformActionFees, createPayUPaymentRequestAsync } from '@/lib/payu';
+import { traceSpan, recordScoutError } from '@/lib/monitoring/scout';
 import { addDays } from 'date-fns';
 import crypto from 'crypto';
 
@@ -627,6 +628,9 @@ Return ONLY a valid JSON object without markdown formatting.`;
     });
   } catch (error: any) {
     console.error('[Verify ID] Processing error:', error);
+    recordScoutError(error, {
+      endpoint: '/api/verify-id',
+    });
     return NextResponse.json(
       {
         verified: false,

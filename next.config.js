@@ -12,7 +12,8 @@ const nextConfig = {
     '@google/genai',
     'cloudinary',
     'tesseract.js',
-    'firebase-admin'
+    'firebase-admin',
+    '@scout_apm/scout-apm'
   ],
   experimental: {
     optimizePackageImports: [

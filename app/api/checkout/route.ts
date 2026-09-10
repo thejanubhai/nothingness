@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createPayUPaymentRequestAsync } from '@/lib/payu';
+import { recordScoutError } from '@/lib/monitoring/scout';
 
 export async function POST(req: Request) {
   try {
@@ -190,6 +191,9 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error('Checkout error:', error);
+    recordScoutError(error, {
+      endpoint: '/api/checkout',
+    });
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

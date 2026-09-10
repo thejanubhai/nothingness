@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { traceSpan, recordScoutError } from '@/lib/monitoring/scout';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -92,15 +93,22 @@ Return ONLY a valid JSON object matching this schema (no markdown, no backticks)
   "notes": "brief string"
 }`;
 
-          const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [
-              {
-                role: 'user',
-                parts: [...imageParts, { text: prompt }],
-              },
-            ],
-          });
+          const response = await traceSpan(
+            'AI',
+            'gemini_screenshot_parsing',
+            async () => {
+              return await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [...imageParts, { text: prompt }],
+                  },
+                ],
+              });
+            },
+            { platform: detectedPlatform, imageCount: imageParts.length }
+          );
 
           rawAiText = response.text || '{}';
           const cleanJson = rawAiText.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -341,6 +349,9 @@ Return ONLY a valid JSON object matching this schema (no markdown, no backticks)
     });
   } catch (error: any) {
     console.error('[Verify Screenshot API] Server error:', error);
+    recordScoutError(error, {
+      endpoint: '/api/bookings/verify-screenshot',
+    });
     return NextResponse.json(
       { error: error.message || 'Failed to verify reservation screenshot.' },
       { status: 500 }
