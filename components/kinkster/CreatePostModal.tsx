@@ -8,7 +8,8 @@ import {
   Link2, 
   RefreshCw, 
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { stripClientExif } from '@/lib/media/clientExif';
@@ -20,6 +21,7 @@ interface CreatePostModalProps {
   initialFile?: File | null;
   userAlias?: string;
   userAvatar?: string;
+  defaultGroupId?: string;
 }
 
 export default function CreatePostModal({
@@ -29,6 +31,7 @@ export default function CreatePostModal({
   initialFile = null,
   userAlias = '',
   userAvatar = '',
+  defaultGroupId = '',
 }: CreatePostModalProps) {
   const [mode, setMode] = useState<'upload' | 'url'>('upload');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -38,7 +41,30 @@ export default function CreatePostModal({
   const [loading, setLoading] = useState<boolean>(false);
   const [uploadProgressText, setUploadProgressText] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('dynamics');
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(defaultGroupId || '');
+  const [taxonomyTopics, setTaxonomyTopics] = useState<Array<{ id: string; name: string; category: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch canonical taxonomy topics when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (defaultGroupId) {
+        setSelectedGroupId(defaultGroupId);
+      }
+      fetch('/api/kinkster/taxonomy')
+        .then(r => r.json())
+        .then(data => {
+          if (data.topics && Array.isArray(data.topics)) {
+            setTaxonomyTopics(data.topics.map((t: any) => ({
+              id: t.id,
+              name: t.name,
+              category: t.category,
+            })));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen, defaultGroupId]);
 
   // Sync initialFile if provided when opening
   useEffect(() => {
@@ -166,6 +192,7 @@ export default function CreatePostModal({
           media_type: 'image',
           media_url: finalMediaUrl,
           caption: finalCaption,
+          group_id: selectedGroupId || null,
         }),
       });
 
@@ -352,6 +379,29 @@ export default function CreatePostModal({
               />
             </div>
           )}
+
+          {/* Canonical Community / Topic Association (Optional) */}
+          <div>
+            <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2 font-mono flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-purple-400" />
+                Community Topic
+              </span>
+              <span className="text-[10px] text-zinc-500 font-normal lowercase">optional</span>
+            </label>
+            <select
+              value={selectedGroupId}
+              onChange={(e) => setSelectedGroupId(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-white text-xs font-mono focus:outline-none focus:border-purple-500 transition-colors"
+            >
+              <option value="">Public Member Feed (Global Sanctuary)</option>
+              {taxonomyTopics.map((topic) => (
+                <option key={topic.id} value={topic.id}>
+                  {topic.name} ({topic.category})
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Vibe / Category Selection */}
           <div>

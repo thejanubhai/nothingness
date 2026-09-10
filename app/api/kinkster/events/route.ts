@@ -1,154 +1,125 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { isUserAdminAsync } from '@/lib/auth-utils';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { rankContentByLocation, LocationCoordinates } from '@/lib/location/relevance';
 
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { searchParams } = new URL(req.url);
+    const groupId = searchParams.get('group_id') || searchParams.get('groupId');
+    const tier = searchParams.get('tier');
+
+    const adminSupabase = createAdminClient();
+
+    // 1. Fetch user discovery location preference
+    let userLoc: LocationCoordinates | null = null;
+    let locationDiscoveryEnabled = true;
+
+    if (user) {
+      const { data: profile } = await adminSupabase
+        .from('kinkster_profiles')
+        .select('discovery_location_city, discovery_location_region, discovery_location_country, discovery_location_enabled')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile) {
+        userLoc = {
+          city: profile.discovery_location_city || 'Delhi',
+          region: profile.discovery_location_region || 'North India',
+          country: profile.discovery_location_country || 'India',
+        };
+        locationDiscoveryEnabled = profile.discovery_location_enabled !== false;
+      }
     }
 
-    const { data: events, error } = await supabase
-      .from('kinkster_events')
+    // 2. Query Sanctuary Events
+    let query = adminSupabase
+      .from('sanctuary_events')
       .select(`
         *,
-        kinkster_profiles!host_kinkster_id (
-          alias,
-          avatar_url,
-          is_trusted_host
-        ),
         spaces (
+          id,
           title,
           city,
           images
+        ),
+        groups (
+          id,
+          name,
+          slug,
+          category,
+          avatar_url
         )
       `)
+      .neq('status', 'draft')
       .order('event_date', { ascending: true });
 
-    let finalEvents = events || [];
-    if (finalEvents.length === 0) {
-      finalEvents = [
-        {
-          id: 'event-curated-1',
-          title: 'The Velvet Masquerade • Midnight Soirée',
-          description: 'A discreet masked gathering for vetted members. Champagne, ambient frequencies, and quiet alcoves for conversational salons.',
-          event_date: new Date(Date.now() + 4 * 24 * 3600 * 1000).toISOString(),
-          location_name: 'The Void Sanctuary (South Delhi)',
-          max_capacity: 14,
-          is_admin_approved: true,
-          kinkster_profiles: {
-            alias: 'obsidian_silk_duo',
-            avatar_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400',
-            is_trusted_host: true
-          },
-          spaces: {
-            title: 'The Void Suite',
-            city: 'New Delhi',
-            images: ['/images/IMG_9955.jpg']
-          }
-        },
-        {
-          id: 'event-curated-2',
-          title: 'Rope & Reverie • Tactile Shibari Jam',
-          description: 'Floor rope demonstrations, tactile suspension lines, and restorative mindful aftercare with hot herbal tea.',
-          event_date: new Date(Date.now() + 9 * 24 * 3600 * 1000).toISOString(),
-          location_name: 'Brutalist Chamber (Delhi NCR)',
-          max_capacity: 10,
-          is_admin_approved: true,
-          kinkster_profiles: {
-            alias: 'aria_shibari',
-            avatar_url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=400',
-            is_trusted_host: true
-          },
-          spaces: {
-            title: 'The Brutalist Void',
-            city: 'New Delhi',
-            images: ['/images/The Void (1).png']
-          }
-        },
-        {
-          id: 'event-curated-3',
-          title: 'Midnight Jacuzzi & Ambient Vinyl Soak',
-          description: 'Hydrotherapy immersion, candlelit silence, and dark techno/ambient vinyl playback in the penthouse.',
-          event_date: new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString(),
-          location_name: 'The Penthouse Sanctuary (Gurgaon)',
-          max_capacity: 8,
-          is_admin_approved: true,
-          kinkster_profiles: {
-            alias: 'velvet_nocturne',
-            avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
-            is_trusted_host: true
-          },
-          spaces: {
-            title: 'The Penthouse Jacuzzi Suite',
-            city: 'Gurgaon',
-            images: ['/images/IMG_4446.jpeg']
-          }
-        }
-      ];
+    if (groupId) {
+      // Check direct group_id and junction event_topics
+      const { data: junctionEvents } = await adminSupabase
+        .from('event_topics')
+        .select('event_id')
+        .eq('group_id', groupId);
+
+      const junctionIds = (junctionEvents || []).map((j: any) => j.event_id);
+      if (junctionIds.length > 0) {
+        query = query.or(`group_id.eq.${groupId},id.in.(${junctionIds.join(',')})`);
+      } else {
+        query = query.eq('group_id', groupId);
+      }
     }
 
-    return NextResponse.json({ events: finalEvents });
+    if (tier && tier !== 'all') {
+      query = query.eq('tier', tier);
+    }
+
+    const { data: dbEvents, error } = await query;
+
+    if (error) {
+      console.error('Error querying sanctuary_events:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const rawEvents = dbEvents || [];
+
+    // 3. User Applications map
+    const applicationsMap: Record<string, any> = {};
+    if (user) {
+      const { data: apps } = await adminSupabase
+        .from('sanctuary_event_applications')
+        .select('*')
+        .eq('user_id', user.id);
+
+      (apps || []).forEach((app: any) => {
+        applicationsMap[app.event_id] = app;
+      });
+    }
+
+    // 4. Apply Invisible Location Relevance Ranking
+    const ranked = rankContentByLocation(
+      rawEvents,
+      userLoc,
+      (e: any) => ({ city: e.spaces?.city }),
+      (e: any) => e.event_date,
+      undefined,
+      locationDiscoveryEnabled
+    );
+
+    const finalEvents = ranked.map(r => ({
+      ...r.item,
+      geoTier: r.geoTier,
+    }));
+
+    return NextResponse.json({
+      success: true,
+      events: finalEvents,
+      applications: applicationsMap,
+    });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Strictly check if user is an Admin-Approved Trusted Host or Admin
-    const { data: hostProfile } = await supabase
-      .from('kinkster_profiles')
-      .select('id, is_trusted_host')
-      .eq('id', user.id)
-      .single();
-
-    const isAdmin = await isUserAdminAsync(user);
-
-    if (!isAdmin && !hostProfile?.is_trusted_host) {
-      return NextResponse.json(
-        { error: 'Only Nothingness Admin-Approved Trusted Hosts can post secret Sanctuary Soirée events.' },
-        { status: 403 }
-      );
-    }
-
-    const { title, description, space_id, event_date, location_name, max_capacity } = await req.json();
-
-    if (!title || !description || !event_date) {
-      return NextResponse.json({ error: 'Title, description, and event date are required.' }, { status: 400 });
-    }
-
-    const { data: event, error: insertError } = await supabase
-      .from('kinkster_events')
-      .insert({
-        host_kinkster_id: user.id,
-        space_id: space_id || null,
-        title,
-        description,
-        event_date,
-        location_name: location_name || 'Discreet Location (Revealed on RSVP)',
-        max_capacity: max_capacity || 12,
-        is_admin_approved: true
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true, event });
-  } catch (err: any) {
+    console.error('Kinkster Events GET exception:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
 }

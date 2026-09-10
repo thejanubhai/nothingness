@@ -14,7 +14,8 @@ import {
   Headphones, 
   KeyRound,
   ShieldCheck,
-  MessageSquare
+  MessageSquare,
+  Users
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -47,14 +48,13 @@ export default function MobileBottomNav() {
   };
 
   // Determine App Context for purposeful navigation
-  const isLifestyleMode = pathname.startsWith('/kinksters');
-  const isEventsMode = pathname.startsWith('/sanctuary-pass');
+  const isUnifiedLifestyleOrEvents = pathname.startsWith('/kinksters') || pathname.startsWith('/sanctuary-pass');
   const isPortalMode = pathname.startsWith('/dashboard') || pathname.startsWith('/verify') || pathname.startsWith('/booking');
 
   let items: NavItem[] = [];
 
-  if (isLifestyleMode) {
-    // Purposeful Lifestyle App Navigation (5 Pillars)
+  if (isUnifiedLifestyleOrEvents) {
+    // Purposeful Unified Kinkster & Events Navigation: [Feed] [Events] [Post] [Groups] [Explore]
     items = [
       {
         name: 'Feed',
@@ -63,10 +63,11 @@ export default function MobileBottomNav() {
         isActive: (p) => p === '/kinksters',
       },
       {
-        name: 'Discover',
-        href: '/kinksters/discover',
-        icon: Compass,
-        isActive: (p) => p.startsWith('/kinksters/discover'),
+        name: 'Events',
+        href: '/kinksters/events',
+        icon: Sparkles,
+        badge: '✨',
+        isActive: (p) => p.startsWith('/kinksters/events') || p.startsWith('/sanctuary-pass'),
       },
       {
         name: 'Post',
@@ -74,59 +75,23 @@ export default function MobileBottomNav() {
         onClick: () => {
           triggerHaptic();
           if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('open-create-post'));
+            window.dispatchEvent(new CustomEvent('open-creation-sheet'));
           }
         },
         icon: PlusCircle,
         isActive: () => false,
       },
       {
-        name: 'Whispers',
-        href: '/kinksters?tab=chats',
-        icon: MessageSquare,
-        isActive: () => false,
+        name: 'Groups',
+        href: '/kinksters/groups',
+        icon: Users,
+        isActive: (p) => p.startsWith('/kinksters/groups'),
       },
       {
-        name: 'Soirées',
-        href: '/kinksters/events',
-        icon: Sparkles,
-        badge: '✨',
-        isActive: (p) => p.startsWith('/kinksters/events'),
-      },
-    ];
-  } else if (isEventsMode) {
-    // Purposeful Events App Navigation
-    items = [
-      {
-        name: 'Vault',
-        href: '/sanctuary-pass',
-        icon: Ticket,
-        isActive: (p) => p === '/sanctuary-pass',
-      },
-      {
-        name: 'Lifestyle',
-        href: '/kinksters',
-        icon: Flame,
-        badge: '🔥',
-        isActive: (p) => p.startsWith('/kinksters'),
-      },
-      {
-        name: 'Spaces',
-        href: '/spaces',
-        icon: Building2,
-        isActive: (p) => p.startsWith('/spaces'),
-      },
-      {
-        name: 'Concierge',
-        href: '/accessibility',
-        icon: Headphones,
-        isActive: (p) => p.startsWith('/accessibility'),
-      },
-      {
-        name: 'Portal',
-        href: '/dashboard',
-        icon: UserCheck,
-        isActive: (p) => p.startsWith('/dashboard'),
+        name: 'Explore',
+        href: '/kinksters/explore',
+        icon: Compass,
+        isActive: (p) => p.startsWith('/kinksters/explore') || p.startsWith('/kinksters/discover'),
       },
     ];
   } else if (isPortalMode) {
@@ -215,32 +180,26 @@ export default function MobileBottomNav() {
 
           if (item.isSpecialAction) {
             return (
-              <label
+              <button
                 key={item.name}
-                onClick={triggerHaptic}
-                className="relative flex flex-col items-center justify-center py-1 px-3 -mt-4 active:scale-90 transition-all duration-200 cursor-pointer touch-manipulation"
+                type="button"
+                onClick={() => {
+                  triggerHaptic();
+                  if (item.onClick) {
+                    item.onClick();
+                  } else if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('open-creation-sheet'));
+                  }
+                }}
+                className="relative flex flex-col items-center justify-center py-1 px-3 -mt-4 active:scale-90 transition-all duration-200 cursor-pointer touch-manipulation focus:outline-none"
               >
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/heic,image/gif,image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file && typeof window !== 'undefined') {
-                      window.dispatchEvent(
-                        new CustomEvent('open-create-post-with-file', { detail: { file } })
-                      );
-                    }
-                    e.target.value = '';
-                  }}
-                />
                 <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-600 via-amber-500 to-rose-500 text-white flex items-center justify-center shadow-[0_0_20px_rgba(244,63,94,0.5)] border-2 border-black">
                   <Icon className="w-6 h-6" />
                 </div>
                 <span className="text-[10px] font-bold text-rose-300 mt-1 tracking-wider">
                   {item.name}
                 </span>
-              </label>
+              </button>
             );
           }
 

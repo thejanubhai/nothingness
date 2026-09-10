@@ -182,8 +182,25 @@ export default function EphemeralChatModal({
     }
   };
 
+  // Cleanup audio tracks on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current) {
+        try {
+          mediaRecorderRef.current.stream?.getTracks().forEach((t) => t.stop());
+          if (mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+          }
+        } catch (_) {}
+      }
+    };
+  }, []);
+
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
+      try {
+        mediaRecorderRef.current.stream?.getTracks().forEach((t) => t.stop());
+      } catch (_) {}
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       triggerHaptic('light');

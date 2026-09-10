@@ -131,14 +131,27 @@ export async function PUT(req: NextRequest) {
     }
 
     const adminClient = createAdminClient();
+    const now = new Date().toISOString();
 
+    // 1. Shred in canonical kinkster_messages table
+    await adminClient
+      .from('kinkster_messages')
+      .update({
+        is_burnt: true,
+        burnt_at: now,
+        content: '[Burned Photo • Shredded]',
+        media_url: null,
+      })
+      .eq('id', targetId);
+
+    // 2. Also shred in legacy chamber table if present
     await adminClient
       .from('kinkster_ephemeral_messages')
       .update({
         is_burnt: true,
         is_burned: true,
-        burnt_at: new Date().toISOString(),
-        burned_at: new Date().toISOString(),
+        burnt_at: now,
+        burned_at: now,
         content: '[Burned Photo • Shredded]',
         media_url: null,
       })

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Lock, Sparkles, CheckCircle2, AlertCircle, X, AtSign } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -23,7 +23,21 @@ export default function KinksterActivationModal({
   const [bio, setBio] = useState('');
   const [confidentialityAgreed, setConfidentialityAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedInterests, setSelectedInterests] = useState<string[]>(['Luxury Stays', 'Discretion']);
+  const [selectedInterests, setSelectedInterests] = useState<string[]>(['Shibari & Japanese Rope Bondage', 'Discretion & Confidentiality']);
+  const [availableTopics, setAvailableTopics] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/kinkster/taxonomy')
+        .then(r => r.json())
+        .then(data => {
+          if (data.topics && Array.isArray(data.topics)) {
+            setAvailableTopics(data.topics.map((t: any) => t.name));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -181,15 +195,15 @@ export default function KinksterActivationModal({
             <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
               Interests & Vibes
             </label>
-            <div className="flex flex-wrap gap-2">
-              {['Luxury Stays', 'Discretion', 'Aesthetic Photography', 'VIP Lounges', 'Private Events', 'Late Night Vibes'].map((tag) => (
+            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
+              {(availableTopics.length > 0 ? availableTopics.slice(0, 20) : selectedInterests).map((tag) => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => toggleInterest(tag)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-all cursor-pointer ${
                     selectedInterests.includes(tag)
-                      ? 'bg-rose-500/20 border-rose-500 text-rose-300'
+                      ? 'bg-rose-500/20 border-rose-500 text-rose-300 font-bold'
                       : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >

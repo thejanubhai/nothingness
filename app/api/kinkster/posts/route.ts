@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { rankContentByLocation, LocationCoordinates } from '@/lib/location/relevance';
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,17 +14,53 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const aliasParam = searchParams.get('alias');
+    const groupIdParam = searchParams.get('group_id') || searchParams.get('groupId');
 
     const adminSupabase = createAdminClient();
 
+    // 1. Fetch user discovery location preference
+    let userLoc: LocationCoordinates | null = null;
+    let locationDiscoveryEnabled = true;
+
+    const { data: profile } = await adminSupabase
+      .from('kinkster_profiles')
+      .select('discovery_location_city, discovery_location_region, discovery_location_country, discovery_location_enabled')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profile) {
+      userLoc = {
+        city: profile.discovery_location_city || 'Delhi',
+        region: profile.discovery_location_region || 'North India',
+        country: profile.discovery_location_country || 'India',
+      };
+      locationDiscoveryEnabled = profile.discovery_location_enabled !== false;
+    }
+
+    // 2. Build Query for Posts
     let query = adminSupabase
       .from('kinkster_posts')
       .select(`
-        *,
+        id,
+        media_type,
+        media_url,
+        caption,
+        likes_count,
+        created_at,
+        city,
+        region,
+        country,
+        group_id,
         kinkster_profiles!inner (
           alias,
           avatar_url,
           is_activated
+        ),
+        groups (
+          id,
+          name,
+          slug,
+          avatar_url
         )
       `)
       .order('created_at', { ascending: false });
@@ -32,13 +69,29 @@ export async function GET(req: NextRequest) {
       query = query.eq('kinkster_profiles.alias', aliasParam.toLowerCase());
     }
 
+    if (groupIdParam) {
+      // Also check junction post_topics for this group
+      const { data: junctionRows } = await adminSupabase
+        .from('post_topics')
+        .select('post_id')
+        .eq('group_id', groupIdParam);
+
+      const junctionPostIds = (junctionRows || []).map((r: any) => r.post_id);
+      if (junctionPostIds.length > 0) {
+        query = query.or(`group_id.eq.${groupIdParam},id.in.(${junctionPostIds.join(',')})`);
+      } else {
+        query = query.eq('group_id', groupIdParam);
+      }
+    }
+
     const { data: posts, error } = await query;
 
     if (error) {
-      console.error('Error fetching kinkster posts:', error);
+      console.error('Error fetching kinkster posts from Supabase:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Get user likes set
+    // 3. User Likes
     let likedPostIds = new Set<string>();
     try {
       const { data: userLikes } = await adminSupabase
@@ -50,7 +103,7 @@ export async function GET(req: NextRequest) {
       }
     } catch (_) {}
 
-    // Get comment counts
+    // 4. Comment Counts
     let commentCountsMap: Record<string, number> = {};
     try {
       const { data: comments } = await adminSupabase
@@ -63,64 +116,36 @@ export async function GET(req: NextRequest) {
       }
     } catch (_) {}
 
-    let finalPosts = (posts || []).map((p: any) => ({
+    const formattedPosts = (posts || []).map((p: any) => ({
       ...p,
       is_liked: likedPostIds.has(p.id),
       likes_count: p.likes_count || 0,
-      comments_count: commentCountsMap[p.id] || 0
+      comments_count: commentCountsMap[p.id] || 0,
     }));
-    if (finalPosts.length === 0 && !aliasParam) {
-      finalPosts = [
-        {
-          id: 'post-curated-1',
-          media_type: 'image',
-          media_url: '/images/IMG_9955.jpg',
-          caption: 'Late night light test inside The Void suite. The acoustics in this concrete chamber are unmatched for sensory focus.',
-          likes_count: 42,
-          comments_count: 7,
-          is_liked: likedPostIds.has('post-curated-1'),
-          created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-          kinkster_profiles: {
-            alias: 'velvet_nocturne',
-            avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
-            is_activated: true
-          }
-        },
-        {
-          id: 'post-curated-2',
-          media_type: 'image',
-          media_url: '/images/The Void (1).png',
-          caption: 'Floor rope patterns & grounded breathing. Ready for the upcoming Velvet Masquerade this weekend.',
-          likes_count: 29,
-          comments_count: 4,
-          is_liked: likedPostIds.has('post-curated-2'),
-          created_at: new Date(Date.now() - 14 * 3600 * 1000).toISOString(),
-          kinkster_profiles: {
-            alias: 'aria_shibari',
-            avatar_url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=400',
-            is_activated: true
-          }
-        },
-        {
-          id: 'post-curated-3',
-          media_type: 'image',
-          media_url: '/images/IMG_4446.jpeg',
-          caption: 'Jacuzzi soaks by candlelight. Sometimes the best aftercare is hot water, quiet vinyl, and zero outside distractions.',
-          likes_count: 51,
-          comments_count: 12,
-          is_liked: likedPostIds.has('post-curated-3'),
-          created_at: new Date(Date.now() - 36 * 3600 * 1000).toISOString(),
-          kinkster_profiles: {
-            alias: 'obsidian_silk_duo',
-            avatar_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400',
-            is_activated: true
-          }
-        }
-      ];
+
+    // 5. Apply Invisible Location Relevance Ranking
+    // If querying by specific user alias, keep chronological order
+    if (aliasParam) {
+      return NextResponse.json({ posts: formattedPosts });
     }
+
+    const ranked = rankContentByLocation(
+      formattedPosts,
+      userLoc,
+      (p: any) => ({ city: p.city, region: p.region, country: p.country }),
+      (p: any) => p.created_at,
+      (p: any) => p.likes_count,
+      locationDiscoveryEnabled
+    );
+
+    const finalPosts = ranked.map(r => ({
+      ...r.item,
+      geoTier: r.geoTier,
+    }));
 
     return NextResponse.json({ posts: finalPosts });
   } catch (err: any) {
+    console.error('Posts GET exception:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
 }
@@ -137,7 +162,7 @@ export async function POST(req: NextRequest) {
     // Verify user profile is activated
     const { data: kinksterProfile } = await supabase
       .from('kinkster_profiles')
-      .select('id, is_activated')
+      .select('id, is_activated, discovery_location_city, discovery_location_region, discovery_location_country')
       .eq('id', user.id)
       .eq('is_activated', true)
       .single();
@@ -149,29 +174,68 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { media_type, media_url, caption } = await req.json();
+    const body = await req.json();
+    const { media_type, media_url, caption, group_id, groupId, city, region, country } = body;
 
     if (!media_url) {
       return NextResponse.json({ error: 'Media URL is required.' }, { status: 400 });
     }
 
-    const { data: post, error: insertError } = await supabase
+    const targetGroupId = group_id || groupId || null;
+
+    // Coarse content location: Use explicit location provided or fallback to user's coarse discovery city
+    const postCity = city || kinksterProfile.discovery_location_city || null;
+    const postRegion = region || kinksterProfile.discovery_location_region || null;
+    const postCountry = country || kinksterProfile.discovery_location_country || 'India';
+
+    const adminSupabase = createAdminClient();
+
+    const { data: post, error: insertError } = await adminSupabase
       .from('kinkster_posts')
       .insert({
         kinkster_id: user.id,
         media_type: media_type || 'image',
         media_url,
-        caption: caption || ''
+        caption: caption || '',
+        group_id: targetGroupId,
+        city: postCity,
+        region: postRegion,
+        country: postCountry,
       })
-      .select()
+      .select(`
+        *,
+        kinkster_profiles (
+          alias,
+          avatar_url
+        ),
+        groups (
+          id,
+          name,
+          slug
+        )
+      `)
       .single();
 
     if (insertError) {
+      console.error('Post insertion error:', insertError);
       return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
+
+    // If targetGroupId is specified, also link in post_topics junction table
+    if (targetGroupId) {
+      try {
+        await adminSupabase
+          .from('post_topics')
+          .insert({
+            post_id: post.id,
+            group_id: targetGroupId,
+          });
+      } catch (_) {}
     }
 
     return NextResponse.json({ success: true, post });
   } catch (err: any) {
+    console.error('Post creation exception:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
 }

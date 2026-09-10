@@ -144,6 +144,16 @@ export interface DbState {
   kinkster_resonances: any[];
   kinkster_ephemeral_messages: any[];
   gathering_vettings: any[];
+  kinkster_conversations: any[];
+  kinkster_conversation_participants: any[];
+  kinkster_messages: any[];
+  kinkster_blocks: any[];
+  kinkster_reports: any[];
+  groups: any[];
+  group_members: any[];
+  kinkster_follows: any[];
+  kinkster_spice_requests: any[];
+  kinkster_direct_messages: any[];
 }
 
 const initialDb: DbState = {
@@ -250,6 +260,16 @@ const initialDb: DbState = {
   kinkster_resonances: [],
   kinkster_ephemeral_messages: [],
   gathering_vettings: [],
+  kinkster_conversations: [],
+  kinkster_conversation_participants: [],
+  kinkster_messages: [],
+  kinkster_blocks: [],
+  kinkster_reports: [],
+  groups: [],
+  group_members: [],
+  kinkster_follows: [],
+  kinkster_spice_requests: [],
+  kinkster_direct_messages: [],
 };
 
 let db: DbState = JSON.parse(JSON.stringify(initialDb));
@@ -363,6 +383,16 @@ export function setupFetchInterceptor() {
           }
           if (tableName === 'sanctuary_event_applications' && row.sanctuary_events) {
             rowCopy.sanctuary_events = row.sanctuary_events;
+          }
+          if (tableName === 'kinkster_conversation_participants') {
+            const convo = db.kinkster_conversations.find((c) => c.id === row.conversation_id);
+            rowCopy.kinkster_conversations = convo || null;
+            const profile = db.kinkster_profiles.find((p) => p.id === row.user_id);
+            rowCopy.kinkster_profiles = profile || null;
+          }
+          if (tableName === 'kinkster_messages') {
+            const senderProfile = db.kinkster_profiles.find((p) => p.id === row.sender_id);
+            rowCopy.kinkster_profiles = senderProfile || null;
           }
           return rowCopy;
         });

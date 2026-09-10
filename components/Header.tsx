@@ -18,7 +18,11 @@ import {
   HelpCircle,
   PhoneCall,
   ChevronRight,
-  Handshake
+  Handshake,
+  MessageSquare,
+  Users,
+  Compass,
+  PlusCircle
 } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -27,12 +31,19 @@ import AppSwitcher from "./AppSwitcher";
 import { createClient } from "@/lib/supabase/client";
 import { signOut } from "@/app/actions/auth";
 import { isUserAdmin } from "@/lib/auth-utils";
+import KinksterInboxModal from "./kinkster/KinksterInboxModal";
+import CreationActionSheet from "./kinkster/CreationActionSheet";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const pathname = usePathname();
+
+  const isKinksterMode = pathname?.startsWith('/kinksters') || pathname?.startsWith('/sanctuary-pass');
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [inboxOpen, setInboxOpen] = useState<boolean>(false);
+  const [creationSheetOpen, setCreationSheetOpen] = useState<boolean>(false);
 
   // Crest logo double-tap & double-click panic camouflage trigger
   const lastLogoTapRef = useRef<number>(0);
@@ -115,6 +126,66 @@ export default function Header() {
     };
   }, [pathname]);
 
+  // Listen for custom events to trigger inbox drawer or creation sheet
+  useEffect(() => {
+    const handleOpenMessages = () => setInboxOpen(true);
+    const handleOpenCreation = () => setCreationSheetOpen(true);
+    window.addEventListener('open-kinkster-messages', handleOpenMessages);
+    window.addEventListener('open-creation-sheet', handleOpenCreation);
+    return () => {
+      window.removeEventListener('open-kinkster-messages', handleOpenMessages);
+      window.removeEventListener('open-creation-sheet', handleOpenCreation);
+    };
+  }, []);
+
+  // Fetch real unread messages count in Kinkster Mode
+  const fetchUnreadCount = async () => {
+    if (!user || !isKinksterMode) return;
+    try {
+      const res = await fetch('/api/kinkster/chat/unread');
+      if (res.ok) {
+        const data = await res.json();
+        setUnreadCount(data.unread_count || 0);
+      }
+    } catch (_) {}
+  };
+
+  useEffect(() => {
+    if (isKinksterMode && user) {
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 15000);
+      const onFocus = () => fetchUnreadCount();
+      window.addEventListener('focus', onFocus);
+      window.addEventListener('refresh-unread-count', onFocus);
+
+      const supabase = createClient();
+      const channel = supabase
+        .channel(`user_unread_${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'kinkster_conversation_participants',
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            fetchUnreadCount();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('focus', onFocus);
+        window.removeEventListener('refresh-unread-count', onFocus);
+        supabase.removeChannel(channel);
+      };
+    } else {
+      setUnreadCount(0);
+    }
+  }, [isKinksterMode, user]);
+
   // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -164,30 +235,97 @@ export default function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 lg:gap-8">
-            <Link href="/spaces" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
-              Spaces
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
-            </Link>
-            <Link href="/sanctuary-pass" className="text-[12px] font-medium tracking-[0.2em] uppercase text-amber-400/90 hover:text-amber-300 transition-colors duration-300 relative group py-2 flex items-center gap-1">
-              Sanctuary Pass ✨
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-amber-400 group-hover:w-full transition-all duration-300" />
-            </Link>
-            <Link href="/kinksters" className="text-[12px] font-medium tracking-[0.2em] uppercase text-rose-400/90 hover:text-rose-400 transition-colors duration-300 relative group py-2 flex items-center gap-1">
-              Lifestyle 🔥
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-rose-500 group-hover:w-full transition-all duration-300" />
-            </Link>
-            <Link href="/journal" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
-              Journal
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
-            </Link>
-            <Link href="/franchise" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
-              Partner
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
-            </Link>
-            <Link href="/onboarding" className="text-[12px] font-medium tracking-[0.2em] uppercase text-accent-gold/90 hover:text-white transition-colors duration-300 relative group py-2 flex items-center gap-1">
-              Check-In
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
-            </Link>
+            {isKinksterMode ? (
+              <>
+                <Link 
+                  href="/kinksters" 
+                  className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 ${
+                    pathname === '/kinksters' ? 'text-rose-400 font-bold' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Feed
+                  {pathname === '/kinksters' && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-rose-500" />}
+                </Link>
+                <Link 
+                  href="/kinksters/events" 
+                  className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
+                    pathname.startsWith('/kinksters/events') ? 'text-amber-300 font-bold' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Events ✨
+                  {pathname.startsWith('/kinksters/events') && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-amber-400" />}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setCreationSheetOpen(true)}
+                  className="text-[12px] font-medium tracking-[0.2em] uppercase text-rose-400 hover:text-rose-300 transition-colors py-2 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>Post</span>
+                </button>
+                <Link 
+                  href="/kinksters/groups" 
+                  className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
+                    pathname.startsWith('/kinksters/groups') ? 'text-purple-300 font-bold' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Groups
+                  {pathname.startsWith('/kinksters/groups') && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-purple-400" />}
+                </Link>
+                <Link 
+                  href="/kinksters/explore" 
+                  className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
+                    pathname.startsWith('/kinksters/explore') || pathname.startsWith('/kinksters/discover') ? 'text-accent-gold font-bold' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Explore
+                  {(pathname.startsWith('/kinksters/explore') || pathname.startsWith('/kinksters/discover')) && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-accent-gold" />}
+                </Link>
+
+                {/* Top-Right Messages Button on Desktop */}
+                <button
+                  type="button"
+                  onClick={() => setInboxOpen(true)}
+                  className="relative px-3.5 py-1.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[11px] font-mono font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                  title="Sanctuary Messages"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Messages</span>
+                  {unreadCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[9px] font-bold shadow-[0_0_6px_rgba(225,29,72,0.8)]">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/spaces" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
+                  Spaces
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
+                </Link>
+                <Link href="/sanctuary-pass" className="text-[12px] font-medium tracking-[0.2em] uppercase text-amber-400/90 hover:text-amber-300 transition-colors duration-300 relative group py-2 flex items-center gap-1">
+                  Sanctuary Pass ✨
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-amber-400 group-hover:w-full transition-all duration-300" />
+                </Link>
+                <Link href="/kinksters" className="text-[12px] font-medium tracking-[0.2em] uppercase text-rose-400/90 hover:text-rose-400 transition-colors duration-300 relative group py-2 flex items-center gap-1">
+                  Lifestyle 🔥
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-rose-500 group-hover:w-full transition-all duration-300" />
+                </Link>
+                <Link href="/journal" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
+                  Journal
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
+                </Link>
+                <Link href="/franchise" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
+                  Partner
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
+                </Link>
+                <Link href="/onboarding" className="text-[12px] font-medium tracking-[0.2em] uppercase text-accent-gold/90 hover:text-white transition-colors duration-300 relative group py-2 flex items-center gap-1">
+                  Check-In
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
+                </Link>
+              </>
+            )}
             
             {/* Desktop Ecosystem Switcher */}
             <AppSwitcher user={user} />
@@ -215,6 +353,24 @@ export default function Header() {
 
           {/* Mobile Right Controls: Ultra-clean, native 36px circular icon cluster */}
           <div className="flex md:hidden items-center gap-2">
+            {/* Top-Right Native Messages Icon Button in Kinkster Mode */}
+            {isKinksterMode && (
+              <button
+                type="button"
+                onClick={() => setInboxOpen(true)}
+                className="relative w-9 h-9 flex items-center justify-center rounded-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 active:scale-95 transition-all touch-manipulation shadow-sm cursor-pointer"
+                title="Sanctuary Messages"
+                aria-label="Sanctuary Messages"
+              >
+                <MessageSquare className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-rose-600 text-white text-[9px] font-mono font-bold flex items-center justify-center border-2 border-black shadow-[0_0_8px_rgba(225,29,72,0.8)]">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            )}
+
             {/* App Switcher (compact circular icon button) */}
             <AppSwitcher user={user} />
 
@@ -507,6 +663,27 @@ export default function Header() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Kinkster Mode Unified Messaging Slide-Over Drawer */}
+      {isKinksterMode && (
+        <KinksterInboxModal
+          isOpen={inboxOpen}
+          onClose={() => {
+            setInboxOpen(false);
+            fetchUnreadCount();
+          }}
+          onRefreshUnread={fetchUnreadCount}
+        />
+      )}
+
+      {/* Kinkster Mode Native Creation Action Sheet */}
+      {isKinksterMode && (
+        <CreationActionSheet
+          isOpen={creationSheetOpen}
+          onClose={() => setCreationSheetOpen(false)}
+          userAlias={user?.email ? user.email.split('@')[0] : 'member'}
+        />
+      )}
     </>
   );
 }

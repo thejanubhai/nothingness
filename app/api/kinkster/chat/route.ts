@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { MessagingService } from '@/lib/messaging/service';
+import { resolveConversationContext } from '@/lib/messaging/context';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,116 +15,205 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const adminSupabase = createAdminClient();
+    const messagingService = new MessagingService(adminSupabase);
     const { searchParams } = new URL(req.url);
     const receiverAlias = searchParams.get('alias');
+    const tab = searchParams.get('tab') || 'all';
+    const query = (searchParams.get('query') || '').trim().toLowerCase();
 
-    // If alias is provided: return conversation thread for that recipient
+    // CASE 1: Fetch specific thread by recipient @alias
     if (receiverAlias) {
-      const { data: receiverProfile } = await supabase
+      const cleanAlias = receiverAlias.replace('@', '').toLowerCase();
+      const { data: receiverProfile } = await adminSupabase
         .from('kinkster_profiles')
-        .select('id, alias, avatar_url')
-        .eq('alias', receiverAlias.toLowerCase())
-        .single();
+        .select('id, alias, avatar_url, bio, is_in_person_vetted')
+        .eq('alias', cleanAlias)
+        .maybeSingle();
 
       if (!receiverProfile) {
         return NextResponse.json({ error: 'Recipient alias not found.' }, { status: 404 });
       }
 
-      const { data: messages, error } = await supabase
-        .from('kinkster_direct_messages')
+      // Look up or establish direct conversation
+      const { conversation, requiresRequest } = await messagingService.getOrCreateDirectConversation({
+        senderId: user.id,
+        recipientId: receiverProfile.id,
+      });
+
+      // Fetch messages for this conversation
+      const { data: messages, error: msgsError } = await adminSupabase
+        .from('kinkster_messages')
         .select('*')
-        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${receiverProfile.id}),and(sender_id.eq.${receiverProfile.id},receiver_id.eq.${user.id})`)
+        .eq('conversation_id', conversation.id)
         .order('created_at', { ascending: true });
 
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+      if (msgsError) {
+        return NextResponse.json({ error: msgsError.message }, { status: 500 });
       }
+
+      // Resolve context banner if conversation has context
+      const context = await resolveConversationContext(
+        adminSupabase,
+        conversation.context_type,
+        conversation.context_id,
+        user.id
+      );
+
+      // Auto mark as read on open
+      await messagingService.markConversationAsRead(conversation.id, user.id);
 
       return NextResponse.json({
+        success: true,
+        conversation,
         receiver: receiverProfile,
-        messages: messages || []
+        context,
+        requiresRequest,
+        messages: (messages || []).map((m: any) => ({
+          id: m.id,
+          conversation_id: m.conversation_id,
+          sender_id: m.sender_id,
+          is_me: m.sender_id === user.id,
+          message_type: m.message_type,
+          content: m.is_burnt ? '[Burned Photo • Destroyed]' : m.content,
+          media_url: m.is_burnt ? null : m.media_url,
+          media_metadata: m.media_metadata,
+          is_view_once: m.is_view_once,
+          is_burnt: m.is_burnt,
+          burnt_at: m.burnt_at,
+          burn_countdown_seconds: m.burn_countdown_seconds,
+          status: m.status,
+          context_type: m.context_type,
+          context_id: m.context_id,
+          context_data: m.context_data,
+          created_at: m.created_at,
+        })),
       });
     }
 
-    // If alias is NOT provided: return list of active conversations/inbox threads
-    const { data: allMessages, error: msgsError } = await supabase
-      .from('kinkster_direct_messages')
-      .select('id, sender_id, receiver_id, message, media_url, is_read, created_at')
-      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-      .order('created_at', { ascending: false });
-
-    if (msgsError) {
-      return NextResponse.json({ error: msgsError.message }, { status: 500 });
-    }
-
-    const otherUserIds = new Set<string>();
-    const threadMap: Record<string, { lastMessage: any; unreadCount: number }> = {};
-
-    for (const msg of allMessages || []) {
-      const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
-      otherUserIds.add(otherId);
-
-      if (!threadMap[otherId]) {
-        threadMap[otherId] = {
-          lastMessage: msg,
-          unreadCount: 0,
-        };
-      }
-      if (msg.receiver_id === user.id && !msg.is_read) {
-        threadMap[otherId].unreadCount += 1;
-      }
-    }
-
-    // Also include mutual spice matches so conversations can start instantly
-    const { data: spiceAccepted } = await supabase
-      .from('kinkster_spice_requests')
-      .select('sender_id, receiver_id')
-      .eq('status', 'accepted')
-      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
-
-    for (const sp of spiceAccepted || []) {
-      const otherId = sp.sender_id === user.id ? sp.receiver_id : sp.sender_id;
-      otherUserIds.add(otherId);
-      if (!threadMap[otherId]) {
-        threadMap[otherId] = {
-          lastMessage: {
-            message: 'Mutual Spice 🔥 Say hello!',
-            created_at: new Date().toISOString(),
-            is_read: true,
-          },
-          unreadCount: 0,
-        };
-      }
-    }
-
-    let conversations: any[] = [];
-    if (otherUserIds.size > 0) {
-      const { data: profiles } = await supabase
-        .from('kinkster_profiles')
-        .select('id, alias, avatar_url, bio')
-        .in('id', Array.from(otherUserIds));
-
-      const profileMap = new Map((profiles || []).map(p => [p.id, p]));
-
-      conversations = Array.from(otherUserIds).map(id => {
-        const prof = profileMap.get(id);
-        const thread = threadMap[id];
-        return {
+    // CASE 2: List user's conversations / inbox threads with filter tabs
+    // Fetch user's participant records
+    let participantQuery = adminSupabase
+      .from('kinkster_conversation_participants')
+      .select(`
+        conversation_id,
+        role,
+        status,
+        last_read_at,
+        unread_count,
+        is_muted,
+        is_hidden,
+        kinkster_conversations (
           id,
-          alias: prof?.alias || 'anonymous',
-          avatar_url: prof?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
-          bio: prof?.bio || '',
-          last_message: thread?.lastMessage?.message || '',
-          last_message_time: thread?.lastMessage?.created_at,
-          unread_count: thread?.unreadCount || 0,
-        };
-      });
+          type,
+          title,
+          context_type,
+          context_id,
+          context_data,
+          created_by,
+          last_message_at,
+          last_message_preview,
+          retention_policy,
+          expires_at,
+          created_at
+        )
+      `)
+      .eq('user_id', user.id)
+      .eq('is_hidden', false);
 
-      conversations.sort((a, b) => new Date(b.last_message_time || 0).getTime() - new Date(a.last_message_time || 0).getTime());
+    if (tab === 'requests') {
+      participantQuery = participantQuery.eq('status', 'pending_request');
+    } else {
+      participantQuery = participantQuery.in('status', ['active', 'muted']);
     }
 
-    return NextResponse.json({ conversations });
+    const { data: userParticipants, error: pErr } = await participantQuery;
+
+    if (pErr) {
+      return NextResponse.json({ error: pErr.message }, { status: 500 });
+    }
+
+    const convosList = (userParticipants || [])
+      .map((p: any) => ({
+        ...p.kinkster_conversations,
+        participantStatus: p.status,
+        unreadCount: p.unread_count || 0,
+        isMuted: p.is_muted,
+        lastReadAt: p.last_read_at,
+      }))
+      .filter((c: any) => !!c && !!c.id);
+
+    // Apply tab filters
+    const filteredByTab = convosList.filter((c: any) => {
+      if (tab === 'requests') return c.participantStatus === 'pending_request';
+      if (tab === 'people') return c.type === 'DIRECT';
+      if (tab === 'resonance') return c.type === 'RESONANCE';
+      if (tab === 'events') return c.type === 'EVENT' || c.context_type === 'event';
+      if (tab === 'communities') return c.type === 'COMMUNITY' || c.context_type === 'community';
+      if (tab === 'ephemeral') return c.type === 'EPHEMERAL' || (c.retention_policy && c.retention_policy !== 'permanent');
+      return true; // 'all'
+    });
+
+    if (filteredByTab.length === 0) {
+      return NextResponse.json({ conversations: [] });
+    }
+
+    // Fetch other participants' profile data for these conversations
+    const convoIds = filteredByTab.map((c: any) => c.id);
+    const { data: allParticipants } = await adminSupabase
+      .from('kinkster_conversation_participants')
+      .select('conversation_id, user_id, kinkster_profiles(id, alias, avatar_url, bio, is_in_person_vetted)')
+      .in('conversation_id', convoIds)
+      .neq('user_id', user.id);
+
+    const convoOtherMap = new Map<string, any>();
+    for (const ap of allParticipants || []) {
+      if (!convoOtherMap.has(ap.conversation_id)) {
+        convoOtherMap.set(ap.conversation_id, ap.kinkster_profiles);
+      }
+    }
+
+    const formattedConversations = filteredByTab.map((c: any) => {
+      const otherProfile = convoOtherMap.get(c.id);
+      return {
+        id: c.id,
+        type: c.type,
+        title: c.title || (otherProfile ? `@${otherProfile.alias}` : 'Sanctuary Conversation'),
+        alias: otherProfile?.alias || 'anonymous',
+        avatar_url: otherProfile?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+        bio: otherProfile?.bio || '',
+        is_vetted: !!otherProfile?.is_in_person_vetted,
+        context_type: c.context_type,
+        context_id: c.context_id,
+        context_data: c.context_data,
+        last_message: c.last_message_preview || '',
+        last_message_time: c.last_message_at,
+        unread_count: c.unreadCount || 0,
+        retention_policy: c.retention_policy,
+        expires_at: c.expires_at,
+        is_muted: c.isMuted,
+        status: c.participantStatus,
+      };
+    });
+
+    // Apply search query filter if present
+    const searched = query
+      ? formattedConversations.filter(
+          (c) =>
+            c.alias.toLowerCase().includes(query) ||
+            c.title.toLowerCase().includes(query) ||
+            c.last_message.toLowerCase().includes(query)
+        )
+      : formattedConversations;
+
+    // Order by latest message
+    searched.sort(
+      (a, b) => new Date(b.last_message_time || 0).getTime() - new Date(a.last_message_time || 0).getTime()
+    );
+
+    return NextResponse.json({ conversations: searched });
   } catch (err: any) {
+    console.error('Chat GET error:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
 }
@@ -133,57 +227,122 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Ensure sender profile is activated
-    const { data: senderProfile } = await supabase
-      .from('kinkster_profiles')
-      .select('id, is_activated')
-      .eq('id', user.id)
-      .eq('is_activated', true)
-      .single();
+    const body = await req.json();
+    const {
+      conversation_id,
+      receiver_alias,
+      message,
+      media_url,
+      message_type = 'text',
+      is_view_once = false,
+      idempotency_key,
+      context_type,
+      context_id,
+      context_data,
+    } = body;
 
-    if (!senderProfile) {
-      return NextResponse.json(
-        { error: 'You must activate Kinkster Mode before sending in-app messages.' },
-        { status: 403 }
-      );
+    const adminSupabase = createAdminClient();
+    const messagingService = new MessagingService(adminSupabase);
+
+    let targetConvoId = conversation_id;
+
+    // If conversation_id not supplied, resolve from receiver_alias
+    if (!targetConvoId && receiver_alias) {
+      const cleanAlias = receiver_alias.replace('@', '').toLowerCase();
+      const { data: targetProfile } = await adminSupabase
+        .from('kinkster_profiles')
+        .select('id')
+        .eq('alias', cleanAlias)
+        .maybeSingle();
+
+      if (!targetProfile) {
+        return NextResponse.json({ error: 'Recipient alias not found.' }, { status: 404 });
+      }
+
+      const { conversation } = await messagingService.getOrCreateDirectConversation({
+        senderId: user.id,
+        recipientId: targetProfile.id,
+        contextType: context_type,
+        contextId: context_id,
+        contextData: context_data,
+      });
+
+      targetConvoId = conversation.id;
     }
 
-    const { receiver_alias, message, media_url, is_view_once } = await req.json();
-
-    if (!receiver_alias || (!message && !media_url)) {
-      return NextResponse.json({ error: 'Message content and recipient alias are required.' }, { status: 400 });
+    if (!targetConvoId) {
+      return NextResponse.json({ error: 'Conversation ID or recipient alias is required.' }, { status: 400 });
     }
 
-    // Lookup recipient by alias
-    const { data: receiverProfile } = await supabase
-      .from('kinkster_profiles')
-      .select('id')
-      .eq('alias', receiver_alias.toLowerCase())
-      .eq('is_activated', true)
-      .single();
-
-    if (!receiverProfile) {
-      return NextResponse.json({ error: 'Recipient alias not found or not activated.' }, { status: 404 });
+    if (!message && !media_url) {
+      return NextResponse.json({ error: 'Message text or media is required.' }, { status: 400 });
     }
 
-    const { data: newMessage, error: insertError } = await supabase
-      .from('kinkster_direct_messages')
-      .insert({
-        sender_id: user.id,
-        receiver_id: receiverProfile.id,
-        message: message || '',
-        media_url: media_url || null,
-        is_view_once: is_view_once || false
-      })
-      .select()
-      .single();
+    const { message: sentMessage, isDuplicate } = await messagingService.sendMessage({
+      conversationId: targetConvoId,
+      senderId: user.id,
+      content: message || '',
+      messageType: is_view_once ? 'burn_photo' : message_type,
+      mediaUrl: media_url || null,
+      isViewOnce: is_view_once,
+      idempotencyKey: idempotency_key || null,
+      contextType: context_type || null,
+      contextId: context_id || null,
+      contextData: context_data || {},
+    });
 
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true, message: newMessage });
+    return NextResponse.json({
+      success: true,
+      isDuplicate,
+      message: sentMessage,
+    });
   } catch (err: any) {
+    console.error('Chat POST error:', err);
+    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { conversation_id, alias } = await req.json();
+    const adminSupabase = createAdminClient();
+    const messagingService = new MessagingService(adminSupabase);
+
+    let targetConvoId = conversation_id;
+
+    if (!targetConvoId && alias) {
+      const cleanAlias = alias.replace('@', '').toLowerCase();
+      const { data: targetProfile } = await adminSupabase
+        .from('kinkster_profiles')
+        .select('id')
+        .eq('alias', cleanAlias)
+        .maybeSingle();
+
+      if (targetProfile) {
+        const { conversation } = await messagingService.getOrCreateDirectConversation({
+          senderId: user.id,
+          recipientId: targetProfile.id,
+        });
+        targetConvoId = conversation.id;
+      }
+    }
+
+    if (!targetConvoId) {
+      return NextResponse.json({ error: 'Target conversation ID or recipient alias required.' }, { status: 400 });
+    }
+
+    await messagingService.markConversationAsRead(targetConvoId, user.id);
+
+    return NextResponse.json({ success: true, message: 'Conversation marked as read.' });
+  } catch (err: any) {
+    console.error('Chat PATCH error:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
 }

@@ -2,106 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-// Helper to generate dynamic upcoming flagship gatherings
-function getFlagshipGatherings() {
-  const now = new Date();
-  
-  // Event 1: Next Tuesday (Munch / Salon)
-  const d1 = new Date(now);
-  d1.setDate(now.getDate() + ((2 - now.getDay() + 7) % 7 || 5));
-  d1.setHours(19, 30, 0, 0);
-
-  // Event 2: Next Saturday (Masquerade)
-  const d2 = new Date(now);
-  d2.setDate(now.getDate() + ((6 - now.getDay() + 7) % 7 || 7));
-  d2.setHours(22, 0, 0, 0);
-
-  // Event 3: Following Saturday (Intimate Soirée)
-  const d3 = new Date(now);
-  d3.setDate(now.getDate() + ((6 - now.getDay() + 14) % 7 || 14));
-  d3.setHours(23, 0, 0, 0);
-
-  return [
-    {
-      id: 'flagship-shibari-salon',
-      title: 'Rope & Reverie: The Shibari Dialogue Salon',
-      tagline: 'Sensory Artistry, Power Exchange & Mindful Aftercare',
-      tier: 'munch' as const,
-      requires_munch_vetting: false,
-      event_date: d1.toISOString(),
-      end_time: '11:30 PM',
-      dress_code: 'Minimalist Noir • Textured Linen & Structured Silhouettes',
-      consent_marshall_name: 'Master Rigger Dev & Maya',
-      price_couples: 3999,
-      price_females: 1499,
-      price_males: 4499,
-      price_nonbinary: 1999,
-      max_couples: 12,
-      max_females: 15,
-      max_males: 8,
-      max_nonbinary: 6,
-      description: 'An intimate introductory evening of technical suspension demonstrations, discussion on psychological power dynamics in modern relationships, anatomical safety considerations, and deep aftercare protocols. Accompanied by fine wine and quiet music. Phones are permitted. A Nothingness concierge is present for physical Level 2 vetting.',
-      cover_image_url: '/images/The Void (1).png',
-      spaces: {
-        title: 'The Brutalist Void',
-        city: 'New Delhi',
-        images: ['/images/The Void (1).png']
-      }
-    },
-    {
-      id: 'flagship-velvet-masquerade',
-      title: 'The Velvet Masquerade: Midnight Noir',
-      tagline: 'Masked Anonymity, Ambient Vinyl & Sensory Immersion',
-      tier: 'rave' as const,
-      requires_munch_vetting: true,
-      event_date: d2.toISOString(),
-      end_time: '04:00 AM',
-      dress_code: 'Noir Luxury • Silk Cravats, Leather Corsetry & Velvet Masks',
-      consent_marshall_name: 'Aria & Kael',
-      price_couples: 6999,
-      price_females: 1999,
-      price_males: 7999,
-      price_nonbinary: 2499,
-      max_couples: 15,
-      max_females: 20,
-      max_males: 5,
-      max_nonbinary: 10,
-      description: 'An underground midnight masquerade across our secluded South Delhi penthouse sanctuary. Live dark ambient soundscapes, curated craft bar, discreet lounge alcoves, and mandatory camera-ban tamper seals. Access is strictly unlocked for members who have attended an in-person Munch.',
-      cover_image_url: '/images/IMG_9955.jpg',
-      spaces: {
-        title: 'The Penthouse Sanctuary',
-        city: 'South Delhi',
-        images: ['/images/IMG_9955.jpg']
-      }
-    },
-    {
-      id: 'flagship-obsidian-soiree',
-      title: 'The Obsidian Soirée: Deep Surrender',
-      tagline: 'Strictly Capped to 8 Couples • Private Jacuzzis & Suspension Suites',
-      tier: 'soiree' as const,
-      requires_munch_vetting: true,
-      event_date: d3.toISOString(),
-      end_time: '05:00 AM',
-      dress_code: 'Noir Elegance • Dark Silk Robes & Statement Collars',
-      consent_marshall_name: 'Sovereign Floor Guild',
-      price_couples: 9999,
-      price_females: 2999,
-      price_males: 9999,
-      price_nonbinary: 3499,
-      max_couples: 8,
-      max_females: 10,
-      max_males: 3,
-      max_nonbinary: 4,
-      description: 'Our most intimate and exclusive gathering. Strictly limited to vetted couples and sovereign members. Features private jacuzzi soaks, industrial ceiling suspension rigs, sensory isolation chambers, and bespoke champagne service.',
-      cover_image_url: '/images/IMG_4446.jpeg',
-      spaces: {
-        title: 'The Obsidian Suite',
-        city: 'South Delhi',
-        images: ['/images/IMG_4446.jpeg']
-      }
-    }
-  ];
-}
 
 function sanitizeEvents(rawEvents: any[], isVetted: boolean) {
   return rawEvents.map((evt: any) => {
@@ -179,7 +79,7 @@ export async function GET(req: NextRequest) {
     const passPrice = settings?.one_time_pass_price || 1499;
 
     // Fetch Published DB Events
-    const { data: dbEvents } = await adminClient
+    const { data: dbEvents, error: dbEventsError } = await adminClient
       .from('sanctuary_events')
       .select(`
         *,
@@ -192,8 +92,12 @@ export async function GET(req: NextRequest) {
       .neq('status', 'draft')
       .order('event_date', { ascending: true });
 
-    // If no DB events, supply our curated flagship gatherings
-    const rawEvents = (dbEvents && dbEvents.length > 0) ? dbEvents : getFlagshipGatherings();
+    if (dbEventsError) {
+      console.error('Error fetching sanctuary events:', dbEventsError);
+      return NextResponse.json({ error: dbEventsError.message }, { status: 500 });
+    }
+
+    const rawEvents = dbEvents || [];
 
     // 1. If unauthenticated, return public state with locked teasers for higher tiers!
     if (authError || !user) {

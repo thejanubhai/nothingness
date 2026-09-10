@@ -23,7 +23,8 @@ import {
   RefreshCw,
   Eye,
   SlidersHorizontal,
-  Flag
+  Flag,
+  Users
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -45,6 +46,13 @@ interface Post {
   comments_count?: number;
   is_liked?: boolean;
   created_at: string;
+  group_id?: string | null;
+  groups?: {
+    id: string;
+    name: string;
+    slug: string;
+    avatar_url?: string | null;
+  } | null;
   kinkster_profiles: {
     alias: string;
     avatar_url: string;
@@ -140,9 +148,11 @@ function KinkstersContent() {
       setActiveView('manifesto');
     } else if (tab === 'feed') {
       setActiveView('feed');
-    } else if (tab === 'discover') {
-      router.push('/kinksters/discover');
-    } else if (tab === 'events' || tab === 'soirees') {
+    } else if (tab === 'discover' || tab === 'explore') {
+      router.push('/kinksters/explore');
+    } else if (tab === 'groups' || tab === 'communities') {
+      router.push('/kinksters/groups');
+    } else if (tab === 'events' || tab === 'soirees' || tab === 'gatherings') {
       router.push('/kinksters/events');
     }
 
@@ -795,11 +805,27 @@ function KinkstersContent() {
             </button>
 
             <Link
-              href="/kinksters/discover"
+              href="/kinksters/events"
+              className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 text-zinc-400 hover:text-white bg-zinc-900/70 border border-zinc-800"
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              Gatherings
+            </Link>
+
+            <Link
+              href="/kinksters/groups"
+              className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 text-zinc-400 hover:text-white bg-zinc-900/70 border border-zinc-800"
+            >
+              <Users className="w-4 h-4 text-emerald-400" />
+              Communities
+            </Link>
+
+            <Link
+              href="/kinksters/explore"
               className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 text-zinc-400 hover:text-white bg-zinc-900/70 border border-zinc-800"
             >
               <Compass className="w-4 h-4 text-purple-400" />
-              Discover Members
+              Explore
             </Link>
 
             <button
@@ -819,14 +845,6 @@ function KinkstersContent() {
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
               )}
             </button>
-
-            <Link
-              href="/kinksters/events"
-              className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 text-zinc-400 hover:text-white bg-zinc-900/70 border border-zinc-800"
-            >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              Secret Soirées
-            </Link>
 
             <button
               onClick={() => setActiveView('manifesto')}
@@ -928,7 +946,18 @@ function KinkstersContent() {
                               </Link>
                               <ShieldCheck className="w-4 h-4 text-emerald-400" />
                             </div>
-                            <span className="text-[10px] text-zinc-500">ID Vetted • Confidential Member</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] text-zinc-500">ID Vetted • Confidential Member</span>
+                              {post.groups && (
+                                <Link
+                                  href={`/kinksters/groups/${post.groups.slug}`}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-purple-300 hover:text-white hover:border-purple-500/40 transition-colors"
+                                >
+                                  <Users className="w-2.5 h-2.5 text-purple-400" />
+                                  <span>{post.groups.name}</span>
+                                </Link>
+                              )}
+                            </div>
                           </div>
                         </div>
 

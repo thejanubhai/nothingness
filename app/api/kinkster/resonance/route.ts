@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { MessagingService } from '@/lib/messaging/service';
 
 export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     const adminClient = createAdminClient();
 
-    // 1. Fetch user's mutual resonances (where is_mutual is true)
+    // 1. Fetch user's mutual resonances strictly where is_mutual is true
     const { data: mutualResonances } = await adminClient
       .from('kinkster_resonances')
       .select(`
@@ -26,12 +28,13 @@ export async function GET(req: NextRequest) {
         expires_at,
         sender_id,
         target_id,
-        kinkster_profiles!kinkster_resonances_target_id_fkey(alias, avatar_url, bio)
+        sender:kinkster_profiles!kinkster_resonances_sender_id_fkey(alias, avatar_url, bio),
+        target:kinkster_profiles!kinkster_resonances_target_id_fkey(alias, avatar_url, bio)
       `)
       .or(`sender_id.eq.${user.id},target_id.eq.${user.id}`)
       .eq('is_mutual', true);
 
-    // 2. Fetch all target IDs the user has currently resonated with
+    // 2. Fetch all target IDs the user has resonated with (strictly user's outbound intent)
     const { data: outboundResonances } = await adminClient
       .from('kinkster_resonances')
       .select('target_id, tags')
@@ -43,14 +46,16 @@ export async function GET(req: NextRequest) {
     const matches = (mutualResonances || []).map((m: any) => {
       const isSender = m.sender_id === user.id;
       const otherId = isSender ? m.target_id : m.sender_id;
+      const otherProfile = isSender ? m.target : m.sender;
       return {
         id: m.id,
         chamberToken: m.chamber_token,
         tags: m.tags || [],
         matchedAt: m.matched_at,
+        expiresAt: m.expires_at,
         otherUserId: otherId,
-        otherAlias: m.kinkster_profiles?.alias || 'anonymous_member',
-        otherAvatar: m.kinkster_profiles?.avatar_url || '/images/IMG_9955.jpg',
+        otherAlias: otherProfile?.alias || 'anonymous_member',
+        otherAvatar: otherProfile?.avatar_url || '/images/IMG_9955.jpg',
       };
     });
 
@@ -87,7 +92,7 @@ export async function POST(req: NextRequest) {
     const { data: targetProfile } = await adminClient
       .from('kinkster_profiles')
       .select('id, alias')
-      .eq('alias', targetAlias.replace('@', ''))
+      .eq('alias', targetAlias.replace('@', '').toLowerCase())
       .maybeSingle();
 
     if (!targetProfile) {
@@ -98,7 +103,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'You cannot resonate with your own profile.' }, { status: 400 });
     }
 
-    // 2. Check if reverse resonance exists from target to user
+    // 2. Dual-Blind Check: Does target have an active un-expired resonance towards user?
     const { data: reverseMatch } = await adminClient
       .from('kinkster_resonances')
       .select('id, chamber_token, tags')
@@ -111,7 +116,7 @@ export async function POST(req: NextRequest) {
     let chamberToken = reverseMatch?.chamber_token || Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     if (reverseMatch) {
-      // It's a mutual lock!
+      // It's a genuine mutual lock!
       isMutual = true;
 
       // Update reverse record
@@ -124,7 +129,15 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', reverseMatch.id);
 
-      // Sync into kinkster_spice_requests as accepted so both chat modes are open
+      // Link to canonical messaging system
+      try {
+        const messagingService = new MessagingService(adminClient);
+        await messagingService.getOrCreateResonanceConversation(user.id, targetProfile.id, tags);
+      } catch (err) {
+        console.error('Error linking resonance conversation:', err);
+      }
+
+      // Sync into kinkster_spice_requests as accepted
       try {
         await adminClient
           .from('kinkster_spice_requests')
@@ -150,11 +163,8 @@ export async function POST(req: NextRequest) {
         .from('kinkster_resonances')
         .update({
           sender_id: user.id,
-          source_user_id: user.id,
           target_id: targetProfile.id,
-          target_user_id: targetProfile.id,
           tags,
-          status: isMutual ? 'mutual' : 'pending',
           is_mutual: isMutual,
           chamber_token: chamberToken,
           matched_at: isMutual ? now : null,
@@ -165,11 +175,8 @@ export async function POST(req: NextRequest) {
         .from('kinkster_resonances')
         .insert({
           sender_id: user.id,
-          source_user_id: user.id,
           target_id: targetProfile.id,
-          target_user_id: targetProfile.id,
           tags,
-          status: isMutual ? 'mutual' : 'pending',
           is_mutual: isMutual,
           chamber_token: chamberToken,
           matched_at: isMutual ? now : null,
