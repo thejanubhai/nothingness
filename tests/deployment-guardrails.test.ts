@@ -87,24 +87,26 @@ describe('Deployment & Infrastructure Guardrails', () => {
     const migrationsDir = path.resolve(process.cwd(), 'supabase/migrations');
     const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql'));
 
+    let totalPoliciesFound = 0;
     for (const file of files) {
       const content = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-      const lines = content.split('\n');
+      const multilineRegex = /CREATE\s+POLICY\s+["']([^"']+)["'][\s\r\n]+ON[\s\r\n]+([a-zA-Z0-9_.]+)/gi;
+      let match;
 
-      lines.forEach((line, idx) => {
-        const match = line.match(/CREATE\s+POLICY\s+["']([^"']+)["']\s+ON\s+([a-zA-Z0-9_.]+)/i);
-        if (match) {
-          const policyName = match[1];
-          const table = match[2].replace('public.', '');
-          const precedingContent = lines.slice(0, idx).join('\n');
-          const escapedName = policyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const dropRegex = new RegExp(`DROP\\s+POLICY\\s+(IF\\s+EXISTS\\s+)?["']?${escapedName}["']?\\s+ON\\s+(public\\.)?${table}`, 'i');
-          assert.ok(
-            dropRegex.test(precedingContent),
-            `Migration ${file}:${idx + 1} creates policy "${policyName}" on ${table} without a preceding DROP POLICY IF EXISTS.`
-          );
-        }
-      });
+      while ((match = multilineRegex.exec(content)) !== null) {
+        totalPoliciesFound++;
+        const policyName = match[1].trim();
+        const table = match[2].trim().replace('public.', '');
+        const precedingContent = content.substring(0, match.index);
+        const escapedName = policyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const dropRegex = new RegExp(`DROP\\s+POLICY\\s+(IF\\s+EXISTS\\s+)?["']?${escapedName}["']?\\s+ON\\s+(public\\.)?${table}`, 'i');
+        assert.ok(
+          dropRegex.test(precedingContent),
+          `Migration ${file} creates policy "${policyName}" on ${table} without a preceding DROP POLICY IF EXISTS.`
+        );
+      }
     }
+    assert.ok(totalPoliciesFound > 140, `Expected > 140 policies across all migrations, found ${totalPoliciesFound}`);
   });
 });
+
