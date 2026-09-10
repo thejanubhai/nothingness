@@ -74,15 +74,23 @@ DROP POLICY IF EXISTS "Service role all partner_profiles" ON public.partner_prof
 DROP POLICY IF EXISTS "Service role all partner_properties" ON public.partner_properties;
 
 -- Franchise leads policies
+DROP POLICY IF EXISTS "Public insert franchise_leads" ON public.franchise_leads;
+DROP POLICY IF EXISTS "Service role read franchise_leads" ON public.franchise_leads;
 CREATE POLICY "Public insert franchise_leads" ON public.franchise_leads FOR INSERT WITH CHECK (true);
 CREATE POLICY "Service role read franchise_leads" ON public.franchise_leads FOR ALL USING (true);
 
 -- Partner profiles policies
+DROP POLICY IF EXISTS "Users can view own partner profile" ON public.partner_profiles;
+DROP POLICY IF EXISTS "Users can insert own partner profile" ON public.partner_profiles;
+DROP POLICY IF EXISTS "Users can update own partner profile" ON public.partner_profiles;
 CREATE POLICY "Users can view own partner profile" ON public.partner_profiles FOR SELECT TO authenticated USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own partner profile" ON public.partner_profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own partner profile" ON public.partner_profiles FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 
 -- Partner properties policies
+DROP POLICY IF EXISTS "Partners can view own properties" ON public.partner_properties;
+DROP POLICY IF EXISTS "Partners can insert own properties" ON public.partner_properties;
+DROP POLICY IF EXISTS "Partners can update own properties" ON public.partner_properties;
 CREATE POLICY "Partners can view own properties" ON public.partner_properties FOR SELECT TO authenticated USING (
     partner_id IN (SELECT id FROM public.partner_profiles WHERE user_id = auth.uid())
 );

@@ -40,6 +40,8 @@ ALTER TABLE kinkster_resonances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kinkster_ephemeral_messages ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies: Members only read their own outbound/mutual resonances
+DROP POLICY IF EXISTS "Allow members read own resonances" ON kinkster_resonances;
+DROP POLICY IF EXISTS "Allow members insert own resonances" ON kinkster_resonances;
 CREATE POLICY "Allow members read own resonances" ON kinkster_resonances FOR SELECT TO authenticated USING (
     auth.uid() = sender_id OR (auth.uid() = target_id AND is_mutual = true)
 );
@@ -48,6 +50,8 @@ CREATE POLICY "Allow members insert own resonances" ON kinkster_resonances FOR I
     auth.uid() = sender_id
 );
 
+DROP POLICY IF EXISTS "Allow members read ephemeral messages" ON kinkster_ephemeral_messages;
+DROP POLICY IF EXISTS "Allow members insert ephemeral messages" ON kinkster_ephemeral_messages;
 CREATE POLICY "Allow members read ephemeral messages" ON kinkster_ephemeral_messages FOR SELECT TO authenticated USING (
     true
 );
