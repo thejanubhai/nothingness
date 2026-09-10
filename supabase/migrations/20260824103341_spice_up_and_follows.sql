@@ -30,14 +30,18 @@ ALTER TABLE kinkster_follows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kinkster_spice_requests ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Allow authenticated read for follows" ON kinkster_follows;
 CREATE POLICY "Allow authenticated read for follows" ON kinkster_follows FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow user manage own follows" ON kinkster_follows;
 CREATE POLICY "Allow user manage own follows" ON kinkster_follows FOR ALL TO authenticated USING (
     auth.uid() = follower_id
 );
 
+DROP POLICY IF EXISTS "Allow users read own spice requests" ON kinkster_spice_requests;
 CREATE POLICY "Allow users read own spice requests" ON kinkster_spice_requests FOR SELECT TO authenticated USING (
     auth.uid() = sender_id OR auth.uid() = receiver_id
 );
+DROP POLICY IF EXISTS "Allow users manage own spice requests" ON kinkster_spice_requests;
 CREATE POLICY "Allow users manage own spice requests" ON kinkster_spice_requests FOR ALL TO authenticated USING (
     auth.uid() = sender_id OR auth.uid() = receiver_id
 );

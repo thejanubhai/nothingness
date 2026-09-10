@@ -37,10 +37,14 @@ ALTER TABLE kinkster_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kinkster_posts ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies: Allow read/write access to authenticated users
+DROP POLICY IF EXISTS "Allow authenticated read for profiles" ON kinkster_profiles;
 CREATE POLICY "Allow authenticated read for profiles" ON kinkster_profiles FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow authenticated write for profiles" ON kinkster_profiles;
 CREATE POLICY "Allow authenticated write for profiles" ON kinkster_profiles FOR ALL TO authenticated USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Allow authenticated read for posts" ON kinkster_posts;
 CREATE POLICY "Allow authenticated read for posts" ON kinkster_posts FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow authenticated write for posts" ON kinkster_posts;
 CREATE POLICY "Allow authenticated write for posts" ON kinkster_posts FOR ALL TO authenticated USING (
     auth.uid() = kinkster_id
 );

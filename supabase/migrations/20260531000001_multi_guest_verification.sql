@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS public.booking_guests (
 
 ALTER TABLE public.booking_guests ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Enable all operations for booking_guests" ON public.booking_guests;
 CREATE POLICY "Enable all operations for booking_guests" ON public.booking_guests
   FOR ALL
   USING (true)

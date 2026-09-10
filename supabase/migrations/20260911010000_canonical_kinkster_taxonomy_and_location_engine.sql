@@ -52,16 +52,19 @@ ALTER TABLE public.event_topics ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'post_topics' AND policyname = 'Allow public read for post_topics') THEN
+        DROP POLICY IF EXISTS "Allow public read for post_topics" ON public.post_topics;
         CREATE POLICY "Allow public read for post_topics" ON public.post_topics FOR SELECT TO authenticated USING (true);
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'post_topics' AND policyname = 'Allow post owner manage post_topics') THEN
+        DROP POLICY IF EXISTS "Allow post owner manage post_topics" ON public.post_topics;
         CREATE POLICY "Allow post owner manage post_topics" ON public.post_topics FOR ALL TO authenticated USING (
             EXISTS (SELECT 1 FROM public.kinkster_posts WHERE id = post_topics.post_id AND kinkster_id = auth.uid())
         );
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'event_topics' AND policyname = 'Allow public read for event_topics') THEN
+        DROP POLICY IF EXISTS "Allow public read for event_topics" ON public.event_topics;
         CREATE POLICY "Allow public read for event_topics" ON public.event_topics FOR SELECT TO authenticated USING (true);
     END IF;
 END $$;

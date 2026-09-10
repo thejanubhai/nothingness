@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS kinkster_event_rsvps (
 
 ALTER TABLE kinkster_event_rsvps ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow authenticated read for rsvps" ON kinkster_event_rsvps;
 CREATE POLICY "Allow authenticated read for rsvps" ON kinkster_event_rsvps FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow user manage own rsvps" ON kinkster_event_rsvps;
 CREATE POLICY "Allow user manage own rsvps" ON kinkster_event_rsvps FOR ALL TO authenticated USING (
     auth.uid() = kinkster_id
 );

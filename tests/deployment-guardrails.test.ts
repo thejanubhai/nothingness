@@ -82,4 +82,29 @@ describe('Deployment & Infrastructure Guardrails', () => {
       }
     }
   });
+
+  test('All CREATE POLICY statements across all migrations are idempotent with DROP POLICY IF EXISTS', () => {
+    const migrationsDir = path.resolve(process.cwd(), 'supabase/migrations');
+    const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql'));
+
+    for (const file of files) {
+      const content = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+      const lines = content.split('\n');
+
+      lines.forEach((line, idx) => {
+        const match = line.match(/CREATE\s+POLICY\s+["']([^"']+)["']\s+ON\s+([a-zA-Z0-9_.]+)/i);
+        if (match) {
+          const policyName = match[1];
+          const table = match[2].replace('public.', '');
+          const precedingContent = lines.slice(0, idx).join('\n');
+          const escapedName = policyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const dropRegex = new RegExp(`DROP\\s+POLICY\\s+(IF\\s+EXISTS\\s+)?["']?${escapedName}["']?\\s+ON\\s+(public\\.)?${table}`, 'i');
+          assert.ok(
+            dropRegex.test(precedingContent),
+            `Migration ${file}:${idx + 1} creates policy "${policyName}" on ${table} without a preceding DROP POLICY IF EXISTS.`
+          );
+        }
+      });
+    }
+  });
 });

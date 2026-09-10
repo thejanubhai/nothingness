@@ -3,6 +3,7 @@
 DROP POLICY IF EXISTS "Admins have full access to spaces." ON spaces;
 DROP POLICY IF EXISTS "Admins have full access to spaces" ON spaces;
 
+DROP POLICY IF EXISTS "Admins and API manage spaces" ON spaces;
 CREATE POLICY "Admins and API manage spaces"
 ON spaces
 FOR ALL

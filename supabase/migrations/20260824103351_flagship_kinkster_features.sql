@@ -40,12 +40,16 @@ ALTER TABLE kinkster_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kinkster_ratings ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Allow authenticated read for events" ON kinkster_events;
 CREATE POLICY "Allow authenticated read for events" ON kinkster_events FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow trusted host create events" ON kinkster_events;
 CREATE POLICY "Allow trusted host create events" ON kinkster_events FOR INSERT TO authenticated WITH CHECK (
     auth.uid() = host_kinkster_id
 );
 
+DROP POLICY IF EXISTS "Allow authenticated read for ratings" ON kinkster_ratings;
 CREATE POLICY "Allow authenticated read for ratings" ON kinkster_ratings FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow user manage own ratings" ON kinkster_ratings;
 CREATE POLICY "Allow user manage own ratings" ON kinkster_ratings FOR ALL TO authenticated USING (
     auth.uid() = rater_id
 );

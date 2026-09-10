@@ -40,14 +40,17 @@ CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chatflows ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow admins to read messages" ON messages;
 CREATE POLICY "Allow admins to read messages" ON messages
   FOR SELECT TO authenticated
   USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR auth.jwt() ->> 'email' LIKE '%admin%');
 
+DROP POLICY IF EXISTS "Allow admins to insert messages" ON messages;
 CREATE POLICY "Allow admins to insert messages" ON messages
   FOR INSERT TO authenticated
   WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR auth.jwt() ->> 'email' LIKE '%admin%');
 
+DROP POLICY IF EXISTS "Allow admins to read chatflows" ON chatflows;
 CREATE POLICY "Allow admins to read chatflows" ON chatflows
   FOR ALL TO authenticated
   USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR auth.jwt() ->> 'email' LIKE '%admin%');

@@ -65,21 +65,28 @@ ALTER TABLE kinkster_co_stay_invites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kinkster_direct_messages ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Allow public read for kinks reference" ON kinkster_kinks;
 CREATE POLICY "Allow public read for kinks reference" ON kinkster_kinks FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Allow authenticated read for prefs" ON kinkster_preferences;
 CREATE POLICY "Allow authenticated read for prefs" ON kinkster_preferences FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow user manage own prefs" ON kinkster_preferences;
 CREATE POLICY "Allow user manage own prefs" ON kinkster_preferences FOR ALL TO authenticated USING (
     auth.uid() = kinkster_id
 );
 
+DROP POLICY IF EXISTS "Allow authenticated read for co-stays" ON kinkster_co_stay_invites;
 CREATE POLICY "Allow authenticated read for co-stays" ON kinkster_co_stay_invites FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow host manage own co-stays" ON kinkster_co_stay_invites;
 CREATE POLICY "Allow host manage own co-stays" ON kinkster_co_stay_invites FOR ALL TO authenticated USING (
     auth.uid() = host_kinkster_id
 );
 
+DROP POLICY IF EXISTS "Allow users read own message threads" ON kinkster_direct_messages;
 CREATE POLICY "Allow users read own message threads" ON kinkster_direct_messages FOR SELECT TO authenticated USING (
     auth.uid() = sender_id OR auth.uid() = receiver_id
 );
+DROP POLICY IF EXISTS "Allow users send messages" ON kinkster_direct_messages;
 CREATE POLICY "Allow users send messages" ON kinkster_direct_messages FOR INSERT TO authenticated WITH CHECK (
     auth.uid() = sender_id
 );

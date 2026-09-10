@@ -23,9 +23,11 @@ CREATE INDEX IF NOT EXISTS idx_kinkster_health_kinkster ON kinkster_health_repor
 ALTER TABLE kinkster_health_reports ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Allow authenticated read for health reports" ON kinkster_health_reports;
 CREATE POLICY "Allow authenticated read for health reports" ON kinkster_health_reports FOR SELECT TO authenticated USING (
     auth.uid() = kinkster_id
 );
+DROP POLICY IF EXISTS "Allow user insert own health report" ON kinkster_health_reports;
 CREATE POLICY "Allow user insert own health report" ON kinkster_health_reports FOR INSERT TO authenticated WITH CHECK (
     auth.uid() = kinkster_id
 );

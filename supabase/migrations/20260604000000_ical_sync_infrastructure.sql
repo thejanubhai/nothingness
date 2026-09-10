@@ -42,6 +42,7 @@ ALTER TABLE calendar_sync_sources ENABLE ROW LEVEL SECURITY;
 ALTER TABLE external_blocked_dates ENABLE ROW LEVEL SECURITY;
 
 -- Admin-only access policies
+DROP POLICY IF EXISTS "Allow admins to manage calendar sync sources" ON calendar_sync_sources;
 CREATE POLICY "Allow admins to manage calendar sync sources" ON calendar_sync_sources
   FOR ALL TO authenticated
   USING (
@@ -50,6 +51,7 @@ CREATE POLICY "Allow admins to manage calendar sync sources" ON calendar_sync_so
     OR auth.jwt() ->> 'email' LIKE '%hudav%'
   );
 
+DROP POLICY IF EXISTS "Allow admins to manage external blocked dates" ON external_blocked_dates;
 CREATE POLICY "Allow admins to manage external blocked dates" ON external_blocked_dates
   FOR ALL TO authenticated
   USING (
@@ -59,5 +61,6 @@ CREATE POLICY "Allow admins to manage external blocked dates" ON external_blocke
   );
 
 -- Public read access for blocked dates (needed for booking availability checks)
+DROP POLICY IF EXISTS "Anyone can view external blocked dates" ON external_blocked_dates;
 CREATE POLICY "Anyone can view external blocked dates" ON external_blocked_dates
   FOR SELECT USING (true);

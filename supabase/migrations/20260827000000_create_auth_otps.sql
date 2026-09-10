@@ -17,6 +17,7 @@ CREATE INDEX IF NOT EXISTS idx_auth_otps_expires_at ON public.auth_otps(expires_
 ALTER TABLE public.auth_otps ENABLE ROW LEVEL SECURITY;
 
 -- Allow service role full access
+DROP POLICY IF EXISTS "Allow service role full access" ON auth_otps;
 CREATE POLICY "Allow service role full access on auth_otps"
     ON public.auth_otps
     FOR ALL

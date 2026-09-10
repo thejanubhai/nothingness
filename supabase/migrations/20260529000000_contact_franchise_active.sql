@@ -30,15 +30,23 @@ ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.franchise_leads ENABLE ROW LEVEL SECURITY;
 
 -- Contact Messages Policies
+DROP POLICY IF EXISTS "Enable insert for anonymous users" ON contact_messages;
+DROP POLICY IF EXISTS "Enable insert for anonymous users on contact_messages" ON public.contact_messages;
 CREATE POLICY "Enable insert for anonymous users on contact_messages" ON public.contact_messages
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Enable read for service role" ON contact_messages;
+DROP POLICY IF EXISTS "Enable read for service role on contact_messages" ON public.contact_messages;
 CREATE POLICY "Enable read for service role on contact_messages" ON public.contact_messages
   FOR SELECT USING (true);
 
 -- Franchise Leads Policies
+DROP POLICY IF EXISTS "Enable insert for anonymous users" ON franchise_leads;
+DROP POLICY IF EXISTS "Enable insert for anonymous users on franchise_leads" ON public.franchise_leads;
 CREATE POLICY "Enable insert for anonymous users on franchise_leads" ON public.franchise_leads
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Enable read for service role" ON franchise_leads;
+DROP POLICY IF EXISTS "Enable read for service role on franchise_leads" ON public.franchise_leads;
 CREATE POLICY "Enable read for service role on franchise_leads" ON public.franchise_leads
   FOR SELECT USING (true);

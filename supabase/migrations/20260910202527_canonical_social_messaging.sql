@@ -113,6 +113,7 @@ ALTER TABLE public.kinkster_reports ENABLE ROW LEVEL SECURITY;
 -- 8. RLS Policies for kinkster_conversations
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_conversations' AND policyname = 'Participants can view their conversations') THEN
+        DROP POLICY IF EXISTS "Participants can view their conversations" ON public.kinkster_conversations;
         CREATE POLICY "Participants can view their conversations" ON public.kinkster_conversations
             FOR SELECT TO authenticated
             USING (
@@ -127,6 +128,7 @@ DO $$ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_conversations' AND policyname = 'Users can create conversations') THEN
+        DROP POLICY IF EXISTS "Users can create conversations" ON public.kinkster_conversations;
         CREATE POLICY "Users can create conversations" ON public.kinkster_conversations
             FOR INSERT TO authenticated
             WITH CHECK (
@@ -139,6 +141,7 @@ DO $$ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_conversations' AND policyname = 'Participants can update conversation timestamp') THEN
+        DROP POLICY IF EXISTS "Participants can update conversation timestamp" ON public.kinkster_conversations;
         CREATE POLICY "Participants can update conversation timestamp" ON public.kinkster_conversations
             FOR UPDATE TO authenticated
             USING (
@@ -155,6 +158,7 @@ END $$;
 -- 9. RLS Policies for kinkster_conversation_participants
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_conversation_participants' AND policyname = 'Users can view participants in their conversations') THEN
+        DROP POLICY IF EXISTS "Users can view participants in their conversations" ON public.kinkster_conversation_participants;
         CREATE POLICY "Users can view participants in their conversations" ON public.kinkster_conversation_participants
             FOR SELECT TO authenticated
             USING (
@@ -168,6 +172,7 @@ DO $$ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_conversation_participants' AND policyname = 'Users can insert participants during conversation creation') THEN
+        DROP POLICY IF EXISTS "Users can insert participants during conversation creation" ON public.kinkster_conversation_participants;
         CREATE POLICY "Users can insert participants during conversation creation" ON public.kinkster_conversation_participants
             FOR INSERT TO authenticated
             WITH CHECK (
@@ -181,12 +186,14 @@ DO $$ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_conversation_participants' AND policyname = 'Users can update their own participant record') THEN
+        DROP POLICY IF EXISTS "Users can update their own participant record" ON public.kinkster_conversation_participants;
         CREATE POLICY "Users can update their own participant record" ON public.kinkster_conversation_participants
             FOR UPDATE TO authenticated
             USING (user_id = auth.uid());
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_conversation_participants' AND policyname = 'Users can leave conversations') THEN
+        DROP POLICY IF EXISTS "Users can leave conversations" ON public.kinkster_conversation_participants;
         CREATE POLICY "Users can leave conversations" ON public.kinkster_conversation_participants
             FOR DELETE TO authenticated
             USING (user_id = auth.uid());
@@ -196,6 +203,7 @@ END $$;
 -- 10. RLS Policies for kinkster_messages
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_messages' AND policyname = 'Active participants can read messages') THEN
+        DROP POLICY IF EXISTS "Active participants can read messages" ON public.kinkster_messages;
         CREATE POLICY "Active participants can read messages" ON public.kinkster_messages
             FOR SELECT TO authenticated
             USING (
@@ -210,6 +218,7 @@ DO $$ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_messages' AND policyname = 'Active participants can send messages') THEN
+        DROP POLICY IF EXISTS "Active participants can send messages" ON public.kinkster_messages;
         CREATE POLICY "Active participants can send messages" ON public.kinkster_messages
             FOR INSERT TO authenticated
             WITH CHECK (
@@ -224,6 +233,7 @@ DO $$ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_messages' AND policyname = 'Participants can update message read or burn state') THEN
+        DROP POLICY IF EXISTS "Participants can update message read or burn state" ON public.kinkster_messages;
         CREATE POLICY "Participants can update message read or burn state" ON public.kinkster_messages
             FOR UPDATE TO authenticated
             USING (
@@ -240,12 +250,14 @@ END $$;
 -- 11. RLS Policies for kinkster_blocks
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_blocks' AND policyname = 'Users can view their own blocks') THEN
+        DROP POLICY IF EXISTS "Users can view their own blocks" ON public.kinkster_blocks;
         CREATE POLICY "Users can view their own blocks" ON public.kinkster_blocks
             FOR SELECT TO authenticated
             USING (auth.uid() = blocker_id);
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_blocks' AND policyname = 'Users can manage their own blocks') THEN
+        DROP POLICY IF EXISTS "Users can manage their own blocks" ON public.kinkster_blocks;
         CREATE POLICY "Users can manage their own blocks" ON public.kinkster_blocks
             FOR ALL TO authenticated
             USING (auth.uid() = blocker_id)
@@ -256,18 +268,21 @@ END $$;
 -- 12. RLS Policies for kinkster_reports
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_reports' AND policyname = 'Users can insert reports') THEN
+        DROP POLICY IF EXISTS "Users can insert reports" ON public.kinkster_reports;
         CREATE POLICY "Users can insert reports" ON public.kinkster_reports
             FOR INSERT TO authenticated
             WITH CHECK (auth.uid() = reporter_id);
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_reports' AND policyname = 'Users can view their own reports') THEN
+        DROP POLICY IF EXISTS "Users can view their own reports" ON public.kinkster_reports;
         CREATE POLICY "Users can view their own reports" ON public.kinkster_reports
             FOR SELECT TO authenticated
             USING (auth.uid() = reporter_id);
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_reports' AND policyname = 'Service role full access on reports') THEN
+        DROP POLICY IF EXISTS "Service role full access on reports" ON public.kinkster_reports;
         CREATE POLICY "Service role full access on reports" ON public.kinkster_reports
             FOR ALL TO service_role
             USING (true);

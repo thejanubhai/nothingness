@@ -22,10 +22,12 @@ ALTER TABLE public.gathering_vettings ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'gathering_vettings' AND policyname = 'Admins and Marshalls manage vettings') THEN
+        DROP POLICY IF EXISTS "Admins and Marshalls manage vettings" ON public.gathering_vettings;
         CREATE POLICY "Admins and Marshalls manage vettings" ON public.gathering_vettings
             FOR ALL TO public USING (true) WITH CHECK (true);
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'gathering_vettings' AND policyname = 'Attendees view own vetting records') THEN
+        DROP POLICY IF EXISTS "Attendees view own vetting records" ON public.gathering_vettings;
         CREATE POLICY "Attendees view own vetting records" ON public.gathering_vettings
             FOR SELECT TO authenticated USING (auth.uid() = attendee_id);
     END IF;
@@ -50,10 +52,12 @@ WHERE is_in_person_vetted IS NULL OR is_in_person_vetted = FALSE;
 -- Ensure public access for kinkster_profiles
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_profiles' AND policyname = 'Public read for kinkster_profiles') THEN
+        DROP POLICY IF EXISTS "Public read for kinkster_profiles" ON public.kinkster_profiles;
         CREATE POLICY "Public read for kinkster_profiles" ON public.kinkster_profiles 
             FOR SELECT TO public USING (true);
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_profiles' AND policyname = 'Public update for kinkster_profiles') THEN
+        DROP POLICY IF EXISTS "Public update for kinkster_profiles" ON public.kinkster_profiles;
         CREATE POLICY "Public update for kinkster_profiles" ON public.kinkster_profiles 
             FOR UPDATE TO public USING (true) WITH CHECK (true);
     END IF;
@@ -82,18 +86,21 @@ ALTER TABLE public.kinkster_resonances ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_resonances' AND policyname = 'Allow members read own resonances') THEN
+        DROP POLICY IF EXISTS "Allow members read own resonances" ON public.kinkster_resonances;
         CREATE POLICY "Allow members read own resonances" ON public.kinkster_resonances 
             FOR SELECT TO authenticated USING (
                 auth.uid() = sender_id OR (auth.uid() = target_id AND is_mutual = true)
             );
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_resonances' AND policyname = 'Allow members insert own resonances') THEN
+        DROP POLICY IF EXISTS "Allow members insert own resonances" ON public.kinkster_resonances;
         CREATE POLICY "Allow members insert own resonances" ON public.kinkster_resonances 
             FOR INSERT TO authenticated WITH CHECK (
                 auth.uid() = sender_id
             );
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_resonances' AND policyname = 'Allow members update own resonances') THEN
+        DROP POLICY IF EXISTS "Allow members update own resonances" ON public.kinkster_resonances;
         CREATE POLICY "Allow members update own resonances" ON public.kinkster_resonances 
             FOR UPDATE TO authenticated USING (
                 auth.uid() = sender_id OR auth.uid() = target_id
@@ -123,16 +130,19 @@ ALTER TABLE public.kinkster_ephemeral_messages ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_ephemeral_messages' AND policyname = 'Allow members read ephemeral messages') THEN
+        DROP POLICY IF EXISTS "Allow members read ephemeral messages" ON public.kinkster_ephemeral_messages;
         CREATE POLICY "Allow members read ephemeral messages" ON public.kinkster_ephemeral_messages 
             FOR SELECT TO authenticated USING (true);
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_ephemeral_messages' AND policyname = 'Allow members insert ephemeral messages') THEN
+        DROP POLICY IF EXISTS "Allow members insert ephemeral messages" ON public.kinkster_ephemeral_messages;
         CREATE POLICY "Allow members insert ephemeral messages" ON public.kinkster_ephemeral_messages 
             FOR INSERT TO authenticated WITH CHECK (
                 auth.uid() = sender_id
             );
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'kinkster_ephemeral_messages' AND policyname = 'Allow members update ephemeral messages') THEN
+        DROP POLICY IF EXISTS "Allow members update ephemeral messages" ON public.kinkster_ephemeral_messages;
         CREATE POLICY "Allow members update ephemeral messages" ON public.kinkster_ephemeral_messages 
             FOR UPDATE TO authenticated USING (true);
     END IF;

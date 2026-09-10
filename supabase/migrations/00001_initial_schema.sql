@@ -38,9 +38,11 @@ ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 
 -- Policies for Properties
+DROP POLICY IF EXISTS "Public properties are viewable by everyone." ON properties;
 CREATE POLICY "Public properties are viewable by everyone." ON properties
   FOR SELECT USING (active = true);
 
+DROP POLICY IF EXISTS "Properties are fully managed by admins." ON properties;
 CREATE POLICY "Properties are fully managed by admins." ON properties
   FOR ALL USING (
     EXISTS (
@@ -51,12 +53,15 @@ CREATE POLICY "Properties are fully managed by admins." ON properties
   );
 
 -- Policies for Bookings
+DROP POLICY IF EXISTS "Users can view their own bookings." ON bookings;
 CREATE POLICY "Users can view their own bookings." ON bookings
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own bookings." ON bookings;
 CREATE POLICY "Users can create their own bookings." ON bookings
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Bookings are fully managed by admins." ON bookings;
 CREATE POLICY "Bookings are fully managed by admins." ON bookings
   FOR ALL USING (
     EXISTS (

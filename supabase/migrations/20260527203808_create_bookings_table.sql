@@ -21,11 +21,13 @@ CREATE TABLE IF NOT EXISTS public.bookings (
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 
 -- Allow anyone to insert (since users are not authenticated initially when making a booking)
+DROP POLICY IF EXISTS "Enable insert for anonymous users" ON public.bookings;
 CREATE POLICY "Enable insert for anonymous users" ON public.bookings
   FOR INSERT
   WITH CHECK (true);
 
 -- Only allow service role (admin) to view bookings, OR we can add a token
+DROP POLICY IF EXISTS "Enable read for service role" ON public.bookings;
 CREATE POLICY "Enable read for service role" ON public.bookings
   FOR SELECT
   USING (true); -- In a real app, restrict this!
@@ -39,6 +41,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_bookings_modtime ON public.bookings;
 CREATE TRIGGER update_bookings_modtime
     BEFORE UPDATE ON public.bookings
     FOR EACH ROW

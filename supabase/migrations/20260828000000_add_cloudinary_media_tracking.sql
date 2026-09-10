@@ -29,12 +29,14 @@ CREATE INDEX IF NOT EXISTS idx_media_assets_folder ON public.media_assets(folder
 ALTER TABLE public.media_assets ENABLE ROW LEVEL SECURITY;
 
 -- Allow public read access to media metadata for active resources
+DROP POLICY IF EXISTS "Public read media assets" ON public.media_assets;
 CREATE POLICY "Public read media assets"
   ON public.media_assets
   FOR SELECT
   USING (true);
 
 -- Allow authenticated users to insert/update their media
+DROP POLICY IF EXISTS "Authenticated users manage media" ON public.media_assets;
 CREATE POLICY "Authenticated users manage media"
   ON public.media_assets
   FOR ALL
@@ -43,6 +45,7 @@ CREATE POLICY "Authenticated users manage media"
   WITH CHECK (true);
 
 -- Allow service role full access
+DROP POLICY IF EXISTS "Service role full access media" ON public.media_assets;
 CREATE POLICY "Service role full access media"
   ON public.media_assets
   FOR ALL

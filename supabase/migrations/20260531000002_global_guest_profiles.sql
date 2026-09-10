@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.guest_profiles (
 
 ALTER TABLE public.guest_profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Enable all operations for guest_profiles" ON public.guest_profiles;
 CREATE POLICY "Enable all operations for guest_profiles" ON public.guest_profiles
   FOR ALL
   USING (true)

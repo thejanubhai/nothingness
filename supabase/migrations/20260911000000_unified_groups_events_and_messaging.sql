@@ -61,6 +61,7 @@ ALTER TABLE public.group_members ENABLE ROW LEVEL SECURITY;
 -- 6. RLS Policies for groups
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'groups' AND policyname = 'Public read active public groups') THEN
+        DROP POLICY IF EXISTS "Public read active public groups" ON public.groups;
         CREATE POLICY "Public read active public groups" ON public.groups
             FOR SELECT TO authenticated
             USING (
@@ -76,6 +77,7 @@ DO $$ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'groups' AND policyname = 'Activated profiles can create groups') THEN
+        DROP POLICY IF EXISTS "Activated profiles can create groups" ON public.groups;
         CREATE POLICY "Activated profiles can create groups" ON public.groups
             FOR INSERT TO authenticated
             WITH CHECK (
@@ -88,6 +90,7 @@ DO $$ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'groups' AND policyname = 'Owners and admins can update groups') THEN
+        DROP POLICY IF EXISTS "Owners and admins can update groups" ON public.groups;
         CREATE POLICY "Owners and admins can update groups" ON public.groups
             FOR UPDATE TO authenticated
             USING (
@@ -106,6 +109,7 @@ END $$;
 -- 7. RLS Policies for group_members
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'group_members' AND policyname = 'View members of accessible groups') THEN
+        DROP POLICY IF EXISTS "View members of accessible groups" ON public.group_members;
         CREATE POLICY "View members of accessible groups" ON public.group_members
             FOR SELECT TO authenticated
             USING (
@@ -128,6 +132,7 @@ DO $$ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'group_members' AND policyname = 'Members can join groups') THEN
+        DROP POLICY IF EXISTS "Members can join groups" ON public.group_members;
         CREATE POLICY "Members can join groups" ON public.group_members
             FOR INSERT TO authenticated
             WITH CHECK (
@@ -140,6 +145,7 @@ DO $$ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'group_members' AND policyname = 'Members can leave or admins manage') THEN
+        DROP POLICY IF EXISTS "Members can leave or admins manage" ON public.group_members;
         CREATE POLICY "Members can leave or admins manage" ON public.group_members
             FOR DELETE TO authenticated
             USING (
@@ -159,6 +165,7 @@ DO $$ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'group_members' AND policyname = 'Admins can update membership') THEN
+        DROP POLICY IF EXISTS "Admins can update membership" ON public.group_members;
         CREATE POLICY "Admins can update membership" ON public.group_members
             FOR UPDATE TO authenticated
             USING (

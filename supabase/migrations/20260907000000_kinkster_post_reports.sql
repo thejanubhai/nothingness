@@ -21,13 +21,16 @@ CREATE INDEX IF NOT EXISTS idx_kinkster_reports_status ON kinkster_post_reports(
 ALTER TABLE kinkster_post_reports ENABLE ROW LEVEL SECURITY;
 
 -- Allow authenticated users to report posts
+DROP POLICY IF EXISTS "Allow authenticated insert report" ON kinkster_post_reports;
 CREATE POLICY "Allow authenticated insert report" ON kinkster_post_reports
     FOR INSERT TO authenticated WITH CHECK (auth.uid() = reporter_id);
 
 -- Allow users to view their own reports
+DROP POLICY IF EXISTS "Allow users to view own reports" ON kinkster_post_reports;
 CREATE POLICY "Allow users to view own reports" ON kinkster_post_reports
     FOR SELECT TO authenticated USING (auth.uid() = reporter_id);
 
 -- Allow service role full access for administration
+DROP POLICY IF EXISTS "Allow service role full access" ON kinkster_post_reports;
 CREATE POLICY "Allow service role full access" ON kinkster_post_reports
     FOR ALL TO service_role USING (true);

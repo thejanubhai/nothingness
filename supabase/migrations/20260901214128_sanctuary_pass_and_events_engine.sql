@@ -107,19 +107,31 @@ ALTER TABLE sanctuary_event_applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE web_push_subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- 8. Policies
+DROP POLICY IF EXISTS "Public read for settings" ON sanctuary_pass_settings;
 CREATE POLICY "Public read for settings" ON sanctuary_pass_settings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin manage settings" ON sanctuary_pass_settings;
 CREATE POLICY "Admin manage settings" ON sanctuary_pass_settings FOR ALL USING (true);
 
+DROP POLICY IF EXISTS "User read own pass" ON sanctuary_passes;
 CREATE POLICY "User read own pass" ON sanctuary_passes FOR SELECT TO authenticated USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admin manage passes" ON sanctuary_passes;
 CREATE POLICY "Admin manage passes" ON sanctuary_passes FOR ALL USING (true);
 
+DROP POLICY IF EXISTS "Public read published events" ON sanctuary_events;
 CREATE POLICY "Public read published events" ON sanctuary_events FOR SELECT USING (status != 'draft');
+DROP POLICY IF EXISTS "Admin manage events" ON sanctuary_events;
 CREATE POLICY "Admin manage events" ON sanctuary_events FOR ALL USING (true);
 
+DROP POLICY IF EXISTS "User read own applications" ON sanctuary_event_applications;
 CREATE POLICY "User read own applications" ON sanctuary_event_applications FOR SELECT TO authenticated USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "User create own application" ON sanctuary_event_applications;
 CREATE POLICY "User create own application" ON sanctuary_event_applications FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "User update own application" ON sanctuary_event_applications;
 CREATE POLICY "User update own application" ON sanctuary_event_applications FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admin manage all applications" ON sanctuary_event_applications;
 CREATE POLICY "Admin manage all applications" ON sanctuary_event_applications FOR ALL USING (true);
 
+DROP POLICY IF EXISTS "User manage own push subscriptions" ON web_push_subscriptions;
 CREATE POLICY "User manage own push subscriptions" ON web_push_subscriptions FOR ALL TO authenticated USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admin read all push subscriptions" ON web_push_subscriptions;
 CREATE POLICY "Admin read all push subscriptions" ON web_push_subscriptions FOR SELECT USING (true);

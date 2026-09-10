@@ -73,32 +73,39 @@ ALTER TABLE public.partner_inventory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lounge_access_logs ENABLE ROW LEVEL SECURITY;
 
 -- Policies for partner_profiles
+DROP POLICY IF EXISTS "Users can view own partner profile" ON public.partner_profiles;
 CREATE POLICY "Users can view own partner profile" ON public.partner_profiles
     FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own partner profile" ON public.partner_profiles;
 CREATE POLICY "Users can insert own partner profile" ON public.partner_profiles
     FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own partner profile" ON public.partner_profiles;
 CREATE POLICY "Users can update own partner profile" ON public.partner_profiles
     FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 
 -- Policies for partner_properties
+DROP POLICY IF EXISTS "Partners can view own properties" ON public.partner_properties;
 CREATE POLICY "Partners can view own properties" ON public.partner_properties
     FOR SELECT TO authenticated USING (
         partner_id IN (SELECT id FROM public.partner_profiles WHERE user_id = auth.uid())
     );
 
+DROP POLICY IF EXISTS "Partners can insert own properties" ON public.partner_properties;
 CREATE POLICY "Partners can insert own properties" ON public.partner_properties
     FOR INSERT TO authenticated WITH CHECK (
         partner_id IN (SELECT id FROM public.partner_profiles WHERE user_id = auth.uid())
     );
 
+DROP POLICY IF EXISTS "Partners can update own properties" ON public.partner_properties;
 CREATE POLICY "Partners can update own properties" ON public.partner_properties
     FOR UPDATE TO authenticated USING (
         partner_id IN (SELECT id FROM public.partner_profiles WHERE user_id = auth.uid())
     );
 
 -- Policies for partner_inventory
+DROP POLICY IF EXISTS "Partners can manage own inventory" ON public.partner_inventory;
 CREATE POLICY "Partners can manage own inventory" ON public.partner_inventory
     FOR ALL TO authenticated USING (
         property_id IN (
@@ -109,5 +116,6 @@ CREATE POLICY "Partners can manage own inventory" ON public.partner_inventory
     );
 
 -- Policies for lounge_access_logs
+DROP POLICY IF EXISTS "Partners can view lounge logs" ON public.lounge_access_logs;
 CREATE POLICY "Partners can view lounge logs" ON public.lounge_access_logs
     FOR ALL TO authenticated USING (true);
