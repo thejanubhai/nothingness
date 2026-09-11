@@ -108,5 +108,31 @@ describe('Deployment & Infrastructure Guardrails', () => {
     }
     assert.ok(totalPoliciesFound > 140, `Expected > 140 policies across all migrations, found ${totalPoliciesFound}`);
   });
+
+  test('No Supabase migration files contain UTF-8 BOM or invisible zero-width characters', () => {
+    const migrationsDir = path.resolve(process.cwd(), 'supabase/migrations');
+    const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql'));
+
+    for (const file of files) {
+      const buffer = fs.readFileSync(path.join(migrationsDir, file));
+      // Disallow UTF-8 BOM (0xEF, 0xBB, 0xBF) which breaks PostgreSQL parser with SQLSTATE 42601
+      const isUtf8Bom = buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf;
+      assert.ok(
+        !isUtf8Bom,
+        `Migration file "${file}" has a UTF-8 BOM header! PostgreSQL parser fails on statement 0 with SQLSTATE 42601.`
+      );
+
+      // Disallow UTF-16 BOM
+      const isUtf16Bom = (buffer[0] === 0xff && buffer[1] === 0xfe) || (buffer[0] === 0xfe && buffer[1] === 0xff);
+      assert.ok(!isUtf16Bom, `Migration file "${file}" has a UTF-16 BOM header.`);
+
+      const text = buffer.toString('utf8');
+      assert.ok(!text.includes('\ufeff'), `Migration file "${file}" contains U+FEFF zero-width no-break space.`);
+      assert.ok(!text.includes('\u200b'), `Migration file "${file}" contains U+200B zero-width space.`);
+      assert.ok(!text.includes('\u200c'), `Migration file "${file}" contains U+200C zero-width non-joiner.`);
+      assert.ok(!text.includes('\u200d'), `Migration file "${file}" contains U+200D zero-width joiner.`);
+    }
+  });
 });
+
 
