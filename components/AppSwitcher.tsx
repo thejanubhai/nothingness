@@ -36,7 +36,7 @@ const apps: AppItem[] = [
     id: 'spaces',
     name: 'Sanctuaries',
     badge: 'Stays',
-    subtitle: 'Ultra-discreet luxury suites & Jacuzzi sanctuaries',
+    subtitle: 'Ultra-discreet luxury suites & private sanctuaries',
     href: '/spaces',
     icon: Building2,
     accentColor: 'text-amber-400',

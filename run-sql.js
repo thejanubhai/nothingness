@@ -12,7 +12,7 @@ async function main() {
     await client.connect();
     console.log('Connected to Supabase DB');
     
-    const sqlPath = path.join(__dirname, 'supabase', 'migrations', '20260602000001_admin_tables.sql');
+    const sqlPath = path.join(__dirname, 'supabase', 'migrations', '20260913000000_production_security_and_compliance_hardening.sql');
     const sql = fs.readFileSync(sqlPath, 'utf8');
     
     await client.query(sql);

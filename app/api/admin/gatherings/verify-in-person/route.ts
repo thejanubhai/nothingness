@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { isUserAdminAsync } from '@/lib/auth-utils';
 
 export const maxDuration = 60;
 
@@ -45,29 +46,30 @@ export async function POST(req: NextRequest) {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          const isAdmin = await isUserAdminAsync(user);
           if (
-            user.email?.includes('admin') ||
+            isAdmin ||
             user.app_metadata?.role === 'admin' ||
             user.user_metadata?.role === 'admin'
           ) {
             isAuthorized = true;
             marshallAlias = user.email || 'Admin Marshall';
           } else {
-            // Check kinkster_profiles for admin/marshall status
+            // Check kinkster_profiles for explicit role in admin_notes or is_marshall
             const adminClient = createAdminClient();
             const { data: kp } = await adminClient
               .from('kinkster_profiles')
-              .select('alias, admin_notes')
+              .select('alias, admin_notes, is_marshall')
               .eq('id', user.id)
               .maybeSingle();
 
             if (
-              kp?.admin_notes?.toLowerCase().includes('admin') ||
-              kp?.alias?.toLowerCase().includes('marshall') ||
-              kp?.alias?.toLowerCase().includes('admin')
+              (kp as any)?.is_marshall === true ||
+              kp?.admin_notes?.toLowerCase().includes('role_marshall') ||
+              kp?.admin_notes?.toLowerCase().includes('role_admin')
             ) {
               isAuthorized = true;
-              marshallAlias = kp.alias || user.email || 'Admin Marshall';
+              marshallAlias = kp?.alias || user.email || 'Admin Marshall';
             }
           }
         }
@@ -96,13 +98,21 @@ export async function POST(req: NextRequest) {
 
     // Check if token is JSON-encoded QR payload
     try {
-      if (cleanToken.startsWith('{') && cleanToken.endsWith('}')) {
+      if (typeof cleanToken === 'string' && cleanToken.startsWith('{') && cleanToken.endsWith('}')) {
         const parsed = JSON.parse(cleanToken);
-        cleanToken = parsed.token || parsed.qr_secret_token || parsed.userId || cleanToken;
-        if (parsed.userId) targetUserId = parsed.userId;
-        if (parsed.appId) targetAppId = parsed.appId;
+        const rawToken = parsed.token ?? parsed.qr_secret_token ?? parsed.userId;
+        cleanToken = rawToken !== undefined && rawToken !== null ? String(rawToken) : cleanToken;
+        if (parsed.userId) targetUserId = String(parsed.userId);
+        if (parsed.appId) targetAppId = String(parsed.appId);
       }
     } catch {}
+
+    cleanToken = String(cleanToken || '').trim();
+
+    // Prevent PostgREST filter injection (e.g. comma-delimited chained filters)
+    if (cleanToken.includes(',') || cleanToken.includes('.neq.') || cleanToken.includes('.eq.')) {
+      return NextResponse.json({ success: false, error: 'Invalid token characters.' }, { status: 400 });
+    }
 
     const cleanTokenWithoutAt = cleanToken.startsWith('@') ? cleanToken.slice(1) : cleanToken;
     const isTokenUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanToken);
@@ -246,7 +256,7 @@ export async function POST(req: NextRequest) {
     const resolvedEventId = targetEventId || (eventId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId) ? eventId : null);
 
     if (isTargetUuid) {
-      await adminClient
+      const { error: insertErr } = await adminClient
         .from('gathering_vettings')
         .insert({
           event_id: resolvedEventId,
@@ -258,6 +268,9 @@ export async function POST(req: NextRequest) {
           notes: `Physical L2 Vetting certified by ${marshallAlias}. Level 1 ID: ${isIdVerified ? 'Verified' : 'Pending Physical Check'}`,
           created_at: now,
         });
+      if (insertErr) {
+        console.error('Failed to insert gathering_vettings audit:', insertErr);
+      }
     }
 
     return NextResponse.json({

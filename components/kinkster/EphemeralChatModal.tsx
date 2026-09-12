@@ -39,6 +39,7 @@ interface EphemeralChatModalProps {
   chamberToken: string;
   targetAlias: string;
   targetAvatar?: string;
+  currentViewerAlias?: string;
 }
 
 export default function EphemeralChatModal({
@@ -47,6 +48,7 @@ export default function EphemeralChatModal({
   chamberToken,
   targetAlias,
   targetAvatar,
+  currentViewerAlias,
 }: EphemeralChatModalProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
@@ -151,15 +153,32 @@ export default function EphemeralChatModal({
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      
+      // Check browser MIME type compatibility (iOS Safari requires audio/mp4)
+      let selectedMimeType = 'audio/webm';
+      if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          selectedMimeType = 'audio/webm;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          selectedMimeType = 'audio/webm';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          selectedMimeType = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/aac')) {
+          selectedMimeType = 'audio/aac';
+        }
+      }
+
+      const recorderOptions = selectedMimeType ? { mimeType: selectedMimeType } : undefined;
+      const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+      mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
-      mediaRecorderRef.current.ondataavailable = (e) => {
+      mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
-      mediaRecorderRef.current.onstop = async () => {
-        let audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      mediaRecorder.onstop = async () => {
+        let audioBlob = new Blob(audioChunksRef.current, { type: selectedMimeType || 'audio/webm' });
         if (pitchShiftEnabled) {
           try {
             audioBlob = await processSultryNoirVoice(audioBlob);
@@ -174,7 +193,7 @@ export default function EphemeralChatModal({
         };
       };
 
-      mediaRecorderRef.current.start();
+      mediaRecorder.start();
       setIsRecording(true);
       triggerHaptic('medium');
     } catch {
@@ -347,7 +366,7 @@ export default function EphemeralChatModal({
 
         {/* ACTIVE BURN-ON-READ MODAL OVERLAY */}
         {activeBurnPhoto && (
-          <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
+          <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4 select-none">
             <div className="w-full max-w-sm space-y-4 text-center">
               {/* COUNTDOWN TIMER BADGE */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-600 text-white font-mono text-xs font-bold animate-pulse shadow-lg">
@@ -359,12 +378,33 @@ export default function EphemeralChatModal({
                 <img
                   src={activeBurnPhoto.url}
                   alt="Burn on read"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover pointer-events-none select-none"
+                  onContextMenu={(e) => e.preventDefault()}
+                  draggable={false}
                 />
+
+                {/* ANTI-LEAK FORENSIC WATERMARK OVERLAY */}
+                <div className="absolute inset-0 pointer-events-none select-none flex flex-col justify-between p-4 bg-gradient-to-b from-black/40 via-transparent to-black/60">
+                  <div className="flex justify-between items-center text-[10px] font-mono text-white/50 tracking-wider">
+                    <span>CONFIDENTIAL VIEW</span>
+                    <span>DO NOT CAPTURE</span>
+                  </div>
+                  <div className="text-center transform -rotate-12 select-none pointer-events-none">
+                    <p className="text-sm font-mono font-black text-white/20 uppercase tracking-widest break-all">
+                      @{currentViewerAlias || 'SANCTUARY-GUEST'}
+                    </p>
+                    <p className="text-[9px] font-mono text-white/15">
+                      {new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC
+                    </p>
+                  </div>
+                  <div className="text-right text-[9px] font-mono text-rose-400/50">
+                    BURN ID: {activeBurnPhoto.id.slice(0, 8)}
+                  </div>
+                </div>
               </div>
 
               <p className="text-[10px] font-mono text-zinc-500">
-                Tamper-resistant • Destroyed from vault upon timer completion
+                Tamper-resistant forensic watermark • Destroyed from vault upon timer completion
               </p>
             </div>
           </div>

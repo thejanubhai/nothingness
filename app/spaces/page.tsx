@@ -9,10 +9,10 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Sanctuaries & Private Stays in Delhi NCR | Nothingness",
-  description: "Browse private brutalist sanctuaries, Jacuzzi suites, and aesthetic spaces for total isolation, intimacy, and discreet stays across Delhi NCR.",
+  description: "Browse private brutalist sanctuaries, architectural suites, and aesthetic spaces for total isolation, intimacy, and discreet stays across Delhi NCR.",
   keywords: [
     "private sanctuary delhi",
-    "jacuzzi suite delhi ncr",
+    "architectural suite delhi ncr",
     "south delhi private stay",
     "aesthetic airbnb delhi",
     "discreet boutique accommodation"
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Sanctuaries & Private Stays | Nothingness",
-    description: "Browse private brutalist sanctuaries, Jacuzzi suites, and aesthetic spaces across Delhi NCR.",
+    description: "Browse private brutalist sanctuaries, architectural suites, and aesthetic spaces across Delhi NCR.",
     url: "https://nothingness.asia/spaces",
     images: ['/images/The Void (1).png'],
   },

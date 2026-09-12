@@ -189,7 +189,7 @@ Dominating the local search landscape requires understanding micro-market bounda
 To capture high-intent bookings across the National Capital Region, your digital footprint must address specific regional pain points:
 
 * **South Delhi Corridor (GK, Hauz Khas, Saket):** Searchers prioritize discreet parking, acoustic isolation from bustling main roads, and proximity to artisanal dining hubs.
-* **Gurgaon Corporate Corridor (Cyber City, Golf Course Ext):** Searchers prioritize high-speed fiber connectivity, private jacuzzi baths for decompression, and friction-free Friday evening keyless check-in.
+* **Gurgaon Corporate Corridor (Cyber City, Golf Course Ext):** Searchers prioritize high-speed fiber connectivity, private soaking baths for decompression, and friction-free Friday evening keyless check-in.
 * **Noida and Expressway Sectors:** Searchers look for expansive floor plans, uninterrupted skyline vistas, and secure gated community entry.
 
 ## Geo-Targeted Schema and Clean Local Citations
@@ -238,7 +238,7 @@ Ensure your web assets implement clear LocalBusiness and LodgingBusiness schema.
   'Why 48 percent of luxury urban staycations are booked within 72 hours of check-in. Optimizing conversion funnels for mobile-first spontaneous searchers.',
   'The traditional travel planning model involving weeks of itinerary curation is fading among urban Gen-Z and millennial professionals in India. Today, hospitality purchasing decisions occur in concentrated micro-moments.
 
-A stressful Thursday afternoon at a tech firm or agency frequently culminates in a spontaneous mobile search at 9:00 PM: "private stay with jacuzzi near me tonight".
+A stressful Thursday afternoon at a tech firm or agency frequently culminates in a spontaneous mobile search at 9:00 PM: "private stay with soaking bath near me tonight".
 
 ## The Anatomy of a High-Intent Micro-Moment
 

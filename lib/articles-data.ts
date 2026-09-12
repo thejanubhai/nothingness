@@ -38,7 +38,7 @@ In an urban Indian landscape where professionals manage relentless corporate str
 
 Yet, in Indian cultural discourse, power dynamics are often misunderstood. People confuse consensual erotic dominance and submission with traditional patriarchal conditioning. In reality, healthy D/s (Dominance and submission) is the exact opposite of patriarchy: it is built on mutual negotiation, explicit verbal consent, and the fundamental principle that the submissive holds the ultimate authority through safe words and negotiated boundaries.
 
-![The Brutalist Sanctuary Space](/images/The Void (1).png)
+![The Brutalist Sanctuary Space](/images/journal/power-dynamics-modern-indian-relationships.jpg).png)
 
 ## The Psychological Relief of Surrender
 
@@ -57,7 +57,7 @@ Before entering any power exchange dynamic, couples must decouple from external 
 1. **Conduct a Boundary Audit**: Write down hard limits (things that are never on the table) and soft limits (things you are curious to explore under specific conditions).
 2. **Establish Rituals of Entry and Exit**: Use distinct physical triggers, like lighting a specific scent or putting on a dedicated piece of jewelry, to signal when the dynamic begins and when it dissolves back into everyday partnership.
 3. **Prioritize the Debrief**: Always spend fifteen minutes after a session discussing what felt nourishing and what needs refinement for next time.`,
-    cover_image: '/images/The Void (1).png',
+    cover_image: '/images/journal/power-dynamics-modern-indian-relationships.jpg',
     category: 'Dynamics & Kink Culture',
     tags: ['Power Dynamics', 'BDSM India', 'Consent Culture', 'Relationships', 'Intimacy'],
     author_name: 'Kabir Varma',
@@ -85,7 +85,7 @@ If Shibari is a tactile language, the Single Column Tie (SCT) is its first lette
 
 In this practical guide, we break down the mechanics of the Somerville Bowline Single Column Tie, the gold standard for beginner rope enthusiasts in India.
 
-![Rope and Texture Aesthetics](/images/IMG_9955.jpg)
+![Rope and Texture Aesthetics](/images/journal/how-to-tie-single-column-shibari-guide.jpg)
 
 ## Preparation & Essential Gear
 
@@ -116,7 +116,7 @@ Pass the working ends around the standing loop and lock them off with a secure h
 1. **The Three-Minute Wiggle Test**: Every few minutes, ask your partner to open and close their fingers. Check that fingertips remain warm and naturally pink.
 2. **Immediate Red Flags**: Any sensation of tingling, electric shooting pains, or sudden numbness requires immediate cutting or untying of the rope.
 3. **The Ritual of Untying**: Take as much time untying the rope as you took tying it. Massage the limb gently to encourage smooth venous return.`,
-    cover_image: '/images/IMG_9955.jpg',
+    cover_image: '/images/journal/how-to-tie-single-column-shibari-guide.jpg',
     category: 'Dynamics & Kink Culture',
     tags: ['Shibari Tutorial', 'Single Column Tie', 'Rope Safety', 'Step-by-Step Guide', 'BDSM Skills'],
     author_name: 'Ananya Sen',
@@ -144,7 +144,7 @@ By 7:00 PM on a Friday, my brain was vibrating with cortisol. Twelve pitch meeti
 
 My partner, an architect who lived in South Delhi, had noticed the physical toll. My shoulders were permanently hitched up toward my ears. Over dinner two weeks prior, she had posed a simple question: "What if, for just one night, you did not make a single decision?"
 
-![Monolithic Sanctuary Interior](/images/IMG_4446.jpeg)
+![Monolithic Sanctuary Interior](/images/journal/confessions-south-delhi-high-rise-first-ds-night.jpg)
 
 ## The Threshold of the Sanctuary
 
@@ -165,7 +165,7 @@ When she finally spoke the words, "You did wonderfully tonight; you can let it a
 ## What That Night Taught Us
 
 We returned to our everyday egalitarian partnership the next morning, but something fundamental had shifted. We had accessed a subterranean layer of intimacy that conventional dating in Delhi never prepared us for. Power exchange was not about cruelty; it was the ultimate act of trust.`,
-    cover_image: '/images/IMG_4446.jpeg',
+    cover_image: '/images/journal/confessions-south-delhi-high-rise-first-ds-night.jpg',
     category: 'Dynamics & Kink Culture',
     tags: ['Personal Story', 'Confessions', 'Surrender', 'Delhi High Rise', 'Power Exchange'],
     author_name: 'Anonymous Contributor',
@@ -193,7 +193,7 @@ For decades, alternative lifestyle practitioners in India were isolated, believi
 
 Today, a sophisticated underground renaissance is taking root across tier-one Indian metros. Vetted communities are creating judgment-free physical spaces where educated, respectful adults can gather, discuss desires, learn safety skills, and connect without fear of professional or social ruin.
 
-![Underground Aesthetic Atmosphere](/images/The Void (1).png)
+![Underground Aesthetic Atmosphere](/images/journal/destigmatizing-kink-urban-india-finding-community.jpg).png)
 
 ## The Principles of Alias Culture and Vetted Access
 
@@ -210,7 +210,7 @@ In a society where conservative relatives or corporate HR departments can weapon
 1. **Prioritize Safety Over Rush**: If a group or individual refuses to respect your alias, asks for intrusive social media links immediately, or dismisses safe words, walk away.
 2. **Attend Educational Munches First**: Start by attending non-play educational discussions (Munches) in casual public cafes to observe community etiquette and meet veterans.
 3. **Own Your Curiosity Without Apology**: There is no shame in wanting more from intimacy than what conventional society prescribes.`,
-    cover_image: '/images/The Void (1).png',
+    cover_image: '/images/journal/destigmatizing-kink-urban-india-finding-community.jpg',
     category: 'Dynamics & Kink Culture',
     tags: ['Kink Community India', 'Alias Culture', 'Underground Delhi', 'Safe Gatherings', 'Discreet Identity'],
     author_name: 'Kabir Varma',
@@ -238,7 +238,7 @@ To the uninitiated, the idea of intentionally incorporating impact, whether thro
 
 When skin and muscle tissue receive rhythmic, calibrated impact, the brain triggers a surge of endogenous opioids (endorphins) to mitigate the sensation. When experienced in a deeply trusted, consensual dynamic, this chemical rush transforms what might initially feel stinging into warm, floating euphoria known as subspace.
 
-![Impact Tool Calibration](/images/IMG_9955.jpg)
+![Impact Tool Calibration](/images/journal/impact-play-101-anatomy-and-tools-guide.jpg)
 
 ## Anatomical Safety and Strike Zones
 
@@ -255,7 +255,7 @@ Impact play requires precise knowledge of human anatomy. A stray strike in the w
 1. **Calibrate with a 1 to 10 Scale**: Ask your partner to rate intensity periodically. A healthy session usually hovers between 5 and 7 on their personal scale.
 2. **Cool Down with Soothing Touch**: Follow every sequence of intense impact with firm, warm, calming hand pressure to soothe the nerve endings.
 3. **Inspect the Skin Post-Scene**: Check for excessive bruising or broken skin. Apply arnica balm or aloe vera to support natural muscle recovery.`,
-    cover_image: '/images/IMG_9955.jpg',
+    cover_image: '/images/journal/impact-play-101-anatomy-and-tools-guide.jpg',
     category: 'Dynamics & Kink Culture',
     tags: ['Impact Play', 'BDSM Safety', 'Somatic Release', 'Anatomy Guide', 'Endorphin Rush'],
     author_name: 'Kabir Varma',
@@ -283,7 +283,7 @@ Mainstream media often depicts the BDSM Dominant as an arrogant, emotionally det
 
 In authentic D/s dynamics, the person holding the reins carries an enormous burden of emotional and physical responsibility. To hold absolute authority over another person's body and mind requires acute empathy, deep vulnerability, and an unwavering commitment to their psychological wellbeing.
 
-![Intimate Presence and Shadow](/images/IMG_4446.jpeg)
+![Intimate Presence and Shadow](/images/journal/vulnerability-of-dominance-true-control-requires-empathy.jpg)
 
 ## The Emotional Labor of Holding the Space
 
@@ -300,7 +300,7 @@ While the submissive partner experiences the freedom of surrender, the dominant 
 1. **Check Your Ego at the Door**: Your partner's submission is a sacred gift, not an entitlement. Treat it with the reverence of borrowed crystal.
 2. **Listen Twice as Much as You Direct**: The best dominants are master listeners who understand their partner's unspoken needs before the partner even articulates them.
 3. **Ask for Your Own Aftercare**: Dominants need tenderness and verbal validation after intense scenes just as much as submissives do. Never feel ashamed to ask for comfort.`,
-    cover_image: '/images/IMG_4446.jpeg',
+    cover_image: '/images/journal/vulnerability-of-dominance-true-control-requires-empathy.jpg',
     category: 'Dynamics & Kink Culture',
     tags: ['Dominance Philosophy', 'Emotional Intelligence', 'BDSM Ethics', 'Vulnerability', 'Power Exchange'],
     author_name: 'Kabir Varma',
@@ -328,7 +328,7 @@ In competitive Indian urban environments, many individuals grow up under immense
 
 When these individuals step into intimate spaces, traditional degradation can sometimes feel re-traumatizing. Instead, praise kink, the erotic and psychological arousal derived from genuine verbal validation, pride, and affirmation, offers profound emotional healing and somatic arousal.
 
-![Ambient Crimson Room](/images/The Void (1).png)
+![Ambient Crimson Room](/images/journal/psychology-of-praise-kink-verbal-affirmation.jpg).png)
 
 ## The Neurochemistry of Praise
 
@@ -345,7 +345,7 @@ Words have physical weight. When a dominant or trusted partner delivers sincere,
 1. **Be Specific with Language**: Move beyond generic compliments. Praise specific actions: their breath control, their ability to stay grounded, their trust, or the beauty of their surrender.
 2. **Match Tone to Intensity**: A soft, low-toned whisper in the ear often carries ten times the emotional impact of a loud exclamation.
 3. **Use Praise as a Calming Anchor**: If your partner is struggling through a difficult sensation or emotional edge, steady praise helps them breathe through the crest of the wave.`,
-    cover_image: '/images/The Void (1).png',
+    cover_image: '/images/journal/psychology-of-praise-kink-verbal-affirmation.jpg',
     category: 'Dynamics & Kink Culture',
     tags: ['Praise Kink', 'Verbal Affirmation', 'Intimacy Psychology', 'Oxytocin Release', 'Erotic Validation'],
     author_name: 'Ananya Sen',
@@ -373,7 +373,7 @@ Swipe right on Bumble or Hinge in Delhi, and eighty percent of profiles look ide
 
 How do you find your people in this city without broadcasting your private desires to colleague connections or college alumni?
 
-![Urban Discretion Atmosphere](/images/IMG_9955.jpg)
+![Urban Discretion Atmosphere](/images/journal/dating-in-delhi-as-a-kinkster-alias-etiquette.jpg)
 
 ## The Three-Date Disclosure Rule
 
@@ -390,7 +390,7 @@ Dropping your entire BDSM resume into your Tinder bio is a recipe for creepy DMs
 3. **Refusing Safe Words**: Anyone who mocks the concept of safe words or aftercare has zero understanding of the lifestyle.
 
 > Kink is not about finding someone who will do anything; it is about finding someone with the maturity to respect everything.`,
-    cover_image: '/images/IMG_9955.jpg',
+    cover_image: '/images/journal/dating-in-delhi-as-a-kinkster-alias-etiquette.jpg',
     category: 'Dynamics & Kink Culture',
     tags: ['Dating in Delhi', 'Field Blog', 'Kink Etiquette', 'Red Flags', 'Modern Dating India'],
     author_name: 'Kabir Varma',
@@ -418,7 +418,7 @@ You do not need leather whips or heavy iron shackles to explore alternative inti
 
 The most elegant gateway is sensory modulation: using darkness, ice, warm oils, and silk blindfolds to gently rewire the nervous system without triggering fear.
 
-![Sensory Contrast Lighting](/images/IMG_4446.jpeg)
+![Sensory Contrast Lighting](/images/journal/how-to-introduce-blindfolds-and-temperature-play.jpg)
 
 ## The 30-Minute Sensory Script
 
@@ -440,7 +440,7 @@ Transition from light fingertips to firm, heavy pressure. Use a warmed stone or 
 1. **Never Surprise with Extreme Sensation**: Always announce the introduction of a new texture or temperature with a soft verbal cue before making contact.
 2. **Check for Sensory Fatigue**: Thirty minutes of sensory deprivation is intensely stimulating for a beginner brain. Do not drag the session past their cognitive comfort threshold.
 3. **Offer Immediate Reconnection**: When removing the blindfold, keep room lights very dim and hold eye contact for two minutes to anchor them back in the room.`,
-    cover_image: '/images/IMG_4446.jpeg',
+    cover_image: '/images/journal/how-to-introduce-blindfolds-and-temperature-play.jpg',
     category: 'Dynamics & Kink Culture',
     tags: ['Sensory Play Guide', 'Blindfolds', 'Temperature Play', 'Beginner Kink', 'Couples Guide'],
     author_name: 'Ananya Sen',
@@ -468,7 +468,7 @@ During intense physical or psychological exploration, whether it involves rope b
 
 However, once the scene concludes, hormone levels drop precipitously. Without intentional aftercare, both partners can experience sudden feelings of vulnerability, anxiety, tearfulness, or emotional isolation. In Indian households where people rush to clean up or sneak back to normal routines due to lack of privacy, aftercare is frequently neglected, leaving partners emotionally bruised.
 
-![Warmth and Aftercare Atmosphere](/images/IMG_9955.jpg)
+![Warmth and Aftercare Atmosphere](/images/journal/art-of-aftercare-indian-couples.jpg)
 
 ## What Real Aftercare Looks Like
 
@@ -485,7 +485,7 @@ Aftercare is not an optional bonus; it is fifty percent of the entire experience
 1. **Plan Aftercare Before Starting**: Designate comfortable blankets, warm drinks, and comfort playlists in advance so you are not scrambling while disoriented.
 2. **Check for Drop 24 Hours Later**: Sub-drop or top-drop can hit the following afternoon. Send a grounding text or voice note checking in on emotional temperature.
 3. **Honor Individual Needs**: Some people crave tight physical contact, while others need quiet solitude with a cup of tea. Never assume; ask what their body requires in that specific moment.`,
-    cover_image: '/images/IMG_9955.jpg',
+    cover_image: '/images/journal/art-of-aftercare-indian-couples.jpg',
     category: 'Intimacy & Modern Relationships',
     tags: ['Aftercare', 'Emotional Hygiene', 'Couples Therapy', 'Intimacy Care', 'Kink Safety'],
     author_name: 'Ananya Sen',
@@ -513,7 +513,7 @@ In long-term Indian relationships and marriages, partners often know each other 
 
 Roleplay allows couples to temporarily step out of their assigned domestic roles (husband, wife, provider, homemaker) and inhabit alternative personas where different rules, power dynamics, and desires apply.
 
-![Curated Atmosphere Design](/images/The Void (1).png)
+![Curated Atmosphere Design](/images/journal/roleplay-playbook-long-term-indian-marriages.jpg).png)
 
 ## Overcoming the Cringe Barrier
 
@@ -530,7 +530,7 @@ The biggest obstacle Indian couples face with roleplay is the fear of feeling si
 1. **Text the Prelude**: Hours before meeting, send a message setting the premise: "Tonight, my name is Samar, and I have never seen you before. Meet me at 8:00 PM."
 2. **Leave the Household Behind**: Do not attempt intense roleplay in the same bedroom where laundry is folded on the chair. Step out to a dedicated private sanctuary where the environment supports the illusion.
 3. **Celebrate the Laughter**: If someone breaks character and giggles, embrace it. Playfulness and vulnerability are the building blocks of deep intimacy.`,
-    cover_image: '/images/The Void (1).png',
+    cover_image: '/images/journal/roleplay-playbook-long-term-indian-marriages.jpg',
     category: 'Intimacy & Modern Relationships',
     tags: ['Roleplay Guide', 'Marriage Intimacy', 'Desire Rekindling', 'Couples Communication', 'Erotic Intelligence'],
     author_name: 'Ananya Sen',
@@ -558,7 +558,7 @@ In traditional Indian relationship conditioning, talking openly about specific s
 
 This mind-reading approach is dangerous. When exploring alternative lifestyles, BDSM, or expanded intimacy, ambiguity leads to anxiety, accidental boundary violations, or mutual frustration. Explicit, structured negotiation is the highest form of romantic care you can offer a partner.
 
-![Intimate Communication Sanctuary](/images/IMG_4446.jpeg)
+![Intimate Communication Sanctuary](/images/journal/negotiating-boundaries-hard-conversations-before-bedroom.jpg)
 
 ## The Yes / No / Maybe Framework
 
@@ -575,7 +575,7 @@ A boundary conversation should never feel like a high-stakes confrontation. Trea
 1. **Decouple Conversation from Action**: Never negotiate a new kink or fantasy five minutes before you plan to engage in it. Have the discussion over dinner when both minds are calm and rational.
 2. **Ban Judgment and Mockery**: If your partner confesses a deep fantasy, respond with curiosity ("Tell me what that means to you") rather than disgust or ridicule.
 3. **Revisit and Evolve**: Boundaries are not static concrete walls; they are living agreements. Regularly check in every few months to see if any Maybes have turned into Yeses or Nos.`,
-    cover_image: '/images/IMG_4446.jpeg',
+    cover_image: '/images/journal/negotiating-boundaries-hard-conversations-before-bedroom.jpg',
     category: 'Intimacy & Modern Relationships',
     tags: ['Consent Culture', 'Boundary Negotiation', 'Communication Skills', 'Couples Therapy', 'Intimacy Frameworks'],
     author_name: 'Ananya Sen',
@@ -603,7 +603,7 @@ When Priya and I married in Bangalore seven years ago, our relationship was the 
 
 We loved each other, but there was a vast, unspoken chasm between us. I secretly devoured books on Japanese rope art and power dynamics, while Priya harbored quiet fantasies of being held down and told what to do. Neither of us dared speak because we feared being judged as perverted or degenerate.
 
-![Sensory Immersion Space](/images/IMG_9955.jpg)
+![Sensory Immersion Space](/images/journal/from-arranged-marriage-to-consensual-kink-bangalore.jpg)
 
 ## The Breakthrough on a Goa Weekend
 
@@ -624,7 +624,7 @@ We did not become seasoned kinksters overnight. It took years of gradual, patien
 ## Advice for Traditional Couples
 
 Do not let cultural conditioning convince you that marriage must be vanilla. If you have trust, patience, and unwavering respect for consent, you can build any world you desire inside your private walls.`,
-    cover_image: '/images/IMG_9955.jpg',
+    cover_image: '/images/journal/from-arranged-marriage-to-consensual-kink-bangalore.jpg',
     category: 'Intimacy & Modern Relationships',
     tags: ['Personal Narrative', 'Arranged Marriage', 'Bangalore Couples', 'Kink Awakening', 'Relationship Evolution'],
     author_name: 'Anonymous Contributor',
@@ -652,7 +652,7 @@ For generations, society taught that one single person must fulfill every concei
 
 Consensual Non-Monogamy (CNM) and Polyamory offer an alternative: the understanding that love and attraction are not zero-sum games, provided that all parties participate with total honesty, transparent boundaries, and explicit consent.
 
-![Reflective Architectural Geometry](/images/The Void (1).png)
+![Reflective Architectural Geometry](/images/journal/polyamory-non-monogamy-open-dynamics-metro-india.jpg).png)
 
 ## Deconstructing the Muscle of Jealousy
 
@@ -669,7 +669,7 @@ In Indian culture, jealousy is frequently glorified as proof of love. In healthy
 1. **Over-Communicate Calendar and Health Boundaries**: Regular STI testing, clear communication on barrier use, and respecting reserved date nights are non-negotiable foundations.
 2. **Beware of the New Relationship Energy (NRE) Trap**: When infatuation with a new partner hits, do not neglect your existing anchor partner who built your foundation.
 3. **Build Individual Social Support**: Ensure you have friends and therapists who understand non-traditional dynamics and will not offer generic judgmental advice when challenges arise.`,
-    cover_image: '/images/The Void (1).png',
+    cover_image: '/images/journal/polyamory-non-monogamy-open-dynamics-metro-india.jpg',
     category: 'Intimacy & Modern Relationships',
     tags: ['Polyamory India', 'Ethical Non-Monogamy', 'Compersion', 'Relationship Design', 'Modern Love'],
     author_name: 'Ananya Sen',
@@ -697,7 +697,7 @@ Despite India being the historic birthplace of the Kama Sutra and sacred temple 
 
 From early childhood, individuals are subtly conditioned to associate sexual curiosity, kink, and intense pleasure with moral failure, dirtiness, or loss of character. Even highly educated, independent professionals in Delhi and Mumbai frequently experience a wave of sudden guilt immediately after exploring an unconventional fantasy.
 
-![Intimate Shadow Work](/images/IMG_4446.jpeg)
+![Intimate Shadow Work](/images/journal/navigating-guilt-shame-indian-cultural-baggage-pleasure.jpg)
 
 ## The Difference Between Guilt and Shame
 
@@ -714,7 +714,7 @@ Understanding your emotional vocabulary is the first step toward self-liberation
 1. **Externalize the Voice**: When a wave of post-pleasure guilt hits, ask yourself: "Is this my voice, or is this the voice of my school teacher, my conservative relative, or a moralizing society?"
 2. **Talk to Sex-Positive Peers**: Shame thrives in darkness and isolation. The moment you share a fantasy with a non-judgmental community member, its power over you evaporates.
 3. **Reframe Pleasure as Somatic Art**: View physical intimacy, rope work, and power exchange not as dirty secrets, but as sophisticated forms of self-discovery, play, and emotional release.`,
-    cover_image: '/images/IMG_4446.jpeg',
+    cover_image: '/images/journal/navigating-guilt-shame-indian-cultural-baggage-pleasure.jpg',
     category: 'Intimacy & Modern Relationships',
     tags: ['Deconstructing Shame', 'Sex Positivity', 'Mental Health India', 'Purity Culture Healing', 'Self Acceptance'],
     author_name: 'Ananya Sen',
@@ -742,7 +742,7 @@ In high-velocity Indian cities, life is governed by rigid calendar notifications
 
 When intimacy is treated as a hurried domestic chore, it inevitably loses its magic, its emotional depth, and its erotic tension. To re-enchant your relationship, you must take intimacy completely off the clock and transform it from a routine into an intentional ritual.
 
-![Warm Amber Lighting Container](/images/IMG_9955.jpg)
+![Warm Amber Lighting Container](/images/journal/re-enchantment-of-intimacy-moving-from-routine-to-ritual.jpg)
 
 ## Building the Sacred Container
 
@@ -759,7 +759,7 @@ A ritual is simply a sequence of intentional actions that marks a boundary betwe
 1. **Book an Uninterrupted Window**: Carve out twenty-four hours where neither partner checks work emails or family group chats.
 2. **Set an Intention**: Begin your getaway by lighting a single flame and stating one word that represents your desire for the weekend: Surrender, Curiosity, Play, or Stillness.
 3. **Allow the Return to be Slow**: Do not abruptly pack bags and rush into traffic. Allow an hour of quiet tea, soft cuddling, and gentle conversation to seal the sanctuary container before stepping back into the world.`,
-    cover_image: '/images/IMG_9955.jpg',
+    cover_image: '/images/journal/re-enchantment-of-intimacy-moving-from-routine-to-ritual.jpg',
     category: 'Intimacy & Modern Relationships',
     tags: ['Intimacy Rituals', 'Sacred Sexuality', 'Mindful Touch', 'Couples Retreat', 'Transformative Connection'],
     author_name: 'Ananya Sen',
@@ -791,7 +791,7 @@ By year five, we realized we were paying an exorbitant premium for an environmen
 * **The Clinical Lighting**: Why does every hotel bathroom have stadium-grade 6000K fluorescent lighting that illuminates every pore and kills any erotic mood instantly?
 * **The Paper-Thin Acoustic Isolation**: Hearing the elevator chime down the hallway or children splashing in the courtyard below instantly pulls you out of deep connection.
 
-![Minimalist Dark Sanctuary](/images/The Void (1).png)
+![Minimalist Dark Sanctuary](/images/journal/why-we-stopped-booking-five-star-hotels-for-anniversaries.jpg).png)
 
 ## What Actually Matters for Romance
 
@@ -806,7 +806,7 @@ The difference was staggering. No front desk check-in line. No staff asking what
 1. **Prioritize Privacy Over Amenities**: You do not need a business center or a breakfast buffet with forty items; you need a space that guarantees unbroken isolation.
 2. **Control Your Own Environment**: Choose spaces where you can adjust lighting temperatures, connect your own soundscape, and control your schedule autonomously.
 3. **Invest in Emotional Depth**: Romance is built on presence, not on hotel points.`,
-    cover_image: '/images/The Void (1).png',
+    cover_image: '/images/journal/why-we-stopped-booking-five-star-hotels-for-anniversaries.jpg',
     category: 'Intimacy & Modern Relationships',
     tags: ['Field Blog', 'Luxury Redefined', 'Anniversary Ideas', 'Couples Stays', 'Intimate Getaways'],
     author_name: 'Kabir Varma',
@@ -834,7 +834,7 @@ When most people go to North Goa, they are chasing crowded beach clubs in Anjuna
 
 We rented a secluded stone villa tucked away behind the banyan trees in Assagao. Before leaving the airport in Dabolim, he took possession of my smartphone, my car keys, and my wallet. For the next three days, my only responsibility was to obey, breathe, and exist.
 
-![Secluded Stone Architecture](/images/IMG_4446.jpeg)
+![Secluded Stone Architecture](/images/journal/the-weekend-in-assagao-surrendering-control.jpg)
 
 ## The Protocol of Presence
 
@@ -849,7 +849,7 @@ The weekend operated under strict, comforting protocols established weeks in adv
 When he handed my phone back on Sunday evening at the departure gate, looking at the screen felt strange and jarring. The notifications seemed trivial compared to the deep, silent stillness we had cultivated over seventy-two hours.
 
 > When power exchange is practiced with reverence, it does not diminish you; it cleanses the soul of all the noise the modern world piles upon it.`,
-    cover_image: '/images/IMG_4446.jpeg',
+    cover_image: '/images/journal/the-weekend-in-assagao-surrendering-control.jpg',
     category: 'Intimacy & Modern Relationships',
     tags: ['Goa Retreat', 'Personal Narrative', '72 Hour Protocol', 'Surrender', 'D/s Lifestyle'],
     author_name: 'Anonymous Contributor',
@@ -877,7 +877,7 @@ The human brain processes roughly eighty percent of its external stimuli through
 
 A light caress that might feel unremarkable in a brightly lit room becomes intensely visceral when sight is removed. Conversely, by layering specific sensory inputs, like bass frequencies, warm wax, ice, or textured leather, partners can guide one another into trance-like states of heightened sensitivity.
 
-![Sensory Deprivation Space](/images/IMG_9955.jpg)
+![Sensory Deprivation Space](/images/journal/sensory-deprivation-overload-altered-states-intimacy.jpg)
 
 ## Modulating the Sensory Spectrum
 
@@ -894,7 +894,7 @@ Intimacy can be dialed across two powerful axes: deprivation (stripping away inp
 1. **The Ten-Minute Sensory Silence**: Blindfold one partner in a pitch-black room. For ten minutes, touch them only with non-erotic textures (ice, linen, velvet, fingertips) without speaking. Notice how breath rhythms change.
 2. **Calibrate Lighting to Warm Amber**: Harsh white overhead bulbs trigger stress hormones. Use 2200K amber lamps or deep crimson mood lighting to soften the visual environment.
 3. **Use Non-Verbal Signals**: Agree on a tap system (one tap for more, two taps to ease up) so the blindfolded partner can communicate without breaking the meditative trance.`,
-    cover_image: '/images/IMG_9955.jpg',
+    cover_image: '/images/journal/sensory-deprivation-overload-altered-states-intimacy.jpg',
     category: 'Sensory Exploration & Space',
     tags: ['Sensory Play', 'Neural Intimacy', 'Atmosphere Design', 'Somatic Touch', 'Dark Aesthetics'],
     author_name: 'Kabir Varma',
@@ -922,7 +922,7 @@ Step into a conventional five-star hotel room in India, and your eyes are assaul
 
 When the objective is deep intimacy, psychological vulnerability, or intense sensory exploration, visual distractions dilute focus. The nervous system seeks grounded simplicity so that the human body in front of you becomes the singular focal point in the room.
 
-![Brutalist Monolith Interior](/images/The Void (1).png)
+![Brutalist Monolith Interior](/images/journal/architecture-of-seduction-minimalist-brutalism-intimacy.jpg).png)
 
 ## The Brutalist Philosophy of Space and Shadow
 
@@ -939,7 +939,7 @@ Monolithic brutalism, defined by textured concrete, deep charcoal tones, minimal
 1. **Eradicate Visual Clutter**: Remove all work documents, charging cables, and bright screen indicators from the eyeline.
 2. **Embrace Matte Textures**: Replace shiny synthetic fabrics with heavy matte linens, raw stone trays, and tactile leather surfaces.
 3. **Use Light to Frame, Not Illuminate**: Place low-wattage warm lights on the floor pointing upward against textured walls to create dramatic ambient depth.`,
-    cover_image: '/images/The Void (1).png',
+    cover_image: '/images/journal/architecture-of-seduction-minimalist-brutalism-intimacy.jpg',
     category: 'Sensory Exploration & Space',
     tags: ['Brutalist Architecture', 'Spatial Psychology', 'Sensory Architecture', 'Minimalist Intimacy', 'Atmosphere'],
     author_name: 'Kabir Varma',
@@ -967,7 +967,7 @@ Indian urban architecture is notoriously loud. Hollow brick masonry, unsealed do
 
 In this environment, intimacy is almost always performed with one foot on the brake. Partners unconsciously bite pillows, stifle their breath, and hold back natural vocal expressions out of fear of social embarrassment. This vocal suppression directly restricts deep diaphragmatic breathing, keeping pleasure shallow and guarded.
 
-![Acoustic Heavy Doors and Sanctuary](/images/IMG_4446.jpeg)
+![Acoustic Heavy Doors and Sanctuary](/images/journal/acoustic-isolation-freedom-of-complete-silence.jpg)
 
 ## The Physiology of Vocal Freedom
 
@@ -984,7 +984,7 @@ Vocalization during intimacy is not just theatrical noise; it is a primal somati
 1. **Notice Your Own Stifling**: Pay attention to the moments you hold your breath or clamp your jaw during intimacy. Make a conscious choice to exhale with sound.
 2. **Prioritize Acoustic Sanctuaries**: When booking private getaways, verify whether the space was intentionally engineered for acoustic privacy or merely decorated with pretty furniture.
 3. **Let the Voice Lead**: Sound follows breath, and pleasure follows sound. Never apologize for the noise of your own joy.`,
-    cover_image: '/images/IMG_4446.jpeg',
+    cover_image: '/images/journal/acoustic-isolation-freedom-of-complete-silence.jpg',
     category: 'Sensory Exploration & Space',
     tags: ['Acoustic Privacy', 'Soundproofing', 'Somatic Release', 'Vocal Freedom', 'Spatial Design'],
     author_name: 'Kabir Varma',
@@ -1012,7 +1012,7 @@ Many couples assume that sexual desire is something that must happen entirely in
 
 To transition from mundane analytical thinking to deep somatic immersion, the external space must signal absolute safety, warmth, and visual mystery.
 
-![Warm Amber Lighting Spectrum](/images/The Void (1).png)
+![Warm Amber Lighting Spectrum](/images/journal/curating-the-mood-lighting-temperature-soundscapes.jpg).png)
 
 ## The Three Pillars of Atmosphere Curation
 
@@ -1029,7 +1029,7 @@ Atmosphere is crafted by calibrating three primary environmental dials: light, s
 1. **Ban Overhead Central Fixtures**: Never turn on the primary ceiling light. Use only low-standing corner lamps, floor uplights, or candles placed safely in stone vessels.
 2. **Invest in Acoustic Subwoofers**: Low bass frequencies stimulate the vagus nerve and promote parasympathetic nervous system relaxation.
 3. **Use Olfactory Triggers**: Diffuse grounding essential oils like cedarwood, black pepper, and amber resin twenty minutes before entering the sanctuary.`,
-    cover_image: '/images/The Void (1).png',
+    cover_image: '/images/journal/curating-the-mood-lighting-temperature-soundscapes.jpg',
     category: 'Sensory Exploration & Space',
     tags: ['Atmosphere Curation', 'Mood Lighting', 'Soundscape Design', 'Sensory Architecture', 'Intimacy Aesthetics'],
     author_name: 'Kabir Varma',
@@ -1057,7 +1057,7 @@ When people think of specialized lifestyle spaces, they often picture Hollywood 
 
 When a human body is suspended, restrained, or subjected to intense physical impact, equipment failure is not an option. Every bolt, carabiner, and frame weld must be engineered with massive safety tolerances.
 
-![Structural Hardware Details](/images/IMG_9955.jpg)
+![Structural Hardware Details](/images/journal/bdsm-hardware-furniture-anatomy-dedicated-sanctuary.jpg)
 
 ## Essential Components of a Purpose-Built Sanctuary
 
@@ -1074,7 +1074,7 @@ A true private sanctuary is designed with both aesthetic minimalism and uncompro
 1. **Three-Tier Sterilization**: Between uses, all leather and metal surfaces must undergo hospital-grade enzymatic disinfection, followed by dry UVC light cycle treatment.
 2. **Routine Hardware Stress Inspections**: Regularly check all locking carabiners, swivel bearings, and leather straps for microscopic stress fractures or thread wear.
 3. **Prioritize Acoustic Floor Decoupling**: Heavy equipment must sit on vibration-absorbing acoustic neoprene pads to prevent impact resonance from traveling through concrete building structures.`,
-    cover_image: '/images/IMG_9955.jpg',
+    cover_image: '/images/journal/bdsm-hardware-furniture-anatomy-dedicated-sanctuary.jpg',
     category: 'Sensory Exploration & Space',
     tags: ['BDSM Hardware', 'Sanctuary Architecture', 'Suspension Safety', 'Structural Engineering', 'Dungeon Design'],
     author_name: 'Kabir Varma',
@@ -1102,7 +1102,7 @@ Most beginner kink kits sold on generic Indian e-commerce portals are made of to
 
 Here is the essential checklist for assembling a sophisticated, durable sensory toolkit in India.
 
-![Curated Play Equipment](/images/IMG_4446.jpeg)
+![Curated Play Equipment](/images/journal/how-to-build-a-sensory-dungeon-kit-at-home.jpg)
 
 ## The Core Five Elements of a Sensory Kit
 
@@ -1129,7 +1129,7 @@ Always keep a bottle of alcohol-free, toy-safe antibacterial foam spray to clean
 
 * **The Flight Case with TSA Lock**: Store your kit in an understated matte-black hard aluminum flight case with a combination lock. To housemates or domestic staff, it looks like professional camera equipment.
 * **Desiccant Packets**: Indian monsoon humidity can ruin leather and mold jute ropes. Always keep silica gel desiccant packs inside your storage container.`,
-    cover_image: '/images/IMG_4446.jpeg',
+    cover_image: '/images/journal/how-to-build-a-sensory-dungeon-kit-at-home.jpg',
     category: 'Sensory Exploration & Space',
     tags: ['Sensory Kit', 'Gear Guide', 'Kink Sourcing India', 'Equipment Maintenance', 'Discreet Storage'],
     author_name: 'Ananya Sen',
@@ -1157,7 +1157,7 @@ If there is one universal feature of Indian domestic architecture, it is the gla
 
 Under cold white light, human skin appears grayish-green. Every perceived physical imperfection is sharply outlined, triggering acute self-consciousness and keeping the nervous system alert for daytime chores.
 
-![Warm Amber Glow Sanctuary](/images/The Void (1).png)
+![Warm Amber Glow Sanctuary](/images/journal/the-hypnotic-glow-of-2200k-amber-lighting.jpg).png)
 
 ## The Primal Psychology of Firelight
 
@@ -1174,7 +1174,7 @@ For hundreds of thousands of years, the human species ended its day around the w
 1. **Replace Every Bedroom Bulb with 2200K Vintage Filament Bulbs**: They cost a few hundred rupees and instantly transform sterile bedrooms into boutique hotel suites.
 2. **Floor-Level Placement**: Keep light sources below eye level. Light emerging from the floor creates dramatic upward shadows that heighten erotic atmosphere.
 3. **Use Matte Black Shades**: Direct light strictly where you want it, keeping surrounding walls in soft, velvety darkness.`,
-    cover_image: '/images/The Void (1).png',
+    cover_image: '/images/journal/the-hypnotic-glow-of-2200k-amber-lighting.jpg',
     category: 'Sensory Exploration & Space',
     tags: ['Field Blog', 'Lighting Design', 'Color Temperature', 'Home Aesthetics', 'Mood Architecture'],
     author_name: 'Kabir Varma',
@@ -1202,7 +1202,7 @@ To live in an Indian metropolis is to exist in a perpetual panopticon. Whether i
 
 This constant surveillance forces individuals to live with a suppressed baseline: keeping voices low during conversations, moderating laughter, and perpetually calculating who might be listening on the other side of a paper-thin partition.
 
-![Architectural Privacy Geometry](/images/IMG_9955.jpg)
+![Architectural Privacy Geometry](/images/journal/privacy-metropolis-psychological-toll-surveillance.jpg)
 
 ## The Chronic Stress of Self-Censorship
 
@@ -1219,7 +1219,7 @@ When your nervous system perceives that you might be judged or interrupted at an
 1. **Seek Dedicated Acoustic Isolation**: When planning getaways, prioritize soundproof decoupling and discreet keyless access over generic hotel amenities.
 2. **Practice Total Phone Disconnection**: Turn off notifications to prevent digital intrusion from puncturing your private bubble.
 3. **Claim Your Time Without Justification**: You do not owe explanations to society for carving out private space dedicated strictly to your partnership and peace of mind.`,
-    cover_image: '/images/IMG_9955.jpg',
+    cover_image: '/images/journal/privacy-metropolis-psychological-toll-surveillance.jpg',
     category: 'Discretion & Safe Havens',
     tags: ['Privacy Rights', 'Urban Living', 'Mental Health', 'Safe Spaces India', 'Discretion'],
     author_name: 'Kabir Varma',
@@ -1247,7 +1247,7 @@ Under Indian law, two consenting adults possessing valid government ID have the 
 
 Despite this legal reality, the lived experience for unmarried couples in India remains fraught with stress: receptionists demanding marriage certificates, security staff making unsolicited remarks, and the perpetual anxiety of having private moments scrutinized by judgmental hospitality personnel. This moral policing ruins the romance before a couple even enters the room.
 
-![Keyless Discretion Entry](/images/IMG_4446.jpeg)
+![Keyless Discretion Entry](/images/journal/unmarried-under-scrutiny-digital-keyless-stays-india.jpg)
 
 ## The Paradigm Shift of Autonomous Hospitality
 
@@ -1264,7 +1264,7 @@ True luxury is not defined by a bellboy carrying your suitcase; true luxury is t
 1. **Verify Legal Compliance**: Always choose properties that follow strict digital police vetting so your stay is 100% legal, documented, and protected from arbitrary local interference.
 2. **Demand Keyless Autonomy**: Avoid properties where caretakers linger on the premises or demand in-person key handovers.
 3. **Own Your Peace**: You are paying for sanctuary. Never apologize for demanding complete privacy.`,
-    cover_image: '/images/IMG_4446.jpeg',
+    cover_image: '/images/journal/unmarried-under-scrutiny-digital-keyless-stays-india.jpg',
     category: 'Discretion & Safe Havens',
     tags: ['Couple Safety India', 'Unmarried Couples Rights', 'Keyless Check-in', 'Autonomous Stays', 'Privacy Laws'],
     author_name: 'Ananya Sen',
@@ -1292,7 +1292,7 @@ For alternative lifestyle practitioners in India, a leaked photo, an unencrypted
 
 Digital hygiene is not about paranoia; it is about establishing routine, effortless habits that ensure your private explorations remain strictly private forever.
 
-![Digital Privacy and Security](/images/The Void (1).png)
+![Digital Privacy and Security](/images/journal/digital-hygiene-for-kinksters-protecting-identity-india.jpg).png)
 
 ## The Core Rules of Lifestyle OpSec
 
@@ -1310,7 +1310,7 @@ Treat your alternative identity with the same disciplined security as sensitive 
 1. **Audit Your Cloud Sync Settings**: Immediately turn off automatic camera-roll cloud syncing for third-party photo apps.
 2. **Never Share Location PINs Directly**: Meet new connections in vetted public spaces first before ever sharing private residence locations.
 3. **Use Dedicated Burner Profiles**: Maintain separate email accounts and aliases for lifestyle community memberships that have zero connection to your LinkedIn, banking, or corporate credentials.`,
-    cover_image: '/images/The Void (1).png',
+    cover_image: '/images/journal/digital-hygiene-for-kinksters-protecting-identity-india.jpg',
     category: 'Discretion & Safe Havens',
     tags: ['Digital Security', 'OpSec India', 'Photo Privacy', 'Identity Protection', 'Kink Privacy'],
     author_name: 'Kabir Varma',
@@ -1338,7 +1338,7 @@ In our West Delhi family home, eight people lived under one roof: my in-laws, tw
 
 For three years, our intimate life was reduced to twenty minutes of frantic whispering at 1:00 AM, constantly listening for the sound of someone walking to the kitchen for water. We had stopped talking about fantasies; we had stopped touching with presence; we had become roommates surviving domestic logistics.
 
-![Sanctuary of Silence and Solitude](/images/IMG_9955.jpg)
+![Sanctuary of Silence and Solitude](/images/journal/escaping-the-joint-family-our-first-48-hours-of-silence.jpg)
 
 ## The Decision to Disappear
 
@@ -1357,7 +1357,7 @@ When we finally made love, my husband broke down because for the first time in t
 ## The Ritual We Now Keep
 
 We still live in the joint family, and we still fulfill our familial duties with love and respect. But every six weeks, we book forty-eight hours in a soundproof sanctuary. It is not an indulgence; it is the oxygen that keeps our marriage alive.`,
-    cover_image: '/images/IMG_9955.jpg',
+    cover_image: '/images/journal/escaping-the-joint-family-our-first-48-hours-of-silence.jpg',
     category: 'Discretion & Safe Havens',
     tags: ['Joint Family Living', 'Personal Story', 'Couples Refuge', 'Silence and Privacy', 'Delhi Couples'],
     author_name: 'Anonymous Contributor',
@@ -1385,7 +1385,7 @@ Many young couples in India operate under the mistaken belief that checking into
 
 Under the Constitution of India, your right to privacy, autonomy, and association is absolute. Here is the definitive legal handbook every modern couple in India should have saved on their phone.
 
-![Legal Dignity and Discretion](/images/IMG_4446.jpeg)
+![Legal Dignity and Discretion](/images/journal/the-unmarried-couples-legal-and-safety-handbook-india.jpg)
 
 ## Fundamental Constitutional Rights
 
@@ -1411,7 +1411,7 @@ If a hotel staff member or third party claims you cannot stay together, politely
 1. **Opt for Autonomous Keyless Stays**: Properties with encrypted digital check-in remove the human interface where moral policing typically occurs.
 2. **Verify Police Digital Compliance**: Choose sanctuaries that digitally process guest IDs through Police Compliance portals (such as Form C and state police registers), ensuring your stay is 100% legally recognized and protected.
 3. **Keep Emergency Legal Contacts Handy**: Always save contact numbers for trusted legal counsel or accredited civil rights helplines when traveling to unfamiliar regions.`,
-    cover_image: '/images/IMG_4446.jpeg',
+    cover_image: '/images/journal/the-unmarried-couples-legal-and-safety-handbook-india.jpg',
     category: 'Discretion & Safe Havens',
     tags: ['Legal Handbook', 'Couple Rights India', 'Article 21 Privacy', 'Police Protocols', 'Unmarried Couples Guide'],
     author_name: 'Kabir Varma',

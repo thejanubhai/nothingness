@@ -74,10 +74,19 @@ function KinksterExploreContent() {
   const [showHealthUploadModal, setShowHealthUploadModal] = useState<boolean>(false);
   const [resonanceTarget, setResonanceTarget] = useState<{ alias: string; avatar?: string } | null>(null);
   const [activeChamber, setActiveChamber] = useState<{ token: string; alias: string; avatar?: string } | null>(null);
+  const [currentViewerAlias, setCurrentViewerAlias] = useState<string>('');
 
   const fetchDiscoveryData = async () => {
     setLoading(true);
     try {
+      // 0. Fetch current profile
+      fetch('/api/kinkster/profile')
+        .then(r => r.json())
+        .then(d => {
+          if (d.profile?.alias) setCurrentViewerAlias(d.profile.alias);
+        })
+        .catch(() => {});
+
       // 1. Fetch compatibility matches
       const matchRes = await fetch('/api/kinkster/match');
       if (matchRes.ok) {
@@ -751,6 +760,7 @@ function KinksterExploreContent() {
           chamberToken={activeChamber.token}
           targetAlias={activeChamber.alias}
           targetAvatar={activeChamber.avatar}
+          currentViewerAlias={currentViewerAlias}
         />
       )}
 

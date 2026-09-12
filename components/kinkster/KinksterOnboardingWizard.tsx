@@ -42,7 +42,7 @@ const DEFAULT_KINKS: KinkOption[] = [
   { id: 'sensory', name: 'Sensory Deprivation & Blindfolds', category: 'Sensory', intensity: 3 },
   { id: 'roleplay', name: 'Roleplay & Atmospheric Storytelling', category: 'Creative', intensity: 3 },
   { id: 'aftercare', name: 'Mindfulness & Grounded Aftercare', category: 'Emotional', intensity: 5 },
-  { id: 'jacuzzi', name: 'Private Jacuzzi & Bath Soaks', category: 'Luxury Vibe', intensity: 4 }
+  { id: 'sensory_bath', name: 'Sensory Soaking Baths & Spa', category: 'Luxury Vibe', intensity: 4 }
 ];
 
 export default function KinksterOnboardingWizard({

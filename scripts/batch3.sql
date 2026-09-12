@@ -19,7 +19,7 @@ To achieve maximum search indexing precision, your application should deploy nes
 Declares the physical entity, operational hours, accepted payment methods (UPI, Visa, MasterCard), and legal business details.
 
 ### 2. HotelRoom / Accommodation
-Specifies individual room units, maximum guest capacity, bed configurations, square footage, and unique amenities like private jacuzzi tubs and acoustic soundproofing.
+Specifies individual room units, maximum guest capacity, bed configurations, square footage, and unique amenities like private soaking baths and acoustic soundproofing.
 
 ### 3. LocationFeatureSpecification
 Explicitly communicates specialized room features such as high-speed fiber Wi-Fi, mood lighting systems, and keyless smart lockboxes.

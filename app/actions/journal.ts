@@ -4,6 +4,13 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { SEED_ARTICLES, Article } from '@/lib/articles-data';
+import {
+  generateContextualImageForArticle,
+  generateContextualImagesForAllArticles,
+  buildContextualPrompt,
+  generateImageBuffer,
+  persistJournalImage,
+} from '@/lib/ai/image-generator';
 
 export async function getPublishedArticles(): Promise<Article[]> {
   try {
@@ -338,9 +345,28 @@ To engage with ${topic.toLowerCase()} safely and sustainably, partners must anch
         .replace(/--/g, '-');
     };
 
+    const articleSlug = (rawResult.slug || cleanSlug(rawResult.title)).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+    // Contextual Cover Image Generation (Strict Anti-AI Realism)
+    let generatedCover = `/images/journal/${articleSlug}.jpg`;
+    try {
+      const prompt = buildContextualPrompt({
+        title: sanitize(rawResult.title),
+        slug: articleSlug,
+        category: rawResult.category || category,
+        excerpt: sanitize(rawResult.excerpt),
+        tags: rawResult.tags,
+      });
+      const buffer = await generateImageBuffer(prompt);
+      const { localPath } = await persistJournalImage(articleSlug, buffer);
+      if (localPath) generatedCover = localPath;
+    } catch (imgErr) {
+      console.warn('[Journal AI] Cover image generation notice, falling back to static path:', imgErr);
+    }
+
     const sanitizedResult: Partial<Article> = {
       title: sanitize(rawResult.title),
-      slug: (rawResult.slug || cleanSlug(rawResult.title)).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+      slug: articleSlug,
       subtitle: sanitize(rawResult.subtitle),
       excerpt: sanitize(rawResult.excerpt),
       content: sanitize(rawResult.content),
@@ -349,7 +375,7 @@ To engage with ${topic.toLowerCase()} safely and sustainably, partners must anch
       author_name: 'Kabir Varma',
       author_role: 'Chief Strategy Architect',
       author_avatar: '/images/logo.png',
-      cover_image: '/images/The Void (1).png',
+      cover_image: generatedCover,
       status: 'published',
       featured: false,
       reading_time_minutes: rawResult.reading_time_minutes || 6,
@@ -366,6 +392,17 @@ To engage with ${topic.toLowerCase()} safely and sustainably, partners must anch
   }
 }
 
+export async function generateArticleCoverImageAction(
+  articleIdentifier: string,
+  customPrompt?: string
+) {
+  return await generateContextualImageForArticle(articleIdentifier, { customPrompt });
+}
+
+export async function generateAllArticleCoverImagesAction(options?: { onlyRoomImages?: boolean; forceRegenerate?: boolean }) {
+  return await generateContextualImagesForAllArticles(options);
+}
+
 function cleanSlug(title: string) {
   return (title || '')
     .toLowerCase()
@@ -373,4 +410,5 @@ function cleanSlug(title: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
+
 

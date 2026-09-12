@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     "south delhi secret stay",
     "luxury boutique staycation delhi ncr",
     "discreet private apartment stay",
-    "jacuzzi private suite delhi",
+    "aesthetic private suite delhi",
     "autonomous hospitality india"
   ],
   alternates: {

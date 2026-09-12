@@ -105,10 +105,10 @@ const VAULT_PERSONAS: Persona[] = [
     avatarUrl: 'https://images.unsplash.com/photo-1609137144827-c10427843444?auto=format&fit=crop&q=80&w=400',
     discretionRating: '4.98 ★ (14 Stays)',
     chemistryScore: 96,
-    bio: 'Aesthetic lifestyle couple. We host private wine evenings, attend Munches, and appreciate absolute consent. Looking for vetted couples or solo switches to spontaneously co-book Jacuzzi suites.',
+    bio: 'Aesthetic lifestyle couple. We host private wine evenings, attend Munches, and appreciate absolute consent. Looking for vetted couples or solo switches to spontaneously co-book private suites.',
     tags: [
       { name: 'Couples Dynamic', stars: 5 },
-      { name: 'Private Jacuzzi', stars: 5 },
+      { name: 'Sensory Baths', stars: 5 },
       { name: 'Noir Masquerades', stars: 5 }
     ],
     audioTitle: 'Sensory Note • "Discretion is our standard..." (11s)',
@@ -159,7 +159,7 @@ const VAULT_PERSONAS: Persona[] = [
     avatarUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=400',
     discretionRating: '5.0 ★ (5 Stays)',
     chemistryScore: 90,
-    bio: 'Seeking slow psychological power exchange, candlelit jacuzzi silence, and deep emotional grounding in secluded private suites.',
+    bio: 'Seeking slow psychological power exchange, candlelit ambient silence, and deep emotional grounding in secluded private suites.',
     tags: [
       { name: 'Consensual Surrender', stars: 5 },
       { name: 'Mindfulness & Tea', stars: 5 },
@@ -167,7 +167,7 @@ const VAULT_PERSONAS: Persona[] = [
     ],
     audioTitle: 'Sensory Note • "In stillness and trust..." (10s)',
     eventAttending: 'Sanctuary Munch & Dialogue (Thursday)',
-    stayProof: 'Verified Guest • Jacuzzi Sanctuary'
+    stayProof: 'Verified Guest • The Void Sanctuary'
   },
   {
     id: 'nocturnal_switch',
@@ -192,7 +192,7 @@ const VAULT_PERSONAS: Persona[] = [
 const DESIRES_LIST = [
   { id: 'shibari', name: 'Japanese Shibari Suspensions', category: 'Rope Art', tag: 'Tactile friction & artistic binds' },
   { id: 'sensory', name: 'Sensory Deprivation & Sound', category: 'Sensory', tag: 'Silk blindfolds & acoustic silence' },
-  { id: 'jacuzzi', name: 'Candlelight Jacuzzi Soaks', category: 'Water Play', tag: 'Warm water immersion & champagne' },
+  { id: 'sensory_bath', name: 'Candlelight Bath Soaks', category: 'Sensory Vibe', tag: 'Warm water immersion & champagne' },
   { id: 'power', name: 'Intentional Power Exchange', category: 'Dynamics', tag: 'Clear command & calm authority' },
   { id: 'masquerade', name: 'Midnight Masquerade Soirées', category: 'Gatherings', tag: 'Masked anonymity & kindred spirits' },
   { id: 'aftercare', name: 'Restorative Mindful Aftercare', category: 'Mindfulness', tag: 'Herbal tea, weighted blankets & debrief' },
@@ -268,7 +268,7 @@ export default function KinksterLandingPage({
   const [desireSelections, setDesireSelections] = useState<Record<string, 'must' | 'curious' | 'pass'>>({
     shibari: 'must',
     sensory: 'must',
-    jacuzzi: 'must',
+    sensory_bath: 'must',
     masquerade: 'curious',
     aftercare: 'must'
   });
@@ -360,7 +360,7 @@ export default function KinksterLandingPage({
         matchPercent: 95,
         membersCount: 24,
         recommendedEvent: 'Rope & Reverie Salon (Thursday)',
-        recommendedSuite: 'The Obsidian Jacuzzi Suite',
+        recommendedSuite: 'The Obsidian Soaking Suite',
         desc: 'You experience profound liberation by letting go of control within an impeccably safe, vetted sanctuary. Scent, candlelight, and patient aftercare are your sanctum.'
       };
     }
@@ -803,7 +803,7 @@ export default function KinksterLandingPage({
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {[
                         { id: 'void', title: 'The Brutalist Void', desc: 'Raw concrete, ceiling suspension points, absolute acoustic isolation.' },
-                        { id: 'jacuzzi', title: 'The Obsidian Jacuzzi', desc: 'Warm candlelight, oversized soaking bath, plush silk robes.' },
+                        { id: 'sensory_bath', title: 'The Obsidian Soaking Suite', desc: 'Warm candlelight, oversized soaking bath, plush silk robes.' },
                         { id: 'masquerade', title: 'Midnight Soirée Penthouse', desc: 'Dark ambient vinyl, masked anonymity, secluded conversation alcoves.' }
                       ].map((opt) => (
                         <button
@@ -1024,7 +1024,7 @@ export default function KinksterLandingPage({
                 The Obsidian Soirée: Deep Surrender
               </h3>
               <p className="text-xs text-zinc-400 line-clamp-3 leading-relaxed">
-                Strictly capped to 8 couples. Private jacuzzi soaks, industrial ceiling suspension rigs, sensory isolation chambers, and bespoke champagne service.
+                Strictly capped to 8 couples. Sensory bath soaks, industrial ceiling suspension rigs, sensory isolation chambers, and bespoke champagne service.
               </p>
 
               <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl space-y-1 text-[11px] font-mono text-zinc-400">
@@ -1174,7 +1174,7 @@ export default function KinksterLandingPage({
               host: '@kinkster_architect',
               suite: 'The Void Suite (South Delhi)',
               timing: 'This Saturday Night • Post-Munch Session',
-              desc: 'Booked full penthouse suite with Jacuzzi & 300kg ceiling suspension points. 100% Suite Tariff Covered by Host. Seeking 1 vetted switch guest to explore sound & suspension.',
+              desc: 'Booked full penthouse suite with deep soaking bath & 300kg ceiling suspension points. 100% Suite Tariff Covered by Host. Seeking 1 vetted switch guest to explore sound & suspension.',
               splitRate: '100% Host Sponsored (₹0 for Guest)',
               isSponsored: true,
               status: 'Invite Active'
@@ -1190,7 +1190,7 @@ export default function KinksterLandingPage({
             },
             {
               host: '@obsidian_silk_duo',
-              suite: 'The Obsidian Jacuzzi Suite',
+              suite: 'The Obsidian Soaking Suite',
               timing: 'Upcoming Sunday Retreat',
               desc: 'Sensory candlelight soak and deep acoustic privacy. Seeking vetted female switch or couple to share suite tariff and explore mutual chemistry.',
               splitRate: '₹3,900 / share (50/50 Split at Booking)',

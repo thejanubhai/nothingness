@@ -29,6 +29,7 @@ import EventDossierModal from '@/components/events/EventDossierModal';
 import LiveTicketQRModal from '@/components/events/LiveTicketQRModal';
 import IDUploadModal from '@/components/IDUploadModal';
 import FaceIdScanModal from '@/components/FaceIdScanModal';
+import NightOfConsentHUD from '@/components/events/NightOfConsentHUD';
 
 interface SanctuaryEvent {
   id: string;
@@ -189,6 +190,17 @@ function SanctuaryPassContent() {
     return e.tier === selectedTier;
   });
 
+  const tonightActiveEvent = events.find((e) => {
+    const app = applications[e.id];
+    if (!app || app.status !== 'confirmed') return false;
+    if (!e.event_date) return false;
+    const target = new Date(e.event_date).getTime();
+    if (isNaN(target)) return false;
+    const diffMs = target - Date.now();
+    // Active within 14h before or 14h after event scheduled date
+    return diffMs <= 14 * 60 * 60 * 1000 && diffMs > -14 * 60 * 60 * 1000;
+  });
+
   const getCountdownBadge = (eventDate: string | null) => {
     if (!eventDate) return null;
     const target = new Date(eventDate).getTime();
@@ -257,6 +269,21 @@ function SanctuaryPassContent() {
     <div className="min-h-screen bg-black text-white pt-28 sm:pt-32 pb-24 px-4 sm:px-6 max-w-6xl mx-auto">
       {/* Lockscreen Push Subscription Banner */}
       {isLoggedIn && <PushNotificationPrompt />}
+
+      {/* In-Gathering Night-Of Consent & Safety HUD */}
+      {tonightActiveEvent && applications[tonightActiveEvent.id] && (
+        <NightOfConsentHUD
+          event={tonightActiveEvent}
+          application={applications[tonightActiveEvent.id]}
+          userAlias={userAlias}
+          onOpenTicket={() =>
+            setSelectedEventForTicket({
+              event: tonightActiveEvent,
+              app: applications[tonightActiveEvent.id],
+            })
+          }
+        />
+      )}
 
       {/* Payment Failure Banner */}
       {searchParams?.get('payment') === 'failed' && (

@@ -12,13 +12,13 @@ export const revalidate = 60; // Revalidate every 60s for fresh CMS edits
 
 export const metadata: Metadata = {
   title: "Cinematic Private Stays & Luxury Sanctuaries in Delhi NCR | Nothingness",
-  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Discreet private check-in, Jacuzzi bath soaks, brutalist interiors, and 100% ID-vetted discretion in Delhi NCR.",
+  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Discreet private check-in, minimalist bath soaks, brutalist interiors, and 100% ID-vetted discretion in Delhi NCR.",
   alternates: {
     canonical: 'https://nothingness.asia',
   },
   openGraph: {
     title: 'Cinematic Private Stays & Luxury Sanctuaries | Nothingness',
-    description: "Ultra-discreet, design-forward private sanctuaries with total privacy and Jacuzzi tubs across Delhi NCR.",
+    description: "Ultra-discreet, design-forward private sanctuaries with total acoustic privacy and aesthetic suites across Delhi NCR.",
     url: 'https://nothingness.asia',
     images: ['/images/IMG_9955.jpg'],
   },
@@ -49,7 +49,7 @@ export default async function HomePage() {
   const hero = getBlock('homepage_hero', {
     title: 'Cinematic Private Stays.',
     subtitle: 'Ultra-Discreet Hospitality.',
-    body: 'High-design private sanctuaries featuring total acoustic privacy, Jacuzzi bath soaks, aesthetic interiors, and 100% ID-vetted discretion.'
+    body: 'High-design private sanctuaries featuring total acoustic privacy, bespoke soaking baths, aesthetic interiors, and 100% ID-vetted discretion.'
   });
 
   const badge = getBlock('homepage_badge', {
@@ -68,7 +68,7 @@ export default async function HomePage() {
 
   const trust3 = getBlock('trust_card_3', {
     title: 'Aesthetic Cinematic Suites',
-    body: 'Deep soaking jacuzzi tubs, warm ambient candle lighting, acoustic privacy, and custom sensory amenities designed for ultimate relaxation and connection.'
+    body: 'Deep minimalist soaking baths, warm ambient candle lighting, acoustic privacy, and custom sensory amenities designed for ultimate relaxation and connection.'
   });
 
   const lifestyle = getBlock('lifestyle_showcase', {

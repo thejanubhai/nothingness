@@ -268,7 +268,7 @@ export default function CmsClient({ initialBlocks }: { initialBlocks: CmsBlock[]
             {[
               { key: 'trust_card_1', defaultTitle: 'Discreet Private Check-In', icon: 'Secret Physical Key' },
               { key: 'trust_card_2', defaultTitle: '100% Private & Verified', icon: 'ID Police Vetting' },
-              { key: 'trust_card_3', defaultTitle: 'Aesthetic Cinematic Suites', icon: 'Jacuzzi & Sensory Design' },
+              { key: 'trust_card_3', defaultTitle: 'Aesthetic Cinematic Suites', icon: 'Sensory Design & Bath Soaks' },
             ].map((card, idx) => (
               <div key={card.key} className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-4">
                 <div className="flex items-center justify-between">

@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { isUserAdminAsync } from '@/lib/auth-utils';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user || !(await isUserAdminAsync(user))) {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required.' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const fromDate = searchParams.get('from');
     const toDate = searchParams.get('to');
-
-    const supabase = await createClient();
 
     let query = supabase
       .from('guest_profiles')

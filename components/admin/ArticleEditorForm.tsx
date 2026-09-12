@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Article } from '@/lib/articles-data';
-import { createArticle, updateArticle, generateArticleWithAI } from '@/app/actions/journal';
+import { createArticle, updateArticle, generateArticleWithAI, generateArticleCoverImageAction } from '@/app/actions/journal';
 import { 
   ArrowLeft, Save, Sparkles, Image as ImageIcon, Tag, 
   Clock, Eye, FileText, CheckCircle2, AlertCircle, Loader2,
-  Wand2, ChevronDown, UploadCloud
+  Wand2, ChevronDown, UploadCloud, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import CloudinaryUploadZone from '@/components/admin/CloudinaryUploadZone';
@@ -41,6 +41,7 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generatingCover, setGeneratingCover] = useState(false);
   const [aiTopicInput, setAiTopicInput] = useState(initialData.title || '');
   const [customInstructions, setCustomInstructions] = useState('');
   const [activeTab, setActiveTab] = useState<'content' | 'seo' | 'preview'>('content');
@@ -185,6 +186,33 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
       toast.error(err.message || 'Unexpected error during generation', { id: toastId });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleGenerateContextImage = async () => {
+    const topicToUse = title || aiTopicInput;
+    if (!topicToUse) {
+      toast.error('Please enter an article title first so the AI can build a contextual photograph.');
+      return;
+    }
+
+    setGeneratingCover(true);
+    const toastId = toast.loading('Generating Contextual AI Cover (Leica 35mm, Anti-AI Realism)...');
+
+    try {
+      const identifier = initialData.id || slug || topicToUse;
+      const res = await generateArticleCoverImageAction(identifier, customInstructions);
+
+      if (res.success && res.cover_image) {
+        setCoverImage(res.cover_image);
+        toast.success('Contextual Cover Image Generated & Linked!', { id: toastId });
+      } else {
+        toast.error(res.error || 'Failed to generate contextual cover image', { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error generating image', { id: toastId });
+    } finally {
+      setGeneratingCover(false);
     }
   };
 
@@ -492,27 +520,65 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
               />
             </div>
 
-            {/* Cover Image URL */}
+            {/* Cover Image URL & Context Generator */}
             <div className="md:col-span-2 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
                   Cover Image URL / Path *
                 </label>
-                <CloudinaryUploadZone
-                  buttonOnly={true}
-                  folder="nothingness/journal"
-                  onUploadSuccess={(url) => setCoverImage(url)}
-                  buttonLabel="Upload Cover Image"
-                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleGenerateContextImage}
+                    disabled={generatingCover}
+                    className="px-3 py-1.5 rounded-lg bg-accent-gold/15 hover:bg-accent-gold/30 text-accent-gold hover:text-white text-[10px] font-mono border border-accent-gold/40 flex items-center gap-1.5 transition-all disabled:opacity-50"
+                    title="Generate realistic editorial photograph matching this article's context"
+                  >
+                    {generatingCover ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin text-accent-gold" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3 text-accent-gold" />
+                        <span>Generate Context Cover</span>
+                      </>
+                    )}
+                  </button>
+                  <CloudinaryUploadZone
+                    buttonOnly={true}
+                    folder="nothingness/journal"
+                    onUploadSuccess={(url) => setCoverImage(url)}
+                    buttonLabel="Upload"
+                  />
+                </div>
               </div>
               <input
                 type="text"
                 required
                 value={coverImage}
                 onChange={(e) => setCoverImage(e.target.value)}
-                placeholder="/images/The Void (1).png"
+                placeholder="/images/journal/article-slug.jpg"
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-zinc-300 font-mono focus:outline-none focus:border-accent-gold/50"
               />
+
+              {/* Live Preview Thumbnail */}
+              {coverImage && (
+                <div className="relative w-full h-36 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 mt-2 group">
+                  <Image
+                    src={coverImage}
+                    alt="Cover preview"
+                    fill
+                    className="object-cover transition-transform group-hover:scale-105 duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2.5">
+                    <span className="text-[10px] font-mono text-zinc-300 truncate">
+                      Active Cover: {coverImage}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Publication Date */}

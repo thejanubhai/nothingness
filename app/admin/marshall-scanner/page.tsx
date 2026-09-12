@@ -72,7 +72,7 @@ export default function MarshallScannerPage() {
 
   const handleUnlockWithPin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin.trim() === '1991' || pin.trim().length >= 4) {
+    if (pin.trim() === '1991') {
       setIsUnlocked(true);
       triggerHaptic('success');
       toast.success('Marshall Security Mode Active');
@@ -402,6 +402,21 @@ export default function MarshallScannerPage() {
                     ID: {lastScannedResult.isIdVerified ? 'Verified' : 'Pending'}
                   </p>
                 </div>
+              </div>
+
+              {/* Consent Marshall Incident Intervention */}
+              <div className="pt-2 border-t border-zinc-900 flex items-center justify-between">
+                <span className="text-[10px] font-mono text-zinc-500">Sanctuary Floor Safety:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic('heavy');
+                    toast.error(`Consent incident logged for @${lastScannedResult.userAlias}. Marshall floor team notified.`);
+                  }}
+                  className="px-2.5 py-1 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 text-[10px] font-mono font-bold rounded-lg transition-colors cursor-pointer"
+                >
+                  Flag Consent Violation
+                </button>
               </div>
             </div>
           )}

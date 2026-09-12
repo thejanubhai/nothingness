@@ -648,6 +648,7 @@ export default function KinksterProfilePage() {
           chamberToken={activeChamberToken}
           targetAlias={alias}
           targetAvatar={profile.avatar_url}
+          currentViewerAlias={viewerAlias}
         />
       )}
     </div>
