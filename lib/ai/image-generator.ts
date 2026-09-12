@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import sharp from 'sharp';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
@@ -130,17 +129,22 @@ export async function generateImageBuffer(prompt: string, seed: number = Date.no
     throw new Error('Received invalid/corrupt image buffer');
   }
 
-  // Strip any bottom watermark (36px) and resize with Lanczos3
-  const meta = await sharp(rawBuffer).metadata();
-  const cropHeight = Math.max(100, (meta.height || 675) - 36);
+  // Strip any bottom watermark (36px) and resize with Lanczos3 if sharp is available
+  try {
+    const sharpModule = await import('sharp');
+    const sharp = sharpModule.default || sharpModule;
+    const meta = await sharp(rawBuffer).metadata();
+    const cropHeight = Math.max(100, (meta.height || 675) - 36);
 
-  const cleanBuffer = await sharp(rawBuffer)
-    .extract({ left: 0, top: 0, width: meta.width || 1200, height: cropHeight })
-    .resize(1200, 675, { fit: 'cover' })
-    .jpeg({ quality: 92, progressive: true })
-    .toBuffer();
-
-  return cleanBuffer;
+    return await sharp(rawBuffer)
+      .extract({ left: 0, top: 0, width: meta.width || 1200, height: cropHeight })
+      .resize(1200, 675, { fit: 'cover' })
+      .jpeg({ quality: 92, progressive: true })
+      .toBuffer();
+  } catch (sharpErr) {
+    console.warn('[Image Generator] Sharp processing skipped or unavailable, using raw buffer:', sharpErr);
+    return rawBuffer;
+  }
 }
 
 /**
