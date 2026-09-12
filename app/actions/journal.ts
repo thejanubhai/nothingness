@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isUserAdminAsync } from '@/lib/auth-utils';
 import { revalidatePath } from 'next/cache';
 import { SEED_ARTICLES, Article } from '@/lib/articles-data';
 import {
@@ -11,6 +12,17 @@ import {
   generateImageBuffer,
   persistJournalImage,
 } from '@/lib/ai/image-generator';
+
+function sanitizeDashes(str: string = ''): string {
+  return str
+    .replace(/[\u2014\u2015]/g, ': ')
+    .replace(/[\u2013]/g, '-')
+    .replace(/--/g, '-');
+}
+
+export async function sanitizeDashesAction(str: string = ''): Promise<string> {
+  return sanitizeDashes(str);
+}
 
 export async function getPublishedArticles(): Promise<Article[]> {
   try {
@@ -33,7 +45,7 @@ export async function getPublishedArticles(): Promise<Article[]> {
 
 export async function getAllAdminArticles(): Promise<Article[]> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data, error } = await supabase
       .from('articles')
       .select('*')
@@ -73,23 +85,65 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
 
 export async function createArticle(payload: Partial<Article>) {
   try {
-    const supabase = await createClient();
+    const supabaseUser = await createClient();
+    const { data: { user } } = await supabaseUser.auth.getUser();
+
+    if (!user || !(await isUserAdminAsync(user))) {
+      return { success: false, error: 'Unauthorized: Administrator clearance required.' };
+    }
+
+    const supabase = createAdminClient();
     
     // Ensure slug is clean
-    const cleanSlug = (payload.slug || payload.title || '')
+    let cleanSlug = (payload.slug || payload.title || '')
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
+    if (!cleanSlug) {
+      cleanSlug = `article-${Date.now()}`;
+    }
+
+    // Check for duplicate slug collision and deduplicate if necessary
+    const { data: existingSlug } = await supabase
+      .from('articles')
+      .select('id')
+      .eq('slug', cleanSlug)
+      .maybeSingle();
+
+    if (existingSlug) {
+      let counter = 2;
+      let candidate = `${cleanSlug}-${counter}`;
+      while (true) {
+        const { data: clash } = await supabase
+          .from('articles')
+          .select('id')
+          .eq('slug', candidate)
+          .maybeSingle();
+        if (!clash) {
+          cleanSlug = candidate;
+          break;
+        }
+        counter++;
+      }
+    }
+
+    const title = sanitizeDashes(payload.title || '');
+    const subtitle = payload.subtitle ? sanitizeDashes(payload.subtitle) : null;
+    const excerpt = sanitizeDashes(payload.excerpt || '');
+    const content = sanitizeDashes(payload.content || '');
+    const metaTitle = sanitizeDashes(payload.meta_title || payload.title || '');
+    const metaDescription = sanitizeDashes(payload.meta_description || payload.excerpt || '');
+
     const { data, error } = await supabase
       .from('articles')
       .insert({
         slug: cleanSlug,
-        title: payload.title,
-        subtitle: payload.subtitle || null,
-        excerpt: payload.excerpt,
-        content: payload.content,
+        title,
+        subtitle,
+        excerpt,
+        content,
         cover_image: payload.cover_image || '/images/The Void (1).png',
         category: payload.category || 'Dynamics & Kink Culture',
         format: payload.format || 'essay',
@@ -101,8 +155,8 @@ export async function createArticle(payload: Partial<Article>) {
         status: payload.status || 'published',
         featured: payload.featured ?? false,
         reading_time_minutes: payload.reading_time_minutes || 6,
-        meta_title: payload.meta_title || payload.title,
-        meta_description: payload.meta_description || payload.excerpt,
+        meta_title: metaTitle,
+        meta_description: metaDescription,
         meta_keywords: payload.meta_keywords || [],
         view_count: 0,
       })
@@ -125,26 +179,69 @@ export async function createArticle(payload: Partial<Article>) {
 
 export async function updateArticle(id: string, payload: Partial<Article>) {
   try {
-    const supabase = await createClient();
+    const supabaseUser = await createClient();
+    const { data: { user } } = await supabaseUser.auth.getUser();
+
+    if (!user || !(await isUserAdminAsync(user))) {
+      return { success: false, error: 'Unauthorized: Administrator clearance required.' };
+    }
+
+    const supabase = createAdminClient();
+
+    let cleanSlug = payload.slug
+      ? payload.slug
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+      : undefined;
+
+    if (cleanSlug) {
+      const { data: existingSlug } = await supabase
+        .from('articles')
+        .select('id')
+        .eq('slug', cleanSlug)
+        .neq('id', id)
+        .maybeSingle();
+
+      if (existingSlug) {
+        let counter = 2;
+        let candidate = `${cleanSlug}-${counter}`;
+        while (true) {
+          const { data: clash } = await supabase
+            .from('articles')
+            .select('id')
+            .eq('slug', candidate)
+            .neq('id', id)
+            .maybeSingle();
+          if (!clash) {
+            cleanSlug = candidate;
+            break;
+          }
+          counter++;
+        }
+      }
+    }
 
     const updateData: any = {
-      title: payload.title,
-      subtitle: payload.subtitle,
-      excerpt: payload.excerpt,
-      content: payload.content,
-      cover_image: payload.cover_image,
-      category: payload.category,
-      format: payload.format || 'essay',
-      tags: payload.tags,
-      author_name: payload.author_name,
-      author_role: payload.author_role,
-      published_at: payload.published_at,
-      status: payload.status,
-      featured: payload.featured,
-      reading_time_minutes: payload.reading_time_minutes,
-      meta_title: payload.meta_title,
-      meta_description: payload.meta_description,
-      meta_keywords: payload.meta_keywords,
+      ...(payload.title && { title: sanitizeDashes(payload.title) }),
+      ...(payload.subtitle !== undefined && { subtitle: payload.subtitle ? sanitizeDashes(payload.subtitle) : null }),
+      ...(payload.excerpt && { excerpt: sanitizeDashes(payload.excerpt) }),
+      ...(payload.content && { content: sanitizeDashes(payload.content) }),
+      ...(cleanSlug && { slug: cleanSlug }),
+      ...(payload.cover_image && { cover_image: payload.cover_image }),
+      ...(payload.category && { category: payload.category }),
+      ...(payload.format && { format: payload.format }),
+      ...(payload.tags && { tags: payload.tags }),
+      ...(payload.author_name && { author_name: payload.author_name }),
+      ...(payload.author_role && { author_role: payload.author_role }),
+      ...(payload.published_at && { published_at: payload.published_at }),
+      ...(payload.status && { status: payload.status }),
+      ...(payload.featured !== undefined && { featured: payload.featured }),
+      ...(payload.reading_time_minutes && { reading_time_minutes: payload.reading_time_minutes }),
+      ...(payload.meta_title && { meta_title: sanitizeDashes(payload.meta_title) }),
+      ...(payload.meta_description && { meta_description: sanitizeDashes(payload.meta_description) }),
+      ...(payload.meta_keywords && { meta_keywords: payload.meta_keywords }),
       updated_at: new Date().toISOString(),
     };
 
@@ -175,7 +272,14 @@ export async function updateArticle(id: string, payload: Partial<Article>) {
 
 export async function deleteArticle(id: string) {
   try {
-    const supabase = await createClient();
+    const supabaseUser = await createClient();
+    const { data: { user } } = await supabaseUser.auth.getUser();
+
+    if (!user || !(await isUserAdminAsync(user))) {
+      return { success: false, error: 'Unauthorized: Administrator clearance required.' };
+    }
+
+    const supabase = createAdminClient();
     const { error } = await supabase
       .from('articles')
       .delete()
@@ -302,11 +406,17 @@ Custom Direction: ${customPrompt || 'In-depth, psychological, practical, and gro
         ? targetKeywords 
         : ['Alternate Lifestyle', 'Intimacy Dynamics', 'Consent Culture', 'Relationships'];
 
+      // Extract a flowing subject for natural sentence integration
+      const flowingSubject = topic
+        .replace(/^(navigating|exploring|understanding|mastering|the art of)\s+/i, '')
+        .split(':')[0]
+        .trim();
+
       rawResult = {
         title: topic,
         slug: cleanSlug,
         subtitle: `An honest exploration of boundaries, somatic presence, and personal freedom in modern India`,
-        excerpt: `A grounded perspective on ${topic.toLowerCase()}, navigating intimacy dynamics, consent protocols, and emotional safety within the urban Indian landscape.`,
+        excerpt: `A grounded perspective on ${flowingSubject.toLowerCase()}, navigating intimacy dynamics, consent protocols, and emotional safety within the urban Indian landscape.`,
         content: `## The Modern Context of ${topic}
 
 In contemporary urban India, conversations surrounding relationship dynamics, personal boundaries, and alternative lifestyle exploration are shifting rapidly. For decades, societal conditioning demanded that intimacy remain rigid, unspoken, and strictly conformist. Today, open-minded couples and individuals across metros like Delhi, Mumbai, and Bangalore are actively deconstructing inherited taboos to build relationships grounded in radical honesty and emotional safety.
@@ -315,7 +425,7 @@ When exploring non-traditional dynamics, whether involving power exchange, senso
 
 ## Core Pillars of Conscious Exploration
 
-To engage with ${topic.toLowerCase()} safely and sustainably, partners must anchor their practice in three non-negotiable principles:
+To engage with ${flowingSubject.toLowerCase()} safely and sustainably, partners must anchor their practice in three non-negotiable principles:
 
 * **Explicit Verbal Negotiation**: Assumptions destroy trust. Using structured frameworks like the Yes/No/Maybe list ensures that every activity is preceded by informed, enthusiastic consent.
 * **The Safety Architecture**: Establishing clear safe words (such as the universal Red, Yellow, Green system) provides an impenetrable container of control, allowing the submissive or exploring partner to surrender defenses completely.
@@ -332,7 +442,7 @@ To engage with ${topic.toLowerCase()} safely and sustainably, partners must anch
         tags: defaultTags,
         reading_time_minutes: 7,
         meta_title: `${topic} | Nothingness Journal`,
-        meta_description: `An in-depth guide to ${topic.toLowerCase()} exploring relationship dynamics and intimacy in modern India.`,
+        meta_description: `An in-depth guide to ${flowingSubject.toLowerCase()} exploring relationship dynamics and intimacy in modern India.`,
         meta_keywords: defaultTags
       };
     }
@@ -394,9 +504,16 @@ To engage with ${topic.toLowerCase()} safely and sustainably, partners must anch
 
 export async function generateArticleCoverImageAction(
   articleIdentifier: string,
-  customPrompt?: string
+  options?: {
+    customPrompt?: string;
+    title?: string;
+    category?: string;
+    excerpt?: string;
+    tags?: string[];
+    slug?: string;
+  }
 ) {
-  return await generateContextualImageForArticle(articleIdentifier, { customPrompt });
+  return await generateContextualImageForArticle(articleIdentifier, options);
 }
 
 export async function generateAllArticleCoverImagesAction(options?: { onlyRoomImages?: boolean; forceRegenerate?: boolean }) {

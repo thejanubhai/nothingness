@@ -74,11 +74,19 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
         (u) => (u.phone && normalizeIdentifier(u.phone) === phone) || (u.email && u.email === syntheticEmail)
       );
 
+      const rawAdmin = process.env.ADMIN || '';
+      const isAdminPhone = rawAdmin
+        .split(',')
+        .map((num) => normalizeIdentifier(num.trim()))
+        .filter((num) => num.length >= 10)
+        .includes(normalizeIdentifier(phone));
+
       if (existingUser) {
         await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
           password: deterministicPassword,
           phone_confirm: true,
           email_confirm: true,
+          ...(isAdminPhone ? { app_metadata: { ...existingUser.app_metadata, role: 'admin' } } : {}),
         });
       } else {
         await supabaseAdmin.auth.admin.createUser({
@@ -87,6 +95,7 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
           password: deterministicPassword,
           phone_confirm: true,
           email_confirm: true,
+          ...(isAdminPhone ? { app_metadata: { role: 'admin' } } : {}),
         });
       }
     }

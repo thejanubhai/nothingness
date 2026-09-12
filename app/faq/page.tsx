@@ -29,8 +29,8 @@ const faqs = [
     answer: "The Nothingness Sanctuary Pass is a one-time lifetime membership pass for verified guests. It unlocks confidential access to our Secret Gatherings Vault (Tier 1 Salons & Discussions, Tier 2 Noir Masquerades, Tier 3 Intimate Soirées), governed by curated concierge vetting, balanced attendance, and strict camera-free discretion."
   },
   {
-    question: "What is the Lifestyle Circle (@kinksters) and why is there an entry barrier?",
-    answer: "The Lifestyle Circle is an invite-only private community for verified Nothingness guests. Members connect with complete anonymity under chosen @aliases, share aesthetics, discover mutual sparks without spam, and access secret play suites. A one-time lifetime membership fee filters out casual voyeurs and spam, ensuring an elevated circle where everyone is invested in mutual discretion."
+    question: "What is The Circle (@kinksters) and why is there an entry barrier?",
+    answer: "The Circle is an invite-only private community for verified Nothingness guests. Members connect with complete anonymity under chosen @aliases, share aesthetics, discover mutual sparks without spam, and access secret play suites. A one-time lifetime membership fee filters out casual voyeurs and spam, ensuring an elevated circle where everyone is invested in mutual discretion."
   },
   {
     question: "What are the standard Check-in and Check-out times?",

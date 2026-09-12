@@ -83,7 +83,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/kinksters" className={linkClass}>
-                  Lifestyle 🔥
+                  The Circle ✦
                   <span className={underlineClass} />
                 </Link>
               </li>

@@ -87,12 +87,24 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Strict validation: check for em dashes
-    const allText = `${title} ${subtitle} ${excerpt} ${content} ${metaTitle} ${metaDescription}`;
-    if (/[\u2014\u2013\u2015]/.test(allText)) {
-      toast.error('Em dashes (— or –) are strictly prohibited per brand guidelines. Please replace with colons, commas, or parentheses.');
-      return;
-    }
+    // Auto-sanitize all em dashes and en dashes so publication is never blocked by formatting syntax
+    const sanitizeDashes = (s: string = '') =>
+      s.replace(/[\u2014\u2015]/g, ': ').replace(/[\u2013]/g, '-').replace(/--/g, '-');
+
+    const cleanTitle = sanitizeDashes(title);
+    const cleanSubtitle = subtitle ? sanitizeDashes(subtitle) : '';
+    const cleanExcerpt = sanitizeDashes(excerpt);
+    const cleanContent = sanitizeDashes(content);
+    const cleanMetaTitle = sanitizeDashes(metaTitle || title);
+    const cleanMetaDescription = sanitizeDashes(metaDescription || excerpt);
+
+    // Sync sanitized text back to local state
+    if (cleanTitle !== title) setTitle(cleanTitle);
+    if (cleanSubtitle !== subtitle) setSubtitle(cleanSubtitle);
+    if (cleanExcerpt !== excerpt) setExcerpt(cleanExcerpt);
+    if (cleanContent !== content) setContent(cleanContent);
+    if (cleanMetaTitle !== metaTitle) setMetaTitle(cleanMetaTitle);
+    if (cleanMetaDescription !== metaDescription) setMetaDescription(cleanMetaDescription);
 
     setLoading(true);
 
@@ -100,11 +112,11 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
     const metaKeywords = metaKeywordsInput.split(',').map((t) => t.trim()).filter(Boolean);
 
     const payload: Partial<Article> = {
-      title,
+      title: cleanTitle,
       slug,
-      subtitle,
-      excerpt,
-      content,
+      subtitle: cleanSubtitle,
+      excerpt: cleanExcerpt,
+      content: cleanContent,
       cover_image: coverImage,
       category: category as any,
       format: format as any,
@@ -115,8 +127,8 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
       featured,
       reading_time_minutes: Number(readingTime) || 5,
       published_at: new Date(publishedAt).toISOString(),
-      meta_title: metaTitle || title,
-      meta_description: metaDescription || excerpt,
+      meta_title: cleanMetaTitle,
+      meta_description: cleanMetaDescription,
       meta_keywords: metaKeywords,
     };
 
@@ -201,7 +213,14 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
 
     try {
       const identifier = initialData.id || slug || topicToUse;
-      const res = await generateArticleCoverImageAction(identifier, customInstructions);
+      const res = await generateArticleCoverImageAction(identifier, {
+        customPrompt: customInstructions,
+        title: topicToUse,
+        slug: slug || topicToUse.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        category,
+        excerpt,
+        tags: tagsInput.split(',').map((t) => t.trim()).filter(Boolean),
+      });
 
       if (res.success && res.cover_image) {
         setCoverImage(res.cover_image);
@@ -444,6 +463,7 @@ export default function ArticleEditorForm({ initialData = {}, isNew = false }: A
             <textarea
               required
               rows={16}
+              spellCheck={false}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Write in-depth markdown content here. Use ## for section headings, * for bullet lists, > for blockquotes..."

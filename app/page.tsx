@@ -73,7 +73,7 @@ export default async function HomePage() {
 
   const lifestyle = getBlock('lifestyle_showcase', {
     title: 'Where High Discretion Meets Raw Chemistry.',
-    subtitle: 'The Lifestyle Circle • Private Monikers',
+    subtitle: 'The Circle • Private Monikers & Desires',
     body: 'An intimate, confidential society reserved exclusively for verified guests of Nothingness. Connect under complete anonymity with private @aliases, explore deep aesthetic chemistry, and unlock private sanctuary suites. Protected by a one-time lifetime membership entry barrier.'
   });
 
@@ -151,7 +151,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Nothingness Lifestyle Circle Showcase */}
+      {/* Nothingness The Circle Showcase */}
       <section className="py-16 px-4 sm:px-6 max-w-6xl mx-auto">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-950/40 via-zinc-950 to-purple-950/30 border border-rose-500/30 p-8 sm:p-12 shadow-2xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -191,7 +191,7 @@ export default async function HomePage() {
                 className="px-6 py-3.5 bg-gradient-to-r from-rose-600 via-rose-500 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-extrabold text-xs uppercase tracking-widest rounded-2xl shadow-xl transition-all flex items-center gap-2 active:scale-98"
               >
                 <Flame className="w-4 h-4" />
-                <span>Explore Lifestyle Circle &rarr;</span>
+                <span>Explore The Circle &rarr;</span>
               </Link>
             </div>
           </div>

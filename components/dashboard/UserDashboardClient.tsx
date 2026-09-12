@@ -452,19 +452,19 @@ export default function UserDashboardClient({
 
                 <div className="space-y-1">
                   <span className="text-[10px] uppercase font-mono tracking-widest text-rose-400 block">
-                    PRIVATE LIFESTYLE ALIAS
+                    THE CIRCLE ALIAS
                   </span>
                   <h3 className="text-xl sm:text-2xl font-mono font-bold text-white leading-tight">
                     {currentKinkster?.alias ? `@${currentKinkster.alias}` : 'Anonymous @Alias Pending'}
                   </h3>
                   <p className="text-xs text-zinc-400 line-clamp-1">
-                    {currentKinkster?.bio || 'Alternate Lifestyle Circle Member'}
+                    {currentKinkster?.bio || 'The Circle Member'}
                   </p>
                   <Link
                     href="/kinksters"
                     className="text-[11px] font-mono text-rose-400 hover:text-white flex items-center gap-1 mt-1 cursor-pointer"
                   >
-                    <span>Enter Lifestyle Feed →</span>
+                    <span>Enter The Circle Feed →</span>
                   </Link>
                 </div>
               </div>
@@ -573,7 +573,7 @@ export default function UserDashboardClient({
 
         <div className="p-5 rounded-3xl bg-zinc-950 border border-zinc-800 shadow-xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Lifestyle Circle</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">The Circle</span>
             <Flame className="w-4 h-4 text-rose-400" />
           </div>
           <p className="text-lg sm:text-xl font-bold font-mono text-rose-300 truncate">
@@ -927,7 +927,7 @@ export default function UserDashboardClient({
                 <Flame className="w-6 h-6" />
               </div>
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-serif text-lg sm:text-xl text-white font-bold">Lifestyle Circle</h3>
+                <h3 className="font-serif text-lg sm:text-xl text-white font-bold">The Circle</h3>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                   currentKinkster?.is_activated 
                     ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'

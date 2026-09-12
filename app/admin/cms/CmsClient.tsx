@@ -323,7 +323,7 @@ export default function CmsClient({ initialBlocks }: { initialBlocks: CmsBlock[]
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-widest text-rose-400">Section 3 • Kinkster Banner</span>
-                <h3 className="text-base font-bold text-white mt-0.5">Lifestyle Circle Showcase</h3>
+                <h3 className="text-base font-bold text-white mt-0.5">The Circle Showcase</h3>
               </div>
               <button
                 type="button"
@@ -347,7 +347,7 @@ export default function CmsClient({ initialBlocks }: { initialBlocks: CmsBlock[]
                   type="text"
                   value={blocks['lifestyle_showcase']?.subtitle || ''}
                   onChange={(e) => updateField('lifestyle_showcase', 'subtitle', e.target.value)}
-                  placeholder="e.g. The Lifestyle Circle • Private Monikers"
+                  placeholder="e.g. The Circle • Private Monikers &amp; Desires"
                   className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
                 />
               </div>

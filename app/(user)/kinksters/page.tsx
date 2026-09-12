@@ -597,7 +597,7 @@ function KinkstersContent() {
                         <span>Sanctuary Guest Invitation • Claim Your Private Moniker</span>
                       </div>
                       <h2 className="text-xl sm:text-2xl font-serif text-white font-bold">
-                        Welcome to the <span className="text-rose-400">Lifestyle Circle</span>
+                        Welcome to <span className="text-rose-400">The Circle</span>
                       </h2>
                       <p className="text-xs text-zinc-400 mt-1 max-w-xl leading-relaxed">
                         As a verified sanctuary guest, you are invited to activate your private @alias, connect with vetted members under absolute confidentiality, and unlock secret soirées.

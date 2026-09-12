@@ -196,56 +196,71 @@ export async function persistJournalImage(slug: string, buffer: Buffer): Promise
  */
 export async function generateContextualImageForArticle(
   articleIdentifier: string,
-  options: { customPrompt?: string } = {}
+  options: {
+    customPrompt?: string;
+    title?: string;
+    category?: string;
+    excerpt?: string;
+    tags?: string[];
+    slug?: string;
+  } = {}
 ): Promise<{ success: boolean; cover_image?: string; error?: string }> {
   try {
     const supabase = createAdminClient();
 
-    // Fetch article by ID or slug
-    let query = supabase.from('articles').select('*');
-    if (articleIdentifier.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-      query = query.eq('id', articleIdentifier);
-    } else {
-      query = query.eq('slug', articleIdentifier);
+    // Fetch article by ID or slug if available
+    let article: any = null;
+    if (articleIdentifier) {
+      let query = supabase.from('articles').select('*');
+      if (articleIdentifier.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        query = query.eq('id', articleIdentifier);
+      } else {
+        query = query.eq('slug', articleIdentifier);
+      }
+      const { data } = await query.maybeSingle();
+      article = data;
     }
 
-    const { data: article, error } = await query.single();
-    if (error || !article) {
-      throw new Error(`Article "${articleIdentifier}" not found in database.`);
-    }
+    const title = article?.title || options.title || articleIdentifier || 'Sensory Sanctuary Architecture';
+    const slug = article?.slug || options.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'sanctuary-cover';
+    const category = article?.category || options.category || 'Dynamics & Kink Culture';
+    const excerpt = article?.excerpt || options.excerpt || '';
+    const tags = article?.tags || options.tags || ['Sensory Sanctuary', 'Design'];
 
     const prompt = buildContextualPrompt({
-      title: article.title,
-      slug: article.slug,
-      category: article.category,
-      excerpt: article.excerpt,
-      tags: article.tags,
+      title,
+      slug,
+      category,
+      excerpt,
+      tags,
       customPrompt: options.customPrompt,
     });
 
     const buffer = await generateImageBuffer(prompt);
-    const { localPath, publicUrl } = await persistJournalImage(article.slug, buffer);
+    const { localPath, publicUrl } = await persistJournalImage(slug, buffer);
 
-    // Update database record
-    const coverToSet = fs.existsSync(path.join(process.cwd(), 'public/images/journal', `${article.slug}.jpg`))
+    // Update database record if article exists
+    const coverToSet = fs.existsSync(path.join(process.cwd(), 'public/images/journal', `${slug}.jpg`))
       ? localPath
       : publicUrl;
 
-    const { error: updateError } = await supabase
-      .from('articles')
-      .update({
-        cover_image: coverToSet,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', article.id);
+    if (article?.id) {
+      const { error: updateError } = await supabase
+        .from('articles')
+        .update({
+          cover_image: coverToSet,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', article.id);
 
-    if (updateError) {
-      throw updateError;
+      if (updateError) {
+        console.warn('[Image Generator] Notice: failed to update article record cover_image:', updateError);
+      }
+
+      revalidatePath('/journal');
+      revalidatePath(`/journal/${article.slug}`);
+      revalidatePath('/admin/journal');
     }
-
-    revalidatePath('/journal');
-    revalidatePath(`/journal/${article.slug}`);
-    revalidatePath('/admin/journal');
 
     return {
       success: true,

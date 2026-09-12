@@ -235,7 +235,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
               <div>
                 <div className="flex items-center gap-2">
                   <Flame className="w-5 h-5 text-rose-500" />
-                  <h2 className="font-serif text-xl text-white">Lifestyle Circle &amp; Entry Barrier</h2>
+                  <h2 className="font-serif text-xl text-white">The Circle &amp; Entry Barrier</h2>
                 </div>
                 <p className="text-xs text-white/50 mt-1">
                   Manage the private sanctuary social network and configure the one-time paid entry barrier for members.

@@ -20,12 +20,16 @@ import {
   ChevronRight,
   Handshake,
   MessageSquare,
-  Users,
-  Compass,
-  PlusCircle
+  Users, 
+  Compass, 
+  PlusCircle,
+  KeyRound,
+  Copy,
+  Check
 } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { toast } from "sonner";
 import Magnetic from "./Magnetic";
 import AppSwitcher from "./AppSwitcher";
 import { createClient } from "@/lib/supabase/client";
@@ -34,10 +38,49 @@ import { isUserAdmin } from "@/lib/auth-utils";
 import KinksterInboxModal from "./kinkster/KinksterInboxModal";
 import CreationActionSheet from "./kinkster/CreationActionSheet";
 
+export interface ActiveContext {
+  isLoggedIn: boolean;
+  user?: {
+    id: string;
+    email: string;
+    phone: string;
+    alias: string;
+    avatarUrl: string | null;
+    isIdVerified: boolean;
+    isLevel2Vetted: boolean;
+    isFaceIdVetted: boolean;
+    isAdmin: boolean;
+  };
+  activeStay?: {
+    id: string;
+    spaceTitle: string;
+    spaceSlug: string;
+    city: string;
+    area: string;
+    checkIn: string;
+    checkOut: string;
+    isTodayOrActive: boolean;
+    isVerified: boolean;
+    doorPin: string | null;
+    needsVerification: boolean;
+  } | null;
+  activeGathering?: {
+    id: string;
+    title: string;
+    eventDate: string;
+    isTonight: boolean;
+    qrReady: boolean;
+    qrToken: string;
+    venue: string;
+  } | null;
+  unreadCount?: number;
+}
+
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [activeContext, setActiveContext] = useState<ActiveContext | null>(null);
   const pathname = usePathname();
 
   const isKinksterMode = pathname?.startsWith('/kinksters') || pathname?.startsWith('/sanctuary-pass');
@@ -94,35 +137,55 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Sync auth state across navigations, tab focus, and Supabase auth events
+  // Sync auth state & proactive active context across navigations, tab focus, and Supabase auth events
   useEffect(() => {
     const supabase = createClient();
     let isMounted = true;
 
-    const checkUser = async () => {
+    const fetchActiveContext = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (isMounted) {
-          setUser(user || null);
+        const res = await fetch('/api/user/active-context');
+        if (res.ok) {
+          const data: ActiveContext = await res.json();
+          if (isMounted) {
+            setActiveContext(data);
+            if (data.unreadCount !== undefined) {
+              setUnreadCount(data.unreadCount);
+            }
+            if (data.isLoggedIn && data.user) {
+              setUser(data.user);
+            } else {
+              setUser(null);
+            }
+          }
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('active-context-updated', { detail: data }));
+          }
         }
       } catch (_) {}
     };
 
-    checkUser();
+    fetchActiveContext();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (isMounted) {
-        setUser(session?.user || null);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      fetchActiveContext();
     });
 
-    const onFocus = () => checkUser();
+    const onFocus = () => fetchActiveContext();
     window.addEventListener('focus', onFocus);
+    window.addEventListener('refresh-active-context', onFocus);
+    window.addEventListener('refresh-unread-count', onFocus);
+
+    // Periodic heartbeat to keep proactive pill updated
+    const interval = setInterval(fetchActiveContext, 30000);
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      clearInterval(interval);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('refresh-active-context', onFocus);
+      window.removeEventListener('refresh-unread-count', onFocus);
     };
   }, [pathname]);
 
@@ -137,54 +200,6 @@ export default function Header() {
       window.removeEventListener('open-creation-sheet', handleOpenCreation);
     };
   }, []);
-
-  // Fetch real unread messages count in Kinkster Mode
-  const fetchUnreadCount = async () => {
-    if (!user || !isKinksterMode) return;
-    try {
-      const res = await fetch('/api/kinkster/chat/unread');
-      if (res.ok) {
-        const data = await res.json();
-        setUnreadCount(data.unread_count || 0);
-      }
-    } catch (_) {}
-  };
-
-  useEffect(() => {
-    if (isKinksterMode && user) {
-      fetchUnreadCount();
-      const interval = setInterval(fetchUnreadCount, 15000);
-      const onFocus = () => fetchUnreadCount();
-      window.addEventListener('focus', onFocus);
-      window.addEventListener('refresh-unread-count', onFocus);
-
-      const supabase = createClient();
-      const channel = supabase
-        .channel(`user_unread_${user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'kinkster_conversation_participants',
-            filter: `user_id=eq.${user.id}`,
-          },
-          () => {
-            fetchUnreadCount();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        clearInterval(interval);
-        window.removeEventListener('focus', onFocus);
-        window.removeEventListener('refresh-unread-count', onFocus);
-        supabase.removeChannel(channel);
-      };
-    } else {
-      setUnreadCount(0);
-    }
-  }, [isKinksterMode, user]);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -298,31 +313,131 @@ export default function Header() {
                   )}
                 </button>
               </>
-            ) : (
+            ) : user ? (
+              /* Logged In Desktop Experience */
               <>
-                <Link href="/spaces" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
-                  Spaces
+                <Link 
+                  href="/spaces" 
+                  className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 ${
+                    pathname.startsWith('/spaces') ? 'text-accent-gold font-bold' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Suites
+                  {pathname.startsWith('/spaces') && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-accent-gold" />}
+                </Link>
+
+                <Link 
+                  href="/sanctuary-pass" 
+                  className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
+                    pathname.startsWith('/sanctuary-pass') ? 'text-amber-400 font-bold' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Gatherings ✨
+                  {pathname.startsWith('/sanctuary-pass') && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-amber-400" />}
+                </Link>
+
+                <Link 
+                  href="/kinksters" 
+                  className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
+                    pathname.startsWith('/kinksters') ? 'text-rose-400 font-bold' : 'text-rose-400/90 hover:text-rose-300'
+                  }`}
+                >
+                  The Circle ✦
+                  {pathname.startsWith('/kinksters') && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-rose-500" />}
+                </Link>
+
+                {/* Living Proactive Status Pill for Logged-In Member */}
+                {activeContext?.activeStay?.isTodayOrActive && activeContext.activeStay.doorPin ? (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 text-[11px] font-mono shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="font-semibold text-white truncate max-w-[100px]">{activeContext.activeStay.spaceTitle}</span>
+                    <span className="font-bold text-emerald-300 tracking-wider">PIN {activeContext.activeStay.doorPin}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(activeContext.activeStay?.doorPin || '');
+                        toast.success(`Door PIN copied: ${activeContext.activeStay?.doorPin}`);
+                      }}
+                      className="p-1 hover:bg-emerald-500/20 rounded transition-colors text-emerald-400 hover:text-white cursor-pointer"
+                      title="Copy Door PIN"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : activeContext?.activeStay?.isTodayOrActive && activeContext.activeStay.needsVerification ? (
+                  <Link
+                    href="/onboarding"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500/25 text-[11px] font-mono shadow-[0_0_12px_rgba(245,158,11,0.2)] transition-all"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="font-semibold text-white truncate max-w-[120px]">ID Check for {activeContext.activeStay.spaceTitle}</span>
+                    <ChevronRight className="w-3 h-3 text-amber-400" />
+                  </Link>
+                ) : activeContext?.activeGathering?.isTonight ? (
+                  <Link
+                    href="/sanctuary-pass"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-500/15 border border-purple-500/40 text-purple-300 hover:bg-purple-500/25 text-[11px] font-mono shadow-[0_0_12px_rgba(168,85,247,0.2)] transition-all"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    <span className="font-semibold text-white truncate max-w-[110px]">{activeContext.activeGathering.title}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-200 font-bold uppercase">Pass Live</span>
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-white/80 text-[11px] font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="text-white font-medium">@{activeContext?.user?.alias || user?.alias || 'member'}</span>
+                    {activeContext?.user?.isLevel2Vetted ? (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-accent-gold/20 text-accent-gold border border-accent-gold/40 font-bold">L2</span>
+                    ) : activeContext?.user?.isIdVerified ? (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">Vetted</span>
+                    ) : null}
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Non-Logged In (Public) Desktop Experience: 3 Clear Pillars + OTA Check-In */
+              <>
+                <Link 
+                  href="/spaces" 
+                  className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 ${
+                    pathname.startsWith('/spaces') ? 'text-accent-gold font-bold' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Suites &amp; Stays
                   <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
                 </Link>
-                <Link href="/sanctuary-pass" className="text-[12px] font-medium tracking-[0.2em] uppercase text-amber-400/90 hover:text-amber-300 transition-colors duration-300 relative group py-2 flex items-center gap-1">
-                  Sanctuary Pass ✨
+
+                <Link 
+                  href="/sanctuary-pass" 
+                  className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
+                    pathname.startsWith('/sanctuary-pass') ? 'text-amber-400 font-bold' : 'text-amber-400/90 hover:text-amber-300'
+                  }`}
+                >
+                  Gatherings ✨
                   <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-amber-400 group-hover:w-full transition-all duration-300" />
                 </Link>
-                <Link href="/kinksters" className="text-[12px] font-medium tracking-[0.2em] uppercase text-rose-400/90 hover:text-rose-400 transition-colors duration-300 relative group py-2 flex items-center gap-1">
-                  Lifestyle 🔥
+
+                <Link 
+                  href="/kinksters" 
+                  className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
+                    pathname.startsWith('/kinksters') ? 'text-rose-400 font-bold' : 'text-rose-400/90 hover:text-rose-300'
+                  }`}
+                >
+                  The Circle ✦
                   <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-rose-500 group-hover:w-full transition-all duration-300" />
                 </Link>
-                <Link href="/journal" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
-                  Journal
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
-                </Link>
-                <Link href="/franchise" className="text-[12px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors duration-300 relative group py-2">
-                  Partner
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
-                </Link>
-                <Link href="/onboarding" className="text-[12px] font-medium tracking-[0.2em] uppercase text-accent-gold/90 hover:text-white transition-colors duration-300 relative group py-2 flex items-center gap-1">
-                  Check-In
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent-gold group-hover:w-full transition-all duration-300" />
+
+                <Link 
+                  href="/onboarding" 
+                  className="text-[12px] font-medium tracking-[0.2em] uppercase text-zinc-400 hover:text-white transition-colors duration-300 relative group py-2 flex items-center gap-1"
+                >
+                  OTA Check-In
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-zinc-400 group-hover:w-full transition-all duration-300" />
                 </Link>
               </>
             )}
@@ -337,15 +452,15 @@ export default function Header() {
                   className="text-[12px] font-bold tracking-[0.15em] uppercase text-black bg-accent-gold hover:bg-white transition-all duration-300 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(212,175,55,0.3)] flex items-center gap-2"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>{isAdmin ? "Command Center" : "Member Portal"}</span>
+                  <span>{isAdmin ? "Command Center" : "Member Vault"}</span>
                 </Link>
               ) : (
                 <Link
                   href="/auth"
-                  className="text-[12px] font-bold tracking-[0.15em] uppercase text-black bg-accent-gold hover:bg-white transition-all duration-300 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(212,175,55,0.3)] flex items-center gap-2"
+                  className="text-[12px] font-bold tracking-[0.15em] uppercase text-black bg-gradient-to-r from-amber-500 via-amber-400 to-accent-gold hover:to-white transition-all duration-300 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(212,175,55,0.3)] flex items-center gap-2"
                 >
                   <LogIn className="w-3.5 h-3.5" />
-                  <span>Guest Portal</span>
+                  <span>Sign In / Join</span>
                 </Link>
               )}
             </Magnetic>
@@ -353,6 +468,22 @@ export default function Header() {
 
           {/* Mobile Right Controls: Ultra-clean, native 36px circular icon cluster */}
           <div className="flex md:hidden items-center gap-2">
+            {/* Live Door PIN quick button if active stay */}
+            {activeContext?.activeStay?.doorPin && (
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(activeContext.activeStay?.doorPin || '');
+                  toast.success(`Door PIN copied: ${activeContext.activeStay?.doorPin}`);
+                }}
+                className="h-9 px-2.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[11px] font-mono font-bold flex items-center gap-1.5 active:scale-95 transition-all shadow-[0_0_12px_rgba(16,185,129,0.25)] cursor-pointer"
+                title="Tap to copy Door PIN"
+              >
+                <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{activeContext.activeStay.doorPin}</span>
+              </button>
+            )}
+
             {/* Top-Right Native Messages Icon Button in Kinkster Mode */}
             {isKinksterMode && (
               <button
@@ -378,8 +509,8 @@ export default function Header() {
             {user ? (
               <Link
                 href={isAdmin ? "/admin" : "/dashboard"}
-                title={isAdmin ? "Command Center" : "Member Portal"}
-                aria-label={isAdmin ? "Admin Center" : "Member Portal"}
+                title={isAdmin ? "Command Center" : "Member Vault"}
+                aria-label={isAdmin ? "Admin Center" : "Member Vault"}
                 className="relative w-9 h-9 flex items-center justify-center rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-accent-gold/40 text-accent-gold active:scale-95 transition-all touch-manipulation shadow-sm group"
               >
                 {isAdmin ? (
@@ -471,14 +602,67 @@ export default function Header() {
                         <User className="w-5 h-5" />
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-mono block">Logged In Guest</span>
-                        <p className="text-sm font-bold text-white font-mono truncate max-w-[190px]">{userPhone}</p>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-bold text-white font-mono">
+                            @{activeContext?.user?.alias || (user?.email ? user.email.split('@')[0] : 'member')}
+                          </span>
+                          {activeContext?.user?.isLevel2Vetted ? (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-accent-gold/20 text-accent-gold border border-accent-gold/40 font-bold">L2 Vetted</span>
+                          ) : activeContext?.user?.isIdVerified ? (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">ID Vetted</span>
+                          ) : null}
+                        </div>
+                        <p className="text-[11px] text-zinc-400 font-mono truncate max-w-[190px]">{userPhone}</p>
                       </div>
                     </div>
                     <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold">
                       Active
                     </span>
                   </div>
+
+                  {/* Active Stay Door PIN Quick Card inside Drawer */}
+                  {activeContext?.activeStay?.isTodayOrActive && (
+                    <div className="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white flex items-center gap-1.5 truncate max-w-[200px]">
+                          <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
+                          {activeContext.activeStay.spaceTitle}
+                        </span>
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">
+                          Today's Stay
+                        </span>
+                      </div>
+                      {activeContext.activeStay.doorPin ? (
+                        <div className="flex items-center justify-between bg-black/60 px-3 py-2 rounded-lg border border-emerald-500/20">
+                          <div>
+                            <span className="text-[9px] text-zinc-400 uppercase font-mono block">Door Lock PIN</span>
+                            <span className="text-base font-mono font-bold text-emerald-300 tracking-wider">
+                              {activeContext.activeStay.doorPin}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(activeContext.activeStay?.doorPin || '');
+                              toast.success(`Door PIN copied: ${activeContext.activeStay?.doorPin}`);
+                            }}
+                            className="px-2 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            <Copy className="w-3 h-3" />
+                            <span>Copy</span>
+                          </button>
+                        </div>
+                      ) : activeContext.activeStay.needsVerification ? (
+                        <Link
+                          href="/onboarding"
+                          onClick={() => setMobileOpen(false)}
+                          className="block w-full py-2 px-3 text-center bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold rounded-lg"
+                        >
+                          Complete ID Check to Unlock Door PIN →
+                        </Link>
+                      ) : null}
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <Link
@@ -487,7 +671,7 @@ export default function Header() {
                       className="py-2.5 px-3 bg-accent-gold hover:bg-white text-black font-bold text-xs uppercase tracking-wider rounded-xl text-center flex items-center justify-center gap-1.5 shadow-md transition-all"
                     >
                       <LayoutDashboard className="w-3.5 h-3.5" />
-                      <span>{isAdmin ? "Admin Center" : "Member Portal"}</span>
+                      <span>{isAdmin ? "Admin Center" : "Member Vault"}</span>
                     </Link>
 
                     <form action={signOut} className="w-full">
@@ -560,7 +744,7 @@ export default function Header() {
                         <Building2 className="w-4 h-4" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-white">Spaces &amp; Sanctuaries</h4>
+                        <h4 className="text-sm font-bold text-white">Suites &amp; Sanctuaries</h4>
                         <p className="text-[10px] text-zinc-400 font-mono">Autonomous suites &amp; dungeons</p>
                       </div>
                     </div>
@@ -578,7 +762,7 @@ export default function Header() {
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <h4 className="text-sm font-bold text-amber-300">Sanctuary Pass</h4>
+                          <h4 className="text-sm font-bold text-amber-300">Sanctuary Gatherings</h4>
                           <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-amber-500/20 text-amber-300">Secret Vault</span>
                         </div>
                         <p className="text-[10px] text-zinc-400 font-mono">Munches, Masquerades &amp; Soirées</p>
@@ -598,10 +782,10 @@ export default function Header() {
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <h4 className="text-sm font-bold text-rose-300">Lifestyle Circle</h4>
+                          <h4 className="text-sm font-bold text-rose-300">The Circle</h4>
                           <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-rose-500/20 text-rose-300">18+ Circle</span>
                         </div>
-                        <p className="text-[10px] text-zinc-400 font-mono">Anonymous @Alias feed &amp; stories</p>
+                        <p className="text-[10px] text-zinc-400 font-mono">Anonymous @Alias feed, desires &amp; stories</p>
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-rose-500/60 group-hover:text-rose-300 transition-colors" />
@@ -670,9 +854,15 @@ export default function Header() {
           isOpen={inboxOpen}
           onClose={() => {
             setInboxOpen(false);
-            fetchUnreadCount();
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('refresh-active-context'));
+            }
           }}
-          onRefreshUnread={fetchUnreadCount}
+          onRefreshUnread={() => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('refresh-active-context'));
+            }
+          }}
         />
       )}
 

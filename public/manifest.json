@@ -34,9 +34,9 @@
       "icons": [{ "src": "/images/logo.png", "sizes": "192x192" }]
     },
     {
-      "name": "Lifestyle Circle",
-      "short_name": "Lifestyle",
-      "description": "Vetted Discreet Alternate Lifestyle Feed",
+      "name": "The Circle",
+      "short_name": "The Circle",
+      "description": "Vetted Discreet Alternate Social Feed & Desires",
       "url": "/kinksters",
       "icons": [{ "src": "/images/logo.png", "sizes": "192x192" }]
     },

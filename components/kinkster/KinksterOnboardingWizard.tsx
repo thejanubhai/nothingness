@@ -156,7 +156,7 @@ export default function KinksterOnboardingWizard({
         return;
       }
 
-      toast.success(`Welcome to the Lifestyle Circle! Your moniker @${data.profile?.alias || alias} is active.`);
+      toast.success(`Welcome to The Circle! Your moniker @${data.profile?.alias || alias} is active.`);
       onCompleted();
       onClose();
     } catch (err: any) {
@@ -188,7 +188,7 @@ export default function KinksterOnboardingWizard({
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Lifestyle Circle Initiation</h2>
+              <h2 className="text-lg font-bold text-white tracking-tight">The Circle Initiation</h2>
               <p className="text-xs text-zinc-400">Step {step} of 4 • Confidential Sanctuary Setup</p>
             </div>
           </div>
@@ -429,7 +429,7 @@ export default function KinksterOnboardingWizard({
                 Confidentiality &amp; Discretion Agreement
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
-                By entering the Lifestyle Circle, I pledge that all member profiles, media, and conversations are strictly confidential. I commit to zero screenshots, zero leaks, and absolute mutual consent at all times.
+                By entering The Circle, I pledge that all member profiles, media, and conversations are strictly confidential. I commit to zero screenshots, zero leaks, and absolute mutual consent at all times.
               </p>
               <label className="flex items-center gap-3 pt-2 cursor-pointer">
                 <input

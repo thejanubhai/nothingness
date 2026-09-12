@@ -90,4 +90,42 @@ describe('Production Hardening & Accuracy Guardrails', () => {
       'Must NOT contain insecure length >= 4 bypass'
     );
   });
+
+  test('Journal editorial publishing actions enforce admin auth and use createAdminClient', () => {
+    const journalActionPath = path.resolve(process.cwd(), 'app/actions/journal.ts');
+    assert.ok(fs.existsSync(journalActionPath), 'app/actions/journal.ts must exist');
+    const content = fs.readFileSync(journalActionPath, 'utf8');
+
+    assert.ok(
+      content.includes('isUserAdminAsync'),
+      'journal.ts must verify administrator status via isUserAdminAsync'
+    );
+    assert.ok(
+      content.includes('createAdminClient'),
+      'journal.ts must perform admin actions using createAdminClient'
+    );
+    assert.ok(
+      content.includes('sanitizeDashes'),
+      'journal.ts must export sanitizeDashes to sanitize em-dashes and en-dashes'
+    );
+    assert.ok(
+      content.includes('existingSlug'),
+      'createArticle must check for existing slug and deduplicate automatically'
+    );
+  });
+
+  test('Cover image generator supports unsaved articles without throwing database not found errors', () => {
+    const imgGenPath = path.resolve(process.cwd(), 'lib/ai/image-generator.ts');
+    assert.ok(fs.existsSync(imgGenPath), 'lib/ai/image-generator.ts must exist');
+    const content = fs.readFileSync(imgGenPath, 'utf8');
+
+    assert.ok(
+      content.includes('options.title'),
+      'generateContextualImageForArticle must support options.title for unsaved drafts'
+    );
+    assert.ok(
+      !content.includes('throw new Error(`Article "${articleIdentifier}" not found in database.`);'),
+      'generateContextualImageForArticle must NOT throw when article is not found in database'
+    );
+  });
 });

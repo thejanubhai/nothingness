@@ -58,9 +58,9 @@ const apps: AppItem[] = [
   },
   {
     id: 'lifestyle',
-    name: 'Lifestyle Circle',
-    badge: 'Kinksters 🔥',
-    subtitle: 'Encrypted member social feed under anonymous @aliases',
+    name: 'The Circle',
+    badge: '18+ Circle ✦',
+    subtitle: 'Encrypted member social feed & desires under anonymous @aliases',
     href: '/kinksters',
     icon: Flame,
     accentColor: 'text-rose-400',

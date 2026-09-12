@@ -153,18 +153,18 @@ export default async function SpacePage({ params }: { params: Promise<{ slug: st
                   <span className="text-zinc-400 text-[11px]">Heavy architectural soundproofing &amp; secluded residential entryways.</span>
                 </div>
                 <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl">
-                  <span className="text-amber-400 font-bold block mb-1">Lifestyle Circle</span>
+                  <span className="text-amber-400 font-bold block mb-1">The Circle</span>
                   <span className="text-zinc-400 text-[11px]">Confirmed guests unlock sovereign invitations to secret Noir Soirées.</span>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-zinc-800 text-xs font-mono">
-                <span className="text-zinc-400">Curious about our private lifestyle circle?</span>
+                <span className="text-zinc-400">Curious about The Circle?</span>
                 <Link
                   href="/kinksters"
                   className="text-rose-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors"
                 >
-                  <span>Explore Kinkster Mode &amp; Member Vault</span>
+                  <span>Explore The Circle &amp; Member Vault</span>
                   <span>→</span>
                 </Link>
               </div>

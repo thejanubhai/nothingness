@@ -25,12 +25,50 @@ interface NavItem {
   onClick?: () => void;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
+  hasLivePulse?: boolean;
   isSpecialAction?: boolean;
   isActive: (path: string) => boolean;
 }
 
 export default function MobileBottomNav() {
   const pathname = usePathname() || '';
+  const [activeContext, setActiveContext] = React.useState<any>(null);
+
+  // Sync active context from Header event or fetch directly
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const handleContextUpdate = (e: any) => {
+      if (e.detail && isMounted) {
+        setActiveContext(e.detail);
+      }
+    };
+
+    const fetchContext = async () => {
+      try {
+        const res = await fetch('/api/user/active-context');
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          setActiveContext(data);
+        }
+      } catch (_) {}
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('active-context-updated', handleContextUpdate);
+      window.addEventListener('refresh-active-context', fetchContext);
+    }
+
+    fetchContext();
+
+    return () => {
+      isMounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('active-context-updated', handleContextUpdate);
+        window.removeEventListener('refresh-active-context', fetchContext);
+      }
+    };
+  }, []);
 
   // Hide on admin routes and single space checkout views where the dedicated reservation drawer floats
   if (pathname.startsWith('/admin') || (pathname.startsWith('/spaces/') && pathname !== '/spaces')) {
@@ -49,7 +87,7 @@ export default function MobileBottomNav() {
 
   // Determine App Context for purposeful navigation
   const isUnifiedLifestyleOrEvents = pathname.startsWith('/kinksters') || pathname.startsWith('/sanctuary-pass');
-  const isPortalMode = pathname.startsWith('/dashboard') || pathname.startsWith('/verify') || pathname.startsWith('/booking');
+  const isLoggedIn = Boolean(activeContext?.isLoggedIn);
 
   let items: NavItem[] = [];
 
@@ -94,76 +132,73 @@ export default function MobileBottomNav() {
         isActive: (p) => p.startsWith('/kinksters/explore') || p.startsWith('/kinksters/discover'),
       },
     ];
-  } else if (isPortalMode) {
-    // Purposeful Member Portal Navigation
+  } else if (isLoggedIn) {
+    // State B: Purposeful Logged-In Navigation: [Suites] [My Stays] [Gatherings] [The Circle] [Vault]
+    const hasActiveStay = Boolean(activeContext?.activeStay?.isTodayOrActive);
     items = [
       {
-        name: 'Overview',
-        href: '/dashboard',
-        icon: UserCheck,
-        isActive: (p) => p === '/dashboard',
+        name: 'Suites',
+        href: '/spaces',
+        icon: Building2,
+        isActive: (p) => p === '/spaces' || (p.startsWith('/spaces') && !p.startsWith('/spaces/')),
       },
       {
         name: 'My Stays',
         href: '/dashboard/bookings',
         icon: KeyRound,
+        badge: hasActiveStay ? (activeContext?.activeStay?.doorPin ? 'PIN' : 'LIVE') : undefined,
+        hasLivePulse: hasActiveStay,
         isActive: (p) => p.startsWith('/dashboard/bookings'),
       },
       {
-        name: 'Events',
+        name: 'Gatherings',
         href: '/sanctuary-pass',
         icon: Sparkles,
         badge: '✨',
         isActive: (p) => p.startsWith('/sanctuary-pass'),
       },
       {
-        name: 'Lifestyle',
+        name: 'The Circle',
         href: '/kinksters',
         icon: Flame,
-        badge: '🔥',
+        badge: '✦',
         isActive: (p) => p.startsWith('/kinksters'),
       },
       {
-        name: 'Spaces',
-        href: '/spaces',
-        icon: Building2,
-        isActive: (p) => p.startsWith('/spaces'),
+        name: 'Vault',
+        href: '/dashboard',
+        icon: UserCheck,
+        isActive: (p) => p === '/dashboard' || p.startsWith('/dashboard/profile') || p.startsWith('/dashboard/settings'),
       },
     ];
   } else {
-    // General Spaces & Exploration Navigation
+    // State A: Clear 4-Tab Public Exploration for Guests: [Suites] [Gatherings] [The Circle] [Sign In]
     items = [
       {
-        name: 'Spaces',
+        name: 'Suites',
         href: '/spaces',
         icon: Building2,
         isActive: (p) => p === '/' || p.startsWith('/spaces'),
       },
       {
-        name: 'Check-In',
-        href: '/onboarding',
-        icon: ShieldCheck,
-        isActive: (p) => p.startsWith('/onboarding'),
-      },
-      {
-        name: 'Events',
+        name: 'Gatherings',
         href: '/sanctuary-pass',
         icon: Sparkles,
         badge: '✨',
         isActive: (p) => p.startsWith('/sanctuary-pass'),
       },
       {
-        name: 'Lifestyle',
+        name: 'The Circle',
         href: '/kinksters',
         icon: Flame,
-        badge: '🔥',
+        badge: '✦',
         isActive: (p) => p.startsWith('/kinksters'),
       },
       {
-        name: 'Portal',
-        href: '/dashboard',
-        icon: UserCheck,
-        isActive: (p) => p.startsWith('/dashboard') || p.startsWith('/auth'),
+        name: 'Sign In',
+        href: '/auth',
+        icon: ShieldCheck,
+        isActive: (p) => p.startsWith('/auth') || p.startsWith('/onboarding'),
       },
     ];
   }
@@ -223,8 +258,18 @@ export default function MobileBottomNav() {
 
               <div className="relative z-10 flex items-center justify-center">
                 <Icon className={`w-5 h-5 transition-transform duration-200 ${active ? 'scale-110 text-accent-gold' : ''}`} />
+                {item.hasLivePulse && (
+                  <span className="absolute -top-1 -left-1.5 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                )}
                 {item.badge && (
-                  <span className="absolute -top-1.5 -right-3 text-[10px] leading-none">
+                  <span className={`absolute -top-1.5 -right-3 text-[10px] leading-none ${
+                    item.badge === 'PIN' || item.badge === 'LIVE' 
+                      ? 'text-[8px] font-mono font-bold px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
+                      : ''
+                  }`}>
                     {item.badge}
                   </span>
                 )}
