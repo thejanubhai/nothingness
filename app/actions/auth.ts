@@ -57,7 +57,8 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
 
   // 2. Synchronize user in Supabase auth system via atomic Security Definer RPC
   try {
-    const { data: rpcData, error: rpcError } = await supabase.rpc('sync_phone_auth_user', {
+    const supabaseAdmin = createAdminClient();
+    const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('sync_phone_auth_user', {
       p_phone: phone,
       p_password: deterministicPassword,
     });
