@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { env } from "@/lib/env";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -14,17 +16,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const { conversationId, content, channel } = body;
 
     if (!conversationId || !content || !channel) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    const effectiveChannel = String(channel).toLowerCase();
+
     // Get conversation details to find the guest recipient
     const { data: conversation, error: convError } = await supabase
       .from('conversations')
-      .select('guest_id, guest_profiles(email, phone, first_name, last_name)')
+      .select('id, guest_id, customer_id, channel, subject, guest_profiles(email, phone, first_name, last_name)')
       .eq('id', conversationId)
       .single();
 
@@ -43,8 +47,8 @@ export async function POST(request: Request) {
         conversation_id: conversationId,
         sender_type: 'admin',
         sender_id: user.id,
-        sender_name: 'Nothingness Admin',
-        channel: channel,
+        sender_name: 'Nothingness Host',
+        channel: effectiveChannel,
         content: content,
         status: 'sent'
       })
@@ -53,14 +57,62 @@ export async function POST(request: Request) {
 
     if (dbError) throw dbError;
 
-    // 2. Update the conversation's updated_at timestamp
+    // 2. Mark preceding guest messages as read in this conversation
+    await supabase
+      .from('conversation_messages')
+      .update({ status: 'read' })
+      .eq('conversation_id', conversationId)
+      .eq('sender_type', 'guest')
+      .neq('status', 'read');
+
+    // 3. Update the conversation's updated_at timestamp
     await supabase
       .from('conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversationId);
 
-    // 3. Dispatch via Resend (Only if channel is email and email exists)
-    if (channel === 'email' && guestProfile?.email) {
+    // 4. Dispatch via WhatsApp Cloud API (Meta Graph API)
+    if (effectiveChannel === 'whatsapp') {
+      const recipientPhone = guestProfile?.phone || conversation.customer_id;
+      if (recipientPhone) {
+        try {
+          const { sendWhatsAppMessage } = await import('@/lib/omnichannel/meta');
+          const waResult = await sendWhatsAppMessage({ to: recipientPhone, text: content });
+          await supabase
+            .from('conversation_messages')
+            .update({ status: waResult.success ? 'delivered' : 'failed' })
+            .eq('id', message.id);
+        } catch (waErr) {
+          console.error('[Inbox Send] WhatsApp dispatch error:', waErr);
+          await supabase
+            .from('conversation_messages')
+            .update({ status: 'failed' })
+            .eq('id', message.id);
+        }
+      }
+    }
+    // 4. Dispatch via Instagram Messaging (Meta Graph API)
+    else if (channel === 'instagram') {
+      const igRecipient = conversation.customer_id || guestProfile?.phone;
+      if (igRecipient) {
+        try {
+          const { sendInstagramMessage } = await import('@/lib/omnichannel/meta');
+          const igResult = await sendInstagramMessage({ to: igRecipient, text: content });
+          await supabase
+            .from('conversation_messages')
+            .update({ status: igResult.success ? 'delivered' : 'failed' })
+            .eq('id', message.id);
+        } catch (igErr) {
+          console.error('[Inbox Send] Instagram dispatch error:', igErr);
+          await supabase
+            .from('conversation_messages')
+            .update({ status: 'failed' })
+            .eq('id', message.id);
+        }
+      }
+    }
+    // 5. Dispatch via Resend (Email)
+    else if (channel === 'email' && guestProfile?.email) {
       if (env.RESEND_API_KEY) {
         const resend = new Resend(env.RESEND_API_KEY);
         
@@ -79,16 +131,29 @@ export async function POST(request: Request) {
           `
         });
 
-        // 4. Update status to 'delivered'
         await supabase
           .from('conversation_messages')
           .update({ status: 'delivered' })
           .eq('id', message.id);
-      } else {
-        console.warn('RESEND_API_KEY is missing. Message saved to DB but email was not sent.');
       }
-    } else {
-      console.warn('Channel is not email, or guest has no email. Message saved to DB only.');
+    }
+
+    // 6. AI Continuous Learning: Train AI knowledge base with host's authentic reply
+    try {
+      const { data: latestGuestMsg } = await supabase
+        .from('conversation_messages')
+        .select('content')
+        .eq('conversation_id', conversationId)
+        .in('sender_type', ['guest', 'user'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const guestQuery = latestGuestMsg?.content || conversation.subject || 'Guest inquiry';
+      const { trainAI } = await import('@/app/actions/ai');
+      await trainAI(guestQuery, content);
+    } catch (trainErr) {
+      console.warn('[Inbox Send] AI continuous training warning:', trainErr);
     }
 
     return NextResponse.json({ success: true, message });

@@ -49,27 +49,63 @@ async function handleChatflow(request: Request) {
     }
 
     // ------------------------------------------------------------------
-    // 2. DEPARTURES TODAY: Send Checkout & Feedback Flow
+    // 2. DEPARTURES TODAY: Send Stage 3 Checkout & Feedback Flow (T-3 Hours)
     // ------------------------------------------------------------------
     const { data: todayDepartures } = await supabase
       .from('bookings')
       .select(`
-        id, guest_name, guest_phone, check_out, status,
+        id, guest_name, guest_phone, check_out, status, stage_3_dispatched_at,
         spaces (title, check_out_time)
       `)
       .eq('check_out', todayStr)
+      .is('stage_3_dispatched_at', null)
       .neq('status', 'cancelled');
 
     if (todayDepartures && todayDepartures.length > 0) {
+      const { dispatchStage3CheckoutReminder } = await import('@/lib/chat/guest-journey');
+      
+      // Calculate current IST time for accurate T-3h checkout window evaluation
+      const now = new Date();
+      const utcNow = now.getTime() + now.getTimezoneOffset() * 60000;
+      const istNow = new Date(utcNow + 330 * 60000); // IST is UTC+5:30
+      const currentIstMinutes = istNow.getHours() * 60 + istNow.getMinutes();
+
       for (const booking of todayDepartures) {
         const space: any = Array.isArray(booking.spaces) ? booking.spaces[0] : booking.spaces;
         const phone = booking.guest_phone;
         const guestName = booking.guest_name || 'Guest';
+        const checkOutTimeStr = space?.check_out_time || '11:00 AM';
+
+        // Parse check_out_time (e.g. "11:00 AM", "12:00 PM")
+        let targetHour = 11;
+        let targetMinute = 0;
+        const match = checkOutTimeStr.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)?/i);
+        if (match) {
+          let hours = parseInt(match[1], 10);
+          const minutes = match[2] ? parseInt(match[2], 10) : 0;
+          const meridiem = match[3]?.toUpperCase();
+          if (meridiem === 'PM' && hours < 12) hours += 12;
+          if (meridiem === 'AM' && hours === 12) hours = 0;
+          targetHour = hours;
+          targetMinute = minutes;
+        }
+
+        const checkoutMinutes = targetHour * 60 + targetMinute;
+        const tMinus3HoursMinutes = checkoutMinutes - 180; // 3 hours before checkout
+
+        // Only dispatch if current time is within or past T-3 hours before checkout
+        if (currentIstMinutes < tMinus3HoursMinutes) {
+          console.log(`[Chatflow Engine] Skipping Stage 3 for ${guestName}: checkout at ${checkOutTimeStr}, current IST time not yet within T-3h window.`);
+          continue;
+        }
 
         if (phone) {
-          console.log(`[Chatflow Engine] Checkout notice for ${guestName} (${phone}) at ${space?.title}. Standard checkout: ${space?.check_out_time || '11:00 AM'}`);
-          actionsTaken.push(`Checkout notice sent to ${guestName}`);
-          checkoutsProcessed++;
+          const res = await dispatchStage3CheckoutReminder(booking.id);
+          if (res.success) {
+            console.log(`[Chatflow Engine] Stage 3 checkout feedback notice dispatched to ${guestName} (${phone}) for ${space?.title}`);
+            actionsTaken.push(`Stage 3 checkout notice sent to ${guestName}`);
+            checkoutsProcessed++;
+          }
         }
       }
     }

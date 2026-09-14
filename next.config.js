@@ -37,6 +37,20 @@ const nextConfig = {
       }
     ]
   },
+  async redirects() {
+    return [
+      {
+        source: '/kinksters',
+        destination: '/the-circle',
+        permanent: true,
+      },
+      {
+        source: '/kinksters/:path*',
+        destination: '/the-circle/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

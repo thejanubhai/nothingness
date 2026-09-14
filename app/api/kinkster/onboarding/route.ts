@@ -86,18 +86,18 @@ export async function POST(req: NextRequest) {
         .from('action_fee_orders')
         .select('id')
         .eq('user_id', user.id)
-        .eq('action_type', 'kinkster_activation')
+        .in('action_type', ['kinkster_activation', 'circle_activation'])
         .eq('payment_status', 'paid')
         .maybeSingle();
 
       if (!existingFeePaid) {
         const uniqueSuffix = Math.random().toString(36).substring(2, 7);
-        const orderId = `kinkster_${user.id.slice(0, 6)}_${Date.now()}_${uniqueSuffix}`;
+        const orderId = `circle_${user.id.slice(0, 6)}_${Date.now()}_${uniqueSuffix}`;
 
         // Save pending order
         await adminSupabase.from('action_fee_orders').insert({
           user_id: user.id,
-          action_type: 'kinkster_activation',
+          action_type: 'circle_activation',
           amount: fee_kinkster_activation,
           payment_order_id: orderId,
           payment_status: 'pending',
@@ -113,12 +113,12 @@ export async function POST(req: NextRequest) {
         const { paymentUrl, params } = await createPayUPaymentRequestAsync({
           txnid: orderId,
           amount: fee_kinkster_activation,
-          productinfo: 'Kinkster Mode Lifetime Membership Fee',
-          firstname: user.user_metadata?.full_name || `@${formattedAlias}`,
+          productinfo: 'The Circle Society Annual Membership',
+          firstname: user.user_metadata?.full_name || 'The Circle Member',
           email: user.email || 'concierge@nothingness.asia',
           phone: user.phone || '9999999999',
           udf1: user.id,
-          udf2: 'kinkster_activation_fee',
+          udf2: 'circle_activation_fee',
           udf3: orderId,
           udf4: formattedAlias,
         });

@@ -55,6 +55,38 @@ const envSchema = z.object({
   CLOUDINARY_WEBHOOK_SECRET: z.string().optional(),
   CLOUDINARY_UPLOAD_PRESET: z.string().optional(),
 
+  // Meta Graph API (WhatsApp Cloud API & Instagram Messaging)
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().optional(),
+  WHATSAPP_WEBHOOK_VERIFY_TOKEN: z.string().optional(),
+  WHATSAPP_APP_SECRET: z.string().optional(),
+  whatsapp_app_secret: z.string().optional(),
+  meta_App_ID: z.string().optional(),
+  META_APP_ID: z.string().optional(),
+  meta_App_secret: z.string().optional(),
+  META_APP_SECRET: z.string().optional(),
+  INSTAGRAM_ACCESS_TOKEN: z.string().optional(),
+  INSTAGRAM_ACCOUNT_ID: z.string().optional(),
+  INSTAGRAM_WEBHOOK_VERIFY_TOKEN: z.string().optional(),
+  Instagram_app_ID: z.string().optional(),
+  INSTAGRAM_APP_ID: z.string().optional(),
+  instagram_app_id: z.string().optional(),
+  Instagram_app_name: z.string().optional(),
+  INSTAGRAM_APP_NAME: z.string().optional(),
+  instagram_app_name: z.string().optional(),
+  Instagram_app_secret: z.string().optional(),
+  INSTAGRAM_APP_SECRET: z.string().optional(),
+  instagram_app_secret: z.string().optional(),
+
+  // Facebook Login for Business Configuration ID
+  Facebook_login_Configuration_ID: z.string().optional(),
+  FACEBOOK_LOGIN_CONFIGURATION_ID: z.string().optional(),
+  facebook_login_configuration_id: z.string().optional(),
+  FACEBOOK_CONFIG_ID: z.string().optional(),
+  NEXT_PUBLIC_FACEBOOK_LOGIN_CONFIGURATION_ID: z.string().optional(),
+  NEXT_PUBLIC_FACEBOOK_CONFIG_ID: z.string().optional(),
+
   NVIDIA_API_KEY: z.string().optional(),
   NVIDIA_AI_API_KEY: z.string().optional(),
   nVidia_AI_API_Key: z.string().optional(),
@@ -117,6 +149,72 @@ export const env = envSchema.parse({
   CLOUDINARY_URL: process.env.CLOUDINARY_URL,
   CLOUDINARY_WEBHOOK_SECRET: process.env.CLOUDINARY_WEBHOOK_SECRET || process.env.CLOUDINARY_API_SECRET,
   CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET,
+
+  // Meta Graph API (WhatsApp Cloud API & Instagram Messaging)
+  WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID || process.env.whatsapp_phone_number_id || process.env.whatsappPhoneNumberId,
+  WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN || process.env.whatsapp_access_token || process.env.whatsappAccessToken,
+  WHATSAPP_BUSINESS_ACCOUNT_ID: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || process.env.whatsapp_business_account_id || process.env.whatsappBusinessAccountId,
+  WHATSAPP_WEBHOOK_VERIFY_TOKEN: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || process.env.whatsapp_webhook_verify_token || process.env.whatsappWebhookVerifyToken,
+  WHATSAPP_APP_SECRET: process.env.WHATSAPP_APP_SECRET || process.env.whatsapp_app_secret || process.env.meta_App_secret || process.env.META_APP_SECRET,
+  whatsapp_app_secret: process.env.whatsapp_app_secret || process.env.WHATSAPP_APP_SECRET || process.env.meta_App_secret || process.env.META_APP_SECRET,
+  meta_App_ID: process.env.meta_App_ID || process.env.META_APP_ID || process.env.meta_app_id || process.env.metaAppId || process.env.Instagram_app_ID || process.env.INSTAGRAM_APP_ID || process.env.instagram_app_id,
+  META_APP_ID: process.env.META_APP_ID || process.env.meta_App_ID || process.env.meta_app_id || process.env.metaAppId || process.env.Instagram_app_ID || process.env.INSTAGRAM_APP_ID || process.env.instagram_app_id,
+  meta_App_secret: process.env.meta_App_secret || process.env.META_APP_SECRET || process.env.meta_app_secret || process.env.metaAppSecret || process.env.Instagram_app_secret || process.env.INSTAGRAM_APP_SECRET || process.env.instagram_app_secret,
+  META_APP_SECRET: process.env.META_APP_SECRET || process.env.meta_App_secret || process.env.meta_app_secret || process.env.metaAppSecret || process.env.Instagram_app_secret || process.env.INSTAGRAM_APP_SECRET || process.env.instagram_app_secret,
+  INSTAGRAM_ACCESS_TOKEN: process.env.INSTAGRAM_ACCESS_TOKEN || process.env.instagram_access_token || process.env.instagramAccessToken,
+  INSTAGRAM_ACCOUNT_ID: process.env.INSTAGRAM_ACCOUNT_ID || process.env.instagram_account_id || process.env.instagramAccountId,
+  INSTAGRAM_WEBHOOK_VERIFY_TOKEN: process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || process.env.instagram_webhook_verify_token,
+  Instagram_app_ID: process.env.Instagram_app_ID || process.env.INSTAGRAM_APP_ID || process.env.instagram_app_id || process.env.meta_App_ID || process.env.META_APP_ID,
+  INSTAGRAM_APP_ID: process.env.INSTAGRAM_APP_ID || process.env.Instagram_app_ID || process.env.instagram_app_id || process.env.meta_App_ID || process.env.META_APP_ID,
+  instagram_app_id: process.env.instagram_app_id || process.env.Instagram_app_ID || process.env.INSTAGRAM_APP_ID || process.env.meta_App_ID || process.env.META_APP_ID,
+  Instagram_app_name: process.env.Instagram_app_name || process.env.INSTAGRAM_APP_NAME || process.env.instagram_app_name,
+  INSTAGRAM_APP_NAME: process.env.INSTAGRAM_APP_NAME || process.env.Instagram_app_name || process.env.instagram_app_name,
+  instagram_app_name: process.env.instagram_app_name || process.env.Instagram_app_name || process.env.INSTAGRAM_APP_NAME,
+  Instagram_app_secret: process.env.Instagram_app_secret || process.env.INSTAGRAM_APP_SECRET || process.env.instagram_app_secret || process.env.meta_App_secret || process.env.META_APP_SECRET,
+  INSTAGRAM_APP_SECRET: process.env.INSTAGRAM_APP_SECRET || process.env.Instagram_app_secret || process.env.instagram_app_secret || process.env.meta_App_secret || process.env.META_APP_SECRET,
+  instagram_app_secret: process.env.instagram_app_secret || process.env.Instagram_app_secret || process.env.INSTAGRAM_APP_SECRET || process.env.meta_App_secret || process.env.META_APP_SECRET,
+
+  // Facebook Login for Business Configuration ID
+  Facebook_login_Configuration_ID:
+    process.env.Facebook_login_Configuration_ID ||
+    process.env.FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.facebook_login_configuration_id ||
+    process.env.FACEBOOK_CONFIG_ID ||
+    process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.NEXT_PUBLIC_FACEBOOK_CONFIG_ID,
+  FACEBOOK_LOGIN_CONFIGURATION_ID:
+    process.env.FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.Facebook_login_Configuration_ID ||
+    process.env.facebook_login_configuration_id ||
+    process.env.FACEBOOK_CONFIG_ID ||
+    process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.NEXT_PUBLIC_FACEBOOK_CONFIG_ID,
+  facebook_login_configuration_id:
+    process.env.facebook_login_configuration_id ||
+    process.env.Facebook_login_Configuration_ID ||
+    process.env.FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.FACEBOOK_CONFIG_ID ||
+    process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.NEXT_PUBLIC_FACEBOOK_CONFIG_ID,
+  FACEBOOK_CONFIG_ID:
+    process.env.FACEBOOK_CONFIG_ID ||
+    process.env.Facebook_login_Configuration_ID ||
+    process.env.FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.facebook_login_configuration_id ||
+    process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.NEXT_PUBLIC_FACEBOOK_CONFIG_ID,
+  NEXT_PUBLIC_FACEBOOK_LOGIN_CONFIGURATION_ID:
+    process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.Facebook_login_Configuration_ID ||
+    process.env.FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.facebook_login_configuration_id ||
+    process.env.FACEBOOK_CONFIG_ID,
+  NEXT_PUBLIC_FACEBOOK_CONFIG_ID:
+    process.env.NEXT_PUBLIC_FACEBOOK_CONFIG_ID ||
+    process.env.Facebook_login_Configuration_ID ||
+    process.env.FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.facebook_login_configuration_id ||
+    process.env.FACEBOOK_CONFIG_ID,
 
   NVIDIA_API_KEY: process.env.NVIDIA_API_KEY || process.env.nVidia_AI_API_Key || process.env.NVIDIA_AI_API_KEY,
   NVIDIA_AI_API_KEY: process.env.NVIDIA_AI_API_KEY || process.env.nVidia_AI_API_Key || process.env.NVIDIA_API_KEY,

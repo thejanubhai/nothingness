@@ -432,7 +432,7 @@ export function getBookingReceiptEmailHtml({
   sanctuaryName,
   dateRange,
   totalAmount,
-  paymentMethod = 'UPI / Razorpay Verified',
+  paymentMethod = 'PayU India (UPI / Cards / Net Banking)',
   receiptUrl = 'https://nothingness.asia/reservations/view',
 }: BookingReceiptData): string {
   const content = `

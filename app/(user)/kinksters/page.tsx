@@ -56,6 +56,13 @@ function KinkstersContent() {
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
+
+  // Canonical Redirect to /the-circle
+  useEffect(() => {
+    const params = searchParams ? searchParams.toString() : '';
+    router.replace(params ? `/the-circle?${params}` : '/the-circle');
+  }, [router, searchParams]);
+
   const [isIdVerified, setIsIdVerified] = useState<boolean>(false);
   const [userAlias, setUserAlias] = useState<string>('');
   const [entryFee, setEntryFee] = useState<number>(0);

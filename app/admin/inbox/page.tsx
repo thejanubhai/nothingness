@@ -3,26 +3,80 @@ import { MessageSquare, Send, Mail, Phone, Globe, Bot, Plus, Zap, ToggleLeft, To
 import { format } from "date-fns";
 import Link from "next/link";
 import ComingSoonButton from "@/components/ComingSoonButton";
+import InboxClient from "./InboxClient";
+import InstagramSettingsCard from "./InstagramSettingsCard";
+import WhatsAppSettingsCard from "./WhatsAppSettingsCard";
+import FacebookSettingsCard from "./FacebookSettingsCard";
+import { env } from "@/lib/env";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminInbox({
   searchParams
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; channel?: string; connected?: string; error?: string }>;
 }) {
   const resolvedSearchParams = await searchParams;
   const currentTab = resolvedSearchParams?.tab || 'messages';
+  const currentChannel = resolvedSearchParams?.channel;
   const supabase = await createClient();
+
+  const whatsappPhoneNumberId =
+    env.WHATSAPP_PHONE_NUMBER_ID ||
+    process.env.WHATSAPP_PHONE_NUMBER_ID ||
+    process.env.whatsapp_phone_number_id ||
+    process.env.whatsappPhoneNumberId ||
+    '';
+  const whatsappWabaId =
+    env.WHATSAPP_BUSINESS_ACCOUNT_ID ||
+    process.env.WHATSAPP_BUSINESS_ACCOUNT_ID ||
+    process.env.whatsapp_business_account_id ||
+    process.env.whatsappBusinessAccountId ||
+    '';
+  const isWhatsAppConfigured = Boolean(whatsappPhoneNumberId);
+
+  const instagramAppId =
+    env.Instagram_app_ID ||
+    env.INSTAGRAM_APP_ID ||
+    process.env.Instagram_app_ID ||
+    process.env.INSTAGRAM_APP_ID ||
+    env.meta_App_ID ||
+    env.META_APP_ID ||
+    '';
+  const instagramAppName =
+    env.Instagram_app_name ||
+    env.INSTAGRAM_APP_NAME ||
+    process.env.Instagram_app_name ||
+    process.env.INSTAGRAM_APP_NAME ||
+    'nothingness';
+  const isInstagramConfigured = Boolean(instagramAppId);
+
+  const facebookConfigId =
+    env.Facebook_login_Configuration_ID ||
+    env.FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    env.facebook_login_configuration_id ||
+    env.FACEBOOK_CONFIG_ID ||
+    env.NEXT_PUBLIC_FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    env.NEXT_PUBLIC_FACEBOOK_CONFIG_ID ||
+    process.env.Facebook_login_Configuration_ID ||
+    process.env.FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.facebook_login_configuration_id ||
+    process.env.FACEBOOK_CONFIG_ID ||
+    process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_CONFIGURATION_ID ||
+    process.env.NEXT_PUBLIC_FACEBOOK_CONFIG_ID ||
+    '';
+  const isFacebookConfigured = Boolean(facebookConfigId);
   
-  // Fetch messages
-  const { data: messages } = await supabase
-    .from('messages')
+  // Fetch conversations with their messages and guest profile for the live 2-way inbox
+  const { data: conversations } = await supabase
+    .from('conversations')
     .select(`
       *,
-      guest_profiles(full_name, phone_number)
+      guest_profiles (id, full_name, phone, document_number, is_verified),
+      bookings (id, check_in, check_out, spaces (title)),
+      conversation_messages (*)
     `)
-    .order('created_at', { ascending: false });
+    .order('updated_at', { ascending: false });
 
   // Fetch chatflows
   const { data: chatflows } = await supabase
@@ -63,79 +117,11 @@ export default async function AdminInbox({
 
       <div className="flex-1 bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden flex flex-col">
         {/* ============================================================== */}
-        {/* MESSAGES TAB */}
+        {/* MESSAGES TAB: Real-Time Omnichannel 2-Way Inbox */}
         {/* ============================================================== */}
         {currentTab === 'messages' && (
-          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-            {/* Thread List */}
-            <div className="w-full md:w-1/3 border-r border-white/5 flex flex-col h-full bg-white/[0.01]">
-              <div className="p-4 border-b border-white/5">
-                <input 
-                  type="text" 
-                  placeholder="Search conversations..." 
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-accent-gold/50"
-                />
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                {messages?.length === 0 ? (
-                  <div className="p-8 text-center text-white/30 text-sm">
-                    No active conversations.
-                  </div>
-                ) : (
-                  <div className="p-4 text-center text-white/30 text-sm">
-                    Select a conversation to start messaging.
-                  </div>
-                )}
-                
-                {messages?.map((msg) => (
-                  <div key={msg.id} className="p-4 border-b border-white/5 cursor-pointer hover:bg-white/[0.03] transition-colors">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="text-white font-medium text-sm">{msg.guest_profiles?.full_name || 'Unknown Guest'}</h3>
-                      <span className="text-[10px] text-white/40">{format(new Date(msg.created_at), 'HH:mm')}</span>
-                    </div>
-                    <p className="text-xs text-white/50 truncate">{msg.content}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      {msg.channel === 'whatsapp' && <MessageSquare className="w-3 h-3 text-green-400" />}
-                      {msg.channel === 'email' && <Mail className="w-3 h-3 text-blue-400" />}
-                      {msg.channel === 'sms' && <Phone className="w-3 h-3 text-purple-400" />}
-                      {msg.channel === 'instagram' && <Camera className="w-3 h-3 text-pink-400" />}
-                      {msg.channel === 'facebook' && <MessageCircle className="w-3 h-3 text-blue-500" />}
-                      <span className="text-[9px] uppercase tracking-wider text-white/30">{msg.channel}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Chat Window */}
-            <div className="flex-1 flex flex-col h-full bg-black/20">
-              <div className="p-6 border-b border-white/5 bg-white/[0.02]">
-                <h2 className="text-white font-medium">Select a Conversation</h2>
-                <p className="text-xs text-white/50 mt-1">Unified messaging feed</p>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 flex flex-col justify-end">
-                <div className="text-center text-white/20 text-sm flex flex-col items-center justify-center h-full gap-4">
-                  <Globe className="w-12 h-12 opacity-50" />
-                  <p>Your workspace is ready.</p>
-                </div>
-              </div>
-              
-              <div className="p-4 border-t border-white/5 bg-white/[0.01]">
-                <form className="flex items-center gap-2 relative">
-                  <input 
-                    type="text" 
-                    placeholder="Type a message..." 
-                    disabled
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent-gold/50 disabled:opacity-50"
-                  />
-                  <button disabled className="absolute right-2 p-2 bg-accent-gold text-black rounded-lg disabled:opacity-50">
-                    <Send className="w-4 h-4" />
-                  </button>
-                </form>
-                <p className="text-[10px] text-white/30 text-center mt-2">Replies are sent automatically via the preferred channel.</p>
-              </div>
-            </div>
+          <div className="flex-1 overflow-hidden h-full">
+            <InboxClient initialConversations={conversations || []} initialChannel={currentChannel} />
           </div>
         )}
 
@@ -218,53 +204,28 @@ export default async function AdminInbox({
             </div>
 
             <div className="space-y-4 max-w-3xl">
-              {/* WhatsApp Connection */}
-              <div className="p-5 border border-white/5 bg-white/[0.01] rounded-2xl flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500">
-                    <MessageSquare className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-medium">WhatsApp Business</h3>
-                    <p className="text-xs text-white/50 mt-1">Connect your official WhatsApp API number.</p>
-                  </div>
-                </div>
-                <Link href="/admin/whatsapp-connect" className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-sm rounded-lg border border-white/10 transition-colors">
-                  Connect Device
-                </Link>
-              </div>
+              {/* WhatsApp Connection (Realtime Meta WhatsApp Cloud API) */}
+              <WhatsAppSettingsCard
+                isConfigured={isWhatsAppConfigured}
+                phoneNumberId={whatsappPhoneNumberId}
+                wabaId={whatsappWabaId}
+              />
 
-              {/* Instagram Connection */}
-              <div className="p-5 border border-white/5 bg-white/[0.01] rounded-2xl flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-pink-500/10 rounded-xl flex items-center justify-center text-pink-500">
-                    <Camera className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-medium">Instagram Direct</h3>
-                    <p className="text-xs text-white/50 mt-1">Reply to DMs and story mentions directly.</p>
-                  </div>
-                </div>
-                <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-sm rounded-lg border border-white/10 transition-colors">
-                  Connect
-                </button>
-              </div>
+              {/* Instagram Connection (Realtime Meta Graph API) */}
+              <InstagramSettingsCard
+                isConfigured={isInstagramConfigured}
+                appId={instagramAppId}
+                appName={instagramAppName}
+              />
 
-              {/* Facebook Connection */}
-              <div className="p-5 border border-white/5 bg-white/[0.01] rounded-2xl flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
-                    <MessageCircle className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-medium">Facebook Messenger</h3>
-                    <p className="text-xs text-white/50 mt-1">Handle messages from your Facebook page.</p>
-                  </div>
-                </div>
-                <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-sm rounded-lg border border-white/10 transition-colors">
-                  Connect
-                </button>
-              </div>
+              {/* Facebook Login for Business Connection (Meta Graph API) */}
+              <FacebookSettingsCard
+                isConfigured={isFacebookConfigured}
+                configId={facebookConfigId}
+                appId={instagramAppId}
+                initialConnected={resolvedSearchParams?.connected === 'facebook'}
+                initialError={resolvedSearchParams?.error}
+              />
 
               {/* Email Connection */}
               <div className="p-5 border border-white/5 bg-white/[0.01] rounded-2xl flex items-center justify-between">

@@ -238,6 +238,14 @@ export default function GuestPrivateVerification({ params }: { params: Promise<{
                 ? `Retry Payment (₹${guestData.payment_amount})`
                 : `Pay ₹${guestData.payment_amount} Now`}
             </button>
+            <div className="pt-1 text-center font-mono text-[10px] text-white/40 space-y-0.5">
+              <p className="flex items-center justify-center gap-1.5">
+                <span className="text-emerald-400">🔒</span> 256-Bit SSL Encrypted • Secured by PayU
+              </p>
+              <p className="text-[9px] text-white/30">
+                Statement Descriptor: <strong className="text-white/50">PAYU*NOTHINGNESS</strong>
+              </p>
+            </div>
           </div>
         )}
 

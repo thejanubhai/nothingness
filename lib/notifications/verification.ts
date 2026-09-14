@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { env } from '@/lib/env';
+import { getBookingReceiptEmailHtml } from '@/lib/email-templates';
 
 interface SendApprovedNotificationParams {
   email: string;
@@ -259,4 +260,73 @@ export async function sendAdditionalGuestInviteNotification({
     success: true,
     verificationLink,
   };
+}
+
+export interface SendPrimaryBookingConfirmationParams {
+  email: string;
+  guestName: string;
+  bookingId: string;
+  spaceTitle: string;
+  checkInDate: string;
+  checkOutDate: string;
+  totalAmount: number | string;
+  paymentMethod?: string;
+}
+
+export async function sendPrimaryBookingConfirmationNotification({
+  email,
+  guestName,
+  bookingId,
+  spaceTitle,
+  checkInDate,
+  checkOutDate,
+  totalAmount,
+  paymentMethod = 'PayU India (UPI / Cards / Net Banking)',
+}: SendPrimaryBookingConfirmationParams) {
+  const siteUrl = env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
+  const receiptUrl = `${siteUrl}/booking/${bookingId}/invoice`;
+  const formattedAmount =
+    typeof totalAmount === 'number'
+      ? `₹${totalAmount.toLocaleString('en-IN')}`
+      : String(totalAmount).startsWith('₹')
+      ? totalAmount
+      : `₹${Number(totalAmount || 0).toLocaleString('en-IN')}`;
+
+  console.log(`[Booking Confirmation] Dispatching confirmation & receipt to ${email} for booking ${bookingId}`);
+
+  if (!env.RESEND_API_KEY) {
+    console.warn('[Booking Confirmation] RESEND_API_KEY missing. Mocked receipt email sent to:', email);
+    return { success: true, mocked: true, receiptUrl };
+  }
+
+  try {
+    const resend = new Resend(env.RESEND_API_KEY);
+    const htmlContent = getBookingReceiptEmailHtml({
+      memberName: guestName || 'Sanctuary Guest',
+      bookingId,
+      sanctuaryName: spaceTitle || 'Private Sanctuary',
+      dateRange: `${checkInDate} to ${checkOutDate}`,
+      totalAmount: formattedAmount,
+      paymentMethod,
+      receiptUrl,
+    });
+
+    const { data, error } = await resend.emails.send({
+      from: 'Nothingness Concierge <concierge@nothingness.asia>',
+      to: email,
+      subject: `Booking Confirmed & Tax Invoice: ${spaceTitle} - Nothingness`,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error('[Booking Confirmation] Resend error:', error);
+      return { success: false, error: error.message, receiptUrl };
+    }
+
+    return { success: true, data, receiptUrl };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Unknown exception';
+    console.error('[Booking Confirmation] Exception:', err);
+    return { success: false, error: msg, receiptUrl };
+  }
 }

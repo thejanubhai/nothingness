@@ -20,7 +20,7 @@ export async function GET(req: Request) {
         .order('guest_index', { ascending: true }),
       supabase
         .from('bookings')
-        .select('id, status, payment_status, total_price, check_in, check_out, guest_name, spaces(title)')
+        .select('id, status, payment_status, total_price, check_in, check_out, guest_name, guest_email, guest_phone, payment_order_id, spaces(title, city, check_in_time, check_out_time, key_instructions)')
         .eq('id', bookingId)
         .maybeSingle()
     ]);

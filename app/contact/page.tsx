@@ -19,9 +19,25 @@ export const metadata: Metadata = {
     canonical: 'https://nothingness.asia/contact',
   },
   openGraph: {
-    title: 'Contact Concierge | Nothingness',
-    description: 'Speak with our concierge team regarding reservations, partnerships, and customer support with absolute discretion.',
+    title: 'Contact Concierge & Merchant Support | Nothingness',
+    description: 'Official contact channels and concierge support for private sanctuaries, event access, and partnerships with absolute discretion.',
     url: 'https://nothingness.asia/contact',
+    siteName: 'Nothingness',
+    locale: 'en_IN',
+    type: 'website',
+    images: [
+      {
+        url: '/images/IMG_9955.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Nothingness Concierge & Merchant Support',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact Concierge & Merchant Support | Nothingness',
+    description: 'Official contact channels and concierge support for private sanctuaries, event access, and partnerships with absolute discretion.',
     images: ['/images/IMG_9955.jpg'],
   },
 };

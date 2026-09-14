@@ -3,28 +3,47 @@ import SpaceCard from "@/components/SpaceCard";
 import { Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Metadata } from 'next';
-import JsonLd, { generateBreadcrumbSchema } from '@/components/JsonLd';
+import JsonLd, { generateBreadcrumbSchema, generateSpaceListSchema } from '@/components/JsonLd';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: "Sanctuaries & Private Stays in Delhi NCR | Nothingness",
-  description: "Browse private brutalist sanctuaries, architectural suites, and aesthetic spaces for total isolation, intimacy, and discreet stays across Delhi NCR.",
+  title: "Sanctuaries & Private Suites in Delhi NCR | Nothingness",
+  description: "Curated architectural sanctuaries and intimate suites in Delhi NCR. Autonomous keyless entry, acoustic soundproofing, sensory soaking baths, and 100% discretion.",
   keywords: [
-    "private sanctuary delhi",
+    "private sanctuary suites delhi",
     "architectural suite delhi ncr",
-    "south delhi private stay",
-    "aesthetic airbnb delhi",
-    "discreet boutique accommodation"
+    "south delhi intimate stay",
+    "soundproof couple retreat delhi",
+    "autonomous check in suite delhi",
+    "sensory soaking bath suite",
+    "discreet luxury staycation delhi ncr",
+    "nothingness spaces"
   ],
   alternates: {
     canonical: 'https://nothingness.asia/spaces',
   },
   openGraph: {
-    title: "Sanctuaries & Private Stays | Nothingness",
-    description: "Browse private brutalist sanctuaries, architectural suites, and aesthetic spaces across Delhi NCR.",
+    title: "Sanctuaries & Private Suites in Delhi NCR | Nothingness",
+    description: "Browse private brutalist sanctuaries, architectural suites, and sensory soaking spaces for total isolation and intimacy across Delhi NCR.",
     url: "https://nothingness.asia/spaces",
-    images: ['/images/The Void (1).png'],
+    siteName: "Nothingness",
+    locale: "en_IN",
+    type: "website",
+    images: [
+      {
+        url: "/images/IMG_9955.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Nothingness Private Sanctuaries & Suites",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sanctuaries & Private Suites in Delhi NCR | Nothingness",
+    description: "Browse private brutalist sanctuaries, architectural suites, and sensory soaking spaces for total isolation and intimacy across Delhi NCR.",
+    images: ["/images/IMG_9955.jpg"],
   },
 };
 
@@ -52,8 +71,15 @@ export default async function SpacesPage() {
     slug: p.slug
   }));
 
+  const breadcrumbs = [
+    { name: 'Home', url: '/' },
+    { name: 'Spaces', url: '/spaces' },
+  ];
+
   return (
     <main className="min-h-screen pt-32 pb-24 px-4 md:px-12 max-w-7xl mx-auto">
+      <JsonLd data={generateBreadcrumbSchema(breadcrumbs)} id="spaces-breadcrumb-schema" />
+      <JsonLd data={generateSpaceListSchema(displaySpaces)} id="spaces-list-schema" />
       <div className="mb-16 border-b border-border-subtle pb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="font-serif text-5xl md:text-7xl mb-4">Sanctuaries</h1>

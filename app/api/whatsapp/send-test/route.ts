@@ -1,37 +1,64 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { isUserAdminAsync } from '@/lib/auth-utils';
+import { sendWhatsAppMessage } from '@/lib/omnichannel/meta';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const { targetPhone, message } = await req.json();
-
-    if (!targetPhone) {
-      return NextResponse.json({ error: 'Target phone number is required' }, { status: 400 });
-    }
-
+    // Authenticate admin caller first before parsing payload
     const supabase = await createClient();
-    const { data: session } = await supabase
-      .from('whatsapp_business_sessions')
-      .select('*')
-      .eq('id', '00000000-0000-0000-0000-000000000001')
-      .single();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (session?.status !== 'connected') {
-      return NextResponse.json({ error: 'WhatsApp Business device is not connected. Please scan QR code first.' }, { status: 400 });
+    if (!user || !(await isUserAdminAsync(user))) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Admin privileges required to dispatch test messages.' },
+        { status: 403 }
+      );
     }
 
-    console.log(`[WhatsApp Business Direct] Sending test message to ${targetPhone}: ${message || 'Hello from Nothingness!'}`);
+    const body = await req.json().catch(() => ({}));
+    const { targetPhone, message } = body;
+
+    if (!targetPhone || typeof targetPhone !== 'string' || !targetPhone.trim()) {
+      return NextResponse.json({ error: 'Target phone number is required.' }, { status: 400 });
+    }
+
+    const testContent =
+      message && typeof message === 'string' && message.trim()
+        ? message.trim()
+        : 'Hello from Nothingness Stays! Your Meta WhatsApp Cloud API is operational.';
+
+    console.log(`[WhatsApp Test Sender] Dispatching test WhatsApp to ${targetPhone}`);
+
+    const result = await sendWhatsAppMessage({
+      to: targetPhone,
+      text: testContent,
+    });
+
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: result.error || 'Failed to dispatch WhatsApp message via Meta Cloud API',
+        },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      senderPhone: session.phone_number,
       recipient: targetPhone,
-      status: 'sent',
-      message: message || 'Hello from Nothingness Stays! Your Business WhatsApp is live and connected.',
-      timestamp: new Date().toISOString()
+      messageId: result.messageId,
+      mocked: result.mocked || false,
+      message: testContent,
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[WhatsApp Test Sender] Error:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

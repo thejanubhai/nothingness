@@ -507,6 +507,12 @@ export default function KinksterOnboardingWizard({
           )}
         </div>
 
+        {effectiveFee > 0 && step === 4 && (
+          <p className="text-[10px] text-center text-zinc-500 font-mono mt-3">
+            Secure 256-bit encrypted PayU checkout • Statement Descriptor: <strong className="text-zinc-400">PAYU*NOTHINGNESS</strong>
+          </p>
+        )}
+
       </div>
     </div>
   );

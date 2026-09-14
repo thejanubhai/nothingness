@@ -9,7 +9,7 @@
       "passed": true,
       "status": 200,
       "expectedStatus": 200,
-      "details": "OK (1680ms)",
+      "details": "OK (1947ms)",
       "responseBody": {
         "success": true,
         "alias": "lucifer",
@@ -21,7 +21,7 @@
         "isFaceIdVetted": true,
         "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
         "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:35.833Z",
+        "checkedInAt": "2026-09-13T18:10:21.566Z",
         "certifiedBy": "Consent Marshall (PIN 1991)",
         "message": "Level 2 Physical Vetting Confirmed for @lucifer"
       }
@@ -32,7 +32,7 @@
       "passed": true,
       "status": 401,
       "expectedStatus": 401,
-      "details": "OK (2ms)",
+      "details": "OK (3ms)",
       "responseBody": {
         "success": false,
         "error": "Unauthorized. Invalid Marshall Security PIN",
@@ -71,7 +71,7 @@
       "passed": true,
       "status": 200,
       "expectedStatus": 200,
-      "details": "OK (991ms)",
+      "details": "OK (953ms)",
       "responseBody": {
         "success": true,
         "alias": "lucifer",
@@ -83,7 +83,7 @@
         "isFaceIdVetted": true,
         "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
         "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:36.817Z",
+        "checkedInAt": "2026-09-13T18:10:22.640Z",
         "certifiedBy": "Consent Marshall (PIN 1991)",
         "message": "Level 2 Physical Vetting Confirmed for @lucifer"
       }
@@ -94,7 +94,7 @@
       "passed": true,
       "status": 200,
       "expectedStatus": 200,
-      "details": "OK (965ms)",
+      "details": "OK (908ms)",
       "responseBody": {
         "success": true,
         "alias": "lucifer",
@@ -106,7 +106,7 @@
         "isFaceIdVetted": true,
         "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
         "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:37.816Z",
+        "checkedInAt": "2026-09-13T18:10:23.536Z",
         "certifiedBy": "Consent Marshall (PIN 1991)",
         "message": "Level 2 Physical Vetting Confirmed for @lucifer"
       }
@@ -141,7 +141,7 @@
       "passed": true,
       "status": 400,
       "expectedStatus": 400,
-      "details": "OK (1ms)",
+      "details": "OK (0ms)",
       "responseBody": {
         "error": "Verification token is required."
       }
@@ -152,7 +152,7 @@
       "passed": true,
       "status": 400,
       "expectedStatus": 400,
-      "details": "OK (0ms)",
+      "details": "OK (1ms)",
       "responseBody": {
         "error": "Verification token is required."
       }
@@ -166,7 +166,7 @@
         400,
         404
       ],
-      "details": "OK (382ms)",
+      "details": "OK (413ms)",
       "responseBody": {
         "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
       }
@@ -180,7 +180,7 @@
         400,
         500
       ],
-      "details": "OK (21ms)",
+      "details": "OK (5ms)",
       "responseBody": {
         "error": "Expected double-quoted property name in JSON at position 41 (line 1 column 42)"
       }
@@ -191,7 +191,7 @@
       "passed": true,
       "status": 200,
       "expectedStatus": 200,
-      "details": "OK (979ms)",
+      "details": "OK (994ms)",
       "responseBody": {
         "success": true,
         "alias": "lucifer",
@@ -203,7 +203,7 @@
         "isFaceIdVetted": true,
         "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
         "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:39.198Z",
+        "checkedInAt": "2026-09-13T18:10:24.887Z",
         "certifiedBy": "Consent Marshall (PIN 1991)",
         "message": "Level 2 Physical Vetting Confirmed for @lucifer"
       }
@@ -214,7 +214,7 @@
       "passed": true,
       "status": 200,
       "expectedStatus": 200,
-      "details": "OK (950ms)",
+      "details": "OK (944ms)",
       "responseBody": {
         "success": true,
         "alias": "lucifer",
@@ -226,7 +226,7 @@
         "isFaceIdVetted": true,
         "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
         "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:40.183Z",
+        "checkedInAt": "2026-09-13T18:10:25.915Z",
         "certifiedBy": "Consent Marshall (PIN 1991)",
         "message": "Level 2 Physical Vetting Confirmed for @lucifer"
       }
@@ -237,7 +237,7 @@
       "passed": true,
       "status": 200,
       "expectedStatus": 200,
-      "details": "OK (932ms)",
+      "details": "OK (942ms)",
       "responseBody": {
         "success": true,
         "alias": "lucifer",
@@ -249,7 +249,7 @@
         "isFaceIdVetted": true,
         "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
         "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:41.114Z",
+        "checkedInAt": "2026-09-13T18:10:26.835Z",
         "certifiedBy": "Consent Marshall (PIN 1991)",
         "message": "Level 2 Physical Vetting Confirmed for @lucifer"
       }
@@ -260,7 +260,7 @@
       "passed": true,
       "status": 200,
       "expectedStatus": 200,
-      "details": "OK (936ms)",
+      "details": "OK (958ms)",
       "responseBody": {
         "success": true,
         "alias": "lucifer",
@@ -272,7 +272,7 @@
         "isFaceIdVetted": true,
         "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
         "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:42.019Z",
+        "checkedInAt": "2026-09-13T18:10:27.797Z",
         "certifiedBy": "Consent Marshall (PIN 1991)",
         "message": "Level 2 Physical Vetting Confirmed for @lucifer"
       }
@@ -283,7 +283,7 @@
       "passed": true,
       "status": 404,
       "expectedStatus": 404,
-      "details": "OK (420ms)",
+      "details": "OK (406ms)",
       "responseBody": {
         "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
       }
@@ -294,7 +294,7 @@
       "passed": true,
       "status": 404,
       "expectedStatus": 404,
-      "details": "OK (432ms)",
+      "details": "OK (404ms)",
       "responseBody": {
         "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
       }
@@ -305,7 +305,7 @@
       "passed": true,
       "status": 404,
       "expectedStatus": 404,
-      "details": "OK (483ms)",
+      "details": "OK (459ms)",
       "responseBody": {
         "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
       }
@@ -319,7 +319,7 @@
         400,
         404
       ],
-      "details": "OK (0ms)",
+      "details": "OK (1ms)",
       "responseBody": {
         "success": false,
         "error": "Invalid token characters."
@@ -328,6 +328,124 @@
     {
       "category": "JSON QR Payload",
       "name": "4.1 JSON payload with \"token\" property: {\"token\": \"lucifer\"}",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (1031ms)",
+      "responseBody": {
+        "success": true,
+        "alias": "lucifer",
+        "userAlias": "lucifer",
+        "fullName": "Guest 6791",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isFaceIdVetted": true,
+        "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-13T18:10:30.108Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "JSON QR Payload",
+      "name": "4.2 JSON payload with \"qr_secret_token\" property",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (937ms)",
+      "responseBody": {
+        "success": true,
+        "alias": "lucifer",
+        "userAlias": "lucifer",
+        "fullName": "Guest 6791",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isFaceIdVetted": true,
+        "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-13T18:10:31.014Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "JSON QR Payload",
+      "name": "4.3 JSON payload with \"userId\" property (UUID)",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (1518ms)",
+      "responseBody": {
+        "success": true,
+        "alias": "lucifer",
+        "userAlias": "lucifer",
+        "fullName": "Guest 6791",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isFaceIdVetted": true,
+        "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-13T18:10:32.425Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "JSON QR Payload",
+      "name": "4.4 JSON payload with unclosed curly brace: {\"token\": \"lucifer\"",
+      "passed": true,
+      "status": 404,
+      "expectedStatus": 404,
+      "details": "OK (555ms)",
+      "responseBody": {
+        "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
+      }
+    },
+    {
+      "category": "JSON QR Payload",
+      "name": "4.5 JSON payload with non-string token: {\"token\": 99999}",
+      "passed": true,
+      "status": 404,
+      "expectedStatus": [
+        400,
+        404,
+        500
+      ],
+      "details": "OK (411ms)",
+      "responseBody": {
+        "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
+      }
+    },
+    {
+      "category": "Double Check-In",
+      "name": "5.1 First scan of attendee",
+      "passed": true,
+      "status": 200,
+      "expectedStatus": 200,
+      "details": "OK (971ms)",
+      "responseBody": {
+        "success": true,
+        "alias": "lucifer",
+        "userAlias": "lucifer",
+        "fullName": "Guest 6791",
+        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
+        "eventTitle": "Sanctuary Gathering",
+        "isIdVerified": true,
+        "isFaceIdVetted": true,
+        "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
+        "isInPersonVetted": true,
+        "checkedInAt": "2026-09-13T18:10:34.712Z",
+        "certifiedBy": "Consent Marshall (PIN 1991)",
+        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
+      }
+    },
+    {
+      "category": "Double Check-In",
+      "name": "5.2 Second scan of identical attendee (idempotency)",
       "passed": true,
       "status": 200,
       "expectedStatus": 200,
@@ -343,125 +461,7 @@
         "isFaceIdVetted": true,
         "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
         "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:44.307Z",
-        "certifiedBy": "Consent Marshall (PIN 1991)",
-        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
-      }
-    },
-    {
-      "category": "JSON QR Payload",
-      "name": "4.2 JSON payload with \"qr_secret_token\" property",
-      "passed": true,
-      "status": 200,
-      "expectedStatus": 200,
-      "details": "OK (931ms)",
-      "responseBody": {
-        "success": true,
-        "alias": "lucifer",
-        "userAlias": "lucifer",
-        "fullName": "Guest 6791",
-        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
-        "eventTitle": "Sanctuary Gathering",
-        "isIdVerified": true,
-        "isFaceIdVetted": true,
-        "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
-        "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:45.259Z",
-        "certifiedBy": "Consent Marshall (PIN 1991)",
-        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
-      }
-    },
-    {
-      "category": "JSON QR Payload",
-      "name": "4.3 JSON payload with \"userId\" property (UUID)",
-      "passed": true,
-      "status": 200,
-      "expectedStatus": 200,
-      "details": "OK (891ms)",
-      "responseBody": {
-        "success": true,
-        "alias": "lucifer",
-        "userAlias": "lucifer",
-        "fullName": "Guest 6791",
-        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
-        "eventTitle": "Sanctuary Gathering",
-        "isIdVerified": true,
-        "isFaceIdVetted": true,
-        "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
-        "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:46.160Z",
-        "certifiedBy": "Consent Marshall (PIN 1991)",
-        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
-      }
-    },
-    {
-      "category": "JSON QR Payload",
-      "name": "4.4 JSON payload with unclosed curly brace: {\"token\": \"lucifer\"",
-      "passed": true,
-      "status": 404,
-      "expectedStatus": 404,
-      "details": "OK (376ms)",
-      "responseBody": {
-        "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
-      }
-    },
-    {
-      "category": "JSON QR Payload",
-      "name": "4.5 JSON payload with non-string token: {\"token\": 99999}",
-      "passed": true,
-      "status": 404,
-      "expectedStatus": [
-        400,
-        404,
-        500
-      ],
-      "details": "OK (374ms)",
-      "responseBody": {
-        "error": "Sanctuary pass QR token not recognized. Verify guest profile in system."
-      }
-    },
-    {
-      "category": "Double Check-In",
-      "name": "5.1 First scan of attendee",
-      "passed": true,
-      "status": 200,
-      "expectedStatus": 200,
-      "details": "OK (981ms)",
-      "responseBody": {
-        "success": true,
-        "alias": "lucifer",
-        "userAlias": "lucifer",
-        "fullName": "Guest 6791",
-        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
-        "eventTitle": "Sanctuary Gathering",
-        "isIdVerified": true,
-        "isFaceIdVetted": true,
-        "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
-        "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:47.983Z",
-        "certifiedBy": "Consent Marshall (PIN 1991)",
-        "message": "Level 2 Physical Vetting Confirmed for @lucifer"
-      }
-    },
-    {
-      "category": "Double Check-In",
-      "name": "5.2 Second scan of identical attendee (idempotency)",
-      "passed": true,
-      "status": 200,
-      "expectedStatus": 200,
-      "details": "OK (959ms)",
-      "responseBody": {
-        "success": true,
-        "alias": "lucifer",
-        "userAlias": "lucifer",
-        "fullName": "Guest 6791",
-        "userId": "024e5001-02f7-4530-8c84-c41556db1eab",
-        "eventTitle": "Sanctuary Gathering",
-        "isIdVerified": true,
-        "isFaceIdVetted": true,
-        "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
-        "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:48.974Z",
+        "checkedInAt": "2026-09-13T18:10:35.680Z",
         "certifiedBy": "Consent Marshall (PIN 1991)",
         "message": "Level 2 Physical Vetting Confirmed for @lucifer"
       }
@@ -472,7 +472,7 @@
       "passed": true,
       "status": 200,
       "expectedStatus": 200,
-      "details": "OK (1012ms)",
+      "details": "OK (910ms)",
       "responseBody": {
         "success": true,
         "alias": "lucifer",
@@ -484,7 +484,7 @@
         "isFaceIdVetted": true,
         "facePhotoUrl": "https://amlxlguebzkszkwkzroe.supabase.co/storage/v1/object/public/guest-ids/face-id/024e5001_1788591117353_front.jpg",
         "isInPersonVetted": true,
-        "checkedInAt": "2026-09-12T22:12:50.116Z",
+        "checkedInAt": "2026-09-13T18:10:36.742Z",
         "certifiedBy": "Consent Marshall (PIN 1991)",
         "message": "Level 2 Physical Vetting Confirmed for @lucifer"
       }
@@ -495,7 +495,7 @@
       "passed": true,
       "status": 200,
       "expectedStatus": 200,
-      "details": "All 5 requests resolved in 1269ms with 200 OK"
+      "details": "All 5 requests resolved in 1011ms with 200 OK"
     }
   ]
 }

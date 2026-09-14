@@ -31,21 +31,59 @@ describe('Unified Nothingness Architecture: Navigation & Shell', () => {
     assert.equal(kinksterNavItems[4].href, '/kinksters/explore');
   });
 
+  test('The Circle canonical navigation supports both /the-circle and /kinksters routes', () => {
+    const theCircleNavItems = [
+      { name: 'Feed', href: '/the-circle', isCenter: false },
+      { name: 'Events', href: '/the-circle/events', isCenter: false },
+      { name: 'Post', action: 'open-creation-sheet', isCenter: true },
+      { name: 'Groups', href: '/the-circle/groups', isCenter: false },
+      { name: 'Explore', href: '/the-circle/explore', isCenter: false },
+    ];
+
+    assert.equal(theCircleNavItems.length, 5);
+    assert.equal(theCircleNavItems[0].href, '/the-circle');
+    assert.equal(theCircleNavItems[1].href, '/the-circle/events');
+    assert.equal(theCircleNavItems[2].name, 'Post');
+    assert.equal(theCircleNavItems[3].href, '/the-circle/groups');
+    assert.equal(theCircleNavItems[4].href, '/the-circle/explore');
+  });
+
+  test('Unauthenticated guest navigation on /the-circle or /kinksters NEVER exposes member actions (Post, Messages, Feed)', () => {
+    const guestNavItems = [
+      { name: 'Suites', href: '/spaces' },
+      { name: 'Gatherings', href: '/sanctuary-pass' },
+      { name: 'The Circle', href: '/the-circle' },
+      { name: 'Sign In', href: '/auth' },
+    ];
+
+    assert.equal(guestNavItems.length, 4, 'Guest navigation must strictly have 4 items');
+    assert.equal(guestNavItems.some(i => i.name === 'Post'), false, 'Guests must never see Post action');
+    assert.equal(guestNavItems.some(i => i.name === 'Feed'), false, 'Guests must never see internal Feed');
+    assert.equal(guestNavItems.some(i => i.name.toLowerCase().includes('message')), false, 'Guests must never see Messages');
+  });
+
   test('Route active state matching handles sub-paths and query parameters correctly', () => {
     const isActiveRoute = (pathname: string, href: string) => {
-      if (href === '/kinksters') {
-        return pathname === '/kinksters' || pathname === '/kinksters/';
+      if (href === '/kinksters' || href === '/the-circle') {
+        return pathname === href || pathname === `${href}/`;
       }
       return pathname.startsWith(href);
     };
 
+    assert.equal(isActiveRoute('/the-circle', '/the-circle'), true);
+    assert.equal(isActiveRoute('/the-circle/events', '/the-circle'), false);
+    assert.equal(isActiveRoute('/the-circle/events', '/the-circle/events'), true);
+    assert.equal(isActiveRoute('/the-circle/groups', '/the-circle/groups'), true);
+    assert.equal(isActiveRoute('/the-circle/groups/shibari-aesthetics', '/the-circle/groups'), true);
+    assert.equal(isActiveRoute('/the-circle/explore', '/the-circle/explore'), true);
+    assert.equal(isActiveRoute('/the-circle/explore?tab=members', '/the-circle/explore'), true);
+
+    // Backward compatibility
     assert.equal(isActiveRoute('/kinksters', '/kinksters'), true);
     assert.equal(isActiveRoute('/kinksters/events', '/kinksters'), false);
     assert.equal(isActiveRoute('/kinksters/events', '/kinksters/events'), true);
     assert.equal(isActiveRoute('/kinksters/groups', '/kinksters/groups'), true);
-    assert.equal(isActiveRoute('/kinksters/groups/shibari-aesthetics', '/kinksters/groups'), true);
     assert.equal(isActiveRoute('/kinksters/explore', '/kinksters/explore'), true);
-    assert.equal(isActiveRoute('/kinksters/explore?tab=members', '/kinksters/explore'), true);
   });
 });
 

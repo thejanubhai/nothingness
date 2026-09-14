@@ -2,6 +2,7 @@
 
 import React, { useState, use, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { 
   ShieldAlert, 
   CheckCircle2, 
@@ -13,7 +14,8 @@ import {
   CreditCard,
   Building2,
   Calendar,
-  Sparkles
+  Sparkles,
+  FileText
 } from 'lucide-react';
 import IDUploadModal from '@/components/IDUploadModal';
 import FaceIdScanModal from '@/components/FaceIdScanModal';
@@ -234,7 +236,7 @@ function VerificationDashboardContent({ bookingId }: { bookingId: string }) {
               )}
             </button>
             <p className="text-[10px] text-zinc-500 font-mono">
-              Secure 256-bit encrypted PayU checkout (Cards, UPI, Netbanking)
+              Secure 256-bit encrypted PayU checkout • Descriptor: <strong className="text-zinc-400">PAYU*NOTHINGNESS</strong>
             </p>
           </div>
         </div>
@@ -242,18 +244,27 @@ function VerificationDashboardContent({ bookingId }: { bookingId: string }) {
 
       {/* Payment Confirmed Banner */}
       {isPaymentPaid && (
-        <div className="w-full mb-8 p-5 bg-emerald-950/25 border border-emerald-500/30 rounded-3xl flex items-center gap-4">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-            <CheckCircle2 className="w-5 h-5" />
+        <div className="w-full mb-8 p-5 bg-emerald-950/25 border border-emerald-500/30 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-emerald-300 uppercase tracking-wider font-mono">
+                Tariff Confirmed &amp; Settled
+              </p>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Primary payment verified. Please complete statutory ID verification below to release your entrance passcode.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-bold text-emerald-300 uppercase tracking-wider font-mono">
-              Tariff Confirmed &amp; Settled
-            </p>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Primary payment verified. Please complete statutory ID verification below to release your entrance passcode.
-            </p>
-          </div>
+          <Link
+            href={`/booking/${bookingId}/invoice`}
+            className="shrink-0 px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-mono font-medium transition-colors flex items-center justify-center gap-1.5"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>View GST Invoice</span>
+          </Link>
         </div>
       )}
 

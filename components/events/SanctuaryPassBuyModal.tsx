@@ -136,7 +136,7 @@ export default function SanctuaryPassBuyModal({
               )}
             </button>
             <p className="text-[10px] text-center text-zinc-500 mt-2.5 font-mono">
-              Processed discreetly via PayU • Descriptor: "Nothingness Lifestyle Membership"
+              Processed securely via PayU (Cards, UPI, NetBanking) • Statement Descriptor: <strong className="text-zinc-400">PAYU*NOTHINGNESS</strong>
             </p>
           </div>
         </div>

@@ -51,8 +51,10 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', bookingGuestId)
         .select(`
+          booking_id,
           name,
           bookings (
+            id,
             check_in,
             check_out,
             spaces (title),
@@ -73,6 +75,15 @@ export async function POST(req: NextRequest) {
         spaceTitle = spaceRecord?.title;
         checkInDate = bookingRecord?.check_in;
         checkOutDate = bookingRecord?.check_out;
+
+        if (status === 'verified' && (bookingRecord?.id || bg.booking_id)) {
+          try {
+            const { checkAndDispatchStage2IfAllGuestsVerified } = await import('@/lib/chat/guest-journey');
+            await checkAndDispatchStage2IfAllGuestsVerified(bookingRecord?.id || bg.booking_id);
+          } catch (stage2Err) {
+            console.warn('[Admin Verification] Stage 2 check warning:', stage2Err);
+          }
+        }
       }
     }
 

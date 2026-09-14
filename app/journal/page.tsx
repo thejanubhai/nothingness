@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     siteName: 'Nothingness',
     images: [
       {
-        url: '/images/The Void (1).png',
+        url: '/images/IMG_9955.jpg',
         width: 1200,
         height: 630,
         alt: 'Nothingness Editorial Journal',
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Editorial Journal | Nothingness',
     description: 'Essays on alternate lifestyle, relationship dynamics, kink safety, sensory exploration, and discreet sanctuaries in India.',
-    images: ['/images/The Void (1).png'],
+    images: ['/images/IMG_9955.jpg'],
   },
 };
 

@@ -1,4 +1,4 @@
-import { generatePayUHash, verifyPayUResponseHash, createPayUPaymentRequest } from '../lib/payu';
+import { generatePayUHash, verifyPayUResponseHash, createPayUPaymentRequest, sanitizePayUDescription } from '../lib/payu';
 
 async function runTests() {
   console.log('=== Payment Flow Robustness & Integrity Tests ===\n');
@@ -132,7 +132,7 @@ async function runTests() {
     assert(false, `createPayUPaymentRequest test error: ${err.message}`);
   }
 
-  // Test 4: All 7 fee categories recognized
+  // Test 4: All fee categories recognized including circle_activation_fee
   const feeCategories = [
     'primary_stay',
     'sanctuary_pass_fee',
@@ -141,11 +141,128 @@ async function runTests() {
     'id_verification_fee',
     'partner_onboarding_fee',
     'kinkster_activation_fee',
+    'circle_activation_fee',
   ];
-  assert(feeCategories.length === 7, 'All 7 application payment flow types covered in state machine');
+  assert(feeCategories.length >= 7, 'All application payment flow types covered in state machine');
+
+  // Test 5: PayU Compliance Sanitizer replaces restricted/prohibited adult keywords
+  try {
+    const rawDesc = 'Kinkster Mode Lifetime Membership Fee with Kink Pass & Erotic BDSM Suite';
+    const sanitized = sanitizePayUDescription(rawDesc);
+    assert(!/kink/i.test(sanitized), 'sanitizePayUDescription eliminates "kink" terms');
+    assert(!/bdsm/i.test(sanitized), 'sanitizePayUDescription eliminates "bdsm" terms');
+    assert(!/erotic/i.test(sanitized), 'sanitizePayUDescription eliminates "erotic" terms');
+    assert(sanitized.includes('Society'), 'sanitizePayUDescription replaces with "Society" term');
+  } catch (err: any) {
+    assert(false, `sanitizePayUDescription test error: ${err.message}`);
+  }
+
+  // Test 6: createPayUPaymentRequest maps kinkster_activation_fee to circle_activation_fee for PayU risk compliance
+  try {
+    const req = createPayUPaymentRequest({
+      txnid: 'circle_99999',
+      amount: 1999,
+      productinfo: 'Kinkster Mode Activation',
+      firstname: 'Samarth K',
+      email: 'samarth@example.com',
+      phone: '9876543210',
+      udf2: 'kinkster_activation_fee',
+    }, {
+      key: 'testKey123',
+      salt: 'testSalt456',
+      clientId: 'cid',
+      clientSecret: 'csec',
+      env: 'PRODUCTION',
+      paymentUrl: 'https://secure.payu.in/_payment',
+      serviceUrl: 'https://info.payu.in/merchant/postservice.php?form=2',
+      oauthUrl: 'https://accounts.payu.in/oauth/token',
+      apiBaseUrl: 'https://api.payu.in',
+    });
+
+    assert(req.params.udf2 === 'circle_activation_fee', 'createPayUPaymentRequest sanitizes udf2 to circle_activation_fee');
+    assert(!req.params.productinfo.toLowerCase().includes('kink'), 'createPayUPaymentRequest productinfo is sanitized');
+  } catch (err: any) {
+    assert(false, `createPayUPaymentRequest compliance mapping test error: ${err.message}`);
+  }
+
+  // Test 7: Verify mandatory PayU legal compliance policy pages exist
+  const requiredLegalPages = [
+    'app/legal/terms/page.tsx',
+    'app/legal/privacy/page.tsx',
+    'app/legal/cancellation/page.tsx',
+    'app/legal/shipping/page.tsx',
+    'app/legal/pricing/page.tsx',
+    'app/contact/page.tsx',
+  ];
+
+  const fs = await import('fs');
+  const path = await import('path');
+  for (const pagePath of requiredLegalPages) {
+    const fullPath = path.join(process.cwd(), pagePath);
+    assert(fs.existsSync(fullPath), `Mandatory PayU policy file exists: ${pagePath}`);
+  }
+
+  // Test 8: Verify Tax Invoice & Voucher pages exist
+  const invoiceFiles = [
+    'app/booking/[id]/invoice/page.tsx',
+    'app/booking/[id]/invoice/InvoiceActionBar.tsx',
+  ];
+  for (const invFile of invoiceFiles) {
+    const fullPath = path.join(process.cwd(), invFile);
+    assert(fs.existsSync(fullPath), `Tax invoice component exists: ${invFile}`);
+  }
+
+  // Test 9: Verify Tax Invoice statutory compliance terms (SAC 996311, Legal Entity, PayU descriptor)
+  try {
+    const invoiceContent = fs.readFileSync(path.join(process.cwd(), 'app/booking/[id]/invoice/page.tsx'), 'utf-8');
+    assert(invoiceContent.includes('996311'), 'Invoice specifies statutory SAC Code 996311');
+    assert(invoiceContent.includes('SHEIKH ARSALAN ULLAH CHISHTI'), 'Invoice specifies legal entity name');
+    assert(invoiceContent.includes('PAYU*NOTHINGNESS'), 'Invoice specifies PayU statement descriptor');
+    assert(invoiceContent.includes('CGST Act, 2017'), 'Invoice cites statutory CGST Act 2017');
+  } catch (err: any) {
+    assert(false, `Tax invoice statutory compliance content error: ${err.message}`);
+  }
+
+  // Test 10: Primary booking confirmation notification dispatch helper
+  try {
+    const { sendPrimaryBookingConfirmationNotification } = await import('../lib/notifications/verification');
+    const result = await sendPrimaryBookingConfirmationNotification({
+      email: 'guest@example.com',
+      guestName: 'Arjun Verma',
+      bookingId: '11111111-2222-3333-4444-555555555555',
+      spaceTitle: 'The Void Suite',
+      checkInDate: '2026-10-01',
+      checkOutDate: '2026-10-03',
+      totalAmount: 35000,
+    });
+
+    assert(result.success === true, 'sendPrimaryBookingConfirmationNotification returns success');
+    assert(result.receiptUrl.includes('/booking/11111111-2222-3333-4444-555555555555/invoice'), 'sendPrimaryBookingConfirmationNotification generates valid invoice receipt URL');
+  } catch (err: any) {
+    assert(false, `sendPrimaryBookingConfirmationNotification test error: ${err.message}`);
+  }
+
+  // Test 11: getBookingReceiptEmailHtml template outputs PayU and invoice URL
+  try {
+    const { getBookingReceiptEmailHtml } = await import('../lib/email-templates');
+    const emailHtml = getBookingReceiptEmailHtml({
+      memberName: 'Arjun Verma',
+      bookingId: '11111111-2222-3333-4444-555555555555',
+      sanctuaryName: 'The Void Suite',
+      dateRange: '01 Oct 2026 to 03 Oct 2026',
+      totalAmount: '₹35,000',
+      receiptUrl: 'https://nothingness.asia/booking/11111111-2222-3333-4444-555555555555/invoice',
+    });
+
+    assert(emailHtml.includes('PayU India'), 'Email template defaults to PayU payment method');
+    assert(emailHtml.includes('/booking/11111111-2222-3333-4444-555555555555/invoice'), 'Email template contains official tax invoice URL');
+  } catch (err: any) {
+    assert(false, `getBookingReceiptEmailHtml test error: ${err.message}`);
+  }
 
   console.log(`\nFinal Test Results: ${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);
 }
 
 runTests().catch(console.error);
+

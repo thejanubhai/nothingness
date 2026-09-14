@@ -454,6 +454,16 @@ export default function SingleSpaceClient({ space }: { space: any }) {
         </button>
       </Magnetic>
 
+      {/* PayU Trust & Descriptor Badge */}
+      <div className="pt-1 text-center space-y-1 font-mono">
+        <p className="text-white/50 text-[10px] flex items-center justify-center gap-1.5">
+          <span className="text-emerald-400">🔒</span> 256-Bit SSL Encrypted • Secured by PayU
+        </p>
+        <p className="text-white/35 text-[9px]">
+          Statement Descriptor: <strong className="text-white/60">PAYU*NOTHINGNESS</strong>
+        </p>
+      </div>
+
       <p className="text-center text-white/30 text-[10px] tracking-wider font-mono">
         Strict Discretion • Uncompromising Privacy
       </p>

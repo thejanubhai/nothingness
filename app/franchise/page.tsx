@@ -36,9 +36,25 @@ export const metadata: Metadata = {
     canonical: 'https://nothingness.asia/franchise',
   },
   openGraph: {
-    title: 'Partner with Us | Nothingness Real Estate Network',
-    description: 'Transform residential real estate into high-yield private sanctuaries with 2.5x to 3x higher returns.',
+    title: 'Partner with Us | High-Yield Private Sanctuary Real Estate Network India',
+    description: 'Transform residential real estate into high-yield private sanctuaries with 2.5x to 3x higher returns. 70/30 revenue share and turnkey fit-outs.',
     url: 'https://nothingness.asia/franchise',
+    siteName: 'Nothingness',
+    locale: 'en_IN',
+    type: 'website',
+    images: [
+      {
+        url: '/images/IMG_9955.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Nothingness Real Estate Partner Network',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Partner with Us | High-Yield Private Sanctuary Real Estate Network India',
+    description: 'Transform residential real estate into high-yield private sanctuaries with 2.5x to 3x higher returns. 70/30 revenue share and turnkey fit-outs.',
     images: ['/images/IMG_9955.jpg'],
   },
 };

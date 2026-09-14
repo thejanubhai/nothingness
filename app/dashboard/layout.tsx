@@ -98,7 +98,7 @@ export default function DashboardLayout({
                 <span>Sanctuary Pass</span>
               </Link>
               <Link
-                href="/kinksters"
+                href="/the-circle"
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-colors text-xs font-medium"
               >
                 <Flame className="w-4 h-4 text-rose-400" />

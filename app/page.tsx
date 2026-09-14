@@ -5,14 +5,25 @@ import Link from 'next/link';
 import { ShieldCheck, Key, Sparkles, Building2, Smartphone, Calendar, Award, Flame } from 'lucide-react';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import JsonLd, { generateWebSiteSchema } from '@/components/JsonLd';
+import JsonLd, { generateWebSiteSchema, generateOrganizationSchema, generateBreadcrumbSchema } from '@/components/JsonLd';
 import { createClient } from '@/lib/supabase/server';
 
 export const revalidate = 60; // Revalidate every 60s for fresh CMS edits
 
 export const metadata: Metadata = {
   title: "Cinematic Private Stays & Luxury Sanctuaries in Delhi NCR | Nothingness",
-  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Discreet private check-in, minimalist bath soaks, brutalist interiors, and 100% ID-vetted discretion in Delhi NCR.",
+  description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. Autonomous private check-in, minimalist soaking baths, brutalist interiors, acoustic isolation, and vetted discretion in Delhi NCR.",
+  keywords: [
+    "luxury private sanctuary delhi ncr",
+    "alternate lifestyle stays india",
+    "discreet autonomous check in delhi",
+    "acoustic soundproof suites delhi",
+    "minimalist soaking bath stay",
+    "unmarried couple friendly private luxury stays",
+    "cinematic brutalist architecture delhi",
+    "the circle private moniker network",
+    "sanctuary pass exclusive gatherings"
+  ],
   alternates: {
     canonical: 'https://nothingness.asia',
   },
@@ -20,6 +31,22 @@ export const metadata: Metadata = {
     title: 'Cinematic Private Stays & Luxury Sanctuaries | Nothingness',
     description: "Ultra-discreet, design-forward private sanctuaries with total acoustic privacy and aesthetic suites across Delhi NCR.",
     url: 'https://nothingness.asia',
+    siteName: 'Nothingness',
+    locale: 'en_IN',
+    type: 'website',
+    images: [
+      {
+        url: '/images/IMG_9955.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Nothingness Sanctuaries - Private Stays & Suites Delhi NCR',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Cinematic Private Stays & Luxury Sanctuaries | Nothingness',
+    description: "Ultra-discreet, design-forward private sanctuaries with total acoustic privacy and aesthetic suites across Delhi NCR.",
     images: ['/images/IMG_9955.jpg'],
   },
 };
@@ -86,6 +113,8 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-black text-white selection:bg-rose-500/30">
       <JsonLd data={generateWebSiteSchema()} id="home-website-schema" />
+      <JsonLd data={generateOrganizationSchema()} id="home-org-schema" />
+      <JsonLd data={generateBreadcrumbSchema([{ name: 'Home', url: '/' }])} id="home-breadcrumb-schema" />
       
       {/* Hero Section */}
       <section className="relative pt-28 pb-16 px-4 sm:px-6 max-w-6xl mx-auto text-center overflow-hidden">
@@ -187,7 +216,7 @@ export default async function HomePage() {
 
             <div className="pt-2 flex flex-wrap items-center gap-4">
               <Link
-                href="/kinksters"
+                href="/the-circle"
                 className="px-6 py-3.5 bg-gradient-to-r from-rose-600 via-rose-500 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-extrabold text-xs uppercase tracking-widest rounded-2xl shadow-xl transition-all flex items-center gap-2 active:scale-98"
               >
                 <Flame className="w-4 h-4" />

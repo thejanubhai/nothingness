@@ -188,7 +188,10 @@ export default function CreateFlowPage() {
                   className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-accent-gold/50"
                 >
                   <option value="keyword" className="bg-black text-white">Specific Keyword</option>
-                  <option value="booking_confirmed" className="bg-black text-white">Booking Confirmed</option>
+                  <option value="stage_1_booking_confirmed" className="bg-black text-white">Stage 1: Booking Confirmed (Immediate ID Request)</option>
+                  <option value="stage_2_id_verified" className="bg-black text-white">Stage 2: Post-ID Verification (Location & Caretaker)</option>
+                  <option value="stage_3_checkout_reminder" className="bg-black text-white">Stage 3: Checkout Reminder & Feedback (T-3h)</option>
+                  <option value="booking_confirmed" className="bg-black text-white">Booking Confirmed (Standard)</option>
                   <option value="check_in" className="bg-black text-white">Check-in Day</option>
                   <option value="check_out" className="bg-black text-white">Check-out Day</option>
                 </select>
@@ -203,6 +206,7 @@ export default function CreateFlowPage() {
                 >
                   <option value="all" className="bg-black text-white">All Active Channels</option>
                   <option value="whatsapp" className="bg-black text-white">WhatsApp</option>
+                  <option value="instagram" className="bg-black text-white">Instagram</option>
                   <option value="email" className="bg-black text-white">Email</option>
                   <option value="sms" className="bg-black text-white">SMS</option>
                 </select>

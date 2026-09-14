@@ -209,9 +209,15 @@ export async function POST(req: NextRequest) {
     }
 
     // =========================================================================
-    // 2. KINKSTER MODE LIFETIME MEMBERSHIP FEE
+    // 2. THE CIRCLE / PRIVATE SOCIETY MEMBERSHIP FEE
     // =========================================================================
-    if (paymentType === 'kinkster_activation_fee' || txnid.startsWith('kinkster_')) {
+    if (
+      paymentType === 'circle_activation_fee' ||
+      paymentType === 'society_activation_fee' ||
+      paymentType === 'kinkster_activation_fee' ||
+      txnid.startsWith('circle_') ||
+      txnid.startsWith('kinkster_')
+    ) {
       if (status === 'success') {
         const { data: order } = await supabaseAdmin
           .from('action_fee_orders')
@@ -343,7 +349,7 @@ export async function POST(req: NextRequest) {
     // =========================================================================
     const { data: existingBooking } = await supabaseAdmin
       .from('bookings')
-      .select('id, payment_status, check_in, check_out, guest_name, spaces(title), booking_guests(id, name, phone, email, verification_token, is_primary, payment_status, payment_amount)')
+      .select('id, payment_status, check_in, check_out, guest_name, guest_email, guest_phone, total_price, spaces(title), booking_guests(id, name, phone, email, verification_token, is_primary, payment_status, payment_amount)')
       .or(`payment_order_id.eq.${txnid},id.eq.${udf1}`)
       .maybeSingle();
 
@@ -367,12 +373,34 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
         }
 
-        // Dispatch invitation & verification links to additional guests
+        // Dispatch confirmation to primary booker & invitation links to additional guests
         if (existingBooking.booking_guests) {
           try {
-            const { sendAdditionalGuestInviteNotification } = await import('@/lib/notifications/verification');
+            const { 
+              sendAdditionalGuestInviteNotification,
+              sendPrimaryBookingConfirmationNotification,
+            } = await import('@/lib/notifications/verification');
             const spaceRecord: any = Array.isArray(existingBooking.spaces) ? existingBooking.spaces[0] : existingBooking.spaces;
 
+            // 1. Dispatch primary confirmation email with invoice
+            const primaryGuest = existingBooking.booking_guests.find((g: any) => g.is_primary);
+            const primaryEmail = existingBooking.guest_email || primaryGuest?.email;
+            const primaryName = existingBooking.guest_name || primaryGuest?.name || 'Sanctuary Guest';
+
+            if (primaryEmail) {
+              sendPrimaryBookingConfirmationNotification({
+                email: primaryEmail,
+                guestName: primaryName,
+                bookingId: existingBooking.id,
+                spaceTitle: spaceRecord?.title || 'Private Sanctuary',
+                checkInDate: existingBooking.check_in,
+                checkOutDate: existingBooking.check_out,
+                totalAmount: existingBooking.total_price || 0,
+                paymentMethod: 'PayU India (UPI / Cards / Net Banking)',
+              }).catch((err) => console.warn('[PayU Webhook] Primary booking email dispatch warning:', err));
+            }
+
+            // 2. Dispatch co-guest invitations
             for (const guest of existingBooking.booking_guests) {
               if (!guest.is_primary && (guest.phone || guest.email)) {
                 sendAdditionalGuestInviteNotification({
@@ -389,6 +417,14 @@ export async function POST(req: NextRequest) {
                 }).catch(console.error);
               }
             }
+
+            // 3. Dispatch Stage 1 Omnichannel Booking Confirmation & ID Request
+            try {
+              const { dispatchStage1BookingConfirmation } = await import('@/lib/chat/guest-journey');
+              await dispatchStage1BookingConfirmation(existingBooking.id);
+            } catch (stage1Err) {
+              console.warn('[PayU Webhook] Stage 1 dispatch warning:', stage1Err);
+            }
           } catch (notifyErr) {
             console.warn('[PayU Webhook] Invite notification warning:', notifyErr);
           }
@@ -402,6 +438,13 @@ export async function POST(req: NextRequest) {
             payment_method: 'PayU',
           })
           .eq('id', udf1);
+
+        try {
+          const { dispatchStage1BookingConfirmation } = await import('@/lib/chat/guest-journey');
+          await dispatchStage1BookingConfirmation(udf1);
+        } catch (stage1Err) {
+          console.warn('[PayU Webhook] Stage 1 dispatch warning for udf1:', stage1Err);
+        }
       }
 
       return NextResponse.json({ status: 'ok', message: 'Payment confirmed successfully' }, { status: 200 });

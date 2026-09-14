@@ -57,9 +57,25 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Frequently Asked Questions | Nothingness",
-    description: "Learn about safety protocols, discreet check-in, and guest discretion policies.",
+    description: "Common questions regarding private stays, discreet check-in, Police compliance digital ID verification, acoustic privacy, and guest discretion at Nothingness.",
     url: "https://nothingness.asia/faq",
-    images: ['/images/IMG_9955.jpg'],
+    siteName: "Nothingness",
+    locale: "en_IN",
+    type: "website",
+    images: [
+      {
+        url: "/images/IMG_9955.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Nothingness FAQ & Safety Policies",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Frequently Asked Questions | Nothingness",
+    description: "Common questions regarding private stays, discreet check-in, digital ID verification, acoustic privacy, and guest discretion at Nothingness.",
+    images: ["/images/IMG_9955.jpg"],
   },
 };
 

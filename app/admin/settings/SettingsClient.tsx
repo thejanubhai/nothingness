@@ -242,7 +242,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                 </p>
               </div>
               <a
-                href="/kinksters"
+                href="/the-circle"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg text-xs transition-colors self-start md:self-auto"
@@ -317,7 +317,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                   </div>
                 </div>
                 <p className="text-[11px] text-zinc-400 mt-2">
-                  Changes take effect immediately on <span className="font-mono text-rose-300">/kinksters</span> once you click "Save Settings".
+                  Changes take effect immediately on <span className="font-mono text-rose-300">/the-circle</span> once you click "Save Settings".
                 </p>
               </div>
 

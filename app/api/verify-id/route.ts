@@ -111,6 +111,25 @@ export async function POST(req: Request) {
             .or(`verification_token.eq.${token},id.eq.${token}`);
         }
 
+        let targetBookingId: string | null = bookingId || null;
+        if (!targetBookingId && token) {
+          const { data: bgRecord } = await adminSupabase
+            .from('booking_guests')
+            .select('booking_id')
+            .or(`verification_token.eq.${token},id.eq.${token}`)
+            .maybeSingle();
+          if (bgRecord?.booking_id) targetBookingId = bgRecord.booking_id;
+        }
+
+        if (targetBookingId) {
+          try {
+            const { checkAndDispatchStage2IfAllGuestsVerified } = await import('@/lib/chat/guest-journey');
+            await checkAndDispatchStage2IfAllGuestsVerified(targetBookingId);
+          } catch (stage2Err) {
+            console.warn('[Verify ID] Stage 2 auto-dispatch error:', stage2Err);
+          }
+        }
+
         if (sessionUserId && !existingProfile.user_id) {
           await adminSupabase
             .from('guest_profiles')
@@ -587,6 +606,26 @@ Return ONLY a valid JSON object without markdown formatting.`;
         })
         .eq('id', guestId)
         .eq('booking_id', bookingId);
+    }
+
+    // Auto-dispatch Stage 2 (Location & Caretaker) if all guests on booking are verified
+    let targetBookingId: string | null = bookingId || null;
+    if (!targetBookingId && token) {
+      const { data: bgRecord } = await adminSupabase
+        .from('booking_guests')
+        .select('booking_id')
+        .or(`verification_token.eq.${token},id.eq.${token}`)
+        .maybeSingle();
+      if (bgRecord?.booking_id) targetBookingId = bgRecord.booking_id;
+    }
+
+    if (targetBookingId) {
+      try {
+        const { checkAndDispatchStage2IfAllGuestsVerified } = await import('@/lib/chat/guest-journey');
+        await checkAndDispatchStage2IfAllGuestsVerified(targetBookingId);
+      } catch (stage2Err) {
+        console.warn('[Verify ID] Stage 2 auto-dispatch error:', stage2Err);
+      }
     }
 
     // 8. If logged in, activate kinkster profile

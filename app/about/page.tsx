@@ -12,16 +12,33 @@ export const metadata: Metadata = {
     "alternate lifestyle hospitality india",
     "brutalist architecture philosophy",
     "sensory isolation stays",
-    "luxury intimacy spaces india"
+    "luxury intimacy spaces india",
+    "discreet private stay concept"
   ],
   alternates: {
     canonical: 'https://nothingness.asia/about',
   },
   openGraph: {
-    title: "The Philosophy & Vision | Nothingness",
-    description: "India's Premier Alternate Lifestyle & Luxury Sanctuary Brand. A sanctuary for the unspoken.",
+    title: "The Philosophy & Vision | Nothingness Luxury Sanctuaries",
+    description: "Discover the architectural philosophy, brutalist minimalism, sensory design, and privacy standards behind Nothingness.",
     url: "https://nothingness.asia/about",
-    images: ['/images/IMG_4446.jpeg'],
+    siteName: "Nothingness",
+    locale: "en_IN",
+    type: "website",
+    images: [
+      {
+        url: "/images/IMG_4446.jpeg",
+        width: 1200,
+        height: 630,
+        alt: "Nothingness Philosophy - A Sanctuary for the Unspoken",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "The Philosophy & Vision | Nothingness Luxury Sanctuaries",
+    description: "Discover the architectural philosophy, brutalist minimalism, sensory design, and privacy standards behind Nothingness.",
+    images: ["/images/IMG_4446.jpeg"],
   },
 };
 

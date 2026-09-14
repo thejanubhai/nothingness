@@ -4,7 +4,7 @@ import SingleSpaceClient from "./SingleSpaceClient";
 import SpaceCarousel from "@/components/SpaceCarousel";
 import { createClient } from "@/lib/supabase/server";
 import { getOptimizedImageUrl } from "@/lib/cloudinary/client";
-import Script from "next/script";
+import JsonLd, { generateAccommodationSchema, generateBreadcrumbSchema } from "@/components/JsonLd";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,28 +20,50 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!space) return { title: 'Sanctuary Not Found | Nothingness' };
 
   const title = `${space.title} | Luxury Private Sanctuary in ${space.city || 'Delhi NCR'}`;
-  const description = space.description;
+  const cleanDesc = space.description
+    ? space.description.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').slice(0, 155).trim() + '...'
+    : `Ultra-discreet luxury private sanctuary in ${space.city || 'Delhi NCR'}. Keyless autonomous check-in, acoustic privacy, and sensory amenities.`;
   const canonicalUrl = `https://nothingness.asia/spaces/${slug}`;
-  const ogImageUrl = getOptimizedImageUrl(space.featured_image || '/images/IMG_9955.jpg', { width: 1200, height: 630, crop: 'fill' });
+  const rawImage = space.featured_image || '/images/IMG_9955.jpg';
+  const optimized = getOptimizedImageUrl(rawImage, { width: 1200, height: 630, crop: 'fill' });
+  const ogImageUrl = optimized.startsWith('http') ? optimized : `https://nothingness.asia${optimized}`;
 
   return {
     title,
-    description,
+    description: cleanDesc,
+    keywords: [
+      space.title.toLowerCase(),
+      `luxury stay ${space.city || 'delhi ncr'}`,
+      `private suite ${space.area || 'delhi'}`,
+      "autonomous keyless check in",
+      "acoustic soundproof sanctuary",
+      "unmarried couple friendly suite",
+      "sensory soaking bath suite",
+      "nothingness sanctuaries"
+    ],
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
       title,
-      description,
+      description: cleanDesc,
       url: canonicalUrl,
-      images: [ogImageUrl],
-      type: 'website',
+      siteName: 'Nothingness',
       locale: 'en_IN',
+      type: 'website',
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${space.title} - Nothingness Luxury Sanctuary`,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title,
-      description,
+      description: cleanDesc,
       images: [ogImageUrl],
     }
   };
@@ -161,7 +183,7 @@ export default async function SpacePage({ params }: { params: Promise<{ slug: st
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-zinc-800 text-xs font-mono">
                 <span className="text-zinc-400">Curious about The Circle?</span>
                 <Link
-                  href="/kinksters"
+                  href="/the-circle"
                   className="text-rose-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors"
                 >
                   <span>Explore The Circle &amp; Member Vault</span>
@@ -208,26 +230,28 @@ export default async function SpacePage({ params }: { params: Promise<{ slug: st
         </div>
       </div>
       
-      <Script
-        id="json-ld"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify({
-          '@context': 'https://schema.org',
-          '@type': 'HotelRoom',
-          name: displayProp.title,
+      <JsonLd
+        data={generateAccommodationSchema({
+          id: space.id,
+          title: displayProp.title,
+          slug,
           description: displayProp.description,
-          image: displayProp.images[0],
-          address: {
-            '@type': 'PostalAddress',
-            addressLocality: space.city,
-            addressCountry: 'India'
-          },
-          amenityFeature: displayProp.amenities.map((amenity: string) => ({
-            '@type': 'LocationFeatureSpecification',
-            name: amenity,
-            value: true
-          }))
-        })}}
+          price: displayProp.price,
+          city: space.city,
+          area: space.area,
+          max_guests: displayProp.max_guests,
+          images: displayProp.images,
+          amenities: displayProp.amenities,
+        })}
+        id="space-accommodation-schema"
+      />
+      <JsonLd
+        data={generateBreadcrumbSchema([
+          { name: 'Home', url: '/' },
+          { name: 'Spaces', url: '/spaces' },
+          { name: displayProp.title, url: `/spaces/${slug}` },
+        ])}
+        id="space-breadcrumb-schema"
       />
     </main>
   );

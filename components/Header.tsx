@@ -83,7 +83,7 @@ export default function Header() {
   const [activeContext, setActiveContext] = useState<ActiveContext | null>(null);
   const pathname = usePathname();
 
-  const isKinksterMode = pathname?.startsWith('/kinksters') || pathname?.startsWith('/sanctuary-pass');
+  const isTheCircleMode = pathname?.startsWith('/the-circle') || pathname?.startsWith('/kinksters') || pathname?.startsWith('/sanctuary-pass');
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [inboxOpen, setInboxOpen] = useState<boolean>(false);
   const [creationSheetOpen, setCreationSheetOpen] = useState<boolean>(false);
@@ -250,25 +250,25 @@ export default function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 lg:gap-8">
-            {isKinksterMode ? (
+            {user && isTheCircleMode ? (
               <>
                 <Link 
-                  href="/kinksters" 
+                  href="/the-circle" 
                   className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 ${
-                    pathname === '/kinksters' ? 'text-rose-400 font-bold' : 'text-white/70 hover:text-white'
+                    pathname === '/the-circle' || pathname === '/kinksters' ? 'text-rose-400 font-bold' : 'text-white/70 hover:text-white'
                   }`}
                 >
                   Feed
-                  {pathname === '/kinksters' && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-rose-500" />}
+                  {(pathname === '/the-circle' || pathname === '/kinksters') && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-rose-500" />}
                 </Link>
                 <Link 
-                  href="/kinksters/events" 
+                  href="/the-circle/events" 
                   className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
-                    pathname.startsWith('/kinksters/events') ? 'text-amber-300 font-bold' : 'text-white/70 hover:text-white'
+                    pathname.startsWith('/the-circle/events') || pathname.startsWith('/kinksters/events') ? 'text-amber-300 font-bold' : 'text-white/70 hover:text-white'
                   }`}
                 >
                   Events ✨
-                  {pathname.startsWith('/kinksters/events') && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-amber-400" />}
+                  {(pathname.startsWith('/the-circle/events') || pathname.startsWith('/kinksters/events')) && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-amber-400" />}
                 </Link>
                 <button
                   type="button"
@@ -279,22 +279,22 @@ export default function Header() {
                   <span>Post</span>
                 </button>
                 <Link 
-                  href="/kinksters/groups" 
+                  href="/the-circle/groups" 
                   className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
-                    pathname.startsWith('/kinksters/groups') ? 'text-purple-300 font-bold' : 'text-white/70 hover:text-white'
+                    pathname.startsWith('/the-circle/groups') || pathname.startsWith('/kinksters/groups') ? 'text-purple-300 font-bold' : 'text-white/70 hover:text-white'
                   }`}
                 >
                   Groups
-                  {pathname.startsWith('/kinksters/groups') && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-purple-400" />}
+                  {(pathname.startsWith('/the-circle/groups') || pathname.startsWith('/kinksters/groups')) && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-purple-400" />}
                 </Link>
                 <Link 
-                  href="/kinksters/explore" 
+                  href="/the-circle/explore" 
                   className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
-                    pathname.startsWith('/kinksters/explore') || pathname.startsWith('/kinksters/discover') ? 'text-accent-gold font-bold' : 'text-white/70 hover:text-white'
+                    pathname.startsWith('/the-circle/explore') || pathname.startsWith('/the-circle/discover') || pathname.startsWith('/kinksters/explore') || pathname.startsWith('/kinksters/discover') ? 'text-accent-gold font-bold' : 'text-white/70 hover:text-white'
                   }`}
                 >
                   Explore
-                  {(pathname.startsWith('/kinksters/explore') || pathname.startsWith('/kinksters/discover')) && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-accent-gold" />}
+                  {(pathname.startsWith('/the-circle/explore') || pathname.startsWith('/the-circle/discover') || pathname.startsWith('/kinksters/explore') || pathname.startsWith('/kinksters/discover')) && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-accent-gold" />}
                 </Link>
 
                 {/* Top-Right Messages Button on Desktop */}
@@ -337,13 +337,13 @@ export default function Header() {
                 </Link>
 
                 <Link 
-                  href="/kinksters" 
+                  href="/the-circle" 
                   className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
-                    pathname.startsWith('/kinksters') ? 'text-rose-400 font-bold' : 'text-rose-400/90 hover:text-rose-300'
+                    pathname.startsWith('/the-circle') || pathname.startsWith('/kinksters') ? 'text-rose-400 font-bold' : 'text-rose-400/90 hover:text-rose-300'
                   }`}
                 >
                   The Circle ✦
-                  {pathname.startsWith('/kinksters') && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-rose-500" />}
+                  {(pathname.startsWith('/the-circle') || pathname.startsWith('/kinksters')) && <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-rose-500" />}
                 </Link>
 
                 {/* Living Proactive Status Pill for Logged-In Member */}
@@ -423,13 +423,15 @@ export default function Header() {
                 </Link>
 
                 <Link 
-                  href="/kinksters" 
+                  href="/the-circle" 
                   className={`text-[12px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 relative group py-2 flex items-center gap-1 ${
-                    pathname.startsWith('/kinksters') ? 'text-rose-400 font-bold' : 'text-rose-400/90 hover:text-rose-300'
+                    pathname.startsWith('/the-circle') || pathname.startsWith('/kinksters') ? 'text-rose-400 font-bold' : 'text-rose-400/90 hover:text-rose-300'
                   }`}
                 >
                   The Circle ✦
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-rose-500 group-hover:w-full transition-all duration-300" />
+                  <span className={`absolute -bottom-1 left-0 h-[1px] bg-rose-500 transition-all duration-300 ${
+                    pathname.startsWith('/the-circle') || pathname.startsWith('/kinksters') ? 'w-full' : 'w-0 group-hover:w-full'
+                  }`} />
                 </Link>
 
                 <Link 
@@ -484,8 +486,8 @@ export default function Header() {
               </button>
             )}
 
-            {/* Top-Right Native Messages Icon Button in Kinkster Mode */}
-            {isKinksterMode && (
+            {/* Top-Right Native Messages Icon Button in Circle Mode - ONLY for logged-in users */}
+            {user && isTheCircleMode && (
               <button
                 type="button"
                 onClick={() => setInboxOpen(true)}
@@ -772,7 +774,7 @@ export default function Header() {
                   </Link>
 
                   <Link
-                    href="/kinksters"
+                    href="/the-circle"
                     onClick={() => setMobileOpen(false)}
                     className="p-3 bg-zinc-900/80 hover:bg-zinc-900 border border-rose-500/25 rounded-xl flex items-center justify-between transition-colors group"
                   >
@@ -848,8 +850,8 @@ export default function Header() {
         )}
       </AnimatePresence>
 
-      {/* Kinkster Mode Unified Messaging Slide-Over Drawer */}
-      {isKinksterMode && (
+      {/* Kinkster Mode Unified Messaging Slide-Over Drawer - only for logged-in members */}
+      {user && isTheCircleMode && (
         <KinksterInboxModal
           isOpen={inboxOpen}
           onClose={() => {
@@ -866,8 +868,8 @@ export default function Header() {
         />
       )}
 
-      {/* Kinkster Mode Native Creation Action Sheet */}
-      {isKinksterMode && (
+      {/* Kinkster Mode Native Creation Action Sheet - only for logged-in members */}
+      {user && isTheCircleMode && (
         <CreationActionSheet
           isOpen={creationSheetOpen}
           onClose={() => setCreationSheetOpen(false)}

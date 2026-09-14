@@ -152,7 +152,6 @@ export default function RootLayout({
         </SmoothScroll>
         <CookieBanner />
         <StealthPrivacyShield />
-        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <script
           id="global-org-schema"
           type="application/ld+json"

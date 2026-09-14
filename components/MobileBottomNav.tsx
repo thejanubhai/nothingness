@@ -86,26 +86,26 @@ export default function MobileBottomNav() {
   };
 
   // Determine App Context for purposeful navigation
-  const isUnifiedLifestyleOrEvents = pathname.startsWith('/kinksters') || pathname.startsWith('/sanctuary-pass');
+  const isCircleRoute = pathname.startsWith('/the-circle') || pathname.startsWith('/kinksters') || pathname.startsWith('/sanctuary-pass');
   const isLoggedIn = Boolean(activeContext?.isLoggedIn);
 
   let items: NavItem[] = [];
 
-  if (isUnifiedLifestyleOrEvents) {
-    // Purposeful Unified Kinkster & Events Navigation: [Feed] [Events] [Post] [Groups] [Explore]
+  if (isLoggedIn && isCircleRoute) {
+    // Purposeful Authenticated Circle Navigation: [Feed] [Events] [Post] [Groups] [Explore]
     items = [
       {
         name: 'Feed',
-        href: '/kinksters',
+        href: '/the-circle',
         icon: Flame,
-        isActive: (p) => p === '/kinksters',
+        isActive: (p) => p === '/the-circle' || p === '/kinksters',
       },
       {
         name: 'Events',
-        href: '/kinksters/events',
+        href: '/the-circle/events',
         icon: Sparkles,
         badge: '✨',
-        isActive: (p) => p.startsWith('/kinksters/events') || p.startsWith('/sanctuary-pass'),
+        isActive: (p) => p.startsWith('/the-circle/events') || p.startsWith('/kinksters/events') || p.startsWith('/sanctuary-pass'),
       },
       {
         name: 'Post',
@@ -121,15 +121,15 @@ export default function MobileBottomNav() {
       },
       {
         name: 'Groups',
-        href: '/kinksters/groups',
+        href: '/the-circle/groups',
         icon: Users,
-        isActive: (p) => p.startsWith('/kinksters/groups'),
+        isActive: (p) => p.startsWith('/the-circle/groups') || p.startsWith('/kinksters/groups'),
       },
       {
         name: 'Explore',
-        href: '/kinksters/explore',
+        href: '/the-circle/explore',
         icon: Compass,
-        isActive: (p) => p.startsWith('/kinksters/explore') || p.startsWith('/kinksters/discover'),
+        isActive: (p) => p.startsWith('/the-circle/explore') || p.startsWith('/the-circle/discover') || p.startsWith('/kinksters/explore') || p.startsWith('/kinksters/discover'),
       },
     ];
   } else if (isLoggedIn) {
@@ -159,10 +159,10 @@ export default function MobileBottomNav() {
       },
       {
         name: 'The Circle',
-        href: '/kinksters',
+        href: '/the-circle',
         icon: Flame,
         badge: '✦',
-        isActive: (p) => p.startsWith('/kinksters'),
+        isActive: (p) => p.startsWith('/the-circle') || p.startsWith('/kinksters'),
       },
       {
         name: 'Vault',
@@ -189,10 +189,10 @@ export default function MobileBottomNav() {
       },
       {
         name: 'The Circle',
-        href: '/kinksters',
+        href: '/the-circle',
         icon: Flame,
         badge: '✦',
-        isActive: (p) => p.startsWith('/kinksters'),
+        isActive: (p) => p.startsWith('/the-circle') || p.startsWith('/kinksters'),
       },
       {
         name: 'Sign In',

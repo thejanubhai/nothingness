@@ -137,6 +137,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/legal/pricing" className={linkClass}>
+                  Pricing &amp; Payment Policy
+                  <span className={underlineClass} />
+                </Link>
+              </li>
+              <li>
                 <Link href="/safety" className={linkClass}>
                   Guest Rules &amp; Safety
                   <span className={underlineClass} />
@@ -172,13 +178,71 @@ export default function Footer() {
                   <Mail className="w-3 h-3 text-accent-gold" />
                   <a href="mailto:concierge@nothingness.asia" className="hover:text-accent-gold transition-colors">concierge@nothingness.asia</a>
                 </p>
+                <p className="text-zinc-400 text-[10px]">
+                  Helpline: <a href="tel:+918527976791" className="hover:text-accent-gold transition-colors">+91 85279 76791</a>
+                </p>
               </li>
             </ul>
           </div>
         </div>
 
+        {/* PayU Merchant Compliance Strip (Payment Methods & Business Identity) */}
+        <div className="border-t border-white/5 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Payment Badges */}
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-white/40 mr-1">Accepted Payments:</span>
+            
+            {/* Visa */}
+            <span className="px-2.5 py-1 rounded bg-white/[0.04] border border-white/10 text-white/80 font-black text-[11px] tracking-wider font-sans">
+              VISA
+            </span>
+
+            {/* MasterCard */}
+            <span className="px-2.5 py-1 rounded bg-white/[0.04] border border-white/10 text-white/80 font-bold text-[11px] font-sans flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 inline-block -mr-1.5" />
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
+              <span className="ml-1 text-[10px]">Mastercard</span>
+            </span>
+
+            {/* RuPay */}
+            <span className="px-2.5 py-1 rounded bg-white/[0.04] border border-white/10 text-white/80 font-bold text-[11px] font-sans">
+              RuPay<span className="text-emerald-400">❯</span>
+            </span>
+
+            {/* UPI */}
+            <span className="px-2.5 py-1 rounded bg-white/[0.04] border border-white/10 text-white/80 font-bold text-[11px] font-sans flex items-center gap-1">
+              <span className="text-emerald-400 font-mono text-[10px]">▲</span> UPI
+            </span>
+
+            {/* Net Banking */}
+            <span className="px-2.5 py-1 rounded bg-white/[0.04] border border-white/10 text-white/80 font-mono text-[10px]">
+              Net Banking
+            </span>
+
+            {/* PayU Secured */}
+            <span className="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-mono text-[10px] font-semibold flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" /> PayU Secured
+            </span>
+          </div>
+
+          {/* Statement Descriptor Notice */}
+          <div className="text-[10px] font-mono text-white/40 text-center md:text-right">
+            <span>Statement Descriptor: <strong className="text-zinc-300">PAYU*NOTHINGNESS</strong></span>
+          </div>
+        </div>
+
+        {/* Merchant Statutory Registration & Operating Entity */}
+        <div className="border-t border-white/5 py-4 text-[10px] sm:text-[11px] text-white/40 font-mono leading-relaxed text-center md:text-left space-y-1">
+          <p>
+            <strong className="text-white/70">Operating Legal Entity:</strong> SHEIKH ARSALAN ULLAH CHISHTI (trading as <strong className="text-white/80">Nothingness</strong>) • Business Category: <span className="text-accent-gold">Hotels and Events</span>
+          </p>
+          <p>
+            <strong className="text-white/70">Registered Physical Office:</strong> B-80, Ground Floor, Street 8, Ghaffar Manzil, Jamia Nagar, Okhla, New Delhi - 110025, Delhi, India
+          </p>
+        </div>
+
         {/* Bottom Bar */}
-        <div className="border-t border-white/5 pt-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div className="border-t border-white/5 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="text-white/30 text-[11px] tracking-wide text-center sm:text-left">
             © {new Date().getFullYear()} Nothingness. All rights reserved.
           </p>

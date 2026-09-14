@@ -141,3 +141,150 @@ export function generateBreadcrumbSchema(items: { name: string; url: string }[])
     }))
   };
 }
+
+export function generateAccommodationSchema(space: {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  price: number;
+  city?: string;
+  area?: string;
+  max_guests?: number;
+  images: string[];
+  amenities: string[];
+}) {
+  const url = `https://nothingness.asia/spaces/${space.slug}`;
+  const images = space.images.map((img) =>
+    img.startsWith('http') ? img : `https://nothingness.asia${img}`
+  );
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': ['HotelRoom', 'Accommodation'],
+    '@id': `${url}#accommodation`,
+    name: space.title,
+    description: space.description,
+    url,
+    image: images,
+    occupancy: {
+      '@type': 'QuantitativeValue',
+      maxValue: space.max_guests || 4,
+      minValue: 1,
+      unitText: 'Guests',
+    },
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: space.area || space.city || 'New Delhi',
+      addressRegion: space.city || 'Delhi NCR',
+      addressCountry: 'IN',
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: '28.6139',
+      longitude: '77.2090',
+    },
+    amenityFeature: space.amenities.map((amenity) => ({
+      '@type': 'LocationFeatureSpecification',
+      name: amenity,
+      value: true,
+    })),
+    offers: {
+      '@type': 'Offer',
+      price: space.price,
+      priceCurrency: 'INR',
+      availability: 'https://schema.org/InStock',
+      url,
+      validFrom: new Date().toISOString().split('T')[0],
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: space.price,
+        priceCurrency: 'INR',
+        unitCode: 'DAY',
+      },
+    },
+    containedInPlace: {
+      '@type': 'LodgingBusiness',
+      name: 'Nothingness Sanctuaries',
+      url: 'https://nothingness.asia',
+      '@id': 'https://nothingness.asia/#organization',
+    },
+  };
+}
+
+export function generateSpaceListSchema(spaces: {
+  title: string;
+  slug: string;
+  location?: string;
+  price?: number;
+  image?: string;
+}[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Nothingness Private Sanctuaries & Suites',
+    description: 'Curated architectural sanctuaries and intimate suites for total isolation and discretion in Delhi NCR.',
+    url: 'https://nothingness.asia/spaces',
+    numberOfItems: spaces.length,
+    itemListElement: spaces.map((space, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      item: {
+        '@type': 'HotelRoom',
+        name: space.title,
+        url: `https://nothingness.asia/spaces/${space.slug}`,
+        image: space.image
+          ? space.image.startsWith('http')
+            ? space.image
+            : `https://nothingness.asia${space.image}`
+          : 'https://nothingness.asia/images/IMG_9955.jpg',
+        offers: space.price
+          ? {
+              '@type': 'Offer',
+              price: space.price,
+              priceCurrency: 'INR',
+            }
+          : undefined,
+      },
+    })),
+  };
+}
+
+export function generateSanctuaryPassSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    '@id': 'https://nothingness.asia/sanctuary-pass#pass',
+    name: 'Nothingness Sanctuary Pass',
+    description: 'Exclusive lifetime pass to confidential discussion salons, midnight noir masquerades, and curated intimate soirées across Delhi NCR. Governed by concierge vetting and strict discretion.',
+    brand: {
+      '@type': 'Brand',
+      name: 'Nothingness',
+      '@id': 'https://nothingness.asia/#organization',
+    },
+    image: 'https://nothingness.asia/images/IMG_9955.jpg',
+    url: 'https://nothingness.asia/sanctuary-pass',
+    offers: {
+      '@type': 'Offer',
+      price: '1499',
+      priceCurrency: 'INR',
+      availability: 'https://schema.org/InStock',
+      url: 'https://nothingness.asia/sanctuary-pass',
+      category: 'Hospitality & Events Membership',
+    },
+  };
+}
+
+export function generateTheCircleSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SocialMediaPosting',
+    '@id': 'https://nothingness.asia/the-circle#circle',
+    headline: 'The Circle • 18+ Private Monikers & Desires',
+    description: 'An intimate, confidential society reserved exclusively for verified guests of Nothingness. Connect under complete anonymity with private @aliases, explore deep aesthetic chemistry, and unlock private sanctuary suites.',
+    url: 'https://nothingness.asia/the-circle',
+    publisher: {
+      '@id': 'https://nothingness.asia/#organization',
+    },
+  };
+}
