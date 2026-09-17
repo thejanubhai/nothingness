@@ -15,6 +15,7 @@ import {
   Filter
 } from 'lucide-react';
 import { toast } from 'sonner';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
 
 interface ModerationReport {
   id: string;
@@ -109,29 +110,21 @@ export default function AdminModerationPage() {
   return (
     <div className="space-y-8 max-w-6xl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-serif text-3xl md:text-4xl text-white">Content Moderation</h1>
-            {pendingCount > 0 && (
-              <span className="px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-mono font-bold animate-pulse">
-                {pendingCount} Pending
-              </span>
-            )}
-          </div>
-          <p className="text-white/50 text-sm tracking-wide mt-1">
-            Review member-reported posts, non-consensual leaks, and safety flags.
-          </p>
-        </div>
-
-        <button
-          onClick={fetchReports}
-          className="self-start sm:self-auto px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-mono transition-colors flex items-center gap-2 cursor-pointer"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
-      </div>
+      <AdminPageHeader
+        title="Content Moderation"
+        description="Review member-reported posts, non-consensual leaks, and safety flags."
+        badge={pendingCount > 0 ? `${pendingCount} Pending` : undefined}
+        badgeVariant={pendingCount > 0 ? 'rose' : 'gold'}
+        actions={
+          <button
+            onClick={fetchReports}
+            className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-mono transition-colors flex items-center gap-2 cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+        }
+      />
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 border-b border-white/5 pb-4 overflow-x-auto no-scrollbar">

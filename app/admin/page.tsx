@@ -4,8 +4,14 @@ import Link from "next/link";
 import { 
   ArrowRight, CheckCircle, ShieldAlert, Building2, 
   CalendarDays, Users, Sparkles, CreditCard, Settings,
-  ShieldCheck, Clock, MessageSquare, Plus, DollarSign, Calendar
+  ShieldCheck, Clock, MessageSquare, Plus, DollarSign, 
+  Scan, ArrowUpRight, CheckCircle2
 } from "lucide-react";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import AdminMetricCard from "@/components/admin/ui/AdminMetricCard";
+import AdminBadge from "@/components/admin/ui/AdminBadge";
+import TodayMovementsHub from "@/components/admin/TodayMovementsHub";
+import { ADMIN_HUBS } from "@/lib/admin-nav";
 
 export const dynamic = 'force-dynamic';
 
@@ -73,17 +79,17 @@ export default async function AdminDashboard() {
   // 5. Today's Movements
   const { data: todayArrivals } = await supabase
     .from('bookings')
-    .select('id, guest_name, guest_phone, status, spaces(title)')
+    .select('id, guest_name, guest_phone, status, check_in, check_out, spaces(id, title)')
     .eq('check_in', todayStr)
     .neq('status', 'cancelled');
 
   const { data: todayDepartures } = await supabase
     .from('bookings')
-    .select('id, guest_name, guest_phone, status, spaces(title)')
+    .select('id, guest_name, guest_phone, status, check_in, check_out, spaces(id, title)')
     .eq('check_out', todayStr)
     .neq('status', 'cancelled');
 
-  // 6. Current Month Revenue & Occupancy Calculations (Item 12)
+  // 6. Current Month Revenue & Occupancy Calculations
   const currentMonthBookings = allBookings 
     ? allBookings.filter(b => (b.status === 'confirmed' || b.status === 'completed' || b.status === 'checked_in') && (b.check_in <= currentMonthEnd && b.check_out >= currentMonthStart))
     : [];
@@ -102,169 +108,133 @@ export default async function AdminDashboard() {
   const possibleNights = daysInCurrentMonth.length * totalSanctuariesCount;
   const occupancyPercentage = Math.min(100, Math.round((totalBookedNightsThisMonth / possibleNights) * 100));
 
-  const stats = [
-    { label: `${format(now, 'MMMM')} Tariff`, value: `₹${currentMonthRevenue.toLocaleString('en-IN')}`, subtext: "Paid & Confirmed" },
-    { label: "Kinkster Network", value: (totalKinksters || 0).toString(), subtext: `${pendingGatheringApplications || 0} Gathering Vetting Queue` },
-    { label: `${format(now, 'MMMM')} Occupancy`, value: `${occupancyPercentage}%`, subtext: `${totalBookedNightsThisMonth} Nights Booked` },
-    { label: "Operations Queue", value: ((pendingGuestVerifications || 0) + (pendingHousekeeping || 0)).toString(), subtext: "IDs & Turnovers Pending" }
-  ];
+  const totalPendingOps = (pendingGuestVerifications || 0) + (pendingHousekeeping || 0);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl md:text-4xl mb-1 text-white">Dashboard Command Center</h1>
-          <p className="text-white/50 text-xs md:text-sm tracking-wide">Autonomous Operations, Channel Manager &amp; Hospitality Intelligence.</p>
-        </div>
+      {/* Unified Luxury Header */}
+      <AdminPageHeader
+        title="Dashboard Command Center"
+        description="Autonomous Operations, Multi-Channel Manager & Hospitality Intelligence."
+        badge="OS 2026"
+        badgeVariant="gold"
+        actions={
+          <>
+            <Link
+              href="/admin/marshall-scanner"
+              className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-md flex items-center gap-2"
+            >
+              <Scan className="w-3.5 h-3.5 text-rose-400" />
+              Gatekeeper Scanner
+            </Link>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Link
-            href="/admin/events#scanner"
-            className="px-4 py-2.5 bg-rose-600/15 hover:bg-rose-600/25 border border-rose-500/30 text-rose-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-xl flex items-center gap-1.5"
-          >
-            <Sparkles className="w-4 h-4 text-rose-400" />
-            Gatekeeper Scanner
-          </Link>
+            <Link
+              href="/admin/calendar"
+              className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-mono font-semibold uppercase tracking-wider transition-colors flex items-center gap-2"
+            >
+              <CalendarDays className="w-3.5 h-3.5 text-accent-gold" />
+              Master Calendar
+            </Link>
 
-          <Link
-            href="/admin/calendar"
-            className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors flex items-center gap-2"
-          >
-            <CalendarDays className="w-4 h-4 text-accent-gold" />
-            Master Calendar
-          </Link>
+            <Link
+              href="/admin/bookings/new"
+              className="px-4 py-2 bg-accent-gold hover:bg-white text-black rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              New Booking
+            </Link>
+          </>
+        }
+      />
 
-          <Link
-            href="/admin/bookings/new"
-            className="px-4 py-2.5 bg-accent-gold hover:bg-white text-black rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-xl flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            New Booking
-          </Link>
-        </div>
-      </div>
-
-      {/* KPI Cards (Item 12) */}
+      {/* Unified Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl shadow-lg">
-            <p className="text-[10px] uppercase tracking-widest text-white/40 mb-2 font-mono">{stat.label}</p>
-            <h2 className="font-serif text-3xl text-white mb-1">{stat.value}</h2>
-            <p className="text-[10px] text-accent-gold/80 font-mono">{stat.subtext}</p>
-          </div>
-        ))}
+        <AdminMetricCard
+          label={`${format(now, 'MMMM')} Gross Tariff`}
+          value={`₹${currentMonthRevenue.toLocaleString('en-IN')}`}
+          subtext="Confirmed & Paid Bookings"
+          icon={CreditCard}
+          highlightColor="gold"
+          trend={{ value: `${currentMonthBookings.length} bookings`, direction: 'up' }}
+        />
+
+        <AdminMetricCard
+          label="The Circle Network"
+          value={(totalKinksters || 0).toString()}
+          subtext={`${pendingGatheringApplications || 0} Gathering Vetting Queue`}
+          icon={Sparkles}
+          highlightColor="purple"
+        />
+
+        <AdminMetricCard
+          label={`${format(now, 'MMMM')} Space Occupancy`}
+          value={`${occupancyPercentage}%`}
+          subtext={`${totalBookedNightsThisMonth} of ${possibleNights} Room Nights`}
+          icon={Building2}
+          highlightColor="emerald"
+          trend={{ value: `${totalSanctuariesCount} Suites`, direction: 'neutral' }}
+        />
+
+        <AdminMetricCard
+          label="Operational Action Queue"
+          value={totalPendingOps.toString()}
+          subtext="IDs, Turnovers & Audits Pending"
+          icon={ShieldCheck}
+          highlightColor={totalPendingOps > 0 ? 'amber' : 'emerald'}
+        />
       </div>
 
-      {/* TODAY'S MOVEMENTS WIDGET (Item 10) */}
-      {((todayArrivals && todayArrivals.length > 0) || (todayDepartures && todayDepartures.length > 0)) && (
-        <div className="bg-gradient-to-r from-accent-gold/10 via-white/[0.02] to-transparent border border-accent-gold/20 rounded-3xl p-5 md:p-6 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white flex items-center gap-2">
-              <Clock className="w-4 h-4 text-accent-gold" />
-              Today's Sanctuary Movements ({format(now, 'dd MMMM yyyy')})
-            </h3>
-            <span className="text-[10px] text-accent-gold font-mono">Live Dispatch</span>
-          </div>
+      {/* Interactive Today's Movements Hub with Turnover Squeeze Alerts */}
+      <TodayMovementsHub
+        todayDateStr={format(now, 'dd MMMM yyyy')}
+        arrivals={(todayArrivals as any) || []}
+        departures={(todayDepartures as any) || []}
+      />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* Arrivals */}
-            {todayArrivals?.map((b: any) => {
-              const spaceTitle = Array.isArray(b.spaces) ? b.spaces[0]?.title : b.spaces?.title;
-              const cleanDigits = (b.guest_phone || '').replace(/[^0-9]/g, '');
-              const cleanPhone = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
-              const waText = `Namaste ${b.guest_name || 'Guest'}! ✨ Welcome to Nothingness (${spaceTitle || 'The Sanctuary'}). Your check-in is today. As per our discreet check-in protocol, your physical key has been placed at the secret spot at the property. Caretaker assistance is available on call if you need guidance.`;
-
-              return (
-                <div key={b.id} className="bg-black/50 border border-green-500/30 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-md">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
-                      <span className="text-xs font-bold text-white">{b.guest_name || 'Guest'}</span>
-                      <span className="text-[9px] uppercase px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 font-mono font-bold">
-                        Arriving Today
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-white/50 font-mono mt-1">{spaceTitle} • {b.guest_phone || 'No phone'}</p>
-                    <p className="text-[10px] text-emerald-400 font-mono mt-0.5 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-emerald-400" /> Secret Key Placed • Contactless Check-in Ready
-                    </p>
-                  </div>
-                  {b.guest_phone && (
-                    <a
-                      href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-2.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl transition-colors"
-                      title="Send WhatsApp message"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                    </a>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Departures */}
-            {todayDepartures?.map((b: any) => {
-              const spaceTitle = Array.isArray(b.spaces) ? b.spaces[0]?.title : b.spaces?.title;
-
-              return (
-                <div key={b.id} className="bg-black/50 border border-rose-500/30 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-md">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-                      <span className="text-xs font-bold text-white">{b.guest_name || 'Guest'}</span>
-                      <span className="text-[9px] uppercase px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 font-mono font-bold">
-                        Departing Today
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-white/50 font-mono mt-1">{spaceTitle} • Turnover needed</p>
-                  </div>
-                  <Link
-                    href="/admin/housekeeping"
-                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs uppercase font-mono transition-colors"
-                  >
-                    Turnover
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Quick Launch Control Hub */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-3">
-        {[
-          { label: "Gatherings", href: "/admin/events", icon: Sparkles, desc: "AI Vetting & Pass" },
-          { label: "Master Calendar", href: "/admin/calendar", icon: CalendarDays, desc: "2-Way OTA Hub" },
-          { label: "Sanctuaries", href: "/admin/spaces", icon: Building2, desc: "Property CRUD" },
-          { label: "Franchise", href: "/admin/partners", icon: Sparkles, desc: "Leads & KYC" },
-          { label: "Journal", href: "/admin/journal", icon: Sparkles, desc: "30 Works & AI" },
-          { label: "Bookings", href: "/admin/bookings", icon: CalendarDays, desc: "Reservations" },
-          { label: "Police Log", href: "/admin/guests/police-register", icon: ShieldCheck, desc: "Compliance" },
-          { label: "Housekeeping", href: "/admin/housekeeping", icon: Sparkles, desc: "Turnovers" },
-          { label: "Financials", href: "/admin/financials", icon: CreditCard, desc: "Ledger & GST" },
-        ].map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            className="bg-white/[0.02] hover:bg-white/5 border border-white/5 hover:border-accent-gold/30 p-4 rounded-2xl transition-all group block text-left shadow-lg"
-          >
-            <item.icon className="w-5 h-5 text-white/40 group-hover:text-accent-gold transition-colors mb-2" />
-            <p className="text-xs font-bold text-white group-hover:text-accent-gold transition-colors">{item.label}</p>
-            <p className="text-[10px] text-white/40 font-mono mt-0.5">{item.desc}</p>
-          </Link>
-        ))}
+      {/* Quick Launch Control Hub (7 Integrated Parent Domains) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+        {ADMIN_HUBS.filter((h) => h.id !== 'dashboard').map((hub) => {
+          const HubIcon = hub.icon;
+          return (
+            <Link
+              key={hub.id}
+              href={hub.href}
+              className="bg-zinc-950/60 hover:bg-white/[0.04] border border-white/5 hover:border-accent-gold/30 p-3.5 sm:p-4 rounded-2xl transition-all group block text-left shadow-lg hover:translate-y-[-1px]"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <HubIcon className="w-4 h-4 text-white/40 group-hover:text-accent-gold transition-colors" />
+                {hub.badge && (
+                  <span className="text-[7px] font-mono uppercase tracking-wider px-1.5 py-0.2 rounded bg-white/5 text-accent-gold border border-accent-gold/20 font-bold">
+                    {hub.badge}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs font-bold text-white group-hover:text-accent-gold transition-colors truncate">
+                {hub.name}
+              </p>
+              <p className="text-[9px] text-white/40 font-mono mt-0.5 truncate">
+                {hub.subItems.length} integrated tools
+              </p>
+            </Link>
+          );
+        })}
       </div>
 
+      {/* Main Operations Stream & Queue */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Bookings Stream */}
-        <div className="lg:col-span-2 bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl">
+        <div className="lg:col-span-2 bg-zinc-950/60 border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl backdrop-blur-md">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-serif text-xl text-white">Recent Reservations</h3>
-            <Link href="/admin/bookings" className="text-xs text-accent-gold hover:text-white flex items-center gap-1 transition-colors font-mono">
-              View All <ArrowRight className="w-3 h-3" />
+            <div>
+              <h3 className="font-serif text-xl text-white font-bold">Recent Reservations</h3>
+              <p className="text-xs text-white/40 font-sans mt-0.5">Live incoming stays and direct bookings stream</p>
+            </div>
+            <Link
+              href="/admin/bookings"
+              className="text-xs text-accent-gold hover:text-white flex items-center gap-1 transition-colors font-mono font-medium"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
           
@@ -273,118 +243,157 @@ export default async function AdminDashboard() {
               const spaceTitle = Array.isArray(booking.spaces) ? booking.spaces[0]?.title : booking.spaces?.title;
 
               return (
-                <div key={booking.id} className="flex justify-between items-center p-3.5 hover:bg-white/5 rounded-2xl transition-colors border border-white/5">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm text-white font-semibold">{booking.guest_name || spaceTitle || 'Sanctuary'}</p>
-                      <span className="text-[10px] text-accent-gold font-mono uppercase">
+                <div 
+                  key={booking.id} 
+                  className="flex justify-between items-center p-3.5 hover:bg-white/[0.03] rounded-2xl transition-colors border border-white/5 group"
+                >
+                  <div className="min-w-0 pr-4">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm text-white font-semibold truncate group-hover:text-accent-gold transition-colors">
+                        {booking.guest_name || spaceTitle || 'Direct Guest'}
+                      </p>
+                      <span className="text-[10px] text-accent-gold/80 font-mono uppercase bg-accent-gold/10 px-1.5 py-0.5 rounded">
                         {booking.id.split('-')[0]}
                       </span>
                       {booking.payment_method && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400 font-mono font-bold">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/60 font-mono">
                           {booking.payment_method}
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-white/40 uppercase font-mono mt-0.5">
-                      {format(new Date(booking.check_in), 'MMM dd')} - {format(new Date(booking.check_out), 'MMM dd, yyyy')} • {spaceTitle}
+                    <p className="text-[11px] text-white/40 font-mono mt-1 truncate">
+                      {format(new Date(booking.check_in), 'MMM dd')} - {format(new Date(booking.check_out), 'MMM dd, yyyy')} • {spaceTitle || 'Sanctuary Space'}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-white font-bold font-mono">₹{Number(booking.total_price).toLocaleString('en-IN')}</p>
-                    <span className={`text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-md border font-mono ${
-                      booking.status === 'confirmed' ? 'text-green-400 border-green-500/20 bg-green-500/10' :
-                      booking.status === 'checked_in' ? 'text-blue-400 border-blue-500/20 bg-blue-500/10' :
-                      booking.status === 'cancelled' ? 'text-red-400 border-red-500/20' :
-                      'text-accent-gold border-accent-gold/20 bg-accent-gold/5'
-                    }`}>
-                      {booking.status}
-                    </span>
+
+                  <div className="text-right shrink-0">
+                    <p className="text-sm text-white font-bold font-mono">
+                      ₹{Number(booking.total_price).toLocaleString('en-IN')}
+                    </p>
+                    <div className="mt-1">
+                      <AdminBadge status={booking.status} />
+                    </div>
                   </div>
                 </div>
               );
             }) : (
-              <p className="text-sm text-white/30 text-center py-8 font-mono">No recent bookings recorded.</p>
+              <div className="text-center py-10">
+                <Clock className="w-8 h-8 text-white/10 mx-auto mb-2" />
+                <p className="text-sm text-white/40 font-mono">No recent reservations recorded.</p>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Attention Required / Operational Action Board */}
-        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-xl">
+        {/* Operational Attention Queue */}
+        <div className="bg-zinc-950/60 border border-white/5 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-xl backdrop-blur-md">
           <div>
-            <h3 className="font-serif text-xl text-white mb-6">Operations Queue</h3>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="font-serif text-xl text-white font-bold">Operations Queue</h3>
+                <p className="text-xs text-white/40 font-sans mt-0.5">Tasks requiring administrative sign-off</p>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold border border-accent-gold/25 font-bold">
+                {totalPendingOps} Active
+              </span>
+            </div>
             
             <div className="space-y-3">
               {(pendingGatheringApplications || 0) > 0 && (
-                <div className="flex items-center justify-between p-4 bg-purple-500/10 border border-purple-500/25 rounded-2xl">
+                <div className="flex items-center justify-between p-3.5 bg-purple-500/10 border border-purple-500/25 rounded-2xl">
                   <div className="flex items-center gap-3">
-                    <Sparkles className="w-5 h-5 text-purple-400" />
+                    <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
                     <div>
                       <p className="text-xs text-white font-semibold">Gathering Concierge Vetting</p>
-                      <p className="text-[10px] text-purple-300/80 font-mono">{pendingGatheringApplications} applicant(s) in queue</p>
+                      <p className="text-[10px] text-purple-300/80 font-mono">
+                        {pendingGatheringApplications} applicant(s) in queue
+                      </p>
                     </div>
                   </div>
-                  <Link href="/admin/events" className="text-xs bg-purple-500/20 text-purple-200 px-3 py-1.5 rounded-lg hover:bg-purple-500/30 transition-colors font-bold font-mono">
+                  <Link 
+                    href="/admin/events" 
+                    className="text-xs bg-purple-500/20 text-purple-200 px-3 py-1.5 rounded-lg hover:bg-purple-500/30 transition-colors font-bold font-mono"
+                  >
                     Curate
                   </Link>
                 </div>
               )}
 
               {(pendingPartnerVerifications || 0) > 0 && (
-                <div className="flex items-center justify-between p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                <div className="flex items-center justify-between p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
                   <div className="flex items-center gap-3">
-                    <Building2 className="w-5 h-5 text-amber-400" />
+                    <Building2 className="w-4 h-4 text-amber-400 shrink-0" />
                     <div>
                       <p className="text-xs text-white font-semibold">Partner NOC / KYC Audits</p>
-                      <p className="text-[10px] text-amber-400/80 font-mono">{pendingPartnerVerifications} partner(s) awaiting verification</p>
+                      <p className="text-[10px] text-amber-400/80 font-mono">
+                        {pendingPartnerVerifications} partner(s) awaiting verification
+                      </p>
                     </div>
                   </div>
-                  <Link href="/admin/partners" className="text-xs bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-lg hover:bg-amber-500/30 transition-colors font-bold font-mono">
+                  <Link 
+                    href="/admin/partners" 
+                    className="text-xs bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-lg hover:bg-amber-500/30 transition-colors font-bold font-mono"
+                  >
                     Audit
                   </Link>
                 </div>
               )}
 
               {(newFranchiseLeads || 0) > 0 && (
-                <div className="flex items-center justify-between p-4 bg-accent-gold/10 border border-accent-gold/20 rounded-2xl">
+                <div className="flex items-center justify-between p-3.5 bg-accent-gold/10 border border-accent-gold/20 rounded-2xl">
                   <div className="flex items-center gap-3">
-                    <MessageSquare className="w-5 h-5 text-accent-gold" />
+                    <MessageSquare className="w-4 h-4 text-accent-gold shrink-0" />
                     <div>
                       <p className="text-xs text-white font-semibold">New Franchise Applications</p>
-                      <p className="text-[10px] text-accent-gold/80 font-mono">{newFranchiseLeads} new prospect inquiry</p>
+                      <p className="text-[10px] text-accent-gold/80 font-mono">
+                        {newFranchiseLeads} new prospect inquiry
+                      </p>
                     </div>
                   </div>
-                  <Link href="/admin/partners" className="text-xs bg-accent-gold text-black px-3 py-1.5 rounded-lg hover:bg-white transition-colors font-bold font-mono">
+                  <Link 
+                    href="/admin/partners" 
+                    className="text-xs bg-accent-gold text-black px-3 py-1.5 rounded-lg hover:bg-white transition-colors font-bold font-mono"
+                  >
                     View
                   </Link>
                 </div>
               )}
 
               {(pendingGuestVerifications || 0) > 0 && (
-                <div className="flex items-center justify-between p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                <div className="flex items-center justify-between p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
                   <div className="flex items-center gap-3">
-                    <Users className="w-5 h-5 text-amber-400" />
+                    <Users className="w-4 h-4 text-amber-400 shrink-0" />
                     <div>
                       <p className="text-xs text-white font-semibold">Pending Guest ID Vetting</p>
-                      <p className="text-[10px] text-amber-400/80 font-mono">{pendingGuestVerifications} guest(s) awaiting approval</p>
+                      <p className="text-[10px] text-amber-400/80 font-mono">
+                        {pendingGuestVerifications} guest(s) awaiting approval
+                      </p>
                     </div>
                   </div>
-                  <Link href="/admin/guests" className="text-xs bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-lg hover:bg-amber-500/30 transition-colors font-bold font-mono">
+                  <Link 
+                    href="/admin/guests" 
+                    className="text-xs bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-lg hover:bg-amber-500/30 transition-colors font-bold font-mono"
+                  >
                     Review
                   </Link>
                 </div>
               )}
 
               {(pendingHousekeeping || 0) > 0 && (
-                <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl">
+                <div className="flex items-center justify-between p-3.5 bg-white/5 border border-white/10 rounded-2xl">
                   <div className="flex items-center gap-3">
-                    <Sparkles className="w-5 h-5 text-accent-gold" />
+                    <Sparkles className="w-4 h-4 text-accent-gold shrink-0" />
                     <div>
                       <p className="text-xs text-white font-semibold">Scheduled Cleanings</p>
-                      <p className="text-[10px] text-white/50 font-mono">{pendingHousekeeping} turnover task(s) active</p>
+                      <p className="text-[10px] text-white/50 font-mono">
+                        {pendingHousekeeping} turnover task(s) active
+                      </p>
                     </div>
                   </div>
-                  <Link href="/admin/housekeeping" className="text-xs bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20 transition-colors font-mono">
+                  <Link 
+                    href="/admin/housekeeping" 
+                    className="text-xs bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20 transition-colors font-mono"
+                  >
                     View
                   </Link>
                 </div>
@@ -392,8 +401,9 @@ export default async function AdminDashboard() {
               
               {!pendingGuestVerifications && !pendingHousekeeping && !pendingPartnerVerifications && !newFranchiseLeads && (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <CheckCircle className="w-8 h-8 text-green-500/50 mb-3" />
-                  <p className="text-sm text-white/50 font-mono">All systems operating smoothly.</p>
+                  <CheckCircle className="w-8 h-8 text-emerald-400/60 mb-2" />
+                  <p className="text-sm text-white/60 font-mono">All operational queues clear.</p>
+                  <p className="text-xs text-white/30 font-sans mt-0.5">Autonomous check-in &amp; booking pipeline active.</p>
                 </div>
               )}
             </div>
@@ -402,7 +412,7 @@ export default async function AdminDashboard() {
           <div className="pt-6 border-t border-white/5 mt-6">
             <Link
               href="/admin/settings"
-              className="flex items-center justify-center gap-2 w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs text-white/70 hover:text-white transition-colors uppercase font-mono font-semibold"
+              className="flex items-center justify-center gap-2 w-full py-3 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 rounded-xl text-xs text-white/70 hover:text-white transition-colors uppercase font-mono font-semibold"
             >
               <Settings className="w-4 h-4 text-accent-gold" />
               Configure System Settings

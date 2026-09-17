@@ -8,6 +8,7 @@ import InstagramSettingsCard from "./InstagramSettingsCard";
 import WhatsAppSettingsCard from "./WhatsAppSettingsCard";
 import FacebookSettingsCard from "./FacebookSettingsCard";
 import { env } from "@/lib/env";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 
 export const dynamic = 'force-dynamic';
 
@@ -86,34 +87,33 @@ export default async function AdminInbox({
 
   return (
     <div className="space-y-6 flex flex-col h-[calc(100vh-100px)]">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl md:text-4xl mb-2 text-white">Inbox & Automations</h1>
-          <p className="text-white/50 text-sm tracking-wide">Manage conversations, AI flows, and omnichannel connections.</p>
-        </div>
-        
-        {/* Tabs Navigation */}
-        <div className="flex p-1 bg-white/[0.02] border border-white/5 rounded-xl self-start md:self-auto">
-          <Link 
-            href="/admin/inbox?tab=messages" 
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${currentTab === 'messages' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
-          >
-            Messages
-          </Link>
-          <Link 
-            href="/admin/inbox?tab=chatflows" 
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${currentTab === 'chatflows' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
-          >
-            Chatflows
-          </Link>
-          <Link 
-            href="/admin/inbox?tab=settings" 
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${currentTab === 'settings' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
-          >
-            Settings
-          </Link>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Inbox & Automations"
+        description="Manage conversations, AI flows, and omnichannel connections."
+        badge="Omnichannel"
+        actions={
+          <div className="flex p-1 bg-white/[0.02] border border-white/10 rounded-xl">
+            <Link 
+              href="/admin/inbox?tab=messages" 
+              className={`px-4 py-2 rounded-lg text-xs font-mono font-semibold transition-colors ${currentTab === 'messages' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
+            >
+              Messages
+            </Link>
+            <Link 
+              href="/admin/inbox?tab=chatflows" 
+              className={`px-4 py-2 rounded-lg text-xs font-mono font-semibold transition-colors ${currentTab === 'chatflows' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
+            >
+              Chatflows
+            </Link>
+            <Link 
+              href="/admin/inbox?tab=settings" 
+              className={`px-4 py-2 rounded-lg text-xs font-mono font-semibold transition-colors ${currentTab === 'settings' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
+            >
+              Settings
+            </Link>
+          </div>
+        }
+      />
 
       <div className="flex-1 bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden flex flex-col">
         {/* ============================================================== */}

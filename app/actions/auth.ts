@@ -36,26 +36,10 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
   const supabase = await createClient();
   const cleanDigits = phone.replace(/[^0-9]/g, '');
   let syntheticEmail = `${cleanDigits}@auth.nothingness.asia`;
+  let targetEmail = syntheticEmail;
 
-  // 1. Ensure user is registered in Supabase GoTrue
-  // Calling signUp first creates the user record cleanly in Supabase Auth (auth.users & auth.identities)
-  // according to GoTrue's internal engine.
-  try {
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: syntheticEmail,
-      password: deterministicPassword,
-      options: {
-        data: { phone },
-      },
-    });
-    if (signUpError && !signUpError.message?.toLowerCase().includes('already registered')) {
-      console.warn('[Auth Bridge] signUp note:', signUpError.message);
-    }
-  } catch (signUpErr: any) {
-    console.warn('[Auth Bridge] signUp notice:', signUpErr?.message || signUpErr);
-  }
-
-  // 2. Synchronize user in Supabase auth system via atomic Security Definer RPC
+  // 1. Synchronize user in Supabase auth system via atomic Security Definer RPC
+  let syncSuccess = false;
   try {
     const supabaseAdmin = createAdminClient();
     const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('sync_phone_auth_user', {
@@ -64,11 +48,11 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
     });
 
     if (rpcData && (rpcData as any).email) {
-      syntheticEmail = (rpcData as any).email;
+      targetEmail = (rpcData as any).email;
+      syncSuccess = true;
     } else if (rpcError) {
       console.warn('[Auth Bridge] sync_phone_auth_user RPC notice:', rpcError.message);
       // Fallback: Attempt admin API if service role key is present
-      const supabaseAdmin = createAdminClient();
       const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
       const existingUser = usersData?.users?.find(
         (u) => (u.phone && normalizeIdentifier(u.phone) === phone) || (u.email && u.email === syntheticEmail)
@@ -82,14 +66,18 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
         .includes(normalizeIdentifier(phone));
 
       if (existingUser) {
+        if (existingUser.email) {
+          targetEmail = existingUser.email;
+        }
         await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
           password: deterministicPassword,
           phone_confirm: true,
           email_confirm: true,
           ...(isAdminPhone ? { app_metadata: { ...existingUser.app_metadata, role: 'admin' } } : {}),
         });
+        syncSuccess = true;
       } else {
-        await supabaseAdmin.auth.admin.createUser({
+        const { data: createdUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
           email: syntheticEmail,
           phone,
           password: deterministicPassword,
@@ -97,36 +85,72 @@ async function establishSupabaseUserSession(phone: string): Promise<AuthActionRe
           email_confirm: true,
           ...(isAdminPhone ? { app_metadata: { role: 'admin' } } : {}),
         });
+        if (createdUser?.user) {
+          syncSuccess = true;
+        } else if (createErr) {
+          console.warn('[Auth Bridge] createUser notice:', createErr.message);
+        }
       }
     }
   } catch (syncErr: any) {
     console.warn('[Auth Bridge] User sync notice:', syncErr?.message || syncErr);
   }
 
-  // 3. Execute signInWithPassword on Next.js Server Client (@supabase/ssr)
+  // Fallback: If neither RPC nor admin API succeeded (e.g. restricted environment)
+  if (!syncSuccess) {
+    try {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: syntheticEmail,
+        password: deterministicPassword,
+        options: {
+          data: { phone },
+        },
+      });
+      if (signUpError && !signUpError.message?.toLowerCase().includes('already registered')) {
+        console.warn('[Auth Bridge] signUp note:', signUpError.message);
+      }
+    } catch (signUpErr: any) {
+      console.warn('[Auth Bridge] signUp notice:', signUpErr?.message || signUpErr);
+    }
+  }
+
+  // 2. Execute signInWithPassword on Next.js Server Client (@supabase/ssr)
   // to set native Supabase HTTP-only session cookies
   let signInData: any = null;
   let signInError: any = null;
 
-  // Attempt A: Sign in with synthetic email bridge
+  // Attempt A: Sign in with target email (resolved by RPC or existing user)
   const emailAttempt = await supabase.auth.signInWithPassword({
-    email: syntheticEmail,
+    email: targetEmail,
     password: deterministicPassword,
   });
 
   if (emailAttempt.data?.user) {
     signInData = emailAttempt.data;
   } else {
-    // Attempt B: Fall back to phone sign-in if enabled on the project
-    const phoneAttempt = await supabase.auth.signInWithPassword({
-      phone,
-      password: deterministicPassword,
-    });
+    // Attempt B: If targetEmail was custom and failed, fall back to synthetic email
+    if (targetEmail !== syntheticEmail) {
+      const syntheticAttempt = await supabase.auth.signInWithPassword({
+        email: syntheticEmail,
+        password: deterministicPassword,
+      });
+      if (syntheticAttempt.data?.user) {
+        signInData = syntheticAttempt.data;
+      }
+    }
 
-    if (phoneAttempt.data?.user) {
-      signInData = phoneAttempt.data;
-    } else {
-      signInError = emailAttempt.error || phoneAttempt.error;
+    // Attempt C: Fall back to phone sign-in if enabled on the project
+    if (!signInData?.user) {
+      const phoneAttempt = await supabase.auth.signInWithPassword({
+        phone,
+        password: deterministicPassword,
+      });
+
+      if (phoneAttempt.data?.user) {
+        signInData = phoneAttempt.data;
+      } else {
+        signInError = emailAttempt.error || phoneAttempt.error;
+      }
     }
   }
 

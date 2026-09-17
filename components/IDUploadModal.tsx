@@ -24,9 +24,9 @@ import {
   Check
 } from 'lucide-react';
 import { toast } from 'sonner';
-import IDScanningAnimation from '@/components/IDScanningAnimation';
 import { createClient } from '@/lib/supabase/client';
-import { parseAadhaarQrData, formatAadhaarNumber, compressIdImageForOcr, detectAndDecodeQrClient } from '@/lib/id-utils';
+import IDScanningAnimation from '@/components/IDScanningAnimation';
+import { parseAadhaarQrData, formatAadhaarNumber, compressIdImageForOcr, detectAndDecodeQrClient, extractDetailsFromText } from '@/lib/id-utils';
 
 interface IDUploadModalProps {
   isOpen: boolean;
@@ -125,6 +125,9 @@ export default function IDUploadModal({
   const [inputPhone, setInputPhone] = useState(initialPhone || '');
   const [loading, setLoading] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanSuccess, setScanSuccess] = useState<boolean>(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [autoFilledFields, setAutoFilledFields] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [checkingAuth, setCheckingAuth] = useState(!token && !bookingId);
@@ -174,14 +177,14 @@ export default function IDUploadModal({
     }
   }, [isOpen, initialPhone]);
 
-  const [scanSuccess, setScanSuccess] = useState<boolean>(false);
-
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setUploadedImages([]);
       setExtractedPhoto(null);
       setError(null);
+      setScanError(null);
+      setAutoFilledFields([]);
       setDocumentNumber('');
       setIsDetailsVerifiedByUser(false);
       setScanSuccess(false);
@@ -258,17 +261,34 @@ export default function IDUploadModal({
     if (!previews || previews.length === 0) return;
     setIsScanning(true);
     setScanSuccess(false);
+    setScanError(null);
+    setAutoFilledFields([]);
+    setError(null);
 
     // 1. Instant Client-Side QR Detection (Universal: native BarcodeDetector on Chrome/Android + jsQR on iOS Safari/PWA)
     for (const imgUrl of previews) {
       try {
         const parsed = await detectAndDecodeQrClient(imgUrl);
         if (parsed && (parsed.name || parsed.document_number)) {
-          if (parsed.name) setFullName(parsed.name);
-          if (parsed.document_number) setDocumentNumber(formatAadhaarInput(parsed.document_number));
-          if (parsed.dob) setDob(parsed.dob);
-          if (parsed.permanent_address) setPermanentAddress(parsed.permanent_address);
+          const filled: string[] = [];
+          if (parsed.name) {
+            setFullName(parsed.name);
+            filled.push('fullName');
+          }
+          if (parsed.document_number) {
+            setDocumentNumber(formatAadhaarInput(parsed.document_number));
+            filled.push('documentNumber');
+          }
+          if (parsed.dob) {
+            setDob(parsed.dob);
+            filled.push('dob');
+          }
+          if (parsed.permanent_address) {
+            setPermanentAddress(parsed.permanent_address);
+            filled.push('permanentAddress');
+          }
           setDocumentType('Aadhaar');
+          setAutoFilledFields(filled);
           setScanSuccess(true);
           toast.success('Document details detected via Aadhaar QR Code!');
           setIsScanning(false);
@@ -296,18 +316,35 @@ export default function IDUploadModal({
       });
 
       const data = await res.json();
+
+      // Check if server rejected document as non-ID
+      if (!res.ok || data.is_invalid_document) {
+        const rejectMsg =
+          data.error ||
+          'The uploaded photo does not appear to be a recognized Government ID card (Aadhaar or Passport). Please upload a clear photo of your official ID document.';
+        setScanError(rejectMsg);
+        setScanSuccess(false);
+        setIsScanning(false);
+        setExtractedPhoto(null);
+        toast.error('Invalid ID Document', { description: rejectMsg });
+        return;
+      }
+
       if (data.success && data.visionSucceeded && data.extracted) {
         let filledCount = 0;
+        const filled: string[] = [];
         if (
           data.extracted.full_name &&
           data.extracted.full_name !== 'Nothingness Guest' &&
           data.extracted.full_name !== 'Guest'
         ) {
           setFullName(data.extracted.full_name);
+          filled.push('fullName');
           filledCount++;
         }
         if (data.extracted.document_number) {
           setDocumentNumber(formatAadhaarInput(data.extracted.document_number));
+          filled.push('documentNumber');
           filledCount++;
         }
         if (data.extracted.document_type) {
@@ -315,18 +352,21 @@ export default function IDUploadModal({
         }
         if (data.extracted.dob) {
           setDob(data.extracted.dob);
+          filled.push('dob');
           filledCount++;
         }
         if (data.extracted.permanent_address) {
           setPermanentAddress(data.extracted.permanent_address);
+          filled.push('permanentAddress');
           filledCount++;
         }
 
         if (filledCount > 0) {
+          setAutoFilledFields(filled);
           setScanSuccess(true);
           toast.success('Document details detected & autofilled! Please verify accuracy.');
         } else {
-          toast.info('Could not auto-read text from ID. Please enter details manually.');
+          toast.info('Could not auto-read text from ID. Please verify details manually.');
         }
       } else {
         toast.info('Could not auto-read text from ID. Please enter details manually.');
@@ -342,14 +382,16 @@ export default function IDUploadModal({
   const handleRemoveImage = (indexToRemove: number) => {
     const remaining = uploadedImages.filter((_, idx) => idx !== indexToRemove);
     setUploadedImages(remaining);
-    if (indexToRemove === 0) {
-      if (remaining.length > 0) {
-        extractPhotoFromId(remaining[0].preview, documentType).then((cropped) => {
-          if (cropped) setExtractedPhoto(cropped);
-        });
-      } else {
-        setExtractedPhoto(null);
-      }
+    setScanError(null);
+    if (remaining.length === 0) {
+      setExtractedPhoto(null);
+      setScanSuccess(false);
+      setAutoFilledFields([]);
+    } else if (indexToRemove === 0) {
+      extractPhotoFromId(remaining[0].preview, documentType).then((cropped) => {
+        if (cropped) setExtractedPhoto(cropped);
+        else setExtractedPhoto(null);
+      });
     }
     setError(null);
   };
@@ -357,6 +399,11 @@ export default function IDUploadModal({
   const submitVerification = async () => {
     if (uploadedImages.length === 0) {
       setError('Please capture or upload at least one clear photo of your ID.');
+      return;
+    }
+
+    if (scanError) {
+      setError(scanError);
       return;
     }
 
@@ -585,10 +632,50 @@ export default function IDUploadModal({
                         </span>
                         {isScanning && (
                           <span className="text-[10px] text-accent-gold font-mono flex items-center gap-1.5 animate-pulse">
-                            <Sparkles className="w-3 h-3" /> Auto-scanning document details...
+                            <Sparkles className="w-3 h-3" /> Scanning Document Security Features...
                           </span>
                         )}
                       </div>
+
+                      {/* Interactive Optical HUD Scanning Animation */}
+                      <IDScanningAnimation
+                        imagePreview={uploadedImages[0].preview}
+                        isScanning={isScanning}
+                        documentType={documentType}
+                        isSuccess={scanSuccess}
+                        isError={!!scanError}
+                        errorMessage={scanError || undefined}
+                        extractedName={fullName || undefined}
+                        extractedNumber={documentNumber || undefined}
+                      />
+
+                      {/* Invalid Document Rejection Banner */}
+                      {scanError && (
+                        <div className="bg-rose-500/15 border border-rose-500/30 text-rose-300 p-4 rounded-2xl text-xs space-y-2">
+                          <div className="flex items-center gap-2 font-bold text-rose-200">
+                            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                            <span>Official Government ID Required</span>
+                          </div>
+                          <p className="text-rose-300/80 leading-relaxed">
+                            {scanError}
+                          </p>
+                          <div className="pt-1 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUploadedImages([]);
+                                setScanError(null);
+                                setScanSuccess(false);
+                                setExtractedPhoto(null);
+                                setAutoFilledFields([]);
+                              }}
+                              className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                            >
+                              Upload Clear Government ID
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Images Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -624,7 +711,7 @@ export default function IDUploadModal({
                       </div>
 
                       {/* Live Extracted Face & Photo Match Box */}
-                      {extractedPhoto && (
+                      {extractedPhoto && !scanError && (
                         <div className="p-4 rounded-2xl bg-zinc-900/60 border border-emerald-500/30 flex items-center gap-4">
                           <div className="w-16 h-20 rounded-xl overflow-hidden border border-emerald-500/40 bg-black shrink-0 shadow-lg">
                             <img src={extractedPhoto} alt="Extracted Face" className="w-full h-full object-cover" />
@@ -633,41 +720,28 @@ export default function IDUploadModal({
                             <span className="text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold inline-flex items-center gap-1">
                               <Check className="w-3 h-3" /> Extracted Photo Matched
                             </span>
-                            <p className="text-xs text-white font-medium mt-1">Photo cropped from your official document</p>
-                            <p className="text-[10px] text-zinc-400 mt-0.5">This official photograph will be attached to your Police Compliance Dossier.</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Scanning Status Banner */}
-                      {isScanning && (
-                        <div className="p-3.5 rounded-2xl bg-accent-gold/10 border border-accent-gold/20 flex items-center gap-3 text-accent-gold text-xs animate-pulse">
-                          <Sparkles className="w-4 h-4 text-accent-gold animate-spin shrink-0" />
-                          <div>
-                            <p className="font-semibold">Scanning ID document...</p>
-                            <p className="text-[11px] text-zinc-400 font-sans mt-0.5">
-                              Extracting Name, Document Number, Date of Birth, and Address.
-                            </p>
+                            <p className="text-xs text-white font-medium mt-1">Official photograph extracted from document</p>
+                            <p className="text-[10px] text-zinc-400 mt-0.5">Attached to your Statutory Police Verification Dossier.</p>
                           </div>
                         </div>
                       )}
 
                       {/* Scan Success Banner */}
-                      {scanSuccess && !isScanning && (
+                      {scanSuccess && !isScanning && !scanError && (
                         <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between gap-3 text-emerald-400 text-xs">
                           <div className="flex items-center gap-2.5">
                             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                             <div>
-                              <p className="font-semibold">ID Details Autofilled</p>
+                              <p className="font-semibold">ID Details Extracted &amp; Autofilled</p>
                               <p className="text-[11px] text-emerald-300/70 font-sans mt-0.5">
-                                Please verify the fields below for accuracy before submitting.
+                                All identity details were extracted directly from your document.
                               </p>
                             </div>
                           </div>
                           <button
                             type="button"
                             onClick={() => triggerDocumentScan(uploadedImages.map((img) => img.preview))}
-                            className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg text-[10px] font-mono transition-colors shrink-0"
+                            className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg text-[10px] font-mono transition-colors shrink-0 cursor-pointer"
                           >
                             Rescan
                           </button>
@@ -704,7 +778,14 @@ export default function IDUploadModal({
                         </div>
 
                         <div>
-                          <label className="text-zinc-400 block mb-1">Full Legal Name (as on card)</label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-zinc-400">Full Legal Name (as on card)</label>
+                            {autoFilledFields.includes('fullName') && (
+                              <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Auto-detected
+                              </span>
+                            )}
+                          </div>
                           <div className="relative">
                             <input
                               type="text"
@@ -719,9 +800,16 @@ export default function IDUploadModal({
                         </div>
 
                         <div>
-                          <label className="text-zinc-400 block mb-1">
-                            {documentType === 'Aadhaar' ? '12-Digit Aadhaar Number' : 'Passport Number'}
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-zinc-400">
+                              {documentType === 'Aadhaar' ? '12-Digit Aadhaar Number' : 'Passport Number'}
+                            </label>
+                            {autoFilledFields.includes('documentNumber') && (
+                              <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Auto-detected
+                              </span>
+                            )}
+                          </div>
                           <div className="relative">
                             <input
                               type="text"
@@ -737,7 +825,14 @@ export default function IDUploadModal({
 
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="text-zinc-400 block mb-1">Date of Birth / Year</label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-zinc-400">Date of Birth / Year</label>
+                              {autoFilledFields.includes('dob') && (
+                                <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" /> Auto-detected
+                                </span>
+                              )}
+                            </div>
                             <input
                               type="text"
                               placeholder="DD/MM/YYYY"
@@ -760,7 +855,14 @@ export default function IDUploadModal({
                         </div>
 
                         <div>
-                          <label className="text-zinc-400 block mb-1">Residential Address (Optional)</label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-zinc-400">Residential Address (Optional)</label>
+                            {autoFilledFields.includes('permanentAddress') && (
+                              <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Auto-detected
+                              </span>
+                            )}
+                          </div>
                           <input
                             type="text"
                             placeholder="Residential address as printed on ID"
@@ -783,7 +885,7 @@ export default function IDUploadModal({
                   {uploadedImages.length > 0 && (
                     <button
                       onClick={submitVerification}
-                      disabled={loading || !fullName.trim() || !documentNumber.trim()}
+                      disabled={loading || !fullName.trim() || !documentNumber.trim() || !!scanError}
                       className="w-full py-4 bg-accent-gold hover:bg-white text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {loading ? (

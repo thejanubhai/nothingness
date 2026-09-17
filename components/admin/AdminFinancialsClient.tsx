@@ -7,6 +7,8 @@ import {
   Calendar, ShieldCheck, ArrowUpRight
 } from 'lucide-react';
 import { format } from 'date-fns';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
+import AdminMetricCard from '@/components/admin/ui/AdminMetricCard';
 
 interface Booking {
   id: string;
@@ -163,77 +165,56 @@ export default function AdminFinancialsClient({ initialBookings }: { initialBook
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl md:text-4xl text-white">Financials &amp; Settlements</h1>
-          <p className="text-white/50 text-sm tracking-wide mt-1">
-            Reconciliation ledger, 18% GST tax liability, and space-by-space revenue distribution.
-          </p>
-        </div>
+      {/* Unified Luxury Header */}
+      <AdminPageHeader
+        title="Financials & Settlements"
+        description="Reconciliation ledger, 18% GST statutory tax liability, and space-by-space revenue distribution."
+        badge="GSTR-3B"
+        badgeVariant="emerald"
+        actions={
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 bg-accent-gold hover:bg-white text-black px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg cursor-pointer"
+          >
+            <ArrowDownToLine className="w-4 h-4" />
+            Export Ledger (CSV)
+          </button>
+        }
+      />
 
-        <button
-          onClick={handleExportCSV}
-          className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors"
-        >
-          <ArrowDownToLine className="w-4 h-4 text-accent-gold" />
-          Export Ledger (CSV)
-        </button>
-      </div>
-
-      {/* KPI Cards */}
+      {/* Unified KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl">
-          <div className="flex justify-between items-start mb-3">
-            <p className="text-[10px] uppercase tracking-widest text-white/40 font-mono">Gross Revenue</p>
-            <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-400">
-              <DollarSign className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-3xl font-serif text-white">
-            ₹{grossRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-          </p>
-          <p className="text-[10px] text-white/40 mt-1 font-mono">{totalBookingsCount} Reservations Recorded</p>
-        </div>
+        <AdminMetricCard
+          label="Gross Revenue"
+          value={`₹${grossRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+          subtext={`${totalBookingsCount} Reservations Recorded`}
+          icon={DollarSign}
+          highlightColor="emerald"
+        />
 
-        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl">
-          <div className="flex justify-between items-start mb-3">
-            <p className="text-[10px] uppercase tracking-widest text-white/40 font-mono">Net Operating Income</p>
-            <div className="w-8 h-8 rounded-lg bg-accent-gold/10 flex items-center justify-center text-accent-gold">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-3xl font-serif text-accent-gold">
-            ₹{netRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-          </p>
-          <p className="text-[10px] text-white/40 mt-1 font-mono">Excluding 18% GST</p>
-        </div>
+        <AdminMetricCard
+          label="Net Operating Income"
+          value={`₹${netRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+          subtext="Excluding 18% GST"
+          icon={TrendingUp}
+          highlightColor="gold"
+        />
 
-        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl">
-          <div className="flex justify-between items-start mb-3">
-            <p className="text-[10px] uppercase tracking-widest text-white/40 font-mono">Estimated GST (18%)</p>
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
-              <Percent className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-3xl font-serif text-white">
-            ₹{gstCollected.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-          </p>
-          <p className="text-[10px] text-blue-400/60 mt-1 font-mono">Form GSTR-3B Compliant</p>
-        </div>
+        <AdminMetricCard
+          label="Estimated GST (18%)"
+          value={`₹${gstCollected.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+          subtext="Form GSTR-3B Statutory Output"
+          icon={Percent}
+          highlightColor="purple"
+        />
 
-        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl">
-          <div className="flex justify-between items-start mb-3">
-            <p className="text-[10px] uppercase tracking-widest text-white/40 font-mono">Pending Settlement</p>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
-              <CreditCard className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-3xl font-serif text-white">
-            ₹{pendingRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-          </p>
-          <p className="text-[10px] text-amber-400/60 mt-1 font-mono">Awaiting Gateway Payout</p>
-        </div>
+        <AdminMetricCard
+          label="Pending Settlement"
+          value={`₹${pendingRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+          subtext="Awaiting Gateway Payout"
+          icon={CreditCard}
+          highlightColor={pendingRevenue > 0 ? 'amber' : 'emerald'}
+        />
       </div>
 
       {/* Space-by-Space Distribution */}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { isUserAdminAsync } from '@/lib/auth-utils';
+import { logAdminAction } from '@/lib/audit-logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,6 +100,14 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
       result = data;
     }
+
+    // Log to immutable admin audit ledger in Supabase
+    await logAdminAction(
+      'platform_settings_updated',
+      'platform_settings',
+      result?.id || null,
+      { updated_fields: Object.keys(cleanUpdateData) }
+    );
 
     return NextResponse.json({ success: true, settings: result });
   } catch (err: any) {

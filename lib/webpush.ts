@@ -109,3 +109,68 @@ export async function broadcastPushNotification(
   }
   return { success: true, totalSent };
 }
+
+/**
+ * Broadcast a push notification to ALL subscribed devices across the platform.
+ */
+export async function broadcastPushNotificationToAllSubscribers(
+  payload: PushNotificationPayload
+): Promise<{ success: boolean; totalSent: number; totalFailed: number }> {
+  try {
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      console.warn('WebPush VAPID keys missing. Mocking broadcast notification.');
+      return { success: true, totalSent: 0, totalFailed: 0 };
+    }
+
+    const supabase = createAdminClient();
+    const { data: subs, error } = await supabase
+      .from('web_push_subscriptions')
+      .select('*');
+
+    if (error || !subs || subs.length === 0) {
+      return { success: true, totalSent: 0, totalFailed: 0 };
+    }
+
+    const stringifiedPayload = JSON.stringify({
+      title: payload.title || 'Nothingness Sanctuary',
+      body: payload.body,
+      icon: payload.icon || '/icon-192x192.png',
+      badge: payload.badge || '/badge-72x72.png',
+      url: payload.url || '/',
+      tag: payload.tag || 'broadcast-alert',
+      data: payload.data || {},
+    });
+
+    let totalSent = 0;
+    let totalFailed = 0;
+
+    for (const sub of subs) {
+      try {
+        const pushSubscription = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth,
+          },
+        };
+
+        await webpush.sendNotification(pushSubscription, stringifiedPayload, {
+          TTL: 60 * 60 * 24, // 24 hours
+        });
+        totalSent++;
+      } catch (err: any) {
+        totalFailed++;
+        // Remove expired / invalid subscriptions from Supabase
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          await supabase.from('web_push_subscriptions').delete().eq('id', sub.id);
+        }
+      }
+    }
+
+    return { success: true, totalSent, totalFailed };
+  } catch (err: any) {
+    console.error('Error broadcasting push notification:', err);
+    return { success: false, totalSent: 0, totalFailed: 0 };
+  }
+}
+

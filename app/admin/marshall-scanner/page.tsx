@@ -229,8 +229,9 @@ export default function MarshallScannerPage() {
       <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-6">
         <div className="flex items-center gap-3">
           <Link
-            href="/sanctuary-pass"
+            href="/admin/events"
             className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors"
+            title="Back to Events Hub"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>

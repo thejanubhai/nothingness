@@ -3,6 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isUserAdminAsync } from '@/lib/auth-utils';
 import { recordScoutError, traceSpan } from '@/lib/monitoring/scout';
+import { sendPrimaryBookingConfirmationNotification } from '@/lib/notifications/verification';
+import { sendWhatsAppMessage } from '@/lib/omnichannel/meta';
+import { logAdminAction } from '@/lib/audit-logger';
+import { env } from '@/lib/env';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -108,6 +112,51 @@ export async function POST(req: NextRequest) {
 
       return booking;
     }, { spaceId: space_id });
+
+    const spaceTitle = (bookingResult.spaces as any)?.title || 'Private Sanctuary';
+
+    // 4. Dispatch Email and WhatsApp confirmations if status is confirmed
+    if (bookingResult.status === 'confirmed') {
+      if (bookingResult.guest_email) {
+        try {
+          await sendPrimaryBookingConfirmationNotification({
+            email: bookingResult.guest_email,
+            guestName: bookingResult.guest_name || 'Sanctuary Guest',
+            bookingId: bookingResult.id,
+            spaceTitle,
+            checkInDate: bookingResult.check_in,
+            checkOutDate: bookingResult.check_out,
+            totalAmount: bookingResult.total_price || 0,
+            paymentMethod: bookingResult.payment_method || 'Admin Direct Confirmation',
+          });
+        } catch (emailErr) {
+          console.warn('[Admin Booking] Email dispatch warning:', emailErr);
+        }
+      }
+
+      if (bookingResult.guest_phone) {
+        try {
+          const siteUrl = env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
+          const checkinUrl = `${siteUrl}/verify-guest/invite?booking=${bookingResult.id}`;
+          const waMsg = `Namaste ${bookingResult.guest_name || 'Guest'}! ✨\n\nYour reservation at Nothingness (*${spaceTitle}*) has been confirmed by our Concierge!\n\n📅 Stay Dates: ${bookingResult.check_in} to ${bookingResult.check_out}\n\nPlease complete your 30-second digital ID check-in here:\n${checkinUrl}`;
+
+          await sendWhatsAppMessage({
+            to: bookingResult.guest_phone,
+            text: waMsg,
+          });
+        } catch (waErr) {
+          console.warn('[Admin Booking] WhatsApp dispatch warning:', waErr);
+        }
+      }
+    }
+
+    // 5. Log audit trail
+    await logAdminAction(
+      'create_manual_reservation',
+      'booking',
+      bookingResult.id,
+      { guest_name, space_id, check_in, check_out, total_price }
+    );
 
     return NextResponse.json({
       success: true,

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
 
 export default function AdminEventsHub() {
   const [activeTab, setActiveTab] = useState<'overview' | 'editor' | 'curation' | 'scanner' | 'settings'>('overview');
@@ -277,66 +278,59 @@ export default function AdminEventsHub() {
   return (
     <div className="space-y-8">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
-        <div>
-          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-amber-400 font-mono mb-1">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Master Command Center</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-serif text-white font-bold tracking-tight">
-            Sanctuary Gatherings &amp; Events Engine
-          </h1>
-          <p className="text-xs text-white/40 mt-1">
-            Autonomous ratio balancing, Gemini AI vetting, dynamic QR gatekeeper, and PayU lifecycle controls.
-          </p>
-        </div>
+      <AdminPageHeader
+        title="Sanctuary Gatherings & Events Engine"
+        description="Autonomous ratio balancing, Gemini AI vetting, dynamic QR gatekeeper, and PayU lifecycle controls."
+        badge="Master Command Center"
+        badgeVariant="amber"
+        actions={
+          <>
+            <Link
+              href="/admin/marshall-scanner"
+              className="px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2"
+            >
+              <Camera className="w-4 h-4 text-amber-400" />
+              <span>Marshall Live Scanner</span>
+            </Link>
 
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/admin/marshall-scanner"
-            className="px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2"
-          >
-            <Camera className="w-4 h-4 text-amber-400" />
-            <span>Marshall Live Scanner</span>
-          </Link>
-
-          <button
-            onClick={() => {
-              setEditingEventId(null);
-              setEventForm({
-                title: '',
-                tagline: '',
-                description: '',
-                tier: 'soiree',
-                space_id: '',
-                venue_notes: '',
-                event_date: '',
-                end_time: '',
-                dress_code: 'Noir Luxury / Velvet & Leather / Masquerade',
-                consent_marshall_name: 'Aria (Floor Lead)',
-                price_couples: 3999,
-                price_females: 1499,
-                price_males: 4999,
-                price_nonbinary: 1999,
-                max_couples: 6,
-                max_females: 4,
-                max_males: 3,
-                max_nonbinary: 2,
-                secret_location_address: '',
-                secret_location_coordinates: '28.5244,77.2066',
-                secret_location_instructions: 'Discreet private elevator access.',
-                location_revealed_hours_before: 3,
-                status: 'published',
-              });
-              setActiveTab('editor');
-            }}
-            className="px-4 py-2 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Gathering</span>
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => {
+                setEditingEventId(null);
+                setEventForm({
+                  title: '',
+                  tagline: '',
+                  description: '',
+                  tier: 'soiree',
+                  space_id: '',
+                  venue_notes: '',
+                  event_date: '',
+                  end_time: '',
+                  dress_code: 'Noir Luxury / Velvet & Leather / Masquerade',
+                  consent_marshall_name: 'Aria (Floor Lead)',
+                  price_couples: 3999,
+                  price_females: 1499,
+                  price_males: 4999,
+                  price_nonbinary: 1999,
+                  max_couples: 6,
+                  max_females: 4,
+                  max_males: 3,
+                  max_nonbinary: 2,
+                  secret_location_address: '',
+                  secret_location_coordinates: '28.5244,77.2066',
+                  secret_location_instructions: 'Discreet private elevator access.',
+                  location_revealed_hours_before: 3,
+                  status: 'published',
+                });
+                setActiveTab('editor');
+              }}
+              className="px-4 py-2 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Gathering</span>
+            </button>
+          </>
+        }
+      />
 
       {/* Tab Navigation */}
       <div className="flex flex-wrap items-center gap-2 border-b border-white/5 pb-3">

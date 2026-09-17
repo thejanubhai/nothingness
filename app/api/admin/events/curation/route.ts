@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { isUserAdmin } from '@/lib/auth-utils';
 import { sendPushNotificationToUser } from '@/lib/webpush';
 import { checkAndPromoteWaitlistedCandidates } from '@/lib/events/ratio-balancer';
+import { logAdminAction } from '@/lib/audit-logger';
 
 async function checkAdminAuth(supabase: any) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -63,6 +64,13 @@ export async function POST(req: NextRequest) {
         url: '/sanctuary-pass',
       });
     }
+
+    await logAdminAction(
+      `event_curation_${newStatus}`,
+      'sanctuary_event_applications',
+      applicationId,
+      { event_id: updatedApp.event_id, new_status: newStatus }
+    );
 
     return NextResponse.json({ success: true, application: updatedApp });
   } catch (err: any) {

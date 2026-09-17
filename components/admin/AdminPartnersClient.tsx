@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
+import AdminMetricCard from '@/components/admin/ui/AdminMetricCard';
 import PartnerMouContractModal from '@/components/partner/PartnerMouContractModal';
 import PropertyNocAffidavitModal from '@/components/partner/PropertyNocAffidavitModal';
 
@@ -284,97 +286,72 @@ export default function AdminPartnersClient({
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-gold/10 border border-accent-gold/20 text-accent-gold text-[10px] font-mono uppercase tracking-widest mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Franchise &amp; Partner Command</span>
-          </div>
-          <h1 className="font-serif text-3xl md:text-4xl text-white">Partner Network &amp; Franchises</h1>
-          <p className="text-white/50 text-xs md:text-sm tracking-wide mt-1">
-            Inbound leads, ₹3L setup payments, 70/30 MoU contracts, statutory property NOC audits, and revenue splits.
-          </p>
-        </div>
+      <AdminPageHeader
+        title="Partner Network & Franchises"
+        description="Inbound leads, ₹3L setup payments, 70/30 MoU contracts, statutory property NOC audits, and revenue splits."
+        badge="Franchise Hub"
+        actions={
+          <>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setLeadStatusFilter('all');
+                setPartnerStatusFilter('all');
+                toast.info('Refreshed partner records');
+              }}
+              className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white rounded-xl transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => {
-              setSearchQuery('');
-              setLeadStatusFilter('all');
-              setPartnerStatusFilter('all');
-              toast.info('Refreshed partner records');
-            }}
-            className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white rounded-xl transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-
-          <a
-            href="/franchise"
-            target="_blank"
-            rel="noreferrer"
-            className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors flex items-center gap-2"
-          >
-            <span>View Public Franchise Page</span>
-            <ExternalLink className="w-3.5 h-3.5 text-accent-gold" />
-          </a>
-        </div>
-      </div>
+            <a
+              href="/franchise"
+              target="_blank"
+              rel="noreferrer"
+              className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors flex items-center gap-2"
+            >
+              <span>View Public Franchise Page</span>
+              <ExternalLink className="w-3.5 h-3.5 text-accent-gold" />
+            </a>
+          </>
+        }
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl shadow-lg">
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-mono">Inbound Franchise Leads</p>
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-3xl text-white">{leads.length}</h2>
-            {leads.filter(l => l.status === 'new').length > 0 && (
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-accent-gold/20 text-accent-gold font-bold">
-                {leads.filter(l => l.status === 'new').length} New
-              </span>
-            )}
-          </div>
-          <p className="text-[10px] text-white/50 font-mono mt-2">Prospective hosts &amp; property owners</p>
-        </div>
-
-        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl shadow-lg">
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-mono">Active Partner Hosts</p>
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-3xl text-emerald-400">
-              {partners.filter(p => p.status === 'active' || p.verified_by_admin).length}
-            </h2>
-            <ShieldCheck className="w-6 h-6 text-emerald-400/50" />
-          </div>
-          <p className="text-[10px] text-white/50 font-mono mt-2">70/30 revenue-sharing partners</p>
-        </div>
-
-        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl shadow-lg">
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-mono">Setup Fee Capital</p>
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-3xl text-accent-gold">
-              ₹{(partners.filter(p => p.setup_fee_paid).length * 300000).toLocaleString('en-IN')}
-            </h2>
-            <CreditCard className="w-6 h-6 text-accent-gold/50" />
-          </div>
-          <p className="text-[10px] text-white/50 font-mono mt-2">
-            {partners.filter(p => p.setup_fee_paid).length} partners paid ₹3L setup
-          </p>
-        </div>
-
-        <div className={`p-6 rounded-3xl border shadow-lg transition-all ${
-          partners.filter(p => p.status === 'under_review' || (p.affidavit_uploaded && !p.verified_by_admin)).length > 0
-            ? 'bg-amber-500/10 border-amber-500/30'
-            : 'bg-white/[0.02] border-white/5'
-        }`}>
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-mono">Pending KYC &amp; NOC Audits</p>
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-3xl text-white">
-              {partners.filter(p => p.status === 'under_review' || (p.affidavit_uploaded && !p.verified_by_admin)).length}
-            </h2>
-            <Clock className="w-6 h-6 text-amber-400" />
-          </div>
-          <p className="text-[10px] text-amber-400/80 font-mono mt-2">Requires manual statutory sign-off</p>
-        </div>
+        <AdminMetricCard
+          label="Inbound Franchise Leads"
+          value={leads.length}
+          subtext="Prospective hosts & property owners"
+          icon={Users}
+          highlightColor="gold"
+          trend={leads.filter(l => l.status === 'new').length > 0 ? {
+            value: `${leads.filter(l => l.status === 'new').length} New`,
+            direction: 'up'
+          } : undefined}
+        />
+        <AdminMetricCard
+          label="Active Partner Hosts"
+          value={partners.filter(p => p.status === 'active' || p.verified_by_admin).length}
+          subtext="70/30 revenue-sharing partners"
+          icon={ShieldCheck}
+          highlightColor="emerald"
+        />
+        <AdminMetricCard
+          label="Setup Fee Capital"
+          value={`₹${(partners.filter(p => p.setup_fee_paid).length * 300000).toLocaleString('en-IN')}`}
+          subtext={`${partners.filter(p => p.setup_fee_paid).length} partners paid ₹3L setup`}
+          icon={CreditCard}
+          highlightColor="gold"
+        />
+        <AdminMetricCard
+          label="Pending KYC & NOC Audits"
+          value={partners.filter(p => p.status === 'under_review' || (p.affidavit_uploaded && !p.verified_by_admin)).length}
+          subtext="Requires manual statutory sign-off"
+          icon={Clock}
+          highlightColor={partners.filter(p => p.status === 'under_review' || (p.affidavit_uploaded && !p.verified_by_admin)).length > 0 ? 'amber' : 'gold'}
+        />
       </div>
 
       {/* Navigation Tabs */}

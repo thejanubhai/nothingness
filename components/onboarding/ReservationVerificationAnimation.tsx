@@ -2,37 +2,35 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, CheckCircle2, AlertTriangle, Sparkles } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ShieldCheck, Sparkles } from 'lucide-react';
 
-interface IDScanningAnimationProps {
+interface ReservationVerificationAnimationProps {
   imagePreview: string;
   isScanning: boolean;
-  documentType?: string;
+  platformName?: string;
   isSuccess?: boolean;
   isError?: boolean;
   errorMessage?: string;
-  extractedName?: string;
-  extractedNumber?: string;
+  extractedCode?: string;
 }
 
-export default function IDScanningAnimation({
+export default function ReservationVerificationAnimation({
   imagePreview,
   isScanning,
-  documentType = 'Government ID',
+  platformName = 'OTA',
   isSuccess = false,
   isError = false,
   errorMessage,
-  extractedName,
-  extractedNumber,
-}: IDScanningAnimationProps) {
+  extractedCode,
+}: ReservationVerificationAnimationProps) {
   const [scanStep, setScanStep] = useState(0);
 
   const steps = [
-    'Scanning Optical Security Hologram & Features...',
-    'Extracting Full Legal Name & Coordinates...',
-    `Authenticating ${documentType} Number...`,
-    'Cropping Official Face Photograph...',
-    'ID Details Verified & Autofilled ✓',
+    'Scanning reservation voucher & platform headers...',
+    'Extracting booking confirmation & date coordinates...',
+    'Verifying reservation authenticity against sanctuary registry...',
+    'Synchronizing primary guest & suite allocation...',
+    'Reservation authenticated & linked ✓',
   ];
 
   useEffect(() => {
@@ -47,26 +45,26 @@ export default function IDScanningAnimation({
 
     const interval = setInterval(() => {
       setScanStep((prev) => (prev < steps.length - 2 ? prev + 1 : prev));
-    }, 600);
+    }, 700);
 
     return () => clearInterval(interval);
-  }, [isScanning, isSuccess, documentType]);
+  }, [isScanning, isSuccess]);
 
   return (
-    <div className="relative w-full h-52 sm:h-60 rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl flex items-center justify-center select-none group">
-      {/* Background ID Image */}
+    <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl flex items-center justify-center select-none group">
+      {/* Background Image Preview */}
       <img
         src={imagePreview}
-        alt={documentType}
+        alt="Reservation Voucher"
         className={`w-full h-full object-contain p-2 transition-all duration-500 ${
           isScanning ? 'filter brightness-90 contrast-105 scale-[1.01]' : ''
         } ${isError ? 'filter grayscale brightness-75' : ''}`}
       />
 
       {/* Cyber/Optical Grid Overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#d4af3708_1px,transparent_1px),linear-gradient(to_bottom,#d4af3708_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#d4af3708_1px,transparent_1px),linear-gradient(to_bottom,#d4af3708_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
 
-      {/* 4 Corner Targeting HUD Brackets */}
+      {/* HUD Corner Targeting Reticles */}
       <div
         className={`absolute top-2.5 left-2.5 w-6 h-6 border-t-2 border-l-2 transition-colors duration-300 ${
           isError
@@ -107,16 +105,16 @@ export default function IDScanningAnimation({
       {/* Floating HUD Badges */}
       <div className="absolute top-3 left-10 flex items-center gap-2 pointer-events-none">
         <span className="px-2 py-0.5 rounded-md bg-black/80 border border-white/10 text-[9px] font-mono uppercase tracking-wider text-zinc-300">
-          DOC: <strong className="text-accent-gold">{documentType}</strong>
+          GATEWAY: <strong className="text-accent-gold">{platformName}</strong>
         </span>
-        {extractedNumber && (
+        {extractedCode && (
           <span className="px-2 py-0.5 rounded-md bg-black/80 border border-accent-gold/40 text-[9px] font-mono text-accent-gold font-bold">
-            #{extractedNumber}
+            CODE: #{extractedCode}
           </span>
         )}
       </div>
 
-      {/* GPU-Accelerated Laser Scanning Beam */}
+      {/* Active Scanning Laser Beam (GPU-accelerated via framer-motion) */}
       {isScanning && !isError && (
         <motion.div
           animate={{
@@ -124,7 +122,7 @@ export default function IDScanningAnimation({
             opacity: [0.7, 1, 0.7],
           }}
           transition={{
-            duration: 2.0,
+            duration: 2.2,
             repeat: Infinity,
             ease: 'easeInOut',
           }}
@@ -132,11 +130,11 @@ export default function IDScanningAnimation({
         />
       )}
 
-      {/* Scanning Target Center Node */}
+      {/* Scanning Target Center Ring */}
       {isScanning && !isError && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-16 h-16 rounded-full border border-accent-gold/30 flex items-center justify-center animate-ping opacity-25" />
-          <div className="w-28 h-28 rounded-full border border-accent-gold/15 pointer-events-none" />
+          <div className="w-20 h-20 rounded-full border border-accent-gold/30 flex items-center justify-center animate-ping opacity-30" />
+          <div className="w-32 h-32 rounded-full border border-accent-gold/15 pointer-events-none" />
         </div>
       )}
 
@@ -146,14 +144,14 @@ export default function IDScanningAnimation({
           <div className="bg-rose-950/90 backdrop-blur-md border border-rose-500/50 px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-2xl">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
             <span className="text-[10px] font-mono font-semibold text-rose-200 truncate">
-              {errorMessage || 'Invalid ID document. Verification failed.'}
+              {errorMessage || 'Invalid reservation document. Verification failed.'}
             </span>
           </div>
         ) : isSuccess ? (
           <div className="bg-emerald-950/90 backdrop-blur-md border border-emerald-500/50 px-4 py-1.5 rounded-full flex items-center gap-2 shadow-2xl">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span className="text-[10px] font-mono font-bold text-emerald-300 uppercase tracking-wider">
-              ID Details Verified &amp; Autofilled ✓
+              Reservation Verified &amp; Linked ✓
             </span>
           </div>
         ) : isScanning ? (
@@ -165,7 +163,7 @@ export default function IDScanningAnimation({
           </div>
         ) : (
           <div className="bg-black/80 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full text-[10px] font-mono text-zinc-400">
-            Tap &apos;Remove&apos; to change photo
+            Tap &apos;Change Photo&apos; to replace
           </div>
         )}
       </div>

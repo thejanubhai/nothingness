@@ -6,6 +6,15 @@ import { getPlatformActionFees, createPayUPaymentRequestAsync } from '@/lib/payu
 import { traceSpan, recordScoutError } from '@/lib/monitoring/scout';
 import { addDays } from 'date-fns';
 import crypto from 'crypto';
+import { getGeminiApiKey } from '@/lib/ai/gemini-client';
+import {
+  extractDetailsFromText,
+  formatAadhaarNumber,
+  validateAadhaarNumber,
+  validatePassportNumber,
+  calculateAge,
+  detectGovernmentIdMarkers,
+} from '@/lib/id-utils';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -198,35 +207,7 @@ export async function POST(req: Request) {
       process.env.NV_API_KEY ||
       null;
 
-    let geminiKey =
-      process.env.GEMINI_API_KEY ||
-      process.env.GOOGLE_API_KEY ||
-      process.env.GOOGLE_AI_API_KEY ||
-      process.env.GOOGLE_GENAI_API_KEY ||
-      process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-      null;
-
-    if (!nvidiaKey || !geminiKey) {
-      try {
-        const { createAdminClient } = await import('@/lib/supabase/admin');
-        const adminClient = createAdminClient();
-        const { data: settings } = await adminClient
-          .from('platform_settings')
-          .select('*')
-          .maybeSingle();
-
-        if (settings) {
-          if (!nvidiaKey && (settings.nvidia_api_key || (settings as any).nvidia_key)) {
-            nvidiaKey = (settings.nvidia_api_key || (settings as any).nvidia_key).trim();
-          }
-          if (!geminiKey && (settings.gemini_api_key || (settings as any).google_api_key || (settings as any).gemini_key)) {
-            geminiKey = (settings.gemini_api_key || (settings as any).google_api_key || (settings as any).gemini_key).trim();
-          }
-        }
-      } catch (err: any) {
-        console.warn('[Verify ID] Could not fetch keys from platform_settings:', err?.message);
-      }
-    }
+    let geminiKey = await getGeminiApiKey();
 
     // Helper to extract JSON from raw model text (with or without markdown fences)
     const extractJsonFromText = (text: string): any => {
@@ -272,21 +253,49 @@ export async function POST(req: Request) {
         const { GoogleGenAI } = await import('@google/genai');
         const ai = new GoogleGenAI({ apiKey: geminiKey });
 
-        const prompt = `You are an expert hospitality and government ID verification OCR system for "Nothingness" luxury retreats.
+        const prompt = `You are an authoritative government ID verification system for "Nothingness" luxury retreats (statutory police compliance & guest check-in).
 Analyze the uploaded image(s) of the guest's Indian Aadhaar Card or Passport.
 
-Extract with point-to-point accuracy:
-1. "valid": true if authentic Aadhaar or Passport.
-2. "name": The exact full legal name of the person as printed on the card.
-3. "document_type": "Aadhaar" or "Passport".
-4. "document_number": Cleanly formatted 12-digit Aadhaar number (e.g. "1234 5678 9012") or Passport number.
-5. "dob": Date of birth (DD/MM/YYYY or YYYY).
-6. "permanent_address": Residential address if visible (especially on back of Aadhaar).
-7. "above18": true unless DOB indicates under 18.
-8. "is_foreign_national": false for Indian Aadhaar, true if foreign passport.
-9. "nationality": "Indian" or country name.
+DOCUMENT CLASSIFICATION:
+1. Is this image a genuine Indian Aadhaar Card (front or back) or Passport (photo/data page)?
+2. If the image is:
+   - A random selfie or portrait photo of a human without an ID card
+   - A photo of animals, food, scenery, vehicles, or random objects
+   - A screenshot of an app, social media, or travel booking confirmation (vouchers belong to booking verification, not ID verification)
+   THEN IT IS STRICTLY INVALID. Set:
+   "valid": false,
+   "is_id_document": false,
+   "confidence_score": 0,
+   "document_type": "invalid",
+   "rejection_reason": "The uploaded photo is not a valid Government ID card (Aadhaar or Passport). Please upload a clear photo of your official ID document."
 
-Return ONLY a valid JSON object without markdown formatting.`;
+3. If this IS a valid Aadhaar Card or Passport:
+   Set:
+   "valid": true,
+   "is_id_document": true,
+   "confidence_score": 90,
+   "name": "Full legal name as printed on the card",
+   "document_type": "Aadhaar" or "Passport",
+   "document_number": "12-digit Aadhaar number (e.g. 1234 5678 9012) or Passport number (e.g. A1234567)",
+   "dob": "DD/MM/YYYY or YYYY",
+   "permanent_address": "Residential address if visible (e.g. from back of Aadhaar)",
+   "gender": "Male" | "Female" | "Transgender" | null,
+   "above18": true unless DOB indicates under 18
+
+Return ONLY a valid JSON object matching this schema (no markdown, no backticks):
+{
+  "valid": boolean,
+  "is_id_document": boolean,
+  "confidence_score": number,
+  "document_type": string,
+  "rejection_reason": string or null,
+  "name": string or null,
+  "document_number": string or null,
+  "dob": string or null,
+  "permanent_address": string or null,
+  "gender": string or null,
+  "above18": boolean
+}`;
 
         const parts: any[] = [{ text: prompt }];
         for (const img of cleanImages) {
@@ -309,6 +318,25 @@ Return ONLY a valid JSON object without markdown formatting.`;
             const text = response.text || '';
             const parsed = extractJsonFromText(text);
             if (parsed && typeof parsed === 'object') {
+              // STRICT GATE: Reject non-ID photos immediately
+              if (
+                parsed.valid === false ||
+                parsed.is_id_document === false ||
+                (parsed.confidence_score !== undefined && parsed.confidence_score < 30) ||
+                parsed.document_type === 'invalid'
+              ) {
+                return NextResponse.json(
+                  {
+                    success: false,
+                    is_invalid_document: true,
+                    error:
+                      parsed.rejection_reason ||
+                      'The uploaded photo does not appear to be a recognized Government ID card (Aadhaar or Passport). Please upload a clear photo of your official ID document.',
+                  },
+                  { status: 400 }
+                );
+              }
+
               extractedData = { ...parsed };
               visionSucceeded = true;
               break;
@@ -383,6 +411,11 @@ Return ONLY a valid JSON object without markdown formatting.`;
       ''
     ).trim();
 
+    let formattedScanDocNumber = normalizedDocNumber;
+    if (normalizedDocType.toLowerCase().includes('aadhaar') && normalizedDocNumber) {
+      formattedScanDocNumber = formatAadhaarNumber(normalizedDocNumber);
+    }
+
     // If client requested scan-only (interactive preview in upload modal)
     if (scanOnly) {
       return NextResponse.json({
@@ -391,7 +424,7 @@ Return ONLY a valid JSON object without markdown formatting.`;
         extracted: {
           full_name: normalizedName,
           name: normalizedName,
-          document_number: normalizedDocNumber,
+          document_number: formattedScanDocNumber,
           document_type: normalizedDocType,
           dob: normalizedDob,
           permanent_address: normalizedAddress,
@@ -411,18 +444,51 @@ Return ONLY a valid JSON object without markdown formatting.`;
     }
 
     let finalDocNumber = (clientDocNumber || normalizedDocNumber || '').trim().toUpperCase();
-    // Validate Aadhaar: remove spaces to check length
-    const digitsOnly = finalDocNumber.replace(/[^0-9]/g, '');
-    if (finalDocType === 'Aadhaar' && digitsOnly.length === 12) {
-      // Format cleanly as 1234 5678 9012
+
+    // Strict Government Document Number Validation
+    if (finalDocType === 'Aadhaar') {
+      const aadhaarCheck = validateAadhaarNumber(finalDocNumber);
+      if (!aadhaarCheck.valid) {
+        return NextResponse.json(
+          {
+            verified: false,
+            error: aadhaarCheck.reason || 'Invalid 12-digit Aadhaar number.',
+          },
+          { status: 400 }
+        );
+      }
+      const digitsOnly = finalDocNumber.replace(/[^0-9]/g, '');
       finalDocNumber = `${digitsOnly.slice(0, 4)} ${digitsOnly.slice(4, 8)} ${digitsOnly.slice(8, 12)}`;
+    } else {
+      const passportCheck = validatePassportNumber(finalDocNumber);
+      if (!passportCheck.valid) {
+        return NextResponse.json(
+          {
+            verified: false,
+            error: passportCheck.reason || 'Invalid Passport number.',
+          },
+          { status: 400 }
+        );
+      }
     }
 
-    if (!finalDocNumber || finalDocNumber.length < 4) {
+    // Statutory Age Gate: Guest must be at least 18 years of age
+    const effectiveDob = clientDob || normalizedDob || extractedData.dob;
+    const computedAge = calculateAge(effectiveDob);
+    if (computedAge !== null && computedAge < 18) {
       return NextResponse.json(
         {
           verified: false,
-          error: 'Please provide a valid 12-digit Aadhaar number or Passport number.',
+          error: 'Statutory compliance requires all staying and vetted guests to be at least 18 years of age.',
+        },
+        { status: 400 }
+      );
+    }
+    if (extractedData.above18 === false) {
+      return NextResponse.json(
+        {
+          verified: false,
+          error: 'Statutory compliance requires all staying and vetted guests to be at least 18 years of age.',
         },
         { status: 400 }
       );

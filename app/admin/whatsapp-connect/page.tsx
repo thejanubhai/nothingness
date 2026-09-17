@@ -19,6 +19,7 @@ import {
   Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
 
 interface WhatsAppStatusData {
   connected?: boolean;
@@ -143,38 +144,31 @@ export default function WhatsAppConnectPage() {
 
   return (
     <div className="space-y-8 max-w-5xl pb-16">
-      {/* Top Header Navigation */}
-      <div className="flex items-center justify-between gap-4">
-        <Link
-          href="/admin/inbox?tab=settings"
-          className="flex items-center gap-2 text-xs text-white/50 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Omnichannel Settings</span>
-        </Link>
-
-        <Link
-          href="/admin/inbox?tab=messages&channel=whatsapp"
-          className="text-xs text-accent-gold hover:underline flex items-center gap-1.5"
-        >
-          <span>Open WhatsApp Inbox</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
-      <div>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center justify-center text-green-500 shrink-0">
-            <MessageSquare className="w-6 h-6" />
+      {/* Header */}
+      <AdminPageHeader
+        title="Meta WhatsApp Cloud API"
+        description="Production Meta Graph API infrastructure for 3-stage guest journeys, ID compliance, and host messaging."
+        badge={isConnected ? 'Active & Online' : 'Credentials Pending'}
+        badgeVariant={isConnected ? 'emerald' : 'amber'}
+        actions={
+          <div className="flex items-center gap-2.5">
+            <Link
+              href="/admin/inbox?tab=settings"
+              className="px-3.5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white rounded-xl text-xs font-mono transition-colors flex items-center gap-1.5"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Omnichannel Settings</span>
+            </Link>
+            <Link
+              href="/admin/inbox?tab=messages&channel=whatsapp"
+              className="px-3.5 py-2 bg-accent-gold/10 hover:bg-accent-gold/20 border border-accent-gold/25 text-accent-gold rounded-xl text-xs font-mono transition-colors flex items-center gap-1.5"
+            >
+              <span>WhatsApp Inbox</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
           </div>
-          <div>
-            <h1 className="font-serif text-3xl md:text-4xl text-white">Meta WhatsApp Cloud API</h1>
-            <p className="text-white/50 text-sm tracking-wide mt-1">
-              Production Meta Graph API infrastructure for 3-stage guest journeys, ID compliance, and host messaging.
-            </p>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Main Status & Configuration Card */}
       <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 space-y-6">

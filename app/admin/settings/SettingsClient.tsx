@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import RegisterPasskeyButton from "@/components/RegisterPasskeyButton";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 
 type SettingsType = {
   id: string;
@@ -81,10 +82,14 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update settings');
 
+      const updatedSettings = {
+        ...formData,
+        ...(data.settings?.id ? { id: data.settings.id } : {})
+      };
       if (data.settings?.id) {
-        setFormData(prev => ({ ...prev, id: data.settings.id }));
+        setFormData(updatedSettings);
       }
-      setSavedSnapshot(JSON.stringify(formData));
+      setSavedSnapshot(JSON.stringify(updatedSettings));
       
       toast.success('Settings updated successfully in Supabase!');
       router.refresh();
@@ -106,35 +111,26 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
 
   return (
     <div className="space-y-8 max-w-5xl">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="font-serif text-3xl md:text-4xl text-white">Platform Settings</h1>
-            {hasChanges ? (
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-[10px] font-bold animate-pulse">
-                ● Unsaved Changes
-              </span>
-            ) : (
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[10px] flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Synced with Database
-              </span>
-            )}
-          </div>
-          <p className="text-white/50 text-sm tracking-wide mt-1">Configure integrations, policies, and global preferences.</p>
-        </div>
-        <button 
-          onClick={handleSave}
-          disabled={loading}
-          className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-xl cursor-pointer disabled:opacity-50 ${
-            hasChanges
-              ? 'bg-accent-gold hover:bg-white text-black ring-2 ring-accent-gold/50'
-              : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
-          }`}
-        >
-          <Save className="w-4 h-4" />
-          {loading ? 'Saving...' : hasChanges ? 'Save Changes' : 'Save Settings'}
-        </button>
-      </div>
+      <AdminPageHeader
+        title="Platform Settings"
+        description="Configure integrations, policies, and global preferences."
+        badge={hasChanges ? "● Unsaved Changes" : "Synced with Database"}
+        badgeVariant={hasChanges ? "amber" : "emerald"}
+        actions={
+          <button 
+            onClick={handleSave}
+            disabled={loading}
+            className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-xl cursor-pointer disabled:opacity-50 ${
+              hasChanges
+                ? 'bg-accent-gold hover:bg-white text-black ring-2 ring-accent-gold/50'
+                : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
+            }`}
+          >
+            <Save className="w-4 h-4" />
+            {loading ? 'Saving...' : hasChanges ? 'Save Changes' : 'Save Settings'}
+          </button>
+        }
+      />
 
       <div className="flex overflow-x-auto hide-scrollbar border-b border-white/10 gap-6">
         {tabs.map(tab => (

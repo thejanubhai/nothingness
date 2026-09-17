@@ -9,6 +9,8 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
+import AdminMetricCard from '@/components/admin/ui/AdminMetricCard';
 
 interface GuestProfile {
   id: string;
@@ -94,55 +96,47 @@ export default function AdminGuestsClient({ initialGuests }: { initialGuests: Gu
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl md:text-4xl text-white">Guest CRM &amp; Police Compliance</h1>
-          <p className="text-white/50 text-sm tracking-wide mt-1">
-            Police verified guest registry, 180-day reusable vetting, and Form C foreign records.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href="/admin/guests/police-register"
-            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors"
-          >
-            <FileText className="w-4 h-4 text-accent-gold" />
-            Police Register
-          </Link>
-
+      {/* Unified Luxury Header */}
+      <AdminPageHeader
+        title="Guest CRM & ID Vetting"
+        description="Police verified guest registry, 180-day reusable vetting, and statutory identity documents."
+        badge={`${guests.length} Profiles`}
+        badgeVariant="emerald"
+        actions={
           <Link
             href="/admin/guests/new"
-            className="flex items-center gap-2 bg-accent-gold text-black px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-white transition-all shadow-lg"
+            className="flex items-center gap-2 bg-accent-gold text-black px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider hover:bg-white transition-all shadow-lg"
           >
             <Plus className="w-4 h-4" /> Add Guest
           </Link>
-        </div>
-      </div>
+        }
+      />
 
-      {/* KPI Cards */}
+      {/* Unified KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Total Registered Guests</p>
-          <p className="text-2xl font-serif text-white">{guests.length}</p>
-        </div>
+        <AdminMetricCard
+          label="Total Registered Guests"
+          value={guests.length.toString()}
+          subtext="Lifetime Verified Profiles"
+          icon={User}
+          highlightColor="gold"
+        />
 
-        <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">180-Day Vetted Guests</p>
-          <p className="text-2xl font-serif text-green-400 flex items-center justify-between">
-            {guests.filter(g => g.is_verified).length}
-            <ShieldCheck className="w-5 h-5 text-green-400/60" />
-          </p>
-        </div>
+        <AdminMetricCard
+          label="180-Day Vetted Guests"
+          value={guests.filter(g => g.is_verified).length.toString()}
+          subtext="ID & Facial Biometrics Passed"
+          icon={ShieldCheck}
+          highlightColor="emerald"
+        />
 
-        <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Pending Review</p>
-          <p className="text-2xl font-serif text-amber-400 flex items-center justify-between">
-            {guests.filter(g => !g.is_verified).length}
-            <Clock className="w-5 h-5 text-amber-400/60" />
-          </p>
-        </div>
+        <AdminMetricCard
+          label="Pending KYC Review"
+          value={guests.filter(g => !g.is_verified).length.toString()}
+          subtext="Awaiting Administrator Sign-off"
+          icon={Clock}
+          highlightColor={guests.filter(g => !g.is_verified).length > 0 ? 'amber' : 'emerald'}
+        />
       </div>
 
       {/* Filter & Search Bar */}

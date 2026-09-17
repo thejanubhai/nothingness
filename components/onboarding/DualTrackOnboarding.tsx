@@ -28,8 +28,45 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PLATFORMS, type SupportedPlatform } from '@/components/icons/BookingPlatformLogos';
+import ReservationVerificationAnimation from '@/components/onboarding/ReservationVerificationAnimation';
 import IDScanningAnimation from '@/components/IDScanningAnimation';
 import IDUploadModal from '@/components/IDUploadModal';
+
+async function compressImage(file: File, maxDim = 1280, quality = 0.85): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+}
 
 interface DualTrackOnboardingProps {
   initialUser?: {
@@ -53,6 +90,8 @@ export default function DualTrackOnboarding({
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [scanStep, setScanStep] = useState(0);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanSuccess, setScanSuccess] = useState<boolean>(false);
   const [verifiedBooking, setVerifiedBooking] = useState<any>(null);
   const [showManualConfirmation, setShowManualConfirmation] = useState(false);
   const [availableSpaces, setAvailableSpaces] = useState<any[]>([]);
@@ -72,7 +111,7 @@ export default function DualTrackOnboarding({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleScreenshotSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScreenshotSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -82,21 +121,34 @@ export default function DualTrackOnboarding({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const b64 = ev.target?.result as string;
+    setScanError(null);
+    setScanSuccess(false);
+
+    try {
+      const b64 = await compressImage(file);
+      if (!b64) return;
       setScreenshots([b64]);
       analyzeScreenshot([b64]);
-    };
-    reader.readAsDataURL(file);
+    } catch (compressErr) {
+      console.warn('Compression fallback:', compressErr);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const raw = ev.target?.result as string;
+        setScreenshots([raw]);
+        analyzeScreenshot([raw]);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const analyzeScreenshot = async (imgs: string[]) => {
     setAnalyzing(true);
+    setScanError(null);
+    setScanSuccess(false);
     setScanStep(1);
-    toast.loading('Analyzing reservation screenshot with Gemini Vision...');
+    toast.loading('Authenticating reservation voucher & coordinates...');
 
-    const stepTimer = setTimeout(() => setScanStep(2), 1500);
+    const stepTimer = setTimeout(() => setScanStep(2), 1200);
 
     try {
       const res = await fetch('/api/bookings/verify-screenshot', {
@@ -112,32 +164,43 @@ export default function DualTrackOnboarding({
       toast.dismiss();
       const data = await res.json();
 
-      if (data.requires_manual_confirmation) {
-        setShowManualConfirmation(true);
-        setManualCode(data.extracted?.reservation_code || '');
-        setManualCheckIn(data.extracted?.check_in || '');
-        setManualCheckOut(data.extracted?.check_out || '');
-        setManualSpaceId(data.extracted?.space_id || '');
-        setAvailableSpaces(data.available_spaces || []);
-        toast.info('Please confirm reservation code & dates to complete linking.');
-        return;
-      }
-
       if (!res.ok || !data.success) {
+        if (data.is_invalid_document) {
+          // Reject Government IDs, human portraits, selfies, or non-booking photos
+          setScanError(data.error || 'The uploaded photo is not a valid booking confirmation.');
+          setShowManualConfirmation(false);
+          toast.error(data.is_government_id ? 'Government ID Detected (Not a Voucher)' : 'Verification Failed: Invalid Document', {
+            description: data.error || 'Please upload an official booking voucher screenshot.',
+          });
+          return;
+        }
+
+        if (data.requires_manual_confirmation) {
+          setShowManualConfirmation(true);
+          setManualCode(data.extracted?.reservation_code || '');
+          setManualCheckIn(data.extracted?.check_in || '');
+          setManualCheckOut(data.extracted?.check_out || '');
+          setManualSpaceId(data.extracted?.space_id || '');
+          setAvailableSpaces(data.available_spaces || []);
+          toast.info('Please confirm reservation code & dates to complete linking.');
+          return;
+        }
+
         throw new Error(data.error || 'Failed to parse reservation.');
       }
 
+      setScanSuccess(true);
       setVerifiedBooking(data);
       if (data.primary_guest?.is_verified) {
         setPrimaryVerified(true);
       }
-      toast.success('Reservation linked successfully!', {
-        description: `Code #${data.reservation_code} connected to your profile.`,
+      toast.success('Reservation verified & linked!', {
+        description: `Confirmation #${data.reservation_code} connected to your profile.`,
       });
     } catch (err: any) {
       toast.dismiss();
-      setShowManualConfirmation(true);
-      toast.error(err.message || 'Could not auto-read code. Please enter details manually.');
+      setScanError(err.message || 'Could not verify reservation.');
+      toast.error(err.message || 'Failed to authenticate reservation voucher.');
     } finally {
       setAnalyzing(false);
     }
@@ -440,15 +503,68 @@ export default function DualTrackOnboarding({
                       </div>
                     ) : (
                       <div className="relative rounded-2xl overflow-hidden border border-zinc-800">
-                        <IDScanningAnimation imagePreview={screenshots[0]} isScanning={analyzing} />
-                        <div className="absolute top-2 right-2 flex gap-2 z-10">
+                        <ReservationVerificationAnimation
+                          imagePreview={screenshots[0]}
+                          isScanning={analyzing}
+                          platformName={selectedPlatform?.toUpperCase()}
+                          isSuccess={scanSuccess}
+                          isError={Boolean(scanError)}
+                          errorMessage={scanError || undefined}
+                          extractedCode={verifiedBooking?.reservation_code}
+                        />
+                        <div className="absolute top-2.5 right-2.5 flex gap-2 z-30">
                           <button
                             type="button"
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => {
+                              setScreenshots([]);
+                              setScanError(null);
+                              setScanSuccess(false);
+                              fileInputRef.current?.click();
+                            }}
                             disabled={analyzing}
-                            className="px-3 py-1 bg-black/80 hover:bg-accent-gold hover:text-black border border-white/20 text-white rounded-lg text-[10px] font-mono transition-colors"
+                            className="px-3 py-1 bg-black/85 hover:bg-accent-gold hover:text-black border border-white/20 text-white rounded-lg text-[10px] font-mono transition-colors cursor-pointer shadow-md"
                           >
                             Change Photo
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {scanError && (
+                      <div className="p-4 rounded-2xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs flex flex-col gap-2 animate-in fade-in duration-200">
+                        <div className="flex items-center gap-2 font-bold text-rose-300">
+                          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                          <span>
+                            {scanError.toLowerCase().includes('government id') || scanError.toLowerCase().includes('aadhaar')
+                              ? 'Government ID Detected (Voucher Required)'
+                              : 'Non-Reservation Document Detected'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-rose-200/90 leading-relaxed font-mono">
+                          {scanError}
+                        </p>
+                        <div className="flex items-center gap-3 pt-1 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setScreenshots([]);
+                              setScanError(null);
+                              fileInputRef.current?.click();
+                            }}
+                            className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-mono font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            Upload Official Booking Voucher
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedTrack('lifestyle');
+                              setScanError(null);
+                              setScreenshots([]);
+                            }}
+                            className="text-[11px] font-mono text-zinc-400 hover:text-white underline cursor-pointer"
+                          >
+                            New Guest / Lifestyle Member? Onboard here →
                           </button>
                         </div>
                       </div>
@@ -457,7 +573,7 @@ export default function DualTrackOnboarding({
                     {analyzing && (
                       <div className="p-4 rounded-xl bg-accent-gold/10 border border-accent-gold/20 text-accent-gold text-xs flex items-center gap-3 font-mono">
                         <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
-                        <span>Extracting reservation confirmation coordinates with Gemini Vision...</span>
+                        <span>Verifying booking confirmation and synchronizing guest ledger...</span>
                       </div>
                     )}
 

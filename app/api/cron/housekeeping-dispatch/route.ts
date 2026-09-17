@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { format } from 'date-fns';
+import { sendWhatsAppMessage } from '@/lib/omnichannel/meta';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,8 +74,16 @@ export async function GET(request: NextRequest) {
 
         // Dispatch WhatsApp message to cleaner if phone exists
         if (cleanerPhone) {
-          console.log(`[Housekeeping Auto-Dispatch] Sending WhatsApp turnover alert to ${cleanerName} (${cleanerPhone}) for ${space.title}`);
-          dispatchedCount++;
+          const messageText = `Namaste ${cleanerName}! 🧹\n\nHousekeeping turnover alert for *${space.title}* on ${todayStr}.\n\n- Guest Checkout: ${space.check_out_time || '11:00 AM'}\n- Next Check-In: ${space.check_in_time || '3:00 PM'}\n\nPlease inspect the sanctuary and complete optical cleanliness validation.`;
+          
+          const waResult = await sendWhatsAppMessage({
+            to: cleanerPhone,
+            text: messageText,
+          });
+
+          if (waResult.success) {
+            dispatchedCount++;
+          }
         }
 
         taskDetails.push({

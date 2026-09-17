@@ -17,6 +17,7 @@ import {
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
 
 export interface Space {
   id: string;
@@ -627,67 +628,58 @@ export default function UnifiedCalendarClient({
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
       
       {/* Top Banner & Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Live OTA 2-Way Sync {latestSyncTime && `(${latestSyncTime})`}
-            </span>
-          </div>
-          <h1 className="font-serif text-3xl md:text-4xl text-white font-bold tracking-tight">
-            Master Calendar &amp; Reservations
-          </h1>
-          <p className="text-white/50 text-xs md:text-sm tracking-wide mt-1">
-            Unified channel manager, real-time reservations registry, and digital ID compliance dashboard.
-          </p>
-        </div>
+      <AdminPageHeader
+        title="Master Calendar & Reservations"
+        description="Unified channel manager, real-time reservations registry, and digital ID compliance dashboard."
+        badge={`Live OTA 2-Way Sync ${latestSyncTime ? `(${latestSyncTime})` : ''}`}
+        badgeVariant="emerald"
+        actions={
+          <>
+            <button
+              onClick={() => handleSyncAll(false)}
+              disabled={isSyncing}
+              className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-50"
+              title="Force Sync Inbound iCal Channels"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
+            </button>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => handleSyncAll(false)}
-            disabled={isSyncing}
-            className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-50"
-            title="Force Sync Inbound iCal Channels"
-          >
-            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
-          </button>
+            <Link
+              href="/admin/guests/police-register"
+              className="px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-md"
+            >
+              <ShieldCheck className="w-4 h-4 text-accent-gold" />
+              <span>Police Register</span>
+            </Link>
 
-          <Link
-            href="/admin/guests/police-register"
-            className="px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-md"
-          >
-            <ShieldCheck className="w-4 h-4 text-accent-gold" />
-            <span>Police Register</span>
-          </Link>
+            <button
+              onClick={() => {
+                setQuickActionTab('block');
+                setQuickStartDate(format(new Date(), 'yyyy-MM-dd'));
+                setQuickEndDate(format(addMonths(new Date(), 0), 'yyyy-MM-dd'));
+                setShowQuickActionModal(true);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-zinc-900 border border-rose-500/30 text-rose-300 hover:bg-rose-500/15 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            >
+              <Lock className="w-4 h-4 text-rose-400" />
+              <span>Block Dates</span>
+            </button>
 
-          <button
-            onClick={() => {
-              setQuickActionTab('block');
-              setQuickStartDate(format(new Date(), 'yyyy-MM-dd'));
-              setQuickEndDate(format(addMonths(new Date(), 0), 'yyyy-MM-dd'));
-              setShowQuickActionModal(true);
-            }}
-            className="px-4 py-2.5 rounded-xl bg-zinc-900 border border-rose-500/30 text-rose-300 hover:bg-rose-500/15 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
-          >
-            <Lock className="w-4 h-4 text-rose-400" />
-            <span>Block Dates</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setQuickActionTab('booking');
-              setQuickStartDate(format(new Date(), 'yyyy-MM-dd'));
-              setQuickEndDate(format(new Date(Date.now() + 86400000), 'yyyy-MM-dd'));
-              setShowQuickActionModal(true);
-            }}
-            className="px-4 py-2.5 rounded-xl bg-accent-gold hover:bg-white text-black text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-lg cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Quick Book</span>
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => {
+                setQuickActionTab('booking');
+                setQuickStartDate(format(new Date(), 'yyyy-MM-dd'));
+                setQuickEndDate(format(new Date(Date.now() + 86400000), 'yyyy-MM-dd'));
+                setShowQuickActionModal(true);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-accent-gold hover:bg-white text-black text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-lg cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Quick Book</span>
+            </button>
+          </>
+        }
+      />
 
       {/* Primary Navigation Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">

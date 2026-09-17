@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
 
 interface Space {
   id: string;
@@ -105,22 +106,22 @@ export default function AdminSpacesClient({ initialSpaces }: { initialSpaces: Sp
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl md:text-4xl mb-2 text-white">Sanctuary Spaces</h1>
-          <p className="text-white/50 text-sm tracking-wide">
-            Realtime sanctuary portfolio, capacity policies, and channel sync.
-          </p>
-        </div>
-        <Link 
-          href="/admin/spaces/new" 
-          className="inline-flex items-center justify-center gap-2 bg-accent-gold hover:bg-white text-black px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Add Space
-        </Link>
-      </div>
+      {/* Unified Luxury Header */}
+      <AdminPageHeader
+        title="Sanctuary Spaces"
+        description="Realtime sanctuary portfolio, capacity policies, rates, and multi-channel synchronization."
+        badge={`${spaces.length} Suites`}
+        badgeVariant="gold"
+        actions={
+          <Link 
+            href="/admin/spaces/new" 
+            className="inline-flex items-center justify-center gap-2 bg-accent-gold hover:bg-white text-black px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            Add Suite
+          </Link>
+        }
+      />
 
       {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">

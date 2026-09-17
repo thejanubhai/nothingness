@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { sendWhatsAppMessage } from '@/lib/omnichannel/meta';
+import { logAdminAction } from '@/lib/audit-logger';
+import { Resend } from 'resend';
+import { env } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
@@ -131,6 +135,59 @@ export async function PATCH(req: NextRequest) {
         .single();
 
       if (error) throw error;
+
+      // If partner was verified and activated, dispatch external notifications
+      if (verified_by_admin && data) {
+        const siteUrl = env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
+        const partnerDashboardUrl = `${siteUrl}/partner/dashboard`;
+
+        if (data.phone) {
+          try {
+            const waMsg = `Namaste ${data.full_name || 'Partner'}! 🏛️\n\nCongratulations! Your Nothingness Host Partner account has been approved and activated.\n\nYou now have full live sanctuary hosting and revenue-sharing privileges. Access your partner dashboard here:\n${partnerDashboardUrl}`;
+            await sendWhatsAppMessage({ to: data.phone, text: waMsg });
+          } catch (waErr) {
+            console.warn('[Admin Partners] WhatsApp dispatch error:', waErr);
+          }
+        }
+
+        if (data.email && env.RESEND_API_KEY) {
+          try {
+            const resend = new Resend(env.RESEND_API_KEY);
+            await resend.emails.send({
+              from: 'Nothingness Partnerships <concierge@nothingness.asia>',
+              to: data.email,
+              subject: 'Partner Account Approved & Live - Nothingness',
+              html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0c0c0e; color: #f3f3f3; padding: 40px 24px; border-radius: 16px; border: 1px solid #1a1a22;">
+                  <h1 style="font-family: Georgia, serif; font-size: 22px; color: #e2b866; text-align: center; text-transform: uppercase;">Nothingness</h1>
+                  <p style="text-align: center; color: #888899; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Partner Host Clearance</p>
+                  <div style="padding: 24px 0;">
+                    <p>Dear <strong>${data.full_name}</strong>,</p>
+                    <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">
+                      Your partner host credentials and property documentation have been audited and approved. Your sanctuary host account is now <strong>Active & Online</strong>.
+                    </p>
+                    <div style="text-align: center; margin: 32px 0;">
+                      <a href="${partnerDashboardUrl}" style="display: inline-block; background-color: #e2b866; color: #000000; font-weight: bold; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-size: 13px; text-transform: uppercase;">
+                        Access Partner Dashboard
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              `
+            });
+          } catch (emailErr) {
+            console.warn('[Admin Partners] Resend dispatch error:', emailErr);
+          }
+        }
+      }
+
+      await logAdminAction(
+        verified_by_admin ? 'partner_approved' : 'partner_updated',
+        'partner',
+        id,
+        { status: data.status, verified_by_admin: data.verified_by_admin, setup_fee_paid: data.setup_fee_paid }
+      );
+
       return NextResponse.json({ success: true, partner: data, message: 'Partner profile updated.' });
     }
 

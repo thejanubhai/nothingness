@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { isUserAdminAsync } from '@/lib/auth-utils';
+import { logAdminAction } from '@/lib/audit-logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +53,13 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    await logAdminAction(
+      'cms_block_updated',
+      'cms_content_blocks',
+      data.id || block_key,
+      { block_key, title, subtitle }
+    );
 
     return NextResponse.json({ success: true, block: data });
   } catch (err: any) {

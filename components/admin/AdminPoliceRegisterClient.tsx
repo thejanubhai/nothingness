@@ -5,8 +5,9 @@ import {
   ShieldCheck, Download, UserCheck, ArrowLeft, FileText, 
   Globe, Calendar, Search, Filter, RefreshCw
 } from 'lucide-react';
-import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, subMonths, isWithinInterval, parseISO } from 'date-fns';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
+import AdminMetricCard from '@/components/admin/ui/AdminMetricCard';
 
 interface GuestRecord {
   id: string;
@@ -96,60 +97,50 @@ export default function AdminPoliceRegisterClient({ initialGuests }: { initialGu
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
       
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div className="flex items-center gap-4">
-          <Link href="/admin/guests" className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-colors text-white/50 hover:text-white border border-white/10">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded-md bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] uppercase font-mono tracking-wider">
-                Official Law Enforcement Format
-              </span>
-            </div>
-            <h1 className="font-serif text-3xl md:text-4xl text-white">Police Compliance Guest Register</h1>
-            <p className="text-white/50 text-xs md:text-sm tracking-wide mt-0.5">
-              Guest check-in records formatted for Police station submission &amp; Form C foreign national compliance.
-            </p>
-          </div>
-        </div>
+      {/* Unified Luxury Header */}
+      <AdminPageHeader
+        title="Police Compliance Guest Register"
+        description="Guest check-in records formatted for Police station submission & Form C foreign national statutory compliance."
+        badge="Form C Compliant"
+        badgeVariant="emerald"
+        actions={
+          <a
+            href={exportUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 bg-accent-gold hover:bg-white text-black px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg whitespace-nowrap"
+          >
+            <Download className="w-4 h-4" />
+            Export Police Report ({useDateFilter ? `${fromDate} to ${toDate}` : 'All Dates'})
+          </a>
+        }
+      />
 
-        <a
-          href={exportUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-2 bg-accent-gold hover:bg-white text-black px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-xl whitespace-nowrap"
-        >
-          <Download className="w-4 h-4" />
-          Export Police Report ({useDateFilter ? `${fromDate} to ${toDate}` : 'All Dates'})
-        </a>
-      </div>
-
-      {/* Stats Cards */}
+      {/* Unified Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-mono">Compliant Filtered Records</p>
-          <p className="text-2xl font-serif text-white flex items-center justify-between">
-            {totalVerified}
-            <ShieldCheck className="w-5 h-5 text-green-400" />
-          </p>
-        </div>
+        <AdminMetricCard
+          label="Compliant Filtered Records"
+          value={totalVerified.toString()}
+          subtext="Official Police Form Verified"
+          icon={ShieldCheck}
+          highlightColor="emerald"
+        />
 
-        <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-mono">Foreign Nationals (Form C)</p>
-          <p className="text-2xl font-serif text-accent-gold flex items-center justify-between">
-            {foreignNationals}
-            <Globe className="w-5 h-5 text-accent-gold/60" />
-          </p>
-        </div>
+        <AdminMetricCard
+          label="Foreign Nationals (Form C)"
+          value={foreignNationals.toString()}
+          subtext="Passport & Visa Registered"
+          icon={Globe}
+          highlightColor="gold"
+        />
 
-        <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-mono">Compliance Standard</p>
-          <p className="text-xs font-medium text-green-400 mt-2 flex items-center gap-1.5 font-mono">
-            ✓ 18+ ID Checked • 180-Day Vetted
-          </p>
-        </div>
+        <AdminMetricCard
+          label="Compliance Standard"
+          value="180-Day Vetted"
+          subtext="18+ Government ID Verified"
+          icon={ShieldCheck}
+          highlightColor="purple"
+        />
       </div>
 
       {/* Filter & Date-Range Controls */}

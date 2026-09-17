@@ -9,6 +9,7 @@ import {
 import HousekeepingDispatchButton from '@/components/admin/HousekeepingDispatchButton';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
 
 interface HousekeepingTask {
   id: string;
@@ -120,24 +121,22 @@ export default function AdminHousekeepingClient({
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="font-serif text-3xl md:text-4xl text-white">Housekeeping &amp; Cleanliness Automation</h1>
-          <p className="text-white/50 text-sm tracking-wide mt-1">
-            Automated cleaner WhatsApp dispatches and optical cleanliness validation.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setShowNewTaskModal(true)}
-            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Schedule Cleaning
-          </button>
-          <HousekeepingDispatchButton />
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Housekeeping & Cleanliness Automation"
+        description="Automated cleaner WhatsApp dispatches and optical cleanliness validation."
+        badge="Operations"
+        actions={
+          <>
+            <button
+              onClick={() => setShowNewTaskModal(true)}
+              className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Schedule Cleaning
+            </button>
+            <HousekeepingDispatchButton />
+          </>
+        }
+      />
 
       {/* Task Filters */}
       <div className="flex items-center gap-2 border-b border-white/10 pb-4">

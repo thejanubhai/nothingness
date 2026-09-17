@@ -1,5 +1,6 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logAdminAction } from '@/lib/audit-logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,14 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    await logAdminAction(
+      'block_dates_created',
+      'external_blocked_dates',
+      data.id,
+      { space_id, start_date, end_date, summary }
+    );
+
     return NextResponse.json({ success: true, blockedDate: data });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -63,6 +72,13 @@ export async function DELETE(req: NextRequest) {
       .eq('id', id);
 
     if (error) throw error;
+
+    await logAdminAction(
+      'block_dates_deleted',
+      'external_blocked_dates',
+      id
+    );
+
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

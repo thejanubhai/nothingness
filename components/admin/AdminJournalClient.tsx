@@ -17,6 +17,7 @@ import {
   generateArticleCoverImageAction,
   generateAllArticleCoverImagesAction 
 } from '@/app/actions/journal';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
 
 interface AdminJournalClientProps {
   initialArticles: Article[];
@@ -165,55 +166,49 @@ export default function AdminJournalClient({ initialArticles }: AdminJournalClie
   return (
     <div className="space-y-8">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-serif text-3xl sm:text-4xl text-white">Editorial Journal Engine</h1>
-            <span className="px-2.5 py-0.5 rounded-full bg-accent-gold/10 border border-accent-gold/30 text-accent-gold text-xs font-mono">
-              {articles.length} Total
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-white/50 mt-1">
-            Manage India-targeted essays on alternate lifestyle, relationship dynamics, kink safety, sensory exploration, and private sanctuaries.
-          </p>
-        </div>
+      <AdminPageHeader
+        title="Editorial Journal Engine"
+        description="Manage India-targeted essays on alternate lifestyle, relationship dynamics, kink safety, sensory exploration, and private sanctuaries."
+        badge={`${articles.length} Total`}
+        badgeVariant="gold"
+        actions={
+          <>
+            <button
+              onClick={() => setIsBatchModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-amber-500/20 hover:from-amber-500/30 hover:via-purple-500/30 hover:to-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-mono font-semibold flex items-center gap-2 transition-all shadow-lg hover:shadow-amber-500/10 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
+              <span>Generate AI Context Images</span>
+              {roomImageCount > 0 ? (
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 text-[10px] font-mono font-bold">
+                  {roomImageCount} pending
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
+                  All Contextual
+                </span>
+              )}
+            </button>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setIsBatchModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-amber-500/20 hover:from-amber-500/30 hover:via-purple-500/30 hover:to-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-mono font-semibold flex items-center gap-2 transition-all shadow-lg hover:shadow-amber-500/10 cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
-            <span>Generate AI Context Images</span>
-            {roomImageCount > 0 ? (
-              <span className="px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 text-[10px] font-mono font-bold">
-                {roomImageCount} pending
-              </span>
-            ) : (
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
-                All Contextual
-              </span>
-            )}
-          </button>
+            <Link
+              href="/journal"
+              target="_blank"
+              className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 text-xs font-mono flex items-center gap-2 transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>View Public Journal</span>
+            </Link>
 
-          <Link
-            href="/journal"
-            target="_blank"
-            className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 text-xs font-mono flex items-center gap-2 transition-colors"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span>View Public Journal</span>
-          </Link>
-
-          <Link
-            href="/admin/journal/new"
-            className="px-4 py-2.5 rounded-xl bg-accent-gold hover:bg-white text-black text-xs font-bold font-mono tracking-wider uppercase flex items-center gap-2 transition-all shadow-lg"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Article</span>
-          </Link>
-        </div>
-      </div>
+            <Link
+              href="/admin/journal/new"
+              className="px-4 py-2.5 rounded-xl bg-accent-gold hover:bg-white text-black text-xs font-bold font-mono tracking-wider uppercase flex items-center gap-2 transition-all shadow-lg"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Article</span>
+            </Link>
+          </>
+        }
+      />
 
       {/* AI Topic Generator & Advisor Box */}
       <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-950/20 via-zinc-900/40 to-black border border-purple-500/20 relative overflow-hidden">

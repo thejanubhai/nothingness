@@ -11,7 +11,7 @@ export default function HousekeepingDispatchButton() {
     setIsDispatching(true);
     toast.loading('Triggering automated WhatsApp cleaner dispatch...');
     try {
-      const res = await fetch('/api/cron/housekeeping-dispatch', { method: 'POST' });
+      const res = await fetch('/api/admin/housekeeping/dispatch', { method: 'POST' });
       const data = await res.json();
       toast.dismiss();
       if (res.ok && data.success) {

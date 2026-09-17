@@ -8,6 +8,7 @@ import {
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import AdminPageHeader from '@/components/admin/ui/AdminPageHeader';
 
 export type CmsBlock = {
   id?: string;
@@ -91,28 +92,22 @@ export default function CmsClient({ initialBlocks }: { initialBlocks: CmsBlock[]
   return (
     <div className="space-y-8 max-w-5xl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-serif text-3xl md:text-4xl text-white">Homepage CMS</h1>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[10px] font-bold">
-              Live Sync
-            </span>
-          </div>
-          <p className="text-white/50 text-xs md:text-sm tracking-wide mt-1">
-            Edit front-end headlines, trust highlights, and showcase banners without touching code.
-          </p>
-        </div>
-
-        <Link
-          href="/"
-          target="_blank"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-mono transition-colors self-start sm:self-auto"
-        >
-          <span>View Public Site</span>
-          <ExternalLink className="w-3.5 h-3.5 text-white/50" />
-        </Link>
-      </div>
+      <AdminPageHeader
+        title="Homepage CMS"
+        description="Edit front-end headlines, trust highlights, and showcase banners without touching code."
+        badge="Live Sync"
+        badgeVariant="emerald"
+        actions={
+          <Link
+            href="/"
+            target="_blank"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-mono transition-colors"
+          >
+            <span>View Public Site</span>
+            <ExternalLink className="w-3.5 h-3.5 text-white/50" />
+          </Link>
+        }
+      />
 
       {/* Tabs */}
       <div className="flex overflow-x-auto hide-scrollbar border-b border-white/10 gap-6">
