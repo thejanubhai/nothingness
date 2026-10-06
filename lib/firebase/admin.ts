@@ -180,3 +180,6 @@ export async function verifyFirebaseIdToken(idToken: string): Promise<VerifiedFi
     email: payload.email,
   };
 }
+
+import { getFirestore } from 'firebase-admin/firestore';
+export const adminDb = getFirestore(adminApp, "janubhaiconsultancy");
