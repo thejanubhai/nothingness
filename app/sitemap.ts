@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import { SEED_ARTICLES } from '@/lib/articles-data';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

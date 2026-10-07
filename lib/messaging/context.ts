@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@/lib/supabase/client';
 
 export type ContextType = 'event' | 'community' | 'post' | 'profile' | 'resonance';
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
 import { trainAI } from '@/app/actions/ai'
 import { Send, Bot, User, UserCheck, GraduationCap } from 'lucide-react'
 import { toast } from 'sonner'
