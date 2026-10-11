@@ -319,7 +319,7 @@ Return JSON ONLY:
                       .eq('booking_id', activeBooking.id);
 
                     totalGuestsCount = bGuests?.length || 1;
-                    const unverified = bGuests?.find(g => g.verification_status !== 'verified');
+                    const unverified = bGuests?.find((g: any) => g.verification_status !== 'verified');
                     if (unverified) {
                       await supabase
                         .from('booking_guests')

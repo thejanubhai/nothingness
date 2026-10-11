@@ -31,9 +31,13 @@ interface ModerationReport {
     media_url: string;
     caption: string;
     created_at: string;
+    author_profile?: {
+      alias?: string;
+      avatar_url?: string;
+    };
     kinkster_profiles?: {
-      alias: string;
-      avatar_url: string;
+      alias?: string;
+      avatar_url?: string;
     };
   } | null;
 }
@@ -226,7 +230,7 @@ export default function AdminModerationPage() {
                     <div className="space-y-1.5 flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold font-mono text-rose-400">
-                          @{report.post.kinkster_profiles?.alias || 'anonymous_author'}
+                          @{report.post.author_profile?.alias || report.post.kinkster_profiles?.alias || 'anonymous_author'}
                         </span>
                         <span className="text-[10px] text-white/40 font-mono">
                           Posted {new Date(report.post.created_at).toLocaleDateString()}

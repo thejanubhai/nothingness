@@ -6,27 +6,19 @@ import { usePathname } from 'next/navigation';
 import { 
   Sparkles, 
   Building2, 
-  Flame, 
   UserCheck, 
-  Compass, 
-  PlusCircle, 
-  Ticket, 
-  Headphones, 
   KeyRound,
   ShieldCheck,
-  MessageSquare,
-  Users
+  BookOpen
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface NavItem {
   name: string;
   href?: string;
-  onClick?: () => void;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
   hasLivePulse?: boolean;
-  isSpecialAction?: boolean;
   isActive: (path: string) => boolean;
 }
 
@@ -34,7 +26,6 @@ export default function MobileBottomNav() {
   const pathname = usePathname() || '';
   const [activeContext, setActiveContext] = React.useState<any>(null);
 
-  // Sync active context from Header event or fetch directly
   React.useEffect(() => {
     let isMounted = true;
 
@@ -70,7 +61,6 @@ export default function MobileBottomNav() {
     };
   }, []);
 
-  // Hide on admin routes and single space checkout views where the dedicated reservation drawer floats
   if (pathname.startsWith('/admin') || (pathname.startsWith('/spaces/') && pathname !== '/spaces')) {
     return null;
   }
@@ -80,60 +70,13 @@ export default function MobileBottomNav() {
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
         navigator.vibrate(8);
       }
-    } catch {
-      // Fail silently if vibration is not supported
-    }
+    } catch {}
   };
 
-  // Determine App Context for purposeful navigation
-  const isCircleRoute = pathname.startsWith('/the-circle') || pathname.startsWith('/kinksters') || pathname.startsWith('/sanctuary-pass');
   const isLoggedIn = Boolean(activeContext?.isLoggedIn);
-
   let items: NavItem[] = [];
 
-  if (isLoggedIn && isCircleRoute) {
-    // Purposeful Authenticated Circle Navigation: [Feed] [Events] [Post] [Groups] [Explore]
-    items = [
-      {
-        name: 'Feed',
-        href: '/the-circle',
-        icon: Flame,
-        isActive: (p) => p === '/the-circle' || p === '/kinksters',
-      },
-      {
-        name: 'Events',
-        href: '/the-circle/events',
-        icon: Sparkles,
-        badge: '✨',
-        isActive: (p) => p.startsWith('/the-circle/events') || p.startsWith('/kinksters/events') || p.startsWith('/sanctuary-pass'),
-      },
-      {
-        name: 'Post',
-        isSpecialAction: true,
-        onClick: () => {
-          triggerHaptic();
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('open-creation-sheet'));
-          }
-        },
-        icon: PlusCircle,
-        isActive: () => false,
-      },
-      {
-        name: 'Groups',
-        href: '/the-circle/groups',
-        icon: Users,
-        isActive: (p) => p.startsWith('/the-circle/groups') || p.startsWith('/kinksters/groups'),
-      },
-      {
-        name: 'Explore',
-        href: '/the-circle/explore',
-        icon: Compass,
-        isActive: (p) => p.startsWith('/the-circle/explore') || p.startsWith('/the-circle/discover') || p.startsWith('/kinksters/explore') || p.startsWith('/kinksters/discover'),
-      },
-    ];
-  } else if (isLoggedIn) {
-    // State B: Purposeful Logged-In Navigation: [Suites] [My Stays] [Gatherings] [The Circle] [Vault]
+  if (isLoggedIn) {
     const hasActiveStay = Boolean(activeContext?.activeStay?.isTodayOrActive);
     items = [
       {
@@ -158,11 +101,10 @@ export default function MobileBottomNav() {
         isActive: (p) => p.startsWith('/sanctuary-pass'),
       },
       {
-        name: 'The Circle',
-        href: '/the-circle',
-        icon: Flame,
-        badge: '✦',
-        isActive: (p) => p.startsWith('/the-circle') || p.startsWith('/kinksters'),
+        name: 'Journal',
+        href: '/journal',
+        icon: BookOpen,
+        isActive: (p) => p.startsWith('/journal'),
       },
       {
         name: 'Vault',
@@ -172,7 +114,6 @@ export default function MobileBottomNav() {
       },
     ];
   } else {
-    // State A: Clear 4-Tab Public Exploration for Guests: [Suites] [Gatherings] [The Circle] [Sign In]
     items = [
       {
         name: 'Suites',
@@ -188,55 +129,35 @@ export default function MobileBottomNav() {
         isActive: (p) => p.startsWith('/sanctuary-pass'),
       },
       {
-        name: 'The Circle',
-        href: '/the-circle',
-        icon: Flame,
-        badge: '✦',
-        isActive: (p) => p.startsWith('/the-circle') || p.startsWith('/kinksters'),
+        name: 'Check-In',
+        href: '/onboarding',
+        icon: ShieldCheck,
+        isActive: (p) => p.startsWith('/onboarding'),
+      },
+      {
+        name: 'Journal',
+        href: '/journal',
+        icon: BookOpen,
+        isActive: (p) => p.startsWith('/journal'),
       },
       {
         name: 'Sign In',
         href: '/auth',
-        icon: ShieldCheck,
-        isActive: (p) => p.startsWith('/auth') || p.startsWith('/onboarding'),
+        icon: UserCheck,
+        isActive: (p) => p.startsWith('/auth'),
       },
     ];
   }
 
   return (
     <nav 
-      aria-label="Purposeful App Navigation Bar"
+      aria-label="App Navigation Bar"
       className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-black/90 backdrop-blur-2xl border-t border-white/10 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] px-3 shadow-[0_-8px_30px_rgba(0,0,0,0.8)] select-none"
     >
       <div className="flex items-center justify-around max-w-md mx-auto">
         {items.map((item) => {
           const active = item.isActive(pathname);
           const Icon = item.icon;
-
-          if (item.isSpecialAction) {
-            return (
-              <button
-                key={item.name}
-                type="button"
-                onClick={() => {
-                  triggerHaptic();
-                  if (item.onClick) {
-                    item.onClick();
-                  } else if (typeof window !== 'undefined') {
-                    window.dispatchEvent(new CustomEvent('open-creation-sheet'));
-                  }
-                }}
-                className="relative flex flex-col items-center justify-center py-1 px-3 -mt-4 active:scale-90 transition-all duration-200 cursor-pointer touch-manipulation focus:outline-none"
-              >
-                <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-600 via-amber-500 to-rose-500 text-white flex items-center justify-center shadow-[0_0_20px_rgba(244,63,94,0.5)] border-2 border-black">
-                  <Icon className="w-6 h-6" />
-                </div>
-                <span className="text-[10px] font-bold text-rose-300 mt-1 tracking-wider">
-                  {item.name}
-                </span>
-              </button>
-            );
-          }
 
           return (
             <Link
@@ -247,7 +168,6 @@ export default function MobileBottomNav() {
                 active ? 'text-accent-gold' : 'text-white/50 hover:text-white/80'
               }`}
             >
-              {/* Active Indicator Glow Background */}
               {active && (
                 <motion.div
                   layoutId="bottomNavIndicator"

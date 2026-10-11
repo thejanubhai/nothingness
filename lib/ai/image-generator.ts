@@ -299,7 +299,7 @@ export async function generateContextualImagesForAllArticles(
     }
 
     const targetArticles = options.onlyRoomImages
-      ? articles.filter((a) => {
+      ? articles.filter((a: any) => {
           const img = a.cover_image || '';
           return img.includes('The Void') || img.includes('IMG_') || img.includes('DAFF28CA');
         })

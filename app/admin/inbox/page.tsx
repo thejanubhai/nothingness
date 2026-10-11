@@ -142,7 +142,7 @@ export default async function AdminInbox({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {chatflows?.map((flow) => (
+              {chatflows?.map((flow: any) => (
                 <div key={flow.id} className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex flex-col group relative">
                   <div className="flex justify-between items-start mb-4">
                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/50">

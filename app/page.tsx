@@ -98,11 +98,7 @@ export default async function HomePage() {
     body: 'Deep minimalist soaking baths, warm ambient candle lighting, acoustic privacy, and custom sensory amenities designed for ultimate relaxation and connection.'
   });
 
-  const lifestyle = getBlock('lifestyle_showcase', {
-    title: 'Where High Discretion Meets Raw Chemistry.',
-    subtitle: 'The Circle • Private Monikers & Desires',
-    body: 'An intimate, confidential society reserved exclusively for verified guests of Nothingness. Connect under complete anonymity with private @aliases, explore deep aesthetic chemistry, and unlock private sanctuary suites. Protected by a one-time lifetime membership entry barrier.'
-  });
+
 
   const sanctuary = getBlock('sanctuary_pass_showcase', {
     title: 'Nothingness Sanctuary Pass',
@@ -180,52 +176,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Nothingness The Circle Showcase */}
-      <section className="py-16 px-4 sm:px-6 max-w-6xl mx-auto">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-950/40 via-zinc-950 to-purple-950/30 border border-rose-500/30 p-8 sm:p-12 shadow-2xl">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 max-w-3xl space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px] font-mono font-bold uppercase tracking-wider">
-              <Flame className="w-3.5 h-3.5" />
-              <span>{lifestyle.subtitle}</span>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-serif tracking-tight text-white leading-tight">
-              {lifestyle.title}
-            </h2>
-
-            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              {lifestyle.body}
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-              <div className="p-3.5 bg-black/50 border border-zinc-800/80 rounded-2xl">
-                <span className="text-rose-400 font-bold font-mono block">100% Anonymous</span>
-                <span className="text-[11px] text-zinc-400">Real names never revealed to other members</span>
-              </div>
-              <div className="p-3.5 bg-black/50 border border-zinc-800/80 rounded-2xl">
-                <span className="text-purple-400 font-bold font-mono block">Mutual Spark DMs</span>
-                <span className="text-[11px] text-zinc-400">Direct messaging unlocks solely on mutual desire</span>
-              </div>
-              <div className="p-3.5 bg-black/50 border border-zinc-800/80 rounded-2xl">
-                <span className="text-amber-400 font-bold font-mono block">Verified Guests Only</span>
-                <span className="text-[11px] text-zinc-400">Zero bots, fake accounts, or strangers</span>
-              </div>
-            </div>
-
-            <div className="pt-2 flex flex-wrap items-center gap-4">
-              <Link
-                href="/the-circle"
-                className="px-6 py-3.5 bg-gradient-to-r from-rose-600 via-rose-500 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-extrabold text-xs uppercase tracking-widest rounded-2xl shadow-xl transition-all flex items-center gap-2 active:scale-98"
-              >
-                <Flame className="w-4 h-4" />
-                <span>Explore The Circle &rarr;</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Sanctuary Pass & Secret Gatherings Showcase */}
       <section className="py-20 px-4 sm:px-6 max-w-6xl mx-auto">

@@ -95,8 +95,8 @@ export default async function SpacePage({ params }: { params: Promise<{ slug: st
         .eq('space_id', space.id);
 
       const allBlocked = [
-        ...(bookingData || []).map(b => ({ check_in: b.check_in, check_out: b.check_out })),
-        ...(externalBlockedData || []).map(b => ({ check_in: b.start_date, check_out: b.end_date }))
+        ...(bookingData || []).map((b: any) => ({ check_in: b.check_in, check_out: b.check_out })),
+        ...(externalBlockedData || []).map((b: any) => ({ check_in: b.start_date, check_out: b.end_date }))
       ];
       space.bookings = allBlocked;
     }

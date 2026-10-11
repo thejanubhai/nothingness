@@ -19,7 +19,7 @@ export default async function AdminMessages() {
     .select('*')
     .order('created_at', { ascending: false });
 
-  const unreadCount = (messages || []).filter((m) => m.status === 'unread').length;
+  const unreadCount = (messages || []).filter((m: any) => m.status === 'unread').length;
 
   return (
     <div className="space-y-10 max-w-6xl mx-auto pb-16">
@@ -43,7 +43,7 @@ export default async function AdminMessages() {
         </div>
         
         <div className="grid grid-cols-1 gap-3.5">
-          {messages?.map((msg) => (
+          {messages?.map((msg: any) => (
             <div 
               key={msg.id} 
               className="bg-zinc-950/60 border border-white/5 rounded-3xl p-5 sm:p-6 flex flex-col md:flex-row gap-6 shadow-xl backdrop-blur-md hover:border-white/10 transition-all"
@@ -102,7 +102,7 @@ export default async function AdminMessages() {
         </div>
         
         <div className="grid grid-cols-1 gap-3.5">
-          {franchiseLeads?.map((lead) => (
+          {franchiseLeads?.map((lead: any) => (
             <div 
               key={lead.id} 
               className="bg-zinc-950/60 border border-white/5 rounded-3xl p-5 sm:p-6 flex flex-col lg:flex-row gap-6 shadow-xl backdrop-blur-md"

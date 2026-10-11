@@ -71,7 +71,7 @@ export async function GET() {
         id: user.id,
         email: user.email,
         phone: user.phone || (user.email?.includes('@auth.nothingness') ? `+${user.email.split('@')[0]}` : ''),
-        fullName: user.user_metadata?.full_name || '',
+        fullName: (user as any).user_metadata?.full_name || '',
       } : null,
     });
   } catch (err: any) {
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     // 1. INITIATE SETUP PAYMENT (PAYU OR ZERO-FEE GRANT)
     // ------------------------------------------------------------------
     if (action === 'initiate_setup_payment' || action === 'pay_setup_fee') {
-      const effectiveName = partnerName || user?.user_metadata?.full_name || 'Partner Principal';
+      const effectiveName = partnerName || (user as any)?.user_metadata?.full_name || 'Partner Principal';
       const effectiveEmail = partnerEmail || user?.email || 'partner@nothingness.asia';
       const effectivePhone = partnerPhone || user?.phone || (user?.email?.includes('@auth.nothingness') ? `+${user.email.split('@')[0]}` : '+91 99999 99999');
 
@@ -322,7 +322,7 @@ export async function POST(req: NextRequest) {
             .from('partner_profiles')
             .insert({
               user_id: user.id,
-              full_name: partnerName || user.user_metadata?.full_name || 'Partner Host',
+              full_name: partnerName || (user as any).user_metadata?.full_name || 'Partner Host',
               email: partnerEmail || user.email || 'partner@nothingness.asia',
               phone: partnerPhone || user.phone || '+91 99999 99999',
               contract_signed: true,

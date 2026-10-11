@@ -148,7 +148,7 @@ export async function checkAndDispatchStage2IfAllGuestsVerified(bookingId: strin
     .eq('booking_id', bookingId);
 
   const totalGuests = guests?.length || 0;
-  const verifiedGuests = (guests || []).filter((g) => g.verification_status === 'verified').length;
+  const verifiedGuests = (guests || []).filter((g: any) => g.verification_status === 'verified').length;
   const expectedGuests = Math.max(
     totalGuests,
     booking.guests || (1 + ((booking as any).additional_guests_count || 0))

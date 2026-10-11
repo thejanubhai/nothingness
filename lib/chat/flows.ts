@@ -193,7 +193,7 @@ async function handleDateCheckFlow(state: ConversationState, input: string) {
       // Query live spaces from Supabase database
       const { data: spaces } = await supabase.from('spaces').select('id, title, price_per_night').eq('is_active', true).limit(3);
       
-      const spaceNames = spaces?.map(s => s.title).join(', ') || 'our sanctuaries';
+      const spaceNames = spaces?.map((s: any) => s.title).join(', ') || 'our sanctuaries';
       responseText = `I've checked our live reservation system for your dates (${input}). ${spaceNames} currently have availability! Would you like to proceed with booking?`;
       updatedState.flow_step = 'ask_book_intent';
       updatedState.flow_context.dates = input;

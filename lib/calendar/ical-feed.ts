@@ -162,7 +162,7 @@ export async function generateIcalResponse(
           .eq('is_active', true);
 
         const tenMinsAgo = Date.now() - 10 * 60 * 1000;
-        const needsSync = sources && sources.some(s => !s.last_synced_at || new Date(s.last_synced_at).getTime() < tenMinsAgo);
+        const needsSync = sources && sources.some((s: any) => !s.last_synced_at || new Date(s.last_synced_at).getTime() < tenMinsAgo);
 
         if (needsSync) {
           // Trigger sync in background so iCal response returns instantly (< 100ms) for OTAs like Agoda/Airbnb
@@ -193,7 +193,7 @@ export async function generateIcalResponse(
 
       const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
-      bookings?.forEach((b) => {
+      bookings?.forEach((b: any) => {
         // If pending, only block dates if paid or within 30 min checkout window
         if (b.status === 'pending') {
           const isPaid = b.payment_status === 'completed';
@@ -218,7 +218,7 @@ export async function generateIcalResponse(
         .select('id, start_date, end_date, summary, external_uid')
         .eq('space_id', space.id);
 
-      externalDates?.forEach((blocked) => {
+      externalDates?.forEach((blocked: any) => {
         const uid = blocked.external_uid
           ? (blocked.external_uid.includes('@') ? blocked.external_uid : `${blocked.external_uid}@nothingness.asia`)
           : `block-${blocked.id}@nothingness.asia`;

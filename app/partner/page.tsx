@@ -112,7 +112,7 @@ export default async function PartnerPage() {
   const partnerProfile = {
     id: dbProfile?.id || user?.id || 'partner-host',
     user_id: user?.id || 'partner-host',
-    full_name: dbProfile?.full_name || user?.user_metadata?.full_name || 'Vetted Host Partner',
+    full_name: dbProfile?.full_name || (user as any)?.user_metadata?.full_name || 'Vetted Host Partner',
     email: dbProfile?.email || user?.email || 'partner@nothingness.asia',
     phone: dbProfile?.phone || user?.phone || (user?.email?.includes('@auth.nothingness') ? `+${user.email.split('@')[0]}` : '+91 98101 22910'),
     status: (dbProfile?.status || (user ? 'under_review' : 'active')) as any,

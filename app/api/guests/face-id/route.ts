@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
           .from('guest_profiles')
           .insert({
             user_id: user.id,
-            full_name: user.user_metadata?.full_name || 'Nothingness Guest',
+            full_name: (user as any).user_metadata?.full_name || 'Nothingness Guest',
             phone: user.phone || null,
             phone_number: user.phone || null,
             face_id_vetted: true,

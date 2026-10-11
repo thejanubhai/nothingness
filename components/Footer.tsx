@@ -15,10 +15,10 @@ export default function Footer() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: any) => {
       if (data?.user) setIsLoggedIn(true);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_: any, session: any) => {
       setIsLoggedIn(!!session?.user);
     });
     return () => subscription.unsubscribe();
@@ -30,7 +30,6 @@ export default function Footer() {
   // Hide on admin and dedicated native app routes (Lifestyle, Events, Portal, Verification)
   const isAppRoute = 
     pathname?.startsWith('/admin') ||
-    pathname?.startsWith('/kinksters') ||
     pathname?.startsWith('/sanctuary-pass') ||
     pathname?.startsWith('/dashboard') ||
     pathname?.startsWith('/verify') ||
@@ -78,12 +77,6 @@ export default function Footer() {
               <li>
                 <Link href="/sanctuary-pass" className={linkClass}>
                   Sanctuary Pass ✨
-                  <span className={underlineClass} />
-                </Link>
-              </li>
-              <li>
-                <Link href="/kinksters" className={linkClass}>
-                  The Circle ✦
                   <span className={underlineClass} />
                 </Link>
               </li>

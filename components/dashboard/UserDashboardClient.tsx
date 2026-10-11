@@ -58,7 +58,7 @@ interface UserDashboardClientProps {
     face_id_vetted_at?: string;
     police_register_status?: string;
   } | null;
-  kinksterProfile: any | null;
+  kinksterProfile?: any | null;
   sanctuaryPass?: any | null;
   upcomingBookings: any[];
   pastBookings?: any[];
@@ -69,7 +69,6 @@ interface UserDashboardClientProps {
 export default function UserDashboardClient({
   user,
   profile,
-  kinksterProfile,
   sanctuaryPass,
   upcomingBookings,
   pastBookings = [],
@@ -80,7 +79,6 @@ export default function UserDashboardClient({
   const [showFaceIdModal, setShowFaceIdModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
-  const [activePersona, setActivePersona] = useState<'civilian' | 'lifestyle'>('civilian');
   const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
 
   const [isVerified, setIsVerified] = useState(profile?.is_verified ?? false);
@@ -91,7 +89,6 @@ export default function UserDashboardClient({
   const [bookings, setBookings] = useState<any[]>(upcomingBookings || []);
   const [pastStays, setPastStays] = useState<any[]>(pastBookings || []);
   const [currentPass, setCurrentPass] = useState(sanctuaryPass);
-  const [currentKinkster, setCurrentKinkster] = useState(kinksterProfile);
 
   useEffect(() => {
     setIsVerified(profile?.is_verified ?? false);
@@ -113,11 +110,7 @@ export default function UserDashboardClient({
     setCurrentPass(sanctuaryPass);
   }, [sanctuaryPass]);
 
-  useEffect(() => {
-    setCurrentKinkster(kinksterProfile);
-  }, [kinksterProfile]);
-
-  // Real-time synchronization with Supabase
+  // Real-time synchronization with Supabase / Firestore
   useEffect(() => {
     const supabase = createClient();
 
@@ -126,7 +119,7 @@ export default function UserDashboardClient({
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'sanctuary_passes' },
-        (payload) => {
+        (payload: any) => {
           if (payload.new && ((payload.new as any).user_id === user.id || (payload.new as any).guest_profile_id === profile?.id)) {
             setCurrentPass(payload.new);
           } else if (payload.eventType === 'DELETE') {
@@ -136,19 +129,8 @@ export default function UserDashboardClient({
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'kinkster_profiles' },
-        (payload) => {
-          if (payload.new && ((payload.new as any).id === user.id || (payload.new as any).guest_profile_id === profile?.id)) {
-            setCurrentKinkster(payload.new);
-          } else if (payload.eventType === 'DELETE') {
-            setCurrentKinkster(null);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
         { event: '*', schema: 'public', table: 'guest_profiles' },
-        (payload) => {
+        (payload: any) => {
           if (payload.new && (payload.new as any).id === profile?.id) {
             setIsVerified((payload.new as any).is_verified);
             setIsFaceIdVetted((payload.new as any).face_id_vetted);
@@ -174,7 +156,7 @@ export default function UserDashboardClient({
           pid: profile?.id || null,
           v: isVerified,
           fid: isFaceIdVetted,
-          alias: currentKinkster?.alias || null,
+          name: verifiedName || null,
           tier: sovereignTier,
           issued: new Date().toISOString(),
         });
@@ -192,7 +174,7 @@ export default function UserDashboardClient({
       }
     };
     generateQr();
-  }, [user.id, profile?.id, isVerified, isFaceIdVetted, currentKinkster?.alias, sovereignTier]);
+  }, [user.id, profile?.id, isVerified, isFaceIdVetted, verifiedName, sovereignTier]);
 
   // Calculate Days Left for 180-day ID validity
   let daysLeft = 0;
@@ -330,30 +312,11 @@ export default function UserDashboardClient({
           </div>
 
           {/* Persona Switcher Tab */}
+          {/* Official Identity Header */}
           <div className="flex items-center justify-between gap-4">
-            <div className="flex bg-zinc-900/90 border border-white/10 p-1 rounded-2xl backdrop-blur-md">
-              <button
-                onClick={() => setActivePersona('civilian')}
-                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                  activePersona === 'civilian'
-                    ? 'bg-accent-gold text-black shadow-md'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Civilian Identity</span>
-              </button>
-              <button
-                onClick={() => setActivePersona('lifestyle')}
-                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                  activePersona === 'lifestyle'
-                    ? 'bg-gradient-to-r from-rose-600 to-purple-600 text-white shadow-md'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <Flame className="w-3.5 h-3.5 text-rose-400" />
-                <span>Lifestyle Persona</span>
-              </button>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-white/10 text-xs font-mono font-bold text-accent-gold">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Civilian Government Identity</span>
             </div>
 
             {/* Quick Refresh / Update ID Link */}
@@ -365,138 +328,71 @@ export default function UserDashboardClient({
             </button>
           </div>
 
-          {/* Persona Body Display */}
-          {activePersona === 'civilian' ? (
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              {/* Left: Live Face ID / ID Avatar */}
-              <div className="md:col-span-4 flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-accent-gold/40 bg-zinc-900 shadow-xl shrink-0 flex items-center justify-center">
-                    {liveFaceUrl ? (
-                      <img src={liveFaceUrl} alt="Verified Face ID" className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-10 h-10 text-zinc-600" />
-                    )}
-                  </div>
-                  {isFaceIdVetted && (
-                    <span className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-emerald-500 border-2 border-black flex items-center justify-center text-white" title="3D Face ID Matched">
-                      <Check className="w-3.5 h-3.5" />
-                    </span>
+          {/* Identity Body Display */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            {/* Left: Live Face ID / ID Avatar */}
+            <div className="md:col-span-4 flex items-center gap-4">
+              <div className="relative">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-accent-gold/40 bg-zinc-900 shadow-xl shrink-0 flex items-center justify-center">
+                  {liveFaceUrl ? (
+                    <img src={liveFaceUrl} alt="Verified Face ID" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-10 h-10 text-zinc-600" />
                   )}
                 </div>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] uppercase font-mono tracking-widest text-zinc-500 block">
-                    GOVERNMENT LEGAL RECORD
+                {isFaceIdVetted && (
+                  <span className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-emerald-500 border-2 border-black flex items-center justify-center text-white" title="3D Face ID Matched">
+                    <Check className="w-3.5 h-3.5" />
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-serif font-bold text-white leading-tight">
-                    {verifiedName || 'Verification Incomplete'}
-                  </h3>
-                  <p className="text-xs font-mono text-zinc-400">
-                    {docType ? `${docType.toUpperCase()} Record` : 'Aadhaar / Passport'}
-                  </p>
-                  <button
-                    onClick={() => setShowFaceIdModal(true)}
-                    className="text-[11px] font-mono text-accent-gold hover:text-white flex items-center gap-1 mt-1 cursor-pointer"
-                  >
-                    <Camera className="w-3 h-3" />
-                    <span>{isFaceIdVetted ? 'Retake 3D Face ID' : 'Scan 3D Face ID'}</span>
-                  </button>
-                </div>
+                )}
               </div>
 
-              {/* Middle: Details Grid */}
-              <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-white/[0.06] space-y-1">
-                  <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
-                    <Smartphone className="w-3 h-3 text-accent-gold" /> Registered Mobile
-                  </span>
-                  <p className="text-xs font-mono font-semibold text-white">{userPhone}</p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-white/[0.06] space-y-1">
-                  <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
-                    <Mail className="w-3 h-3 text-accent-gold" /> Sovereign Mail
-                  </span>
-                  <p className="text-xs font-semibold text-white truncate">{user.email || 'None'}</p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-white/[0.06] space-y-1">
-                  <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-accent-gold" /> Statutory Validity
-                  </span>
-                  <p className="text-xs font-mono font-semibold text-emerald-400">
-                    {isVerified ? `${daysLeft} Days Left` : 'Action Required'}
-                  </p>
-                </div>
+              <div className="space-y-1">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-zinc-500 block">
+                  GOVERNMENT LEGAL RECORD
+                </span>
+                <h3 className="text-xl sm:text-2xl font-serif font-bold text-white leading-tight">
+                  {verifiedName || 'Verification Incomplete'}
+                </h3>
+                <p className="text-xs font-mono text-zinc-400">
+                  {docType ? `${docType.toUpperCase()} Record` : 'Aadhaar / Passport'}
+                </p>
+                <button
+                  onClick={() => setShowFaceIdModal(true)}
+                  className="text-[11px] font-mono text-accent-gold hover:text-white flex items-center gap-1 mt-1 cursor-pointer"
+                >
+                  <Camera className="w-3 h-3" />
+                  <span>{isFaceIdVetted ? 'Retake 3D Face ID' : 'Scan 3D Face ID'}</span>
+                </button>
               </div>
             </div>
-          ) : (
-            /* Lifestyle Persona Mode */
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              <div className="md:col-span-4 flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-rose-500/50 bg-zinc-900 shadow-xl shrink-0 flex items-center justify-center">
-                    {currentKinkster?.avatar_url ? (
-                      <img src={currentKinkster.avatar_url} alt="Kinkster Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <Flame className="w-10 h-10 text-rose-500/50" />
-                    )}
-                  </div>
-                  {currentKinkster?.is_activated && (
-                    <span className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-rose-500 border-2 border-black flex items-center justify-center text-white" title="Active Kinkster">
-                      <Flame className="w-3.5 h-3.5" />
-                    </span>
-                  )}
-                </div>
 
-                <div className="space-y-1">
-                  <span className="text-[10px] uppercase font-mono tracking-widest text-rose-400 block">
-                    THE CIRCLE ALIAS
-                  </span>
-                  <h3 className="text-xl sm:text-2xl font-mono font-bold text-white leading-tight">
-                    {currentKinkster?.alias ? `@${currentKinkster.alias}` : 'Anonymous @Alias Pending'}
-                  </h3>
-                  <p className="text-xs text-zinc-400 line-clamp-1">
-                    {currentKinkster?.bio || 'The Circle Member'}
-                  </p>
-                  <Link
-                    href="/kinksters"
-                    className="text-[11px] font-mono text-rose-400 hover:text-white flex items-center gap-1 mt-1 cursor-pointer"
-                  >
-                    <span>Enter The Circle Feed →</span>
-                  </Link>
-                </div>
+            {/* Middle: Details Grid */}
+            <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-white/[0.06] space-y-1">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
+                  <Smartphone className="w-3 h-3 text-accent-gold" /> Registered Mobile
+                </span>
+                <p className="text-xs font-mono font-semibold text-white">{userPhone}</p>
               </div>
 
-              <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-white/[0.06] space-y-1">
-                  <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-rose-400" /> Discretion Score
-                  </span>
-                  <p className="text-xs font-mono font-semibold text-white">5.0 ★ (Ultra-Discreet)</p>
-                </div>
+              <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-white/[0.06] space-y-1">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
+                  <Mail className="w-3 h-3 text-accent-gold" /> Sovereign Mail
+                </span>
+                <p className="text-xs font-semibold text-white truncate">{user.email || 'None'}</p>
+              </div>
 
-                <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-white/[0.06] space-y-1">
-                  <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
-                    <Flame className="w-3 h-3 text-rose-400" /> Verified Credentials
-                  </span>
-                  <p className="text-xs font-semibold text-white">
-                    {currentKinkster?.stay_verified ? 'Stay Verified ✓' : 'Eligible via Stays'}
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-white/[0.06] space-y-1">
-                  <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
-                    <Ticket className="w-3 h-3 text-amber-400" /> Sanctuary Pass
-                  </span>
-                  <p className="text-xs font-mono font-semibold text-amber-300">
-                    {currentPass?.status === 'active' ? (currentPass.pass_tier || 'Noir Luminary') : 'Events Vault Ready'}
-                  </p>
-                </div>
+              <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-white/[0.06] space-y-1">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-accent-gold" /> Statutory Validity
+                </span>
+                <p className="text-xs font-mono font-semibold text-emerald-400">
+                  {isVerified ? `${daysLeft} Days Left` : 'Action Required'}
+                </p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Card Bottom Verification Status Banner */}
           {isVerified ? (
@@ -573,15 +469,15 @@ export default function UserDashboardClient({
 
         <div className="p-5 rounded-3xl bg-zinc-950 border border-zinc-800 shadow-xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">The Circle</span>
-            <Flame className="w-4 h-4 text-rose-400" />
+            <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Sovereign Tier</span>
+            <Sparkles className="w-4 h-4 text-accent-gold" />
           </div>
-          <p className="text-lg sm:text-xl font-bold font-mono text-rose-300 truncate">
-            {currentKinkster?.alias ? `@${currentKinkster.alias}` : 'Available'}
+          <p className="text-lg sm:text-xl font-bold font-serif text-white truncate">
+            {sovereignTier.split(':')[0]}
           </p>
-          <Link href="/kinksters" className="text-[11px] text-rose-400/80 hover:text-rose-300 underline font-mono block">
-            {currentKinkster?.is_activated ? 'Open Whispers & Feed →' : 'Activate Alias →'}
-          </Link>
+          <p className="text-[11px] text-zinc-400">
+            {isVerified ? 'Fully Verified Resident' : 'Vetting in Progress'}
+          </p>
         </div>
       </div>
 
@@ -915,41 +811,29 @@ export default function UserDashboardClient({
             </Link>
           </div>
 
-          {/* OPTION C: LIFESTYLE & KINKSTER CIRCLE */}
-          <div className={`border rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-500 shadow-xl relative overflow-hidden ${
-            currentKinkster?.is_activated 
-              ? 'bg-gradient-to-b from-rose-950/25 via-zinc-950 to-zinc-950 border-rose-500/40 shadow-rose-500/5' 
-              : 'bg-zinc-950 border-zinc-800 hover:border-rose-500/40'
-          }`}>
-            <div className="absolute top-0 right-0 w-48 h-48 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
+          {/* OPTION C: SANCTUARY JOURNAL & DISPATCHES */}
+          <div className="bg-zinc-950 border border-zinc-800 hover:border-amber-500/40 rounded-3xl p-6 sm:p-7 flex flex-col justify-between group transition-all duration-300 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-5">
-                <Flame className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-5">
+                <Compass className="w-6 h-6" />
               </div>
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-serif text-lg sm:text-xl text-white font-bold">The Circle</h3>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                  currentKinkster?.is_activated 
-                    ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
-                    : 'bg-zinc-800 border border-zinc-700 text-zinc-400'
-                }`}>
-                  {currentKinkster?.is_activated ? `@${currentKinkster.alias}` : 'Anonymous @Alias'}
+                <h3 className="font-serif text-lg sm:text-xl text-white font-bold">Sanctuary Journal</h3>
+                <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400 text-[10px] font-mono font-bold">
+                  Curated Stories
                 </span>
               </div>
               <p className="text-xs text-zinc-400 leading-relaxed mb-6">
-                Exclusive community for vetted adults. Create an encrypted alias to explore private media feeds, mutual matching, and audio stories.
+                Read architectural notes, design philosophy, quiet sanctuary essays, and dispatches from the Nothingness collective.
               </p>
             </div>
 
             <Link
-              href="/kinksters"
-              className={`w-full inline-flex items-center justify-between px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-lg ${
-                currentKinkster?.is_activated
-                  ? 'bg-gradient-to-r from-rose-600 to-purple-600 text-white hover:from-rose-500 hover:to-purple-500'
-                  : 'bg-zinc-900 group-hover:bg-gradient-to-r group-hover:from-rose-600 group-hover:to-purple-600 text-white'
-              }`}
+              href="/journal"
+              className="w-full inline-flex items-center justify-between px-4 py-3.5 bg-zinc-900 group-hover:bg-amber-400 group-hover:text-black text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-lg"
             >
-              <span>{currentKinkster?.is_activated ? 'Enter Lifestyle Feed' : 'Activate Anonymous @Alias'}</span>
+              <span>Explore Journal</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

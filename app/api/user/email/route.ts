@@ -67,7 +67,7 @@ export async function POST(req: Request) {
       try {
         const resend = new Resend(env.RESEND_API_KEY);
         const siteUrl = env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
-        const guestName = user.user_metadata?.full_name || 'Valued Guest';
+        const guestName = (user as any).user_metadata?.full_name || 'Valued Guest';
 
         const luxuryHtml = `
 <!DOCTYPE html>

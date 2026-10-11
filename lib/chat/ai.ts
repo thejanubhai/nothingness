@@ -16,7 +16,7 @@ export async function handleAiFallback(
 
   let spacesInfo = "Available Luxury Sanctuaries & Max Guest Limits:\n";
   if (activeSpaces && activeSpaces.length > 0) {
-    activeSpaces.forEach(s => {
+    activeSpaces.forEach((s: any) => {
       spacesInfo += `- ${s.title}: Max ${s.max_guests} Guests (Check-in ${s.check_in_time || '1:00 PM onwards'}, Check-out ${s.check_out_time || 'Strictly 11:00 AM'}). Key Info: ${s.key_instructions || 'Key lockbox'}\n`;
     });
   }
@@ -31,7 +31,7 @@ export async function handleAiFallback(
 
   let historyContext = "Recent Conversation History:\n";
   if (messages) {
-    messages.forEach((msg) => {
+    messages.forEach((msg: any) => {
       historyContext += `${msg.sender_type === 'guest' ? 'Guest' : 'System'}: ${msg.content}\n`;
     });
   }

@@ -7,11 +7,7 @@ import { Send, Bot, User, UserCheck, GraduationCap } from 'lucide-react'
 import { toast } from 'sonner'
 
 // A client-side supabase instance for realtime subscriptions
-// We use anon key for realtime, assuming we have row level security disabled for this internal tool MVP
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createClient()
 
 interface Message {
   id: string
@@ -46,7 +42,7 @@ export default function InboxClient({ initialConversationId, initialMessages }: 
           table: 'messages',
           filter: `conversation_id=eq.${conversationId}`
         },
-        (payload) => {
+        (payload: any) => {
           const newMessage = payload.new as Message
           setMessages(prev => {
             // Avoid duplicates
@@ -58,7 +54,7 @@ export default function InboxClient({ initialConversationId, initialMessages }: 
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      (supabase as any).removeChannel(channel)
     }
   }, [conversationId])
 

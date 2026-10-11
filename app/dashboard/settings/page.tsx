@@ -33,8 +33,8 @@ export default async function SettingsPage() {
 
   // Handle synthetic bridge emails (e.g. 8527976791@auth.nothingness.asia)
   const isSyntheticEmail = Boolean(user.email && user.email.includes('@auth.nothingness'));
-  const realEmail = isSyntheticEmail ? (user.user_metadata?.email || '') : (user.email || '');
-  const displayPhone = user.phone || user.user_metadata?.phone || (isSyntheticEmail && user.email ? `+${user.email.split('@')[0]}` : 'Phone Not Linked');
+  const realEmail = isSyntheticEmail ? ((user as any).user_metadata?.email || '') : (user.email || '');
+  const displayPhone = user.phone || (user as any).user_metadata?.phone || (isSyntheticEmail && user.email ? `+${user.email.split('@')[0]}` : 'Phone Not Linked');
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -52,7 +52,7 @@ export default async function SettingsPage() {
         <div className="relative">
           <EmailUpdateForm initialEmail={realEmail} />
           <div className="absolute top-6 right-6 md:top-8 md:right-8">
-            {(user.email_confirmed_at || user.user_metadata?.email_confirmed) && !isSyntheticEmail ? (
+            {((user as any).email_confirmed_at || (user as any).user_metadata?.email_confirmed) && !isSyntheticEmail ? (
               <span className="flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Verified
               </span>
@@ -77,7 +77,7 @@ export default async function SettingsPage() {
           </div>
           <div className="w-full md:w-auto shrink-0 flex flex-col md:items-end gap-2">
             <span className="bg-white/5 text-white/50 px-4 py-2 rounded-lg text-xs tracking-wide">Cannot be changed</span>
-            {user.phone_confirmed_at && (
+            {(user as any).phone_confirmed_at && (
               <span className="flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Verified
               </span>

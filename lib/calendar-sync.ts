@@ -244,8 +244,8 @@ export async function syncCalendars(
 
       if (existingDates && existingDates.length > 0) {
         const staleFutureIds = existingDates
-          .filter(d => d.end_date >= todayStr && !activeUids.has(d.external_uid))
-          .map(d => d.id);
+          .filter((d: any) => d.end_date >= todayStr && !activeUids.has(d.external_uid))
+          .map((d: any) => d.id);
 
         if (staleFutureIds.length > 0) {
           await supabase

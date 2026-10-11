@@ -54,21 +54,21 @@ export async function POST(req: NextRequest) {
           .eq('event_id', eventId)
           .in('status', ['confirmed', 'approved_payment_pending']);
 
-        userIds = (eventApps || []).map((a) => a.user_id);
+        userIds = (eventApps || []).map((a: any) => a.user_id);
       } else if (targetGroup === 'all_passholders') {
         const { data: passes } = await adminClient
           .from('sanctuary_passes')
           .select('user_id')
           .eq('status', 'active');
 
-        userIds = (passes || []).map((p) => p.user_id);
+        userIds = (passes || []).map((p: any) => p.user_id);
       } else {
         // All subscribed users
         const { data: subs } = await adminClient
           .from('web_push_subscriptions')
           .select('user_id');
 
-        userIds = Array.from(new Set((subs || []).map((s) => s.user_id)));
+        userIds = Array.from(new Set((subs || []).map((s: any) => s.user_id)));
       }
 
       const pushRes = await broadcastPushNotification(userIds, {

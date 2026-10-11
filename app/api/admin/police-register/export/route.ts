@@ -54,7 +54,7 @@ export async function GET(req: Request) {
       'ID Back Document URL'
     ];
     
-    const rows = (guests || []).map((g, idx) => [
+    const rows = (guests || []).map((g: any, idx: number) => [
       idx + 1,
       `"${g.full_name || ''}"`,
       `"${g.dob || ''}"`,
@@ -72,7 +72,7 @@ export async function GET(req: Request) {
       `"${g.id_back_url || ''}"`
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const csvContent = [headers.join(','), ...rows.map((r: any) => r.join(','))].join('\n');
 
     return new NextResponse(csvContent, {
       status: 200,

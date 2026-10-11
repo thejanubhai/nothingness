@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch post details for referenced posts
-    const postIds = Array.from(new Set((reports || []).map((r) => r.post_id)));
+    const postIds = Array.from(new Set((reports || []).map((r: any) => r.post_id)));
     let postsMap: Record<string, any> = {};
 
     if (postIds.length > 0) {
@@ -54,14 +54,14 @@ export async function GET(req: NextRequest) {
           .in('id', postIds);
 
         if (posts) {
-          posts.forEach((p) => {
+          posts.forEach((p: any) => {
             postsMap[p.id] = p;
           });
         }
       } catch (_) {}
     }
 
-    const enrichedReports = (reports || []).map((r) => ({
+    const enrichedReports = (reports || []).map((r: any) => ({
       ...r,
       post: postsMap[r.post_id] || null,
     }));

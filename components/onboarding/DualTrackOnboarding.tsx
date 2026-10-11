@@ -25,6 +25,7 @@ import {
   Check,
   Phone,
   Ticket,
+  BookOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PLATFORMS, type SupportedPlatform } from '@/components/icons/BookingPlatformLogos';
@@ -347,40 +348,40 @@ export default function DualTrackOnboarding({
                 </div>
               </motion.div>
 
-              {/* Track 2: Lifestyle, Events & Membership */}
+              {/* Track 2: Gatherings, Passes & Franchise */}
               <motion.div
                 whileHover={{ scale: 1.015, y: -2 }}
                 whileTap={{ scale: 0.99 }}
                 onClick={() => setSelectedTrack('lifestyle')}
-                className="cursor-pointer bg-gradient-to-b from-zinc-900/90 to-zinc-950 border border-zinc-800 hover:border-rose-500/60 rounded-2xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 shadow-xl group relative overflow-hidden"
+                className="cursor-pointer bg-gradient-to-b from-zinc-900/90 to-zinc-950 border border-zinc-800 hover:border-amber-500/60 rounded-2xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 shadow-xl group relative overflow-hidden"
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-rose-500/20 transition-all" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/20 transition-all" />
 
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 group-hover:scale-110 transition-transform">
-                      <Flame className="w-6 h-6" />
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                      <Sparkles className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-500/20">
-                      Community &amp; Pass
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
+                      Passes &amp; Partner
                     </span>
                   </div>
 
-                  <h3 className="text-lg sm:text-xl font-serif font-bold text-white mb-2 group-hover:text-rose-400 transition-colors">
-                    Lifestyle, Events &amp; Membership
+                  <h3 className="text-lg sm:text-xl font-serif font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">
+                    Sanctuary Pass &amp; Franchise
                   </h3>
                   <p className="text-zinc-400 text-xs leading-relaxed mb-5">
-                    Looking for vetted adult community connections, private blind date nights, 6-month sanctuary lounge passes, or listing luxury properties as a host partner.
+                    Explore curated gathering access, 6-month sanctuary lounge passes, or list high-design luxury properties as an official host partner.
                   </p>
 
                   {/* Badges preview */}
                   <div className="grid grid-cols-3 gap-2 py-3 px-3 rounded-xl bg-black/40 border border-zinc-800/80 mb-4 text-[10px] font-mono text-zinc-400">
                     <div className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-white/[0.02]">
-                      <Flame className="w-3.5 h-3.5 text-rose-400 mb-0.5" />
-                      <span>Kinkster</span>
+                      <Ticket className="w-3.5 h-3.5 text-accent-gold mb-0.5" />
+                      <span>Passes</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-white/[0.02]">
-                      <Ticket className="w-3.5 h-3.5 text-accent-gold mb-0.5" />
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300 mb-0.5" />
                       <span>Events</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-white/[0.02]">
@@ -390,8 +391,8 @@ export default function DualTrackOnboarding({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs font-mono text-rose-400 group-hover:translate-x-1 transition-transform pt-2 border-t border-zinc-800/60">
-                  <span>Explore Memberships</span>
+                <div className="flex items-center justify-between text-xs font-mono text-amber-400 group-hover:translate-x-1 transition-transform pt-2 border-t border-zinc-800/60">
+                  <span>Explore Programs</span>
                   <ArrowRight className="w-4 h-4" />
                 </div>
               </motion.div>
@@ -839,28 +840,28 @@ export default function DualTrackOnboarding({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Card 1: Kinkster */}
+              {/* Card 1: Editorial Journal */}
               <Link
-                href="/kinksters"
-                className="bg-zinc-900/70 border border-zinc-800 hover:border-rose-500/60 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group hover:bg-zinc-900 shadow-lg"
+                href="/journal"
+                className="bg-zinc-900/70 border border-zinc-800 hover:border-amber-500/60 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group hover:bg-zinc-900 shadow-lg"
               >
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-3 group-hover:scale-110 transition-transform">
-                    <Flame className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-3 group-hover:scale-110 transition-transform">
+                    <BookOpen className="w-5 h-5" />
                   </div>
-                  <span className="text-[9px] font-mono uppercase tracking-widest text-rose-400 font-bold">
-                    Adult Network
+                  <span className="text-[9px] font-mono uppercase tracking-widest text-amber-400 font-bold">
+                    Editorial
                   </span>
-                  <h4 className="text-base font-bold text-white font-serif mt-1 mb-2 group-hover:text-rose-400 transition-colors">
-                    Vetted Kinkster
+                  <h4 className="text-base font-bold text-white font-serif mt-1 mb-2 group-hover:text-amber-400 transition-colors">
+                    Sanctuary Journal
                   </h4>
                   <p className="text-zinc-400 text-xs leading-relaxed">
-                    Anonymous aliases, blind resonance matchmaking, clean health vetting, and verified adult sanctuary network.
+                    Explore design philosophies, brutalist architecture, acoustic sanctuary acoustics, and curated travel narratives.
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-xs font-mono text-rose-400 pt-4 mt-4 border-t border-zinc-800/80 group-hover:translate-x-1 transition-transform">
-                  <span>Explore Network</span>
+                <div className="flex items-center justify-between text-xs font-mono text-amber-400 pt-4 mt-4 border-t border-zinc-800/80 group-hover:translate-x-1 transition-transform">
+                  <span>Read Journal</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </div>
               </Link>

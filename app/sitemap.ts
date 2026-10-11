@@ -1,12 +1,10 @@
 import { MetadataRoute } from 'next';
-import { createClient } from '@/lib/supabase/client';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { SEED_ARTICLES } from '@/lib/articles-data';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nothingness.asia';
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://amlxlguebzkszkwkzroe.supabase.co';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_j1sYCinQQ5qSdfXOA1coHA__YduyI9j';
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createAdminClient();
 
   // 1. Static Public Pages
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -147,7 +145,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .eq('active', true);
 
     if (spaces && spaces.length > 0) {
-      spaceRoutes = spaces.map((space) => ({
+      spaceRoutes = spaces.map((space: any) => ({
         url: `${baseUrl}/spaces/${space.slug}`,
         lastModified: space.updated_at ? new Date(space.updated_at) : new Date(),
         changeFrequency: 'weekly' as const,

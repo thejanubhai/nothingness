@@ -45,10 +45,10 @@ export async function GET() {
 
     // 4. Calculate Stats
     const totalLeads = leads?.length || 0;
-    const newLeads = leads?.filter(l => l.status === 'new').length || 0;
-    const activePartners = partners?.filter(p => p.status === 'active' || p.verified_by_admin).length || 0;
-    const pendingVerification = partners?.filter(p => p.status === 'under_review' || (p.affidavit_uploaded && !p.verified_by_admin)).length || 0;
-    const paidSetupCount = partners?.filter(p => p.setup_fee_paid).length || 0;
+    const newLeads = leads?.filter((l: any) => l.status === 'new').length || 0;
+    const activePartners = partners?.filter((p: any) => p.status === 'active' || p.verified_by_admin).length || 0;
+    const pendingVerification = partners?.filter((p: any) => p.status === 'under_review' || (p.affidavit_uploaded && !p.verified_by_admin)).length || 0;
+    const paidSetupCount = partners?.filter((p: any) => p.setup_fee_paid).length || 0;
     const totalSetupRevenue = paidSetupCount * 300000;
 
     return NextResponse.json({

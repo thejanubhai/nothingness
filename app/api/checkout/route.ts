@@ -92,8 +92,8 @@ export async function POST(req: Request) {
       ? user.email.split('@')[0].replace(/[^0-9]/g, '') 
       : "9999999999";
     const customerPhone = rawPhone.length >= 10 ? rawPhone.slice(-10) : "9999999999";
-    const primaryName = user.user_metadata?.full_name || "Nothingness Guest";
-    const customerEmail = isSyntheticEmail ? (user.user_metadata?.email || 'concierge@nothingness.asia') : (user.email || 'concierge@nothingness.asia');
+    const primaryName = (user as any).user_metadata?.full_name || "Nothingness Guest";
+    const customerEmail = isSyntheticEmail ? ((user as any).user_metadata?.email || 'concierge@nothingness.asia') : (user.email || 'concierge@nothingness.asia');
 
     // Save preliminary booking to Supabase
     const { data: booking, error: bookingError } = await supabase

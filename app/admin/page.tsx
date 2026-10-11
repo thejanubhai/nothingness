@@ -71,9 +71,9 @@ export default async function AdminDashboard() {
     .select('*', { count: 'exact', head: true })
     .eq('status', 'applied');
 
-  // 4d. Fetch kinkster mode activations count
-  const { count: totalKinksters } = await supabase
-    .from('kinkster_profiles')
+  // 4d. Fetch sanctuary passes count
+  const { count: totalPasses } = await supabase
+    .from('sanctuary_passes')
     .select('*', { count: 'exact', head: true });
 
   // 5. Today's Movements
@@ -91,16 +91,16 @@ export default async function AdminDashboard() {
 
   // 6. Current Month Revenue & Occupancy Calculations
   const currentMonthBookings = allBookings 
-    ? allBookings.filter(b => (b.status === 'confirmed' || b.status === 'completed' || b.status === 'checked_in') && (b.check_in <= currentMonthEnd && b.check_out >= currentMonthStart))
+    ? allBookings.filter((b: any) => (b.status === 'confirmed' || b.status === 'completed' || b.status === 'checked_in') && (b.check_in <= currentMonthEnd && b.check_out >= currentMonthStart))
     : [];
 
-  const currentMonthRevenue = currentMonthBookings.reduce((sum, b) => sum + Number(b.total_price || 0), 0);
+  const currentMonthRevenue = currentMonthBookings.reduce((sum: number, b: any) => sum + Number(b.total_price || 0), 0);
 
   const daysInCurrentMonth = eachDayOfInterval({ start: startOfMonth(now), end: endOfMonth(now) });
   let totalBookedNightsThisMonth = 0;
   daysInCurrentMonth.forEach(day => {
     const dayStr = format(day, 'yyyy-MM-dd');
-    const hasBooking = currentMonthBookings.some(b => b.check_in <= dayStr && b.check_out > dayStr);
+    const hasBooking = currentMonthBookings.some((b: any) => b.check_in <= dayStr && b.check_out > dayStr);
     if (hasBooking) totalBookedNightsThisMonth++;
   });
 
@@ -159,8 +159,8 @@ export default async function AdminDashboard() {
         />
 
         <AdminMetricCard
-          label="The Circle Network"
-          value={(totalKinksters || 0).toString()}
+          label="Sanctuary Passes"
+          value={(totalPasses || 0).toString()}
           subtext={`${pendingGatheringApplications || 0} Gathering Vetting Queue`}
           icon={Sparkles}
           highlightColor="purple"

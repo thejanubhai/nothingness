@@ -47,7 +47,7 @@ export default function RegisterPasskeyButton({ className }: { className?: strin
 
       // Execute full official Supabase WebAuthn ceremony
       // Handles challenge retrieval, navigator.credentials.create, and server verification
-      const { data, error } = await supabase.auth.registerPasskey();
+      const { data, error } = await (supabase.auth as any).registerPasskey();
 
       if (error) {
         const msg = error.message || '';

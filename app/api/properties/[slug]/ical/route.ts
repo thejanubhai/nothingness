@@ -38,7 +38,7 @@ export async function GET(
     prodId: `//nothingness.com//${property.title}//EN`,
   });
 
-  bookings.forEach((booking) => {
+  bookings.forEach((booking: any) => {
     calendar.createEvent({
       start: new Date(booking.check_in),
       end: new Date(booking.check_out),

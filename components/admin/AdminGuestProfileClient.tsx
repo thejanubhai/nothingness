@@ -54,24 +54,19 @@ interface AdminGuestProfileClientProps {
 export default function AdminGuestProfileClient({ 
   initialGuest,
   initialSanctuaryPass,
-  initialKinksterProfile,
 }: AdminGuestProfileClientProps) {
   const router = useRouter();
   const [guest, setGuest] = useState<GuestProfile>(initialGuest);
   const [sanctuaryPass, setSanctuaryPass] = useState<any | null>(initialSanctuaryPass || null);
-  const [kinksterProfile, setKinksterProfile] = useState<any | null>(initialKinksterProfile || null);
 
   // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
-  const [isKinksterModalOpen, setIsKinksterModalOpen] = useState(false);
 
   // Loading states
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingPass, setIsSavingPass] = useState(false);
-  const [isSavingKinkster, setIsSavingKinkster] = useState(false);
   const [isTogglingPass, setIsTogglingPass] = useState(false);
-  const [togglingKinksterKey, setTogglingKinksterKey] = useState<string | null>(null);
 
   // Guest Edit form state
   const [editFormData, setEditFormData] = useState({
@@ -99,21 +94,7 @@ export default function AdminGuestProfileClient({
     admin_notes: sanctuaryPass?.admin_notes || '',
   });
 
-  // Kinkster Profile Form state
-  const [kinksterFormData, setKinksterFormData] = useState({
-    alias: kinksterProfile?.alias || '',
-    bio: kinksterProfile?.bio || '',
-    interests: Array.isArray(kinksterProfile?.interests) ? kinksterProfile.interests.join(', ') : 'Masquerade, Sanctuary Lounge',
-    is_activated: kinksterProfile?.is_activated ?? true,
-    is_trusted_host: Boolean(kinksterProfile?.is_trusted_host),
-    stay_verified: Boolean(kinksterProfile?.stay_verified),
-    face_id_vetted: Boolean(kinksterProfile?.face_id_vetted || guest.face_id_vetted),
-    in_person_vetted: Boolean(kinksterProfile?.in_person_vetted || guest.in_person_vetted),
-    confidentiality_agreed: kinksterProfile?.confidentiality_agreed ?? true,
-    admin_notes: kinksterProfile?.admin_notes || '',
-  });
-
-  // Keep form data in sync when pass/kinkster changes
+  // Keep form data in sync when pass changes
   useEffect(() => {
     if (sanctuaryPass) {
       setPassFormData({
@@ -127,23 +108,6 @@ export default function AdminGuestProfileClient({
     }
   }, [sanctuaryPass]);
 
-  useEffect(() => {
-    if (kinksterProfile) {
-      setKinksterFormData({
-        alias: kinksterProfile.alias || '',
-        bio: kinksterProfile.bio || '',
-        interests: Array.isArray(kinksterProfile.interests) ? kinksterProfile.interests.join(', ') : '',
-        is_activated: kinksterProfile.is_activated ?? true,
-        is_trusted_host: Boolean(kinksterProfile.is_trusted_host),
-        stay_verified: Boolean(kinksterProfile.stay_verified),
-        face_id_vetted: Boolean(kinksterProfile.face_id_vetted),
-        in_person_vetted: Boolean(kinksterProfile.in_person_vetted),
-        confidentiality_agreed: kinksterProfile.confidentiality_agreed ?? true,
-        admin_notes: kinksterProfile.admin_notes || '',
-      });
-    }
-  }, [kinksterProfile]);
-
   // Real-Time Supabase Subscription
   useEffect(() => {
     const supabase = createClient();
@@ -154,7 +118,7 @@ export default function AdminGuestProfileClient({
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'sanctuary_passes' },
-        (payload) => {
+        (payload: any) => {
           if (payload.new && ((payload.new as any).guest_profile_id === guest.id || (payload.new as any).user_id === effectiveUserId || (payload.new as any).user_id === guest.id)) {
             setSanctuaryPass(payload.new);
           } else if (payload.eventType === 'DELETE') {
@@ -164,19 +128,8 @@ export default function AdminGuestProfileClient({
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'kinkster_profiles' },
-        (payload) => {
-          if (payload.new && ((payload.new as any).guest_profile_id === guest.id || (payload.new as any).id === effectiveUserId || (payload.new as any).id === guest.id)) {
-            setKinksterProfile(payload.new);
-          } else if (payload.eventType === 'DELETE') {
-            setKinksterProfile(null);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
         { event: '*', schema: 'public', table: 'guest_profiles', filter: `id=eq.${guest.id}` },
-        (payload) => {
+        (payload: any) => {
           if (payload.new) {
             setGuest((prev) => ({ ...prev, ...(payload.new as any) }));
           }
@@ -315,120 +268,6 @@ export default function AdminGuestProfileClient({
     } catch {
       toast.dismiss();
       toast.error('Network error revoking pass');
-    }
-  };
-
-  // ==========================================
-  // KINKSTER PROFILE ACTIONS
-  // ==========================================
-  const handleToggleKinksterFeature = async (featureKey: string, newValue: boolean) => {
-    if (!kinksterProfile) return;
-    setTogglingKinksterKey(featureKey);
-    const prevKinkster = { ...kinksterProfile };
-
-    // Optimistic UI update
-    setKinksterProfile({ ...kinksterProfile, [featureKey]: newValue });
-    if (featureKey === 'face_id_vetted') {
-      setGuest(prev => ({ ...prev, face_id_vetted: newValue }));
-    }
-    if (featureKey === 'in_person_vetted') {
-      setGuest(prev => ({ ...prev, in_person_vetted: newValue }));
-    }
-
-    try {
-      const res = await fetch(`/api/admin/guests/${guest.id}/kinkster-profile`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [featureKey]: newValue }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setKinksterProfile(data.profile);
-        toast.success(`${featureKey.replace(/_/g, ' ')} set to ${newValue ? 'ACTIVE' : 'INACTIVE'}`);
-      } else {
-        setKinksterProfile(prevKinkster);
-        toast.error(data.error || 'Failed to update feature');
-      }
-    } catch {
-      setKinksterProfile(prevKinkster);
-      toast.error('Network error updating feature');
-    } finally {
-      setTogglingKinksterKey(null);
-    }
-  };
-
-  const handleSaveKinksterForm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSavingKinkster(true);
-    try {
-      const isExisting = Boolean(kinksterProfile?.id);
-      const url = `/api/admin/guests/${guest.id}/kinkster-profile`;
-      const method = isExisting ? 'PATCH' : 'POST';
-      const interestsArray = kinksterFormData.interests
-        .split(',')
-        .map((s: string) => s.trim())
-        .filter(Boolean);
-
-      const body = {
-        alias: kinksterFormData.alias,
-        bio: kinksterFormData.bio,
-        interests: interestsArray,
-        is_activated: kinksterFormData.is_activated,
-        is_trusted_host: kinksterFormData.is_trusted_host,
-        stay_verified: kinksterFormData.stay_verified,
-        face_id_vetted: kinksterFormData.face_id_vetted,
-        in_person_vetted: kinksterFormData.in_person_vetted,
-        confidentiality_agreed: kinksterFormData.confidentiality_agreed,
-        admin_notes: kinksterFormData.admin_notes,
-      };
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setKinksterProfile(data.profile);
-        setIsKinksterModalOpen(false);
-        toast.success(isExisting ? 'Kinkster profile updated!' : 'Kinkster profile activated successfully!');
-      } else {
-        toast.error(data.error || 'Failed to save Kinkster profile');
-      }
-    } catch {
-      toast.error('Network error saving Kinkster profile');
-    } finally {
-      setIsSavingKinkster(false);
-    }
-  };
-
-  const handleDeleteKinkster = async (hard: boolean = false) => {
-    const confirmMsg = hard
-      ? 'Delete this Kinkster profile permanently? All alias tags and matches will be removed.'
-      : 'Deactivate this Kinkster profile? The user will be unable to access member feeds until reactivated.';
-
-    if (!confirm(confirmMsg)) return;
-
-    try {
-      toast.loading(hard ? 'Deleting profile...' : 'Deactivating profile...');
-      const res = await fetch(`/api/admin/guests/${guest.id}/kinkster-profile?hard=${hard}`, {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-      toast.dismiss();
-      if (res.ok && data.success) {
-        if (hard) {
-          setKinksterProfile(null);
-        } else {
-          setKinksterProfile((prev: any) => ({ ...prev, is_activated: false }));
-        }
-        toast.success(hard ? 'Profile permanently deleted' : 'Profile deactivated');
-      } else {
-        toast.error(data.error || 'Action failed');
-      }
-    } catch {
-      toast.dismiss();
-      toast.error('Network error');
     }
   };
 
@@ -824,226 +663,6 @@ export default function AdminGuestProfileClient({
             )}
           </div>
 
-          {/* ======================================================== */}
-          {/* MODULE 2: KINKSTER LIFESTYLE PROFILE CONTROL (CRUD)      */}
-          {/* ======================================================== */}
-          <div className="bg-zinc-950 border border-rose-500/30 rounded-3xl p-6 md:p-7 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
-                  <Flame className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-lg font-serif font-bold text-white">Kinkster Lifestyle Profile &amp; Vetting</h2>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 whitespace-nowrap ${
-                      kinksterProfile?.is_activated
-                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                        : kinksterProfile
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                    }`}>
-                      {kinksterProfile?.is_activated 
-                        ? `@${kinksterProfile.alias}` 
-                        : kinksterProfile 
-                          ? 'DEACTIVATED' 
-                          : 'NOT INITIALIZED'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-zinc-400 mt-0.5 font-mono">
-                    Encrypted community handle, mutual matching, audio stories, and gatekeeper badges.
-                  </p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => setIsKinksterModalOpen(true)}
-                  className="px-3.5 py-2 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white text-xs font-mono font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
-                >
-                  {kinksterProfile ? <Edit3 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                  <span>{kinksterProfile ? 'Edit Profile' : 'Initialize Profile'}</span>
-                </button>
-
-                {kinksterProfile && (
-                  <button
-                    onClick={() => handleDeleteKinkster(false)}
-                    className="p-2 bg-zinc-900 hover:bg-rose-950/40 text-zinc-400 hover:text-rose-400 border border-zinc-800 rounded-xl transition-colors cursor-pointer"
-                    title="Deactivate Profile"
-                  >
-                    <Power className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Kinkster Body Content */}
-            {kinksterProfile ? (
-              <div className="mt-5 space-y-5">
-                
-                {/* 6 Interactive Live Toggles */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                  
-                  {/* Toggle 1: is_activated */}
-                  <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-white font-mono">Ecosystem Access</p>
-                      <p className="text-[10px] text-zinc-400 font-mono">Profile active in feed</p>
-                    </div>
-                    <button
-                      disabled={togglingKinksterKey === 'is_activated'}
-                      onClick={() => handleToggleKinksterFeature('is_activated', !kinksterProfile.is_activated)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer border ${
-                        kinksterProfile.is_activated
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
-                          : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
-                      }`}
-                    >
-                      {kinksterProfile.is_activated ? 'ON ✓' : 'OFF'}
-                    </button>
-                  </div>
-
-                  {/* Toggle 2: stay_verified */}
-                  <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-white font-mono">Stay Verified Badge</p>
-                      <p className="text-[10px] text-zinc-400 font-mono">Completed sanctuary stay</p>
-                    </div>
-                    <button
-                      disabled={togglingKinksterKey === 'stay_verified'}
-                      onClick={() => handleToggleKinksterFeature('stay_verified', !kinksterProfile.stay_verified)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer border ${
-                        kinksterProfile.stay_verified
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                          : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
-                      }`}
-                    >
-                      {kinksterProfile.stay_verified ? 'ON ✓' : 'OFF'}
-                    </button>
-                  </div>
-
-                  {/* Toggle 3: face_id_vetted */}
-                  <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-white font-mono">3D Face ID Vetted</p>
-                      <p className="text-[10px] text-zinc-400 font-mono">Door biometric pass</p>
-                    </div>
-                    <button
-                      disabled={togglingKinksterKey === 'face_id_vetted'}
-                      onClick={() => handleToggleKinksterFeature('face_id_vetted', !kinksterProfile.face_id_vetted)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer border ${
-                        kinksterProfile.face_id_vetted
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                          : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
-                      }`}
-                    >
-                      {kinksterProfile.face_id_vetted ? 'ON ✓' : 'OFF'}
-                    </button>
-                  </div>
-
-                  {/* Toggle 4: in_person_vetted */}
-                  <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-white font-mono">In-Person Vetted</p>
-                      <p className="text-[10px] text-zinc-400 font-mono">Host / Gatekeeper vetted</p>
-                    </div>
-                    <button
-                      disabled={togglingKinksterKey === 'in_person_vetted'}
-                      onClick={() => handleToggleKinksterFeature('in_person_vetted', !kinksterProfile.in_person_vetted)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer border ${
-                        kinksterProfile.in_person_vetted
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                          : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
-                      }`}
-                    >
-                      {kinksterProfile.in_person_vetted ? 'ON ✓' : 'OFF'}
-                    </button>
-                  </div>
-
-                  {/* Toggle 5: is_trusted_host */}
-                  <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-white font-mono">Trusted Host 👑</p>
-                      <p className="text-[10px] text-zinc-400 font-mono">Eligible for co-stays</p>
-                    </div>
-                    <button
-                      disabled={togglingKinksterKey === 'is_trusted_host'}
-                      onClick={() => handleToggleKinksterFeature('is_trusted_host', !kinksterProfile.is_trusted_host)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer border ${
-                        kinksterProfile.is_trusted_host
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
-                          : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
-                      }`}
-                    >
-                      {kinksterProfile.is_trusted_host ? 'ON ✓' : 'OFF'}
-                    </button>
-                  </div>
-
-                  {/* Toggle 6: confidentiality_agreed */}
-                  <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-white font-mono">NDA / Consent</p>
-                      <p className="text-[10px] text-zinc-400 font-mono">Confidentiality signed</p>
-                    </div>
-                    <button
-                      disabled={togglingKinksterKey === 'confidentiality_agreed'}
-                      onClick={() => handleToggleKinksterFeature('confidentiality_agreed', !kinksterProfile.confidentiality_agreed)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer border ${
-                        kinksterProfile.confidentiality_agreed
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                          : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
-                      }`}
-                    >
-                      {kinksterProfile.confidentiality_agreed ? 'ON ✓' : 'OFF'}
-                    </button>
-                  </div>
-
-                </div>
-
-                {/* Bio & Interests */}
-                <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/80 space-y-2">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-zinc-500">ALIAS HANDLE:</span>
-                    <span className="text-rose-400 font-bold">@{kinksterProfile.alias}</span>
-                  </div>
-                  {kinksterProfile.bio && (
-                    <div className="text-xs font-mono text-zinc-300">
-                      <span className="text-zinc-500 block mb-0.5">BIO:</span>
-                      <p className="italic bg-zinc-950/60 p-2 rounded-xl border border-zinc-800/60">"{kinksterProfile.bio}"</p>
-                    </div>
-                  )}
-                  {Array.isArray(kinksterProfile.interests) && kinksterProfile.interests.length > 0 && (
-                    <div className="pt-2 flex flex-wrap gap-1.5 items-center">
-                      <span className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider mr-1">Interests:</span>
-                      {kinksterProfile.interests.map((tag: string, i: number) => (
-                        <span key={i} className="px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700 text-[10px] font-mono">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-              </div>
-            ) : (
-              <div className="mt-5 p-5 border border-dashed border-zinc-800/80 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono">
-                <div className="space-y-1 text-center sm:text-left">
-                  <p className="text-zinc-300 font-bold">No Kinkster profile created yet for {guest.full_name}.</p>
-                  <p className="text-zinc-500 text-[11px]">Create an encrypted alias and grant vetted community badges.</p>
-                </div>
-                <button
-                  onClick={() => setIsKinksterModalOpen(true)}
-                  className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  + Initialize Profile
-                </button>
-              </div>
-            )}
-          </div>
-
           {/* Stays History */}
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-xl">
             <h2 className="text-xs font-mono font-bold text-white p-6 border-b border-zinc-800 uppercase tracking-widest">
@@ -1404,164 +1023,6 @@ export default function AdminGuestProfileClient({
                   className="px-5 py-2 bg-accent-gold text-black font-bold uppercase rounded-xl hover:bg-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSavingPass ? 'Saving...' : sanctuaryPass ? 'Update Pass' : 'Issue Pass'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ======================================================== */}
-      {/* MODAL 3: INITIALIZE / EDIT KINKSTER PROFILE               */}
-      {/* ======================================================== */}
-      {isKinksterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-zinc-950 border border-rose-500/30 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-              <div className="flex items-center gap-2">
-                <Flame className="w-5 h-5 text-rose-500" />
-                <h3 className="font-serif text-lg text-white font-bold">
-                  {kinksterProfile ? 'Edit Kinkster Profile' : 'Initialize Kinkster Profile'}
-                </h3>
-              </div>
-              <button 
-                onClick={() => setIsKinksterModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-zinc-900 text-zinc-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveKinksterForm} className="space-y-4 text-xs font-mono">
-              <div>
-                <label className="text-zinc-400 block mb-1">Encrypted Community Alias (@handle)</label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-zinc-500">@</span>
-                  <input
-                    type="text"
-                    required
-                    placeholder="phantom_guest"
-                    value={kinksterFormData.alias}
-                    onChange={(e) => setKinksterFormData(prev => ({ ...prev, alias: e.target.value }))}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-8 pr-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-zinc-400 block mb-1">Community Bio</label>
-                <textarea
-                  rows={2}
-                  placeholder="Discreet adult explorer..."
-                  value={kinksterFormData.bio}
-                  onChange={(e) => setKinksterFormData(prev => ({ ...prev, bio: e.target.value }))}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-zinc-400 block mb-1">Interests / Tags (Comma-separated)</label>
-                <input
-                  type="text"
-                  placeholder="Masquerade, Rope, BDSM, Sensory, Lounge"
-                  value={kinksterFormData.interests}
-                  onChange={(e) => setKinksterFormData(prev => ({ ...prev, interests: e.target.value }))}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Feature Checkboxes */}
-              <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-3">
-                <p className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold">Feature Clearance Flags</p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={kinksterFormData.is_activated}
-                      onChange={(e) => setKinksterFormData(prev => ({ ...prev, is_activated: e.target.checked }))}
-                      className="rounded border-zinc-700 bg-zinc-900 text-rose-500"
-                    />
-                    <span className="text-zinc-300">Profile Activated</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={kinksterFormData.stay_verified}
-                      onChange={(e) => setKinksterFormData(prev => ({ ...prev, stay_verified: e.target.checked }))}
-                      className="rounded border-zinc-700 bg-zinc-900 text-rose-500"
-                    />
-                    <span className="text-zinc-300">Stay Verified Badge</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={kinksterFormData.face_id_vetted}
-                      onChange={(e) => setKinksterFormData(prev => ({ ...prev, face_id_vetted: e.target.checked }))}
-                      className="rounded border-zinc-700 bg-zinc-900 text-rose-500"
-                    />
-                    <span className="text-zinc-300">3D Face ID Vetted</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={kinksterFormData.in_person_vetted}
-                      onChange={(e) => setKinksterFormData(prev => ({ ...prev, in_person_vetted: e.target.checked }))}
-                      className="rounded border-zinc-700 bg-zinc-900 text-rose-500"
-                    />
-                    <span className="text-zinc-300">In-Person Vetted</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={kinksterFormData.is_trusted_host}
-                      onChange={(e) => setKinksterFormData(prev => ({ ...prev, is_trusted_host: e.target.checked }))}
-                      className="rounded border-zinc-700 bg-zinc-900 text-rose-500"
-                    />
-                    <span className="text-zinc-300">Trusted Host 👑</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={kinksterFormData.confidentiality_agreed}
-                      onChange={(e) => setKinksterFormData(prev => ({ ...prev, confidentiality_agreed: e.target.checked }))}
-                      className="rounded border-zinc-700 bg-zinc-900 text-rose-500"
-                    />
-                    <span className="text-zinc-300">NDA Signed</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-zinc-400 block mb-1">Admin Notes / Moderation Memo</label>
-                <textarea
-                  rows={2}
-                  value={kinksterFormData.admin_notes}
-                  onChange={(e) => setKinksterFormData(prev => ({ ...prev, admin_notes: e.target.value }))}
-                  placeholder="Pre-vetted for confidential events..."
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
-                <button
-                  type="button"
-                  onClick={() => setIsKinksterModalOpen(false)}
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingKinkster}
-                  className="px-5 py-2 bg-gradient-to-r from-rose-600 to-purple-600 text-white font-bold uppercase rounded-xl hover:from-rose-500 hover:to-purple-500 transition-colors shadow-md"
-                >
-                  {isSavingKinkster ? 'Saving...' : kinksterProfile ? 'Update Profile' : 'Activate Profile'}
                 </button>
               </div>
             </form>

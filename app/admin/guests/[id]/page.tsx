@@ -34,19 +34,10 @@ export default async function GuestProfilePage({ params }: { params: Promise<{ i
     .limit(1)
     .maybeSingle();
 
-  // Fetch Kinkster Profile
-  const { data: kinksterProfile } = await supabase
-    .from('kinkster_profiles')
-    .select('*')
-    .or(`id.eq.${effectiveUserId},guest_profile_id.eq.${id},id.eq.${id}`)
-    .limit(1)
-    .maybeSingle();
-
   return (
     <AdminGuestProfileClient 
       initialGuest={guest as any} 
       initialSanctuaryPass={sanctuaryPass}
-      initialKinksterProfile={kinksterProfile}
     />
   );
 }

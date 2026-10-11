@@ -216,7 +216,7 @@ Return ONLY a valid JSON object matching this schema (no markdown, no backticks)
           if (parsed.space_name && availableSpaces.length > 0) {
             const lowerAiSpace = parsed.space_name.toLowerCase();
             const matched = availableSpaces.find(
-              (s) =>
+              (s: any) =>
                 lowerAiSpace.includes(s.title.toLowerCase()) ||
                 lowerAiSpace.includes(s.slug.toLowerCase())
             );
@@ -304,7 +304,7 @@ Return ONLY a valid JSON object matching this schema (no markdown, no backticks)
       checkOut = cOut.toISOString().split('T')[0];
     }
 
-    const userPhone = user?.phone || user?.user_metadata?.phone || null;
+    const userPhone = user?.phone || (user as any)?.user_metadata?.phone || null;
     const cleanUserPhone = userPhone ? userPhone.replace(/[^0-9]/g, '') : null;
 
     // 3. Check if a booking matching this reservation code already exists
@@ -327,7 +327,7 @@ Return ONLY a valid JSON object matching this schema (no markdown, no backticks)
     }
 
     let activeBookingId = existingBooking?.id;
-    let selectedSpace = existingBooking?.spaces || availableSpaces.find((s) => s.id === matchedSpaceId) || defaultSpace;
+    let selectedSpace = existingBooking?.spaces || availableSpaces.find((s: any) => s.id === matchedSpaceId) || defaultSpace;
 
     // 4. Create new Booking record if none existed
     if (!activeBookingId) {
@@ -374,8 +374,8 @@ Return ONLY a valid JSON object matching this schema (no markdown, no backticks)
       .eq('booking_id', activeBookingId)
       .order('guest_index', { ascending: true });
 
-    let primaryGuestRecord = existingGuests?.find((g) => g.guest_index === 0);
-    let coGuestRecord = existingGuests?.find((g) => g.guest_index === 1);
+    let primaryGuestRecord = existingGuests?.find((g: any) => g.guest_index === 0);
+    let coGuestRecord = existingGuests?.find((g: any) => g.guest_index === 1);
 
     // Auto-check if primary user is already 180-day verified in guest_profiles
     let primaryIsVerified = false;

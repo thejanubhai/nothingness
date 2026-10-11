@@ -49,28 +49,11 @@ export async function POST(req: NextRequest) {
           const isAdmin = await isUserAdminAsync(user);
           if (
             isAdmin ||
-            user.app_metadata?.role === 'admin' ||
-            user.user_metadata?.role === 'admin'
+            (user as any).app_metadata?.role === 'admin' ||
+            (user as any).user_metadata?.role === 'admin'
           ) {
             isAuthorized = true;
             marshallAlias = user.email || 'Admin Marshall';
-          } else {
-            // Check kinkster_profiles for explicit role in admin_notes or is_marshall
-            const adminClient = createAdminClient();
-            const { data: kp } = await adminClient
-              .from('kinkster_profiles')
-              .select('alias, admin_notes, is_marshall')
-              .eq('id', user.id)
-              .maybeSingle();
-
-            if (
-              (kp as any)?.is_marshall === true ||
-              kp?.admin_notes?.toLowerCase().includes('role_marshall') ||
-              kp?.admin_notes?.toLowerCase().includes('role_admin')
-            ) {
-              isAuthorized = true;
-              marshallAlias = kp?.alias || user.email || 'Admin Marshall';
-            }
           }
         }
       } catch {}

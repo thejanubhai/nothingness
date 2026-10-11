@@ -36,10 +36,10 @@ export default async function AdminPartnersPage() {
   const propertiesList = properties || [];
 
   const totalLeads = leadsList.length;
-  const newLeads = leadsList.filter(l => l.status === 'new').length;
-  const activePartners = partnersList.filter(p => p.status === 'active' || p.verified_by_admin).length;
-  const pendingVerification = partnersList.filter(p => p.status === 'under_review' || (p.affidavit_uploaded && !p.verified_by_admin)).length;
-  const paidSetupCount = partnersList.filter(p => p.setup_fee_paid).length;
+  const newLeads = leadsList.filter((l: any) => l.status === 'new').length;
+  const activePartners = partnersList.filter((p: any) => p.status === 'active' || p.verified_by_admin).length;
+  const pendingVerification = partnersList.filter((p: any) => p.status === 'under_review' || (p.affidavit_uploaded && !p.verified_by_admin)).length;
+  const paidSetupCount = partnersList.filter((p: any) => p.setup_fee_paid).length;
   const totalSetupRevenue = paidSetupCount * 300000;
 
   const stats = {

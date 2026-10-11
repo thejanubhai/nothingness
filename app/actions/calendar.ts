@@ -17,7 +17,7 @@ export async function getBlockedIntervals(spaceId: string, iCalUrl?: string | nu
   const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
   if (bookings) {
-    bookings.forEach(b => {
+    bookings.forEach((b: any) => {
       if (b.status === 'pending') {
         const isPaid = b.payment_status === 'completed';
         const isRecentCheckout = b.created_at && b.created_at >= thirtyMinsAgo;
@@ -36,7 +36,7 @@ export async function getBlockedIntervals(spaceId: string, iCalUrl?: string | nu
     .eq('space_id', spaceId);
 
   if (externalDates) {
-    externalDates.forEach(d => {
+    externalDates.forEach((d: any) => {
       intervals.push({ start: d.start_date, end: d.end_date });
     });
   }

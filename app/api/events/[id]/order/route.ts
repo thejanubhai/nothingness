@@ -69,7 +69,7 @@ export async function POST(
       ? guestProfile.phone.replace(/[^0-9]/g, '')
       : '9999999999';
     const customerPhone = rawPhone.length >= 10 ? rawPhone.slice(-10) : '9999999999';
-    const customerName = guestProfile?.full_name || user.user_metadata?.full_name || 'Sanctuary Member';
+    const customerName = guestProfile?.full_name || (user as any).user_metadata?.full_name || 'Sanctuary Member';
     const customerEmail = isSyntheticEmail ? 'hospitality@nothingness.asia' : user.email || 'hospitality@nothingness.asia';
 
     const { paymentUrl, params: payuParams } = await createPayUPaymentRequestAsync({

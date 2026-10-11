@@ -49,9 +49,9 @@ export default async function DashboardOverview() {
 
   const bookingsList = allBookings || [];
   const upcomingBookings = bookingsList
-    .filter((b) => b.check_in >= today)
-    .sort((a, b) => (a.check_in > b.check_in ? 1 : -1));
-  const pastBookings = bookingsList.filter((b) => b.check_in < today);
+    .filter((b: any) => b.check_in >= today)
+    .sort((a: any, b: any) => (a.check_in > b.check_in ? 1 : -1));
+  const pastBookings = bookingsList.filter((b: any) => b.check_in < today);
 
   // 2. Fetch Identity Profile from guest_profiles by phone or user_id
   let profile = null;
@@ -77,15 +77,7 @@ export default async function DashboardOverview() {
 
   const effectiveUserId = user.id;
 
-  // 3. Fetch Kinkster Profile status
-  const { data: kinksterProfile } = await supabase
-    .from('kinkster_profiles')
-    .select('*')
-    .or(`id.eq.${effectiveUserId},guest_profile_id.eq.${profile?.id || effectiveUserId},id.eq.${profile?.id || effectiveUserId}`)
-    .limit(1)
-    .maybeSingle();
-
-  // 4. Fetch Sanctuary Pass status
+  // 3. Fetch Sanctuary Pass status
   const { data: sanctuaryPass } = await supabase
     .from('sanctuary_passes')
     .select('*')
@@ -94,11 +86,11 @@ export default async function DashboardOverview() {
     .limit(1)
     .maybeSingle();
 
-  // 5. Compute Smart Profile Sovereign Metrics
-  const totalStays = bookingsList.filter((b) => b.status === 'confirmed').length;
+  // 4. Compute Smart Profile Sovereign Metrics
+  const totalStays = bookingsList.filter((b: any) => b.status === 'confirmed').length;
   const isGovtIdVerified = Boolean(profile?.is_verified);
-  const isFaceIdVetted = Boolean(profile?.face_id_vetted || kinksterProfile?.face_id_vetted);
-  const hasStayHistory = totalStays > 0 || Boolean(kinksterProfile?.stay_verified);
+  const isFaceIdVetted = Boolean(profile?.face_id_vetted);
+  const hasStayHistory = totalStays > 0;
 
   // Sovereign Tier Calculation:
   // Tier III = Fully Sovereign (Govt ID + 3D Face ID + Stay History)
@@ -116,10 +108,9 @@ export default async function DashboardOverview() {
         id: user.id,
         phone: user.phone,
         email: user.email,
-        email_confirmed_at: user.email_confirmed_at,
+        email_confirmed_at: (user as any).email_confirmed_at,
       }}
       profile={profile}
-      kinksterProfile={kinksterProfile}
       sanctuaryPass={sanctuaryPass}
       upcomingBookings={upcomingBookings}
       pastBookings={pastBookings}

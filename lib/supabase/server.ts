@@ -1,166 +1,50 @@
-"use server";
 import { adminDb, adminAuth } from '@/lib/firebase/admin';
+import { FirestoreQueryBuilder } from '@/lib/firestore/query-builder';
 import { cookies } from 'next/headers';
 
-// GOD MODE: Supabase-to-Firestore Monolithic Adapter
-// This transparently replaces Supabase so all legacy components 
-// read/write directly to the Master Firebase Database!
+export { FirestoreQueryBuilder, FirestoreQueryBuilder as SupabaseQueryBuilder };
 
-class SupabaseQueryBuilder {
-  collection: string;
-  _select: string = '*';
-  _limit?: number;
-  _eq: { key: string, val: any }[] = [];
-
-  constructor(collection: string) {
-    this.collection = collection;
-  }
-
-  select(cols: string) {
-    this._select = cols;
-    return this;
-  }
-
-  limit(count: number) {
-    this._limit = count;
-    return this;
-  }
-
-  eq(key: string, val: any) {
-    this._eq.push({ key, val });
-    return this;
-  }
-  
-  or(clause: string) {
-    // Basic stub for .or('user_id.eq.123,guest_email.eq.foo')
-    return this;
-  }
-  
-  in(key: string, vals: any[]) {
-    // Stub
-    return this;
-  }
-
-  lte(key: string, val: any) { return this; }
-  gte(key: string, val: any) { return this; }
-  order(key: string, opts: any) { return this; }
-
-  async single() {
-    const res = await this.execute();
-    return { data: res.data?.[0] || null, error: res.error };
-  }
-  
-  async maybeSingle() {
-    return this.single();
-  }
-
-  async execute() {
-    try {
-      let ref: any = adminDb.collection(this.collection);
-      for (const cond of this._eq) {
-        if (cond.key === 'id') {
-          const doc = await ref.doc(cond.val).get();
-          if (doc.exists) {
-            return { data: [{ id: doc.id, ...doc.data() }], error: null };
-          }
-          return { data: [], error: null };
-        }
-        ref = ref.where(cond.key, '==', cond.val);
-      }
-      
-      if (this._limit) {
-        ref = ref.limit(this._limit);
-      }
-
-      const snap = await ref.get();
-      const data = snap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
-      return { data, error: null };
-    } catch (error) {
-      console.error(`Firebase Adapter Error [${this.collection}]:`, error);
-      return { data: null, error };
-    }
-  }
-
-  async insert(payload: any) {
-    try {
-      if (Array.isArray(payload)) {
-        const batch = adminDb.batch();
-        const results = [];
-        for (const item of payload) {
-          const ref = adminDb.collection(this.collection).doc(item.id || adminDb.collection(this.collection).doc().id);
-          batch.set(ref, item, { merge: true });
-          results.push({ id: ref.id, ...item });
-        }
-        await batch.commit();
-        return { data: results, error: null };
-      } else {
-        const ref = adminDb.collection(this.collection).doc(payload.id || adminDb.collection(this.collection).doc().id);
-        await ref.set(payload, { merge: true });
-        return { data: [{ id: ref.id, ...payload }], error: null };
-      }
-    } catch (error) {
-      return { data: null, error };
-    }
-  }
-
-  async update(payload: any) {
-    try {
-      let ref: any = adminDb.collection(this.collection);
-      let docsToUpdate = [];
-      
-      const idCond = this._eq.find(c => c.key === 'id');
-      if (idCond) {
-        docsToUpdate.push(ref.doc(idCond.val));
-      } else {
-        // Query to find docs
-        for (const cond of this._eq) {
-          ref = ref.where(cond.key, '==', cond.val);
-        }
-        const snap = await ref.get();
-        docsToUpdate = snap.docs.map((d: any) => d.ref);
-      }
-
-      const batch = adminDb.batch();
-      docsToUpdate.forEach((dRef: any) => batch.update(dRef, payload));
-      await batch.commit();
-      
-      return { data: docsToUpdate.map((d: any) => ({ id: d.id, ...payload })), error: null };
-    } catch (error) {
-      return { data: null, error };
-    }
-  }
-
-  async upsert(payload: any) {
-    return this.insert(payload); // Firebase set({merge:true}) handles upserts
-  }
-  
-  async delete() {
-    try {
-      const idCond = this._eq.find(c => c.key === 'id');
-      if (idCond) {
-        await adminDb.collection(this.collection).doc(idCond.val).delete();
-      }
-      return { data: null, error: null };
-    } catch (error) {
-      return { data: null, error };
-    }
-  }
-
-  // Allow await on the builder itself (for select queries)
-  then(resolve: any, reject: any) {
-    return this.execute().then(resolve, reject);
-  }
+export interface SupabaseServerUser {
+  id: string;
+  email?: string;
+  phone?: string;
+  app_metadata: any;
+  user_metadata: any;
+  aud?: string;
+  created_at?: string;
+  email_confirmed_at?: string;
+  phone_confirmed_at?: string;
+  [key: string]: any;
 }
 
-export const createClient = async () => {
+export interface SupabaseServerClient {
+  auth: {
+    getUser: () => Promise<{ data: { user: SupabaseServerUser | null }; error: any }>;
+    signInWithPassword: (credentials: { email?: string; phone?: string; password?: string }) => Promise<{ data: { user: SupabaseServerUser | null; session?: any }; error: any }>;
+    signUp: (params: { email?: string; password?: string; options?: any }) => Promise<{ data: { user: SupabaseServerUser | null }; error: any }>;
+    signOut: () => Promise<{ error: any }>;
+    exchangeCodeForSession: () => Promise<{ data: { user: any }; error: any }>;
+    [key: string]: any;
+  };
+  from: (table: string) => FirestoreQueryBuilder;
+  [key: string]: any;
+}
+
+/**
+ * Server-side Database Client for Next.js Server Components & Route Handlers.
+ * Connects directly to Firebase Firestore (adminDb) and verifies Firebase session cookies.
+ */
+export const createClient = async (): Promise<SupabaseServerClient> => {
   const cookieStore = await cookies();
 
   return {
     auth: {
-      getUser: async () => {
+      getUser: async (): Promise<{ data: { user: SupabaseServerUser | null }; error: any }> => {
         try {
           const sessionCookie = cookieStore.get('__session')?.value;
-          if (!sessionCookie) return { data: { user: null }, error: null };
+          if (!sessionCookie) {
+            return { data: { user: null }, error: null };
+          }
           const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
           return {
             data: {
@@ -168,28 +52,85 @@ export const createClient = async () => {
                 id: decoded.uid,
                 email: decoded.email,
                 phone: decoded.phone_number,
-                app_metadata: {},
-                user_metadata: {},
+                app_metadata: decoded as Record<string, any>,
+                user_metadata: (decoded.custom_claims || {}) as Record<string, any>,
                 aud: 'authenticated',
                 created_at: new Date().toISOString(),
-              }
+                email_confirmed_at: decoded.email ? new Date().toISOString() : undefined,
+                phone_confirmed_at: decoded.phone_number ? new Date().toISOString() : undefined,
+              },
             },
-            error: null
+            error: null,
           };
         } catch (error) {
-          return { data: { user: null }, error };
+          return { data: { user: null }, error: null };
+        }
+      },
+      signInWithPassword: async (credentials: { email?: string; phone?: string; password?: string }) => {
+        try {
+          let userRecord;
+          if (credentials.phone) {
+            userRecord = await adminAuth.getUserByPhoneNumber(credentials.phone);
+          } else if (credentials.email) {
+            userRecord = await adminAuth.getUserByEmail(credentials.email);
+          }
+          if (!userRecord) {
+            return { data: { user: null }, error: { message: 'Invalid credentials' } };
+          }
+          const customToken = await adminAuth.createCustomToken(userRecord.uid);
+          return {
+            data: {
+              user: {
+                id: userRecord.uid,
+                email: userRecord.email,
+                phone: userRecord.phoneNumber,
+                app_metadata: {},
+                user_metadata: {},
+              },
+              session: { access_token: customToken },
+            },
+            error: null,
+          };
+        } catch (err: any) {
+          return { data: { user: null }, error: { message: err.message } };
+        }
+      },
+      signUp: async (params: { email?: string; password?: string; options?: any }) => {
+        try {
+          const phone = params.options?.data?.phone;
+          const userRecord = await adminAuth.createUser({
+            email: params.email,
+            password: params.password,
+            phoneNumber: phone,
+          });
+          return {
+            data: {
+              user: {
+                id: userRecord.uid,
+                email: userRecord.email,
+                phone: userRecord.phoneNumber,
+                app_metadata: {},
+                user_metadata: {},
+              },
+            },
+            error: null,
+          };
+        } catch (err: any) {
+          return { data: { user: null }, error: { message: err.message } };
+        }
+      },
+      signOut: async () => {
+        try {
+          cookieStore.delete('__session');
+          return { error: null };
+        } catch {
+          return { error: null };
         }
       },
       exchangeCodeForSession: async () => ({ data: { user: null }, error: null }),
-      signOut: async () => {
-        // Clear cookie logic would go here if needed via an API route
-        return { error: null };
-      }
     },
-    from: (table: string) => new SupabaseQueryBuilder(table),
+    from: (table: string) => new FirestoreQueryBuilder(table),
   };
 };
 
-export const createServerClient = async () => createClient(); // Fallback
-
-
+export const createServerClient = async () => createClient();

@@ -440,7 +440,7 @@ Return ONLY a valid JSON object matching this schema (no markdown, no backticks)
 
     let finalName = (clientName || normalizedName || '').trim();
     if (!finalName || finalName === 'Nothingness Guest' || finalName === 'Guest' || finalName === 'Full Legal Name') {
-      finalName = user?.user_metadata?.full_name || 'Nothingness Guest';
+      finalName = (user as any)?.user_metadata?.full_name || 'Nothingness Guest';
     }
 
     let finalDocNumber = (clientDocNumber || normalizedDocNumber || '').trim().toUpperCase();

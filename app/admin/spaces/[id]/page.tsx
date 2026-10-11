@@ -71,7 +71,7 @@ export default function EditSpacePage({ params }: { params: Promise<{ id: string
         .eq('id', id)
         .single();
         
-      if (spaceError) throw spaceError;
+      if (spaceError || !space) throw (spaceError || new Error('Space not found'));
       
       const defaultGuests = space.default_guests || 2;
       const maxGuests = space.max_guests || 4;
@@ -269,7 +269,7 @@ export default function EditSpacePage({ params }: { params: Promise<{ id: string
         
       if (error) throw error;
       
-      setSyncSources(syncSources.filter(s => s.id !== sourceId));
+      setSyncSources(syncSources.filter((s: any) => s.id !== sourceId));
       toast.success('Calendar source removed');
     } catch (err: any) {
       console.error(err);

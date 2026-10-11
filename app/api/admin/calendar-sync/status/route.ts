@@ -31,9 +31,9 @@ export async function GET() {
 
     // 3. Compute stats
     const totalSources = sources?.length || 0;
-    const activeSources = sources?.filter(s => s.is_active)?.length || 0;
-    const errorSources = sources?.filter(s => s.sync_status === 'error')?.length || 0;
-    const successSources = sources?.filter(s => s.sync_status === 'success')?.length || 0;
+    const activeSources = sources?.filter((s: any) => s.is_active)?.length || 0;
+    const errorSources = sources?.filter((s: any) => s.sync_status === 'error')?.length || 0;
+    const successSources = sources?.filter((s: any) => s.sync_status === 'success')?.length || 0;
 
     return NextResponse.json({
       success: true,

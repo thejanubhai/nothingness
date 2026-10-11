@@ -30,15 +30,15 @@ export async function checkAndPromoteWaitlistedCandidates(eventId: string) {
   }
 
   const confirmedCouples = apps.filter(
-    (a) => a.category === 'couple' && ['confirmed', 'checked_in', 'approved_payment_pending'].includes(a.status)
+    (a: any) => a.category === 'couple' && ['confirmed', 'checked_in', 'approved_payment_pending'].includes(a.status)
   ).length;
 
   const confirmedFemales = apps.filter(
-    (a) => a.category === 'single_female' && ['confirmed', 'checked_in', 'approved_payment_pending'].includes(a.status)
+    (a: any) => a.category === 'single_female' && ['confirmed', 'checked_in', 'approved_payment_pending'].includes(a.status)
   ).length;
 
   const confirmedMales = apps.filter(
-    (a) => a.category === 'single_male' && ['confirmed', 'checked_in', 'approved_payment_pending'].includes(a.status)
+    (a: any) => a.category === 'single_male' && ['confirmed', 'checked_in', 'approved_payment_pending'].includes(a.status)
   ).length;
 
   // 3. Dynamic Single Male Capacity calculation (Anchor rule: 1 male per 2 couples or 1 female)
@@ -54,8 +54,8 @@ export async function checkAndPromoteWaitlistedCandidates(eventId: string) {
   if (maleSlotsAvailable > 0) {
     // 4. Fetch top waitlisted single males sorted by AI score
     const waitlistedMales = apps
-      .filter((a) => a.category === 'single_male' && a.status === 'waitlisted')
-      .sort((a, b) => (b.ai_trust_score || 0) - (a.ai_trust_score || 0));
+      .filter((a: any) => a.category === 'single_male' && a.status === 'waitlisted')
+      .sort((a: any, b: any) => (b.ai_trust_score || 0) - (a.ai_trust_score || 0));
 
     const candidatesToPromote = waitlistedMales.slice(0, maleSlotsAvailable);
 
