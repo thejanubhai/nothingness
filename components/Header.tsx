@@ -28,7 +28,6 @@ import Magnetic from "./Magnetic";
 import AppSwitcher from "./AppSwitcher";
 import { createClient } from "@/lib/supabase/client";
 import { signOut } from "@/app/actions/auth";
-import { isUserAdmin } from "@/lib/auth-utils";
 
 export interface ActiveContext {
   isLoggedIn: boolean;
@@ -138,7 +137,7 @@ export default function Header() {
   }
 
   const userPhone = user?.phone || (user?.email?.includes('@auth.nothingness') ? `+${user.email.split('@')[0]}` : user?.email || '');
-  const isAdmin = isUserAdmin(user);
+  const isAdmin = Boolean(activeContext?.user?.isAdmin ?? user?.isAdmin);
 
   return (
     <>
